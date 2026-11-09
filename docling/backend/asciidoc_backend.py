@@ -55,6 +55,13 @@ _LIST_START_ATTR_RE = re.compile(
 # "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
+# The span part of a cell specifier: "2+" spans two columns, ".3+" three rows,
+# "2.3+" both. A "*" factor duplicates the cell instead and is not a span.
+_CELL_SPAN_RE: Final = re.compile(r"(?P<col>\d+)?(?:\.(?P<row>\d+))?\+")
+# The duplication factor of a cell specifier: "3*" writes the cell three times.
+# Asciidoctor takes one span or one factor per cell and keeps "2*3+" as text;
+# Docling drops it as a specifier, as it did before the factor was read.
+_CELL_REPEAT_RE: Final = re.compile(r"(?P<repeat>\d+)\*(?![\d.])")
 # An ordered marker with a letter has one letter only ("a.", "B."), so a line
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
@@ -160,6 +167,16 @@ class _InlineRun:
 class _LiteralBlock:
     text: str
     language: str | None = None  # set for [source,lang] listing blocks
+
+
+@dataclass
+class _TableCellSource:
+    """One table cell as written: its text, spans and duplication factor."""
+
+    text: str
+    col_span: int = 1
+    row_span: int = 1
+    repeat: int = 1
 
 
 @dataclass(frozen=True)
@@ -295,7 +312,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         in_delimited_table = False
 
         text_data: list[str] = []
-        table_data: list[list[str]] = []
+        table_data: list[list[_TableCellSource]] = []
         caption_data: list[str] = []
         last_list_item: ListItem | None = None
         list_continuation = False
@@ -340,21 +357,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             stripped_line = line.strip()
 
             # Attribute entries set or unset a document attribute; they are
-            # never body content. Every other line has its attribute
-            # references replaced before its text is used.
-            if self._apply_attribute_entry(stripped_line, attributes):
+            # never body content. Table rows are split into cells before
+            # references are replaced, so a value containing "|" (e.g.
+            # "{vbar}") stays cell text.
+            if self._apply_attribute_entry(stripped_line, attributes) or (
+                in_delimited_table
+                and self._continue_table(table_data, line, attributes)
+            ):
                 continue
+
+            # Every other line has its attribute references replaced before
+            # its text is used.
             text_line = self._substitute_attributes(line, attributes)
             paragraph_line = self._substitute_attributes(
                 line, attributes, protect_marks=True
             )
-
-            # Table rows are split into cells before references are replaced,
-            # so a value containing "|" (e.g. "{vbar}") stays cell text.
-            if in_delimited_table and self._continue_table(
-                table_data, line, attributes
-            ):
-                continue
 
             in_list, last_list_item, list_continuation = self._close_list_if_needed(
                 line=line,
@@ -502,12 +519,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             elif self._is_table_line(line):  # within a table
                 in_table = True
-                table_data.append(
-                    [
-                        self._substitute_attributes(cell, attributes)
-                        for cell in self._parse_table_line(line)
-                    ]
-                )
+                table_data.append(self._table_cells(line, attributes))
 
             elif in_table and not self._is_table_line(line):  # end of table
                 self._add_table_if_nonempty(
@@ -1339,7 +1351,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     @classmethod
     def _continue_table(
         cls,
-        table_data: list[list[str]],
+        table_data: list[list[_TableCellSource]],
         line: str,
         attributes: dict[str, str],
     ) -> bool:
@@ -1355,24 +1367,62 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             return False
         if stripped:
             stripped = cls._substitute_attributes(stripped, attributes)
-            table_data[-1][-1] = f"{table_data[-1][-1]} {stripped}".lstrip()
+            cell = table_data[-1][-1]
+            cell.text = f"{cell.text} {stripped}".lstrip()
         return True
 
+    @classmethod
+    def _table_cells(
+        cls, line: str, attributes: dict[str, str]
+    ) -> list[_TableCellSource]:
+        """Split a table line into its cells and resolve attribute references."""
+        cells = cls._parse_table_cells(line)
+        for cell in cells:
+            cell.text = cls._substitute_attributes(cell.text, attributes)
+        return cells
+
     @staticmethod
-    def _parse_table_line(line):
-        # Drop cell specifiers glued to a "|" (e.g. "^.^h"); anchored to
-        # whitespace so content ending in a style letter (e.g. "Eth") survives.
-        line = re.sub(rf"(^|\s){_CELL_SPEC}(?=\|)", r"\1", line)
-        # Split on unescaped "|" and remove the leading empty string from the
-        # first "|"; a "\|" is a pipe in the cell text and loses its backslash.
-        cells = re.split(r"(?<!\\)\|", line)[1:]
-        # Strip whitespace from each cell (empty cells become empty strings)
-        return [cell.replace("\\|", "|").strip() for cell in cells]
+    def _parse_table_cells(line: str) -> list[_TableCellSource]:
+        """Split a table line into its cells, reading each cell's spans.
+
+        A specifier glued to a "|" (e.g. "^.^h", "2+") belongs to the cell that
+        "|" opens. It is anchored to whitespace, so content ending in a style
+        letter (e.g. "Eth") survives. A "\\|" is a pipe in the cell text and
+        loses its backslash.
+        """
+        pipes = [match.start() for match in re.finditer(r"(?<!\\)\|", line)]
+        specs: list[str] = []
+        texts: list[str] = []
+        for index, pipe in enumerate(pipes):
+            start = pipes[index - 1] + 1 if index else 0
+            segment = line[start:pipe]
+            anchor = r"(?:^|\s)" if index == 0 else r"\s"
+            match = re.search(rf"{anchor}({_CELL_SPEC})$", segment)
+            spec = match.group(1) if match else ""
+            specs.append(spec)
+            if index:
+                texts.append(segment[: len(segment) - len(spec)])
+        if pipes:
+            texts.append(line[pipes[-1] + 1 :])
+
+        cells = []
+        for spec, text in zip(specs, texts):
+            span = _CELL_SPAN_RE.match(spec)
+            repeat = _CELL_REPEAT_RE.match(spec)
+            cells.append(
+                _TableCellSource(
+                    text=text.replace("\\|", "|").strip(),
+                    col_span=int(span.group("col") or 1) if span else 1,
+                    row_span=int(span.group("row") or 1) if span else 1,
+                    repeat=int(repeat.group("repeat")) if repeat else 1,
+                )
+            )
+        return cells
 
     @staticmethod
     def _add_table_if_nonempty(
         doc: DoclingDocument,
-        table_data: list[list[str]],
+        table_data: list[list[_TableCellSource]],
         caption_data: list[str],
         parent: NodeItem | None,
     ) -> None:
@@ -1390,35 +1440,96 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         doc.add_table(data=data, parent=parent, caption=caption)
 
     @staticmethod
-    def _populate_table_as_grid(table_data):
-        num_rows = len(table_data)
+    def _group_table_rows(
+        table_data: list[list[_TableCellSource]],
+    ) -> list[list[_TableCellSource]]:
+        """Group the cells of a table into its rows.
 
-        # Adjust the table data into a grid format
-        num_cols = max((len(row) for row in table_data), default=0)
+        Asciidoctor takes the column count from the first line of the table and
+        fills each row with that many columns, so a row may be written on
+        several lines (one cell per line is common). A line that holds a whole
+        row on its own stays one row, also when it is wider. Columns that a
+        rowspan from a row above covers count as filled. A cell with a "3*"
+        factor counts as three cells, expanded only here so that a line
+        continuing its text applies to every copy.
+        """
+        if not table_data:
+            return []
+        table_data = [
+            [replace(cell, repeat=1) for cell in line for _ in range(cell.repeat)]
+            for line in table_data
+        ]
+        num_cols = sum(cell.col_span for cell in table_data[0])
+        rows: list[list[_TableCellSource]] = []
+        covered: dict[int, int] = {}
+        row: list[_TableCellSource] = []
+        width = 0
 
-        data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
-        for row_idx, row in enumerate(table_data):
-            # Pad rows with empty strings to match column count
-            # grid.append(row + [''] * (max_cols - len(row)))
+        def close_row() -> None:
+            nonlocal row, width
+            for cell in row:
+                for offset in range(1, cell.row_span):
+                    target = len(rows) + offset
+                    covered[target] = covered.get(target, 0) + cell.col_span
+            rows.append(row)
+            row, width = [], 0
 
-            for col_idx, text in enumerate(row):
-                row_span = 1
-                col_span = 1
+        for line_cells in table_data:
+            needed = num_cols - covered.get(len(rows), 0)
+            if not row and sum(cell.col_span for cell in line_cells) >= needed:
+                row = list(line_cells)
+                close_row()
+                continue
+            for cell in line_cells:
+                row.append(cell)
+                width += cell.col_span
+                if width >= num_cols - covered.get(len(rows), 0):
+                    close_row()
+        if row:
+            close_row()
+        return rows
 
-                cell = TableCell(
-                    text=text,
-                    row_span=row_span,
-                    col_span=col_span,
-                    start_row_offset_idx=row_idx,
-                    end_row_offset_idx=row_idx + row_span,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + col_span,
-                    column_header=row_idx == 0,
-                    row_header=False,
+    @classmethod
+    def _populate_table_as_grid(
+        cls, table_data: list[list[_TableCellSource]]
+    ) -> TableData:
+        """Place each cell on the grid, with its spans.
+
+        A cell takes the first column of its row that no cell to its left and
+        no rowspan from a row above already covers. A rowspan is cut at the
+        last row of the table.
+        """
+        rows = cls._group_table_rows(table_data)
+        num_rows = len(rows)
+        occupied: set[tuple[int, int]] = set()
+        cells: list[TableCell] = []
+        for row_idx, row in enumerate(rows):
+            col_idx = 0
+            for source in row:
+                while (row_idx, col_idx) in occupied:
+                    col_idx += 1
+                row_span = min(source.row_span, num_rows - row_idx)
+                col_span = source.col_span
+                for r in range(row_idx, row_idx + row_span):
+                    for c in range(col_idx, col_idx + col_span):
+                        occupied.add((r, c))
+                cells.append(
+                    TableCell(
+                        text=source.text,
+                        row_span=row_span,
+                        col_span=col_span,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + row_span,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + col_span,
+                        column_header=row_idx == 0,
+                        row_header=False,
+                    )
                 )
-                data.table_cells.append(cell)
+                col_idx += col_span
 
-        return data
+        num_cols = max((cell.end_col_offset_idx for cell in cells), default=0)
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
 
     #   =========   Pictures
     @staticmethod

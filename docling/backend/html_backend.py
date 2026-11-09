@@ -56,13 +56,14 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
     MAX_COLSPAN,
@@ -2029,7 +2030,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         A table cell can hold rich content and be parsed with a Docling RichTableCell.
         However, this requires walking through the content elements and creating
         Docling node items. If the cell holds only plain text, the parsing is simpler
-        and using a TableCell is prefered.
+        and using a TableCell is preferred.
 
         Args:
             table_cell: The HTML tag representing a table cell.
@@ -3628,7 +3629,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_list = self._extract_text_and_hyperlink_recursively(
                 tag, find_parent_annotation=True, keep_newlines=True
             )
-            annotated_texts = text_list.simplify_text_elements()
+            # This backend maps <pre> to code, so the code mark of inner <code> tags
+            # adds nothing here; clear it so that it does not split the block into runs.
+            annotated_texts = AnnotatedTextList(
+                part.model_copy(update={"code": False}) for part in text_list
+            ).simplify_text_elements()
             # Preformatted content: every interior space is significant, so only the block
             # edges are trimmed (HTML drops the newline right after `<pre>`).
             if annotated_texts:
@@ -5379,9 +5384,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
 
-        caption_anno_text = caption.normalize_whitespace().to_single_text_element()
+        src_loc: str = self._get_attr_as_string(img_tag, "src")
+        img_ref: Optional[ImageRef] = None
+        if cast(HTMLBackendOptions, self.options).fetch_images and src_loc:
+            try:
+                src_loc = self._resolve_relative_path(src_loc)
+            except ValueError as e:
+                # The source is not loaded, but the picture is kept, as for an
+                # image file that cannot be read.
+                warnings.warn(f"Could not process an image from {src_loc}: {e}")
+            else:
+                img_ref = self._create_image_ref(src_loc)
 
-        caption_item: Optional[TextItem] = None
+        docling_pic = doc.add_picture(
+            image=img_ref,
+            parent=parent,
+            content_layer=self.content_layer,
+            prov=self._make_prov(text="", tag=img_tag),
+        )
+
+        # Add the caption as a child of its picture, as the PDF pipeline does,
+        # so that it stays with the picture in its section or table cell.
+        caption_anno_text = caption.normalize_whitespace().to_single_text_element()
         if caption_anno_text.text:
             text_clean = HTMLDocumentBackend._clean_unicode(caption_anno_text.text)
             prov = self._make_prov(
@@ -5397,37 +5421,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
                 prov=prov,
+                parent=docling_pic,
             )
+            docling_pic.captions.append(caption_item.get_ref())
 
-        src_loc: str = self._get_attr_as_string(img_tag, "src")
-        pic_prov = self._make_prov(text="", tag=img_tag)
-        if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
-            # Do not fetch the image, just add a placeholder
-            placeholder: PictureItem = doc.add_picture(
-                caption=caption_item,
-                parent=parent,
-                content_layer=self.content_layer,
-                prov=pic_prov,
-            )
-            return placeholder.get_ref()
-
-        img_ref: Optional[ImageRef] = None
-        try:
-            src_loc = self._resolve_relative_path(src_loc)
-        except ValueError as e:
-            # The source is not loaded, but the picture is kept, as for an
-            # image file that cannot be read.
-            warnings.warn(f"Could not process an image from {src_loc}: {e}")
-        else:
-            img_ref = self._create_image_ref(src_loc)
-
-        docling_pic = doc.add_picture(
-            image=img_ref,
-            caption=caption_item,
-            parent=parent,
-            content_layer=self.content_layer,
-            prov=pic_prov,
-        )
         return docling_pic.get_ref()
 
     def _emit_input(self, input_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
@@ -5509,9 +5506,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     image = Image.open(BytesIO(image_data))
                     check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
+                    # A camera stores an orientation tag rather than rotated
+                    # pixels, and a browser shows the image turned by it.
+                    image = ImageOps.exif_transpose(image)
                     # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
                     dpi = int(image.info.get("dpi", (72,))[0]) or 72
-                    return ImageRef.from_pil(image, dpi=dpi)
+                    return ImageRef.from_pil(
+                        normalize_image_for_png(image),
+                        dpi=dpi,
+                    )
                 except (
                     Image.DecompressionBombError,
                     UnidentifiedImageError,

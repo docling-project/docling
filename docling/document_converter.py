@@ -106,6 +106,7 @@ from docling.datamodel.document import (
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
+    PdfPipelineOptions,
     PipelineOptions,
 )
 from docling.datamodel.progress import (
@@ -304,6 +305,21 @@ class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
+
+    @model_validator(mode="after")
+    def configure_embedded_picture_images(self) -> Self:
+        if (
+            isinstance(self.pipeline_options, PdfPipelineOptions)
+            and self.pipeline_options.use_embedded_picture_images
+            and self.backend is ThreadedDoclingParseDocumentBackend
+        ):
+            if self.backend_options is None:
+                self.backend_options = ThreadedDoclingParseBackendOptions(
+                    include_bitmap_images=True
+                )
+            elif isinstance(self.backend_options, PdfBackendOptions):
+                self.backend_options.include_bitmap_images = True
+        return self
 
 
 class IWorkPagesFormatOption(FormatOption):

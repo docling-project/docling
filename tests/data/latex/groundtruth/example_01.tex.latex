@@ -21,10 +21,10 @@ Some background information here with bold and italic text.
 \item Second item in unordered list
 \end{itemize}
 
-\begin{itemize}
+\begin{enumerate}
 \item First item in ordered list
 \item Second item in ordered list
-\end{itemize}
+\end{enumerate}
 
 \subsection{Nested Section}
 

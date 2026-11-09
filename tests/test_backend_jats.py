@@ -12,11 +12,13 @@ are based on open-access articles:
 4. pntd.0008301.nxml - CC0 1.0 (Burgert-Brucker et al. 2020, PMC7289444, https://doi.org/10.1371/journal.pntd.0008301)
 """
 
+import re
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     GroupLabel,
@@ -129,9 +131,10 @@ def get_pictures(doc: DoclingDocument) -> list[PictureItem]:
     return [item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)]
 
 
-def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
+def convert_jats_article_meta(article_meta: str, body: str = "") -> DoclingDocument:
     xml = JATS_WRAPPER.format(
         content=f"<front><article-meta>{article_meta}</article-meta></front>"
+        + (f"<body>{body}</body>" if body else "")
     )
     stream = DocumentStream(name="article-meta-test.nxml", stream=BytesIO(xml.encode()))
     return get_converter().convert(stream).document
@@ -1255,6 +1258,103 @@ def test_jats_figure_image_blocks_path_traversal(
     assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
+def test_jats_table_published_as_image_keeps_its_caption():
+    """A <table-wrap> with a <graphic> instead of a <table> becomes a picture in place."""
+    doc = convert_jats_body(
+        "<sec><title>Methods</title>"
+        "<p>The items are listed in Table 1.</p>"
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Items of data extraction.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/></table-wrap>'
+        "<p>Text after the table.</p></sec>"
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Items of data extraction."
+    markdown = doc.export_to_markdown()
+    before = markdown.index("The items are listed in Table 1.")
+    table_caption = markdown.index("Table 1 Items of data extraction.")
+    picture = markdown.index("<!-- image -->")
+    after = markdown.index("Text after the table.")
+    assert before < table_caption < picture < after
+
+
+def test_jats_table_published_as_alternative_images_is_one_picture():
+    doc = convert_jats_body(
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Two renditions.</p></caption>"
+        '<alternatives><graphic xlink:href="table1.tif"/>'
+        '<graphic xlink:href="table1.jpg"/></alternatives></table-wrap>'
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Two renditions."
+
+
+def test_jats_table_with_cells_and_graphic_stays_a_table():
+    """When a <table-wrap> has both cells and a <graphic>, only the table is added."""
+    doc = convert_jats_body(
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Cells and image.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/>'
+        "<table><tr><td>A</td><td>B</td></tr></table></table-wrap>"
+    )
+
+    assert len(doc.tables) == 1
+    assert get_pictures(doc) == []
+    assert doc.tables[0].captions[0].resolve(doc).text == "Table 1 Cells and image."
+
+
+def test_jats_table_published_as_image_without_caption_keeps_its_label():
+    doc = convert_jats_body(
+        '<table-wrap id="T2"><label>Table 2</label>'
+        '<graphic xlink:href="table2.jpg"/></table-wrap>'
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].captions[0].resolve(doc).text == "Table 2"
+
+
+def test_jats_table_wrap_without_table_or_graphic_adds_nothing():
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        '<table-wrap id="T3"><label>Table 3</label>'
+        "<caption><p>Only a caption.</p></caption></table-wrap></sec>"
+    )
+
+    assert doc.tables == []
+    assert get_pictures(doc) == []
+
+
+def test_jats_table_published_as_image_embeds_image_when_enabled(
+    tmp_path: Path, local_fetch_converter: DocumentConverter
+):
+    _make_test_image(tmp_path / "table1.png", color=(0, 0, 255))
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>A blue table.</p></caption>"
+        '<graphic xlink:href="table1.png"/></table-wrap>',
+    )
+
+    doc = local_fetch_converter.convert(jats_path).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
 def test_jats_element_citation_surname_only_does_not_crash():
     """Citations with only a surname are rendered with that surname."""
     doc = convert_jats_body(
@@ -1471,6 +1571,98 @@ def test_jats_author_affiliations_still_map_from_xref():
     assert "Example University" in md
 
 
+def _furniture_statements(doc: DoclingDocument) -> list[list[tuple[str, str | None]]]:
+    """Return the (text, hyperlink) runs of each furniture text, in document order.
+
+    The runs of a text with styling or links share an inline group.
+    """
+    statements: dict[str, list[tuple[str, str | None]]] = {}
+    for item in doc.texts:
+        if item.content_layer != ContentLayer.FURNITURE:
+            continue
+        key = item.self_ref
+        if item.parent is not None:
+            parent = item.parent.resolve(doc)
+            if parent.label == GroupLabel.INLINE:
+                assert parent.content_layer == ContentLayer.FURNITURE
+                key = parent.self_ref
+        statements.setdefault(key, []).append(
+            (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        )
+    return list(statements.values())
+
+
+def test_jats_license_and_funding_statements_are_furniture():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Control</article-title></title-group>
+      <permissions><license xlink:href="https://example.org/c3-licence"><license-p>CHARLIE-LICENCE terms of the
+      <ext-link ext-link-type="uri" xlink:href="https://example.org/c3-licence">licence</ext-link>.</license-p></license></permissions>
+      <abstract><p>CHARLIE-ABSTRACT paragraph.</p></abstract>
+      <funding-group><funding-statement>CHARLIE-FUNDING statement.</funding-statement></funding-group>
+""",
+        "<sec><title>S</title><p>Body.</p></sec>",
+    )
+
+    assert _furniture_statements(doc) == [
+        [
+            ("CHARLIE-LICENCE terms of the ", None),
+            ("licence", "https://example.org/c3-licence"),
+            (".", None),
+        ],
+        [("CHARLIE-FUNDING statement.", None)],
+    ]
+    # The default export keeps to the body.
+    body_markdown = doc.export_to_markdown()
+    assert "CHARLIE-ABSTRACT paragraph." in body_markdown
+    assert "CHARLIE-LICENCE" not in body_markdown
+    assert "CHARLIE-FUNDING" not in body_markdown
+    # On request, the statements follow the article content.
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert (
+        markdown.index("Body.")
+        < markdown.index("CHARLIE-LICENCE")
+        < markdown.index("CHARLIE-FUNDING")
+    )
+
+
+def test_jats_copyright_and_each_license_paragraph_are_kept_in_order():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Permissions</article-title></title-group>
+      <permissions>
+        <copyright-statement>© The Authors 2026.</copyright-statement>
+        <copyright-year>2026</copyright-year>
+        <license license-type="cc-by" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+          <license-p>Distributed under the CC BY licence.</license-p>
+          <license-p>Funded by SCOAP<sup>3</sup></license-p>
+        </license>
+      </permissions>
+      <funding-group>
+        <award-group><funding-source>Agency</funding-source></award-group>
+        <funding-statement>First grant.</funding-statement>
+        <funding-statement>Second grant.</funding-statement>
+      </funding-group>
+"""
+    )
+
+    assert _furniture_statements(doc) == [
+        [("© The Authors 2026.", None)],
+        [("Distributed under the CC BY licence.", None)],
+        [("Funded by SCOAP", None), ("3", None)],
+        [("First grant.", None)],
+        [("Second grant.", None)],
+    ]
+    superscripts = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.script == Script.SUPER
+    ]
+    assert superscripts == ["3"]
+
+
 @pytest.mark.parametrize("use_stream", [False, True])
 def test_e2e_jats_conversions(use_stream: bool):
     jats_paths = get_jats_paths()
@@ -1493,6 +1685,11 @@ def test_e2e_jats_conversions(use_stream: bool):
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
+        )
+        # Core's hierarchy dump adds a separator space even for empty wrappers.
+        # Remove only that separator in JATS fixtures; leave text runs unchanged.
+        pred_itxt = re.sub(
+            r"(?m)^( *item-\d+ at level \d+: footnote:) $", r"\1", pred_itxt
         )
         assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
             "export to indented-text"
