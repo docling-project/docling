@@ -454,6 +454,19 @@ def test_table_fallbacks_keep_content(caplog: pytest.LogCaptureFixture) -> None:
     assert "without cells as text" in caplog.text
 
 
+def test_huge_table_span_keeps_the_text(caplog: pytest.LogCaptureFixture) -> None:
+    # Without a grid limit, the fallback reader builds 2 x 100000 grid cells.
+    html = '<table><tr><td colspan="100000">a</td></tr><tr><td>b</td></tr></table>'
+    with caplog.at_level(logging.WARNING):
+        doc = _parse(_reply(_element("table", html)))
+
+    assert doc.tables == []
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.TEXT, "a\nb")
+    ]
+    assert "Ignoring an HTML table of 2 x 100000 grid cells" in caplog.text
+
+
 def test_figure_keeps_box_and_unexpected_text() -> None:
     doc = _parse(
         _reply(
