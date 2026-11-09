@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import csv
 import logging
 import re
 from collections.abc import Iterator
@@ -139,6 +140,19 @@ class _CommentBlock:
     """
 
     text: str
+
+
+@dataclass(frozen=True)
+class _DataTableBlock:
+    rows: list[list[str]]
+
+
+_DATA_TABLE_DELIMITERS: Final = {",===": "csv", ":===": "dsv"}
+_DATA_TABLE_SEPARATORS: Final = {"dsv": ":", "tsv": "\t"}
+_TABLE_FORMAT_ATTR_RE: Final = re.compile(
+    r"""^\[(?:[^\]]*,)?\s*format\s*=\s*["']?(csv|dsv|tsv)["']?\s*(?:,[^\]]*)?\]$""",
+    re.IGNORECASE,
+)
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -584,7 +598,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     @classmethod
     def _iter_blocks(
         cls, lines: list[str]
-    ) -> Iterator[str | _LiteralBlock | _CommentBlock]:
+    ) -> Iterator[str | _LiteralBlock | _CommentBlock | _DataTableBlock]:
         block_data: list[str] | None = None
         block_delimiter: str | None = None
         block_language: str | None = None
@@ -677,6 +691,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
+            data_table = cls._read_data_table(lines, i)
+            if data_table is not None:
+                block, i = data_table
+                yield block
+                continue
+
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
             if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
                 block_data = []
@@ -696,6 +716,36 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             comment = cls._make_comment(comment_data)
             if comment is not None:
                 yield comment
+
+    @staticmethod
+    def _read_data_table(
+        lines: list[str], start: int
+    ) -> tuple[_DataTableBlock, int] | None:
+        stripped = lines[start].strip()
+        table_format = _DATA_TABLE_DELIMITERS.get(stripped)
+        body_start = start + 1
+        format_attr = _TABLE_FORMAT_ATTR_RE.match(stripped)
+        if (
+            format_attr is not None
+            and start + 1 < len(lines)
+            and lines[start + 1].strip() == "|==="
+        ):
+            table_format = format_attr.group(1).lower()
+            stripped = "|==="
+            body_start = start + 2
+        if table_format is None:
+            return None
+        end = body_start
+        while end < len(lines) and lines[end].strip() != stripped:
+            end += 1
+        records = [line for line in lines[body_start:end] if line.strip()]
+        separator = _DATA_TABLE_SEPARATORS.get(table_format)
+        rows = (
+            [record.split(separator) for record in records]
+            if separator is not None
+            else list(csv.reader(records))
+        )
+        return _DataTableBlock(rows=[row for row in rows if row]), end + 1
 
     def _add_picture_item(
         self,
@@ -738,7 +788,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         self,
         *,
         doc: DoclingDocument,
-        block: _LiteralBlock | _CommentBlock,
+        block: _LiteralBlock | _CommentBlock | _DataTableBlock,
         text_data: list[str],
         caption_data: list[str],
         in_list: bool,
@@ -761,6 +811,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 parents=parents,
             )
             return text_data, caption_data, in_list, last_list_item, list_continuation
+        if isinstance(block, _DataTableBlock):
+            parent = self._get_current_parent(parents)
+            text_data = self._flush_text_data(
+                doc=doc, text_data=text_data, parent=parent
+            )
+            self._add_table_if_nonempty(
+                doc,
+                [
+                    [_TableCellSource(text=value.strip()) for value in row]
+                    for row in block.rows
+                ],
+                caption_data,
+                parent,
+            )
+            return text_data, [], in_list, last_list_item, list_continuation
         return self._add_literal_block(
             doc=doc,
             block=block,

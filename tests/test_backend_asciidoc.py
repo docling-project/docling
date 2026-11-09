@@ -186,6 +186,23 @@ def test_table_cols_attribute_applies_only_to_its_table() -> None:
     assert (second.num_rows, second.num_cols) == (2, 1)
 
 
+@pytest.mark.parametrize(
+    "src",
+    [
+        b'[format=csv]\n|===\nName,Age\n"Smith, J",3\n|===\n',
+        b',===\nName,Age\n"Smith, J",3\n,===\n',
+        b":===\nName:Age\nSmith, J:3\n:===\n",
+        b'[format="tsv", options="header"]\n|===\nName\tAge\nSmith, J\t3\n|===\n',
+    ],
+)
+def test_csv_and_dsv_tables_keep_every_row(src: bytes) -> None:
+    doc = _convert_adoc(b".People\n" + src + b"\nAfter.\n")
+    assert len(doc.tables) == 1
+    assert doc.tables[0].caption_text(doc) == "People"
+    assert _table_rows(src) == [["Name", "Age"], ["Smith, J", "3"]]
+    assert [item.text for item in doc.texts] == ["People", "After."]
+
+
 def test_table_spans_take_their_grid_positions() -> None:
     # Each cell carries its spans and starts at the first column that no
     # column span to its left and no row span from above covers.
