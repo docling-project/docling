@@ -93,7 +93,8 @@ def _decode_list(text: str, start: int) -> list[Any]:
             return values
         try:
             value, pos = _DECODER.raw_decode(text, pos)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
+            # A looping reply can nest lists deeper than the decoder allows.
             break
         values.append(value)
     if not values:
@@ -123,7 +124,7 @@ def _elements(content: str) -> list[Any]:
         return []
     try:
         data: Any = json.loads(text)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):
         start = _LIST_START.search(text)
         if start is None:
             raise ValueError(

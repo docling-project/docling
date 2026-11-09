@@ -232,6 +232,8 @@ def test_reply_shapes_give_the_same_items(content: str, count: int) -> None:
 
 
 _FULL = _reply(*_ELEMENTS)
+# A looping reply can nest lists past the recursion limit of the JSON decoder.
+_DEEP = "[" * 1_000_000
 
 
 @pytest.mark.parametrize(
@@ -241,8 +243,9 @@ _FULL = _reply(*_ELEMENTS)
         _FULL[: _FULL.index("{a}{") + len("{a}{")],
         _FULL[: _FULL.index('{"bbox": [300')],
         _FULL[: _FULL.index("[300, 210") + len("[300,")],
+        _FULL[: _FULL.index('{"bbox": [300')] + _DEEP,
     ],
-    ids=["inside_latex", "after_a_comma", "inside_a_box"],
+    ids=["inside_latex", "after_a_comma", "inside_a_box", "deep_nesting"],
 )
 def test_cut_reply_keeps_complete_elements(
     content: str, caplog: pytest.LogCaptureFixture
@@ -264,6 +267,7 @@ def test_cut_reply_keeps_complete_elements(
         '{"a": 1}',
         '{"a": [1], "b": [2]}',
         '```json\n[{"bbox": [100, 200, 9',
+        _DEEP,
     ],
     ids=[
         "prose",
@@ -272,6 +276,7 @@ def test_cut_reply_keeps_complete_elements(
         "object_without_a_list",
         "object_with_two_lists",
         "cut_in_the_first_element",
+        "deep_nesting",
     ],
 )
 def test_reply_without_elements_raises(content: str) -> None:
