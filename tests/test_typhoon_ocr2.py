@@ -10,8 +10,8 @@ engine; each ``.source.txt`` file gives the page, the model revision and the
 runtime. ``thai_rainwater.pdf`` is a page written for these tests. Every other
 reply below is written by hand from the output format in the model card and the
 typhoon-ocr2 reference package. The API tests send their requests to a fake
-OpenAI-compatible server on a local socket. Set ``DOCLING_TEST_TYPHOON_OCR2=1`` to
-also run a real conversion.
+OpenAI-compatible server on a local socket. ``tests/test_typhoon_ocr2_vlm.py`` holds
+the inference test.
 """
 
 import base64
@@ -19,7 +19,6 @@ import hashlib
 import io
 import json
 import logging
-import os
 import re
 import unicodedata
 from collections.abc import Iterator, Sequence
@@ -52,10 +51,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.datamodel.vlm_engine_options import (
-    ApiVlmEngineOptions,
-    AutoInlineVlmEngineOptions,
-)
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.datamodel.vlm_prompts import TYPHOON_OCR2_PARSE_PROMPT
 from docling.document_converter import (
     DocumentConverter,
@@ -72,7 +68,6 @@ _SIZE = Size(width=612, height=792)
 # The prompt block of the 2B and 0.8B model cards.
 _PROMPT_SHA256 = "b55c0349b52deac3958a9f356966c99acf50fbb5be25f717f7d2c90cf4dac27a"
 _DATA = Path(__file__).parent / "data"
-_PDF = _DATA / "pdf" / "sources" / "2305.03393v1-pg9.pdf"
 _REPLIES = _DATA / "json_typhoon_ocr2" / "sources"
 _THAI_PDF = _REPLIES / "thai_rainwater.pdf"
 # The text elements of the Thai page, in reading order. The 2B reply has them
@@ -838,37 +833,3 @@ def test_invalid_reply_is_a_page_error(api: FakeOpenAiApi) -> None:
     assert error.error_message.startswith("Invalid Typhoon OCR V2 response: ")
     assert list(result.document.iterate_items()) == []
     assert list(result.document.pages) == [1]
-
-
-@pytest.mark.skipif(
-    os.getenv("DOCLING_TEST_TYPHOON_OCR2") != "1",
-    reason="set DOCLING_TEST_TYPHOON_OCR2=1 to run the Typhoon OCR V2 inference test",
-)
-def test_e2e_typhoon_ocr2() -> None:
-    """Convert a page with the 0.8B preset on the local engine that auto-inline picks."""
-    options = VlmConvertOptions.from_preset(
-        "typhoon_ocr2_08b", engine_options=AutoInlineVlmEngineOptions()
-    )
-    converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_cls=VlmPipeline,
-                pipeline_options=VlmPipelineOptions(vlm_options=options),
-            )
-        }
-    )
-
-    result = converter.convert(_PDF)
-
-    # SUCCESS excludes PARTIAL_SUCCESS, which a cut or invalid reply gives.
-    assert result.status == ConversionStatus.SUCCESS
-    doc = result.document
-    assert [table.data.num_cols for table in doc.tables] == [8]
-    assert "5.1 Hyper Parameter Optimization" in [
-        item.text for item in doc.texts if isinstance(item, SectionHeaderItem)
-    ]
-    assert any(
-        item.label == DocItemLabel.PAGE_HEADER
-        and item.content_layer == ContentLayer.FURNITURE
-        for item in doc.texts
-    )
