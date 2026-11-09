@@ -44,6 +44,14 @@ class AutoInlineVlmEngineOptions(BaseVlmEngineOptions):
         description="Prefer VLLM over Transformers when both are available on CUDA",
     )
 
+    trust_remote_code: bool = Field(
+        default=False,
+        description=(
+            "Allow execution of custom code from the model repo in the selected "
+            "engine. Presets that need it without a default opt-in require this."
+        ),
+    )
+
 
 # =============================================================================
 # TRANSFORMERS ENGINE OPTIONS
@@ -101,6 +109,16 @@ class MlxVlmEngineOptions(BaseVlmEngineOptions):
 
     trust_remote_code: bool = Field(
         default=False, description="Allow execution of custom code from model repo"
+    )
+
+    repetition_penalty: Optional[float] = Field(
+        default=None,
+        description="Penalty applied to repeated tokens during generation",
+    )
+
+    repetition_context_size: Optional[int] = Field(
+        default=None,
+        description="Number of recent tokens considered for repetition penalty",
     )
 
 

@@ -28,6 +28,12 @@ except ImportError as e:
     print("     pip install typer rich\n", file=sys.stderr)
     sys.exit(1)
 
+from docling.datamodel.asr_model_specs import (
+    _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _WHISPER_S2T_PRESETS,
+    _distil_whisper_prefetch_name,
+    _whisper_s2t_prefetch_name,
+)
 from docling.datamodel.settings import settings
 from docling.exceptions import RapidOcrModelSizeNotSupportedError
 from docling.models.stages.ocr.easyocr_model import (
@@ -70,10 +76,63 @@ class _AvailableModels(str, Enum):
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
     GRANITE_CHART_EXTRACTION = "granite_chart_extraction"
+    GRANITE_CHART_EXTRACTION_V3_3 = "granite_chart_extraction_v3_3"
     GRANITE_CHART_EXTRACTION_V4 = "granite_chart_extraction_v4"
     RAPIDOCR = "rapidocr"
     EASYOCR = "easyocr"
     NEMOTRON_OCR_V2 = "nemotron_ocr_v2"
+    WHISPER_TINY = "whisper_tiny"
+    WHISPER_TINY_EN = "whisper_tiny_en"
+    WHISPER_BASE = "whisper_base"
+    WHISPER_BASE_EN = "whisper_base_en"
+    WHISPER_SMALL = "whisper_small"
+    WHISPER_SMALL_EN = "whisper_small_en"
+    WHISPER_MEDIUM = "whisper_medium"
+    WHISPER_MEDIUM_EN = "whisper_medium_en"
+    WHISPER_LARGE = "whisper_large"
+    WHISPER_TURBO = "whisper_turbo"
+    WHISPER_DISTIL_SMALL_EN = "whisper_distil_small_en"
+    WHISPER_DISTIL_MEDIUM_EN = "whisper_distil_medium_en"
+    WHISPER_DISTIL_LARGE_V3 = "whisper_distil_large_v3"
+    WHISPER_DISTIL_LARGE_V3_5 = "whisper_distil_large_v3_5"
+    WHISPER_TINY_S2T = "whisper_tiny_s2t"
+    WHISPER_TINY_EN_S2T = "whisper_tiny_en_s2t"
+    WHISPER_BASE_S2T = "whisper_base_s2t"
+    WHISPER_BASE_EN_S2T = "whisper_base_en_s2t"
+    WHISPER_SMALL_S2T = "whisper_small_s2t"
+    WHISPER_SMALL_EN_S2T = "whisper_small_en_s2t"
+    WHISPER_DISTIL_SMALL_EN_S2T = "whisper_distil_small_en_s2t"
+    WHISPER_MEDIUM_S2T = "whisper_medium_s2t"
+    WHISPER_MEDIUM_EN_S2T = "whisper_medium_en_s2t"
+    WHISPER_DISTIL_MEDIUM_EN_S2T = "whisper_distil_medium_en_s2t"
+    WHISPER_LARGE_V3_S2T = "whisper_large_v3_s2t"
+    WHISPER_DISTIL_LARGE_V3_S2T = "whisper_distil_large_v3_s2t"
+    WHISPER_DISTIL_LARGE_V3_5_S2T = "whisper_distil_large_v3_5_s2t"
+    WHISPER_LARGE_V3_TURBO_S2T = "whisper_large_v3_turbo_s2t"
+
+
+_WHISPER_MODELS = {
+    _AvailableModels.WHISPER_TINY: "tiny",
+    _AvailableModels.WHISPER_TINY_EN: "tiny.en",
+    _AvailableModels.WHISPER_BASE: "base",
+    _AvailableModels.WHISPER_BASE_EN: "base.en",
+    _AvailableModels.WHISPER_SMALL: "small",
+    _AvailableModels.WHISPER_SMALL_EN: "small.en",
+    _AvailableModels.WHISPER_MEDIUM: "medium",
+    _AvailableModels.WHISPER_MEDIUM_EN: "medium.en",
+    _AvailableModels.WHISPER_LARGE: "large",
+    _AvailableModels.WHISPER_TURBO: "turbo",
+}
+
+_WHISPER_DISTIL_MODELS = {
+    _AvailableModels(_distil_whisper_prefetch_name(model_name)): model_name
+    for model_name in _DISTIL_WHISPER_OPENAI_CHECKPOINTS
+}
+
+_WHISPER_S2T_MODELS = {
+    _AvailableModels(_whisper_s2t_prefetch_name(model_name)): model_name
+    for model_name in _WHISPER_S2T_PRESETS
+}
 
 
 _default_models = [
@@ -112,6 +171,18 @@ def download(
             "--all",
             help="If true, all available models will be downloaded (mutually exclusive with passing specific models).",
             show_default=True,
+        ),
+    ] = False,
+    asr: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--asr",
+            help=(
+                "With --all, also download native Whisper ASR models, including "
+                "the Distil-Whisper presets. WhisperS2T models are downloaded "
+                "only by name."
+            ),
         ),
     ] = False,
     quiet: Annotated[
@@ -172,6 +243,8 @@ def download(
         raise typer.BadParameter(
             "Cannot simultaneously set 'all' parameter and specify models to download."
         )
+    if asr and not all:
+        raise typer.BadParameter("--asr requires --all", param_hint="--asr")
     if not quiet:
         logging.basicConfig(
             level=logging.INFO,
@@ -179,7 +252,21 @@ def download(
             datefmt="[%X]",
             handlers=[RichHandler(show_level=False, show_time=False, markup=True)],
         )
-    to_download = models or (list(_AvailableModels) if all else _default_models)
+    to_download = models or (
+        [
+            model
+            for model in _AvailableModels
+            if model not in _WHISPER_S2T_MODELS
+            and (
+                asr
+                or (
+                    model not in _WHISPER_MODELS and model not in _WHISPER_DISTIL_MODELS
+                )
+            )
+        ]
+        if all
+        else _default_models
+    )
     if easyocr_lang is not None:
         if _AvailableModels.EASYOCR not in to_download:
             raise typer.BadParameter(
@@ -246,6 +333,8 @@ def download(
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
         with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
         in to_download,
+        with_granite_chart_extraction_v3_3=_AvailableModels.GRANITE_CHART_EXTRACTION_V3_3
+        in to_download,
         with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
@@ -254,6 +343,19 @@ def download(
         with_easyocr=_AvailableModels.EASYOCR in to_download,
         easyocr_languages=easyocr_lang,
         with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
+        whisper_models=[
+            _WHISPER_MODELS[model] for model in to_download if model in _WHISPER_MODELS
+        ],
+        whisper_distil_models=[
+            _WHISPER_DISTIL_MODELS[model]
+            for model in to_download
+            if model in _WHISPER_DISTIL_MODELS
+        ],
+        whisper_s2t_models=[
+            _WHISPER_S2T_MODELS[model]
+            for model in to_download
+            if model in _WHISPER_S2T_MODELS
+        ],
     )
 
     if quiet:

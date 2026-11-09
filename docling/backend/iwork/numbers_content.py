@@ -4,8 +4,8 @@
 """The content a Numbers document holds, however its container spells it.
 
 Both container generations describe the same things — sheets of positioned
-tables, charts and notes — so they are modelled once here and read into that
-model by :mod:`docling.backend.iwork.numbers_iwa` and
+tables, charts, pictures and comments — so they are modelled once here and read
+into that model by :mod:`docling.backend.iwork.numbers_iwa` and
 :mod:`docling.backend.iwork.numbers_xml`. Turning the result into a
 :class:`~docling_core.types.doc.DoclingDocument` is the backend's job, which is
 what keeps the two readers from having to agree on anything else.
@@ -17,10 +17,10 @@ an XML attribute.
 """
 
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, InvalidOperation
+from decimal import MAX_EMAX, MAX_PREC, MIN_EMIN, Context, Decimal, InvalidOperation
 from typing import NamedTuple
 
-from docling.backend.iwork.content import Chart, Geometry
+from docling.backend.iwork.content import Chart, Geometry, Picture
 
 MAX_TABLE_CELLS = 4_000_000
 """Cells one table may declare before it is rejected as implausible.
@@ -33,14 +33,26 @@ per table, and both readers hold a table to this one.
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 """Instant Numbers counts its dates and times from."""
 
+_EXACT_CONTEXT = Context(prec=MAX_PREC, Emax=MAX_EMAX, Emin=MIN_EMIN)
+"""Context wide enough to hold every decimal128 digit unchanged.
+
+``Decimal.normalize`` rounds to the caller's context, which keeps 28 digits by
+default, and a decimal128 holds 34.
+"""
+
 
 class Cell(NamedTuple):
-    """One cell of a table, already rendered to text."""
+    """One cell of a table, already rendered to text.
+
+    ``picture`` is the image the cell is filled with. Numbers draws it behind
+    the cell's text, and a cell can hold a picture and no text.
+    """
 
     row: int
     col: int
     text: str
     col_span: int = 1
+    picture: Picture | None = None
 
 
 class Table(NamedTuple):
@@ -73,6 +85,17 @@ class PlacedChart(NamedTuple):
     geometry: Geometry | None
 
 
+class PlacedPicture(NamedTuple):
+    """One picture on a sheet, and where Numbers put it.
+
+    A picture in a group takes the frame of the group, since that is what sits
+    on the sheet.
+    """
+
+    picture: Picture
+    geometry: Geometry | None
+
+
 class Comment(NamedTuple):
     """One comment on a sheet, which Numbers calls a sticky note."""
 
@@ -88,10 +111,11 @@ class Sheet(NamedTuple):
     name: str
     tables: list[Table]
     charts: list[PlacedChart]
+    pictures: list[PlacedPicture]
     comments: list[Comment]
 
 
-Drawable = Table | PlacedChart | Comment
+Drawable = Table | PlacedChart | PlacedPicture | Comment
 """Anything a sheet places on its canvas."""
 
 
@@ -134,25 +158,37 @@ def format_number(value: Decimal | float) -> str:
             value = Decimal(repr(value))
         except InvalidOperation:  # nan and the infinities
             return repr(value)
-    return f"{value.normalize():f}"
+    return f"{value.normalize(_EXACT_CONTEXT):f}"
 
 
-def format_date(seconds: float) -> str:
-    """Render a date cell, which Numbers stores as seconds from its epoch."""
-    return (APPLE_EPOCH + timedelta(seconds=seconds)).strftime("%Y-%m-%d %H:%M:%S")
+def format_date(seconds: Decimal | float) -> str | None:
+    """Render a date cell, which Numbers stores as seconds from its epoch.
+
+    Returns None when the span lands outside what a datetime can hold, which
+    only a corrupt or hostile document records.
+    """
+    instant = moment(seconds)
+    return None if instant is None else instant.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def format_duration(seconds: float) -> str:
-    """Render a duration cell, which Numbers stores as a span in seconds."""
-    return str(timedelta(seconds=seconds))
+def format_duration(seconds: Decimal | float) -> str | None:
+    """Render a duration cell, which Numbers stores as a span in seconds.
+
+    Returns None when the span lands outside what a timedelta can hold, which
+    only a corrupt or hostile document records.
+    """
+    try:
+        return str(timedelta(seconds=float(seconds)))
+    except (OverflowError, ValueError):
+        return None
 
 
-def format_bool(value: float) -> str:
+def format_bool(value: Decimal | float) -> str:
     """Render a boolean cell, which Numbers stores as a number."""
     return "True" if value > 0 else "False"
 
 
-def moment(seconds: float) -> datetime | None:
+def moment(seconds: Decimal | float) -> datetime | None:
     """Turn a span of seconds from the Apple epoch into an instant.
 
     Args:
@@ -162,6 +198,6 @@ def moment(seconds: float) -> datetime | None:
         The instant, or None when it lands outside what a datetime can hold.
     """
     try:
-        return APPLE_EPOCH + timedelta(seconds=seconds)
+        return APPLE_EPOCH + timedelta(seconds=float(seconds))
     except (OverflowError, OSError, ValueError):
         return None

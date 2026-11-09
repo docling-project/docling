@@ -21,8 +21,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
-# The font-style signal reads the parsed PDF cells, which are dropped unless you keep them:
-pipeline_options.generate_parsed_pages = True
 
 converter = DocumentConverter(
     format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
@@ -78,24 +76,31 @@ Two things are worth knowing about this pass:
 
 !!! note "Which backends supply bookmarks"
 
-    The pypdfium2 backend returns the richest outline: title, depth, target page and vertical
-    position. The docling-parse backends read their own native table of contents, which carries
-    titles and hierarchy but no page numbers — matching then falls back to titles alone, with a
-    stricter similarity threshold to compensate. Backends with no embedded outline, image inputs
-    among them, report nothing and the stage moves on to numbering.
+    The pypdfium2 and docling-parse backends both return the title, depth, target page and
+    vertical position of each bookmark. An entry without a resolvable target page is matched by
+    title alone, with a stricter similarity threshold to compensate. Backends with no embedded
+    outline, image inputs among them, report nothing and the stage moves on to numbering.
 
 ### Numbering
 
 For everything the outline does not cover, the leading marker of the heading text is the most
 reliable signal — on legal and regulatory documents far more reliable than styling, which tends to
-be uniform throughout. Docling recognizes keyword markers (`PART`, `TITLE`, `BOOK`, `CHAPTER`,
+be uniform throughout. Docling recognizes keyword markers (`PART`, `TITLE`, `BOOK`, `DIVISION`, `SUBDIVISION`, `CHAPTER`,
 `ARTICLE`, `SECTION`, `CLAUSE`, `SCHEDULE`, `ANNEX`, `APPENDIX`, `RULE`, `§`), Roman and Arabic
 numerals, dotted decimals and parenthesized letters, and ranks them in this default order:
 
 ```text
-part  →  chapter  →  article  →  roman_u  →  arabic  →  alpha_u  →  alpha_l  →  roman_l
-PART I   CHAPTER 1   ARTICLE 1     I.          1.          A.          (a)         (i)
+part  →  chapter  →  division  →  subdivision  →  article  →  roman_u  →  arabic  →  alpha_u  →  alpha_l  →  roman_l
+PART I   CHAPTER 1   DIVISION I   SUBDIVISION A   ARTICLE 1     I.          1.          A.          (a)         (i)
 ```
+
+`DIVISION` and `SUBDIVISION` are ordinary words too, so they are read as markers only when a number, letter, or Roman numeral follows.
+The other keywords are also ordinary words. They are read as markers when they stand alone (`APPENDIX`, `Annex:`), or when the next word contains a digit (`Rule 12(b)`), is a letter or a Roman numeral, or is a number word (`CHAPTER ONE`).
+For example, `Rule Definition` and `Part-Year Method` are not markers.
+
+The default order places `part`/`title` above `division`; in codes where a `Division` sits above a `Title` (some US omnibus acts), reorder with `numbering_schemes` so `division` comes first.
+
+If you pinned a custom `numbering_schemes` from before `division`/`subdivision` existed, add the two families to your list, or those headings fall to the lowest rank.
 
 Dotted decimals share the `arabic` rank and sort by their depth, so `1.1` lands one level below
 `1.` and `1.1.1` one below that. If your documents follow a different convention, reorder the
@@ -170,7 +175,7 @@ All of these live on `HeadingHierarchyOptions`, set as
 | `enabled` | `False` | Master switch for the stage. |
 | `use_bookmarks` | `True` | Use the PDF outline as the authoritative signal. |
 | `use_numbering` | `True` | Use the leading numbering marker of the heading text. |
-| `use_style` | `True` | Fall back to the heading's visual style. Requires `generate_parsed_pages=True`. |
+| `use_style` | `True` | Fall back to the heading's visual style. |
 | `use_font_style` | `True` | Refine the style fallback with font weight, slant and all-caps detection. Ignored when `use_style` is off. |
 | `style_size_tolerance` | `0.05` | Relative difference below which two font sizes count as one. Higher merges more sizes into a single level. |
 | `numbering_schemes` | `None` | Override the scheme precedence, highest level first. |
@@ -189,11 +194,20 @@ pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(
 )
 ```
 
-!!! warning "Keep the parsed pages for the style signal"
+!!! note "Parsed pages and the style signal"
 
-    The style fallback reads the parsed PDF cells, and the pipeline discards those as soon as a
-    page is finished unless `generate_parsed_pages=True`. Without them, style inference is skipped
-    silently — no error, just fewer levels. Bookmarks and numbering do not need this option.
+    The style fallback reads the text lines of the headings from the parsed PDF cells. The
+    pipeline keeps only those lines until the heading-hierarchy stage has run, so you do not need
+    `generate_parsed_pages=True`. Set it only if you want the full parsed pages in the result.
+
+## From the command line
+
+```console
+docling --heading-hierarchy report.pdf
+```
+
+The flag turns the stage on with the default options. `docling convert-remote` accepts the same
+flag and forwards it to the service as `do_pdf_heading_hierarchy`.
 
 ## Through the API server
 

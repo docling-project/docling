@@ -3,12 +3,20 @@
 
 """Unit tests for the shared image-resource loader and its safety limits."""
 
+import base64
 import socket
+import struct
+import sys
 import threading
+import zlib
+from io import BytesIO
+from pathlib import Path
 from urllib.parse import quote
 
 import pytest
+from PIL import Image
 
+from docling.backend.utils import image_resource_loader
 from docling.backend.utils.image_resource_loader import (
     ImageResourceLoader,
     validate_url_safety,
@@ -242,3 +250,160 @@ def test_load_image_data_local_requires_base_path():
     loader = ImageResourceLoader(enable_local_fetch=True)
     with pytest.raises(OperationNotAllowed, match="requires base_path"):
         loader.load_image_data("/some/where/image.png", None)
+
+
+def test_resolve_relative_path_accepts_file_uri_base(tmp_path):
+    loader = ImageResourceLoader()
+    base_path = (tmp_path / "doc.md").as_uri()
+
+    resolved = loader.resolve_relative_path("figure.png", base_path)
+
+    assert Path(resolved) == (tmp_path / "figure.png").resolve()
+
+
+def test_resolve_relative_path_accepts_localhost_file_uri(tmp_path):
+    loader = ImageResourceLoader()
+    base_path = (
+        (tmp_path / "doc.md").as_uri().replace("file:///", "file://localhost/", 1)
+    )
+
+    resolved = loader.resolve_relative_path("figure.png", base_path)
+
+    assert Path(resolved) == (tmp_path / "figure.png").resolve()
+
+
+def test_local_base_path_normalizes_unc_authority(monkeypatch):
+    converted_paths: list[str] = []
+
+    def convert_path(path: str) -> str:
+        converted_paths.append(path)
+        return "converted-unc-path"
+
+    monkeypatch.setattr(image_resource_loader, "url2pathname", convert_path)
+
+    result = ImageResourceLoader._local_base_path("file://server/share/docs/doc.md")
+
+    assert converted_paths == ["//server/share/docs/doc.md"]
+    assert result == "converted-unc-path"
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="UNC filesystem paths require Windows"
+)
+def test_resolve_relative_path_accepts_unc_file_uri():
+    loader = ImageResourceLoader()
+
+    resolved = loader.resolve_relative_path(
+        "figure.png", "file://server/share/docs/doc.md"
+    )
+
+    assert Path(resolved) == Path("//server/share/docs/figure.png")
+
+
+def test_resolve_relative_path_keeps_file_uri_confinement(tmp_path):
+    loader = ImageResourceLoader()
+    base_path = (tmp_path / "doc.md").as_uri()
+
+    with pytest.raises(ValueError, match="Path traversal blocked"):
+        loader.resolve_relative_path("../outside.png", base_path)
+
+
+def test_resolve_relative_path_rejects_empty_file_uri():
+    loader = ImageResourceLoader()
+
+    with pytest.raises(ValueError, match="empty path"):
+        loader.resolve_relative_path("figure.png", "file://")
+
+
+def _png_header_data_uri(width: int, height: int) -> str:
+    """A PNG that declares ``width`` x ``height`` pixels but has no pixel data."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 0, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(b""))
+        + chunk(b"IEND", b"")
+    )
+    return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def _png_data_uri(width: int, height: int, dpi: tuple[int, int] | None = None) -> str:
+    buffer = BytesIO()
+    Image.new("RGB", (width, height)).save(
+        buffer, format="PNG", **({} if dpi is None else {"dpi": dpi})
+    )
+    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+
+def test_zero_dpi_image_defaults_to_72_dpi():
+    ref = ImageResourceLoader().create_image_ref(_png_data_uri(4, 4, dpi=(0, 0)), None)
+
+    assert ref is not None
+    assert ref.dpi == 72
+
+
+def test_image_over_pixel_limit_is_skipped():
+    loader = ImageResourceLoader(max_image_pixels=63)
+
+    assert loader.create_image_ref(_png_data_uri(7, 9), None) is not None
+    with pytest.warns(UserWarning, match="8x8 pixels exceeds the limit of 63"):
+        assert loader.create_image_ref(_png_data_uri(8, 8), None) is None
+
+
+def test_image_over_pillow_pixel_limit_is_skipped():
+    # Above twice Image.MAX_IMAGE_PIXELS, Pillow refuses to open the image.
+    loader = ImageResourceLoader(max_image_pixels=10**9)
+
+    with pytest.warns(UserWarning, match="400000000 pixels"):
+        assert loader.create_image_ref(_png_header_data_uri(20000, 20000), None) is None
+
+
+def test_data_uri_over_size_limit_is_rejected():
+    loader = ImageResourceLoader(max_image_data_base64_bytes=8)
+
+    assert loader.load_image_data("data:image/png;base64,AAAAAAAAAAA=", None)
+    with pytest.raises(ValueError, match="exceeds size limit of 8 bytes"):
+        loader.load_image_data("data:image/png;base64,AAAAAAAAAAAAAAAA", None)
+
+
+def _jpeg_data_uri(data: bytes) -> str:
+    return "data:image/jpeg;base64," + base64.b64encode(data).decode()
+
+
+def _jpeg(image: Image.Image) -> bytes:
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def test_create_image_ref_skips_undecodable_image():
+    # A truncated file only fails when Pillow decodes it, with an OSError.
+    data = _jpeg(Image.new("RGB", (200, 100), "red"))
+    truncated = _jpeg_data_uri(data[: len(data) // 2])
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        assert ImageResourceLoader().create_image_ref(truncated, None) is None
+
+
+def test_create_image_ref_applies_exif_orientation():
+    # A 200x100 readout with a black corner, tagged to be turned a quarter
+    # clockwise: a browser shows it 100x200 with the corner at the top right.
+    image = Image.new("RGB", (200, 100), "white")
+    image.paste((0, 0, 0), (0, 0, 20, 20))
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", exif=exif)
+
+    ref = ImageResourceLoader().create_image_ref(
+        _jpeg_data_uri(buffer.getvalue()), None
+    )
+
+    assert ref is not None
+    assert ref.pil_image is not None
+    assert ref.pil_image.size == (100, 200)
+    assert min(ref.pil_image.getpixel((ref.pil_image.width - 3, 2))) < 128

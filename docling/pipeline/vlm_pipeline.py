@@ -17,13 +17,14 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.base import (
     BoundingBox,
     Size,
 )
-from docling_core.types.doc.document import DocTagsDocument
+from docling_core.types.doc.document import BaseMeta, DocTagsDocument
 from PIL import Image as PILImage
 from typing_extensions import override
 
@@ -55,22 +56,34 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import settings
 
 # VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
 # No need to import it separately as it's already imported above
 from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_pipeline_models.hf_transformers_model import (
-    HuggingFaceTransformersVlmModel,
-)
-from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import TimeRecorder
+from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 _DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
+# Formats whose mappers keep raw heading depths per page; the joined document is normalized.
+_RAW_HEADING_DEPTH_FORMATS = frozenset(
+    {
+        ResponseFormat.CHANDRA_HTML,
+        ResponseFormat.DEEPSEEKOCR_MARKDOWN,
+        ResponseFormat.DOTS_JSON,
+        ResponseFormat.LIGHTONOCR_MARKDOWN,
+        ResponseFormat.NEMOTRON_PARSE_V2,
+        ResponseFormat.NEMOTRON_PARSE_V3_5,
+        ResponseFormat.SURYA_HTML,
+        ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        ResponseFormat.UNLIMITED_OCR2,
+    }
+)
 
 
 class VlmPipeline(PaginatedPipeline):
@@ -84,9 +97,41 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe: list = [
-            # Other models working on `NodeItem` elements in the DoclingDocument
-        ]
+    def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
+        # Picture enrichments run before each page backend is released.
+        return conv_res
+
+    def _enrich_page_document(
+        self, conv_res: ConversionResult, page: Page, document: DoclingDocument
+    ) -> None:
+        if not document.pictures or not self.enrichment_pipe:
+            return
+
+        # Finalized page documents use local page number 1. The enrichment
+        # models index conv_res.pages using provenance page numbers, so expose
+        # the source page number while running the models.
+        page_item = document.pages.pop(1)
+        page_item.page_no = page.page_no
+        document.pages[page.page_no] = page_item
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
+            if isinstance(item, DocItem):
+                for provenance in item.prov:
+                    provenance.page_no = page.page_no
+
+        original_document, original_pages = conv_res.document, conv_res.pages
+        original_progress = conv_res._progress
+        try:
+            conv_res.document = document
+            conv_res.pages = [page]
+            # The page is reported once its pictures are enriched, so its page
+            # event covers this work; per-page item counts would only add noise.
+            conv_res._progress = ProgressReporter()
+            super()._enrich_document(conv_res)
+        finally:
+            conv_res.document, conv_res.pages = original_document, original_pages
+            conv_res._progress = original_progress
 
     def _initialize_new_runtime_system(
         self, pipeline_options: VlmPipelineOptions
@@ -163,6 +208,10 @@ class VlmPipeline(PaginatedPipeline):
         elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
             vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
             if vlm_options.inference_framework == InferenceFramework.MLX:
+                from docling.models.vlm_pipeline_models.mlx_model import (
+                    HuggingFaceMlxModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceMlxModel(
                         enabled=True,
@@ -172,6 +221,10 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
+                from docling.models.vlm_pipeline_models.hf_transformers_model import (
+                    HuggingFaceTransformersVlmModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
                         enabled=True,
@@ -243,6 +296,9 @@ class VlmPipeline(PaginatedPipeline):
                 page._backend = page_backend
                 if not page_backend.is_valid():
                     failed_page_nos.add(page.page_no)
+                    conv_res._progress.page_completed(
+                        page.page_no, total_pages=len(pages_by_no), success=False
+                    )
                     conv_res.errors.append(
                         ErrorItem(
                             component_type=DoclingComponentType.DOCUMENT_BACKEND,
@@ -263,6 +319,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_batch=page_batch,
                     page_documents=page_documents,
                     processed_page_nos=processed_page_nos,
+                    total_pages=len(pages_by_no),
                 )
                 page_batch = []
                 if self._document_timed_out(
@@ -279,6 +336,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_batch=page_batch,
                     page_documents=page_documents,
                     processed_page_nos=processed_page_nos,
+                    total_pages=len(pages_by_no),
                 )
                 self._document_timed_out(
                     conv_res=conv_res,
@@ -290,6 +348,9 @@ class VlmPipeline(PaginatedPipeline):
             page_iterator.close()
             for page in pages_by_no.values():
                 self._release_page_resources(page)
+        conv_res._progress.fail_unfinished_pages(
+            expected_page_nos, total_pages=len(pages_by_no)
+        )
 
         if not any(
             error.category == FailureCategory.TIMEOUT for error in conv_res.errors
@@ -312,14 +373,33 @@ class VlmPipeline(PaginatedPipeline):
             for page_no in expected_page_nos
             if page_no in processed_page_nos
         ]
-        conv_res.document = self._concatenate_page_documents(
+        conv_res.document = self._join_page_documents(
             [
                 (page_no, page_documents[page_no])
                 for page_no in expected_page_nos
                 if page_no in page_documents
             ]
         )
+        nemotron_pages = {
+            str(page.page_no): page.predictions.vlm_response.nemotron_parse.model_dump()
+            for page in conv_res.pages
+            if page.predictions.vlm_response is not None
+            and page.predictions.vlm_response.nemotron_parse is not None
+        }
+        if nemotron_pages:
+            conv_res.document.body.meta = BaseMeta.model_validate(
+                {"docling__nemotron_parse": {"pages": nemotron_pages}}
+            )
         return conv_res
+
+    def _join_page_documents(
+        self, page_documents: list[tuple[int, DoclingDocument]]
+    ) -> DoclingDocument:
+        document = self._concatenate_page_documents(page_documents)
+        if self._response_format() in _RAW_HEADING_DEPTH_FORMATS:
+            # Once per document, so a heading depth has one level on all pages.
+            normalize_section_header_levels(document)
+        return document
 
     def _process_page_batch(
         self,
@@ -328,15 +408,19 @@ class VlmPipeline(PaginatedPipeline):
         page_batch: list[Page],
         page_documents: dict[int, DoclingDocument],
         processed_page_nos: set[int],
+        total_pages: int,
     ) -> None:
         try:
             for page in self._apply_on_pages(conv_res, page_batch):
                 if page.size is None:
                     continue
-                page_documents[page.page_no] = self._finalize_page_document(
-                    conv_res, page
-                )
+                document = self._finalize_page_document(conv_res, page)
+                self._enrich_page_document(conv_res, page, document)
+                page_documents[page.page_no] = document
                 processed_page_nos.add(page.page_no)
+                conv_res._progress.page_completed(
+                    page.page_no, total_pages=total_pages, success=True
+                )
         finally:
             for page in page_batch:
                 self._release_page_resources(page)
@@ -480,6 +564,7 @@ class VlmPipeline(PaginatedPipeline):
                 page_no=page.page_no,
                 filename=conv_res.input.file.name or "file",
                 page_image=page.image,
+                normalize_heading_levels=False,
             )
         elif response_format == ResponseFormat.UNLIMITED_OCR_MARKDOWN:
             from docling.utils.deepseekocr_utils import parse_unlimited_ocr_markdown
@@ -490,6 +575,29 @@ class VlmPipeline(PaginatedPipeline):
                 page_no=page.page_no,
                 filename=conv_res.input.file.name or "file",
                 page_image=page.image,
+                normalize_heading_levels=False,
+            )
+        elif response_format == ResponseFormat.UNLIMITED_OCR2:
+            from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
+
+            document = parse_unlimited_ocr2(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
+            )
+        elif response_format == ResponseFormat.LIGHTONOCR_MARKDOWN:
+            from docling.utils.lightonocr_utils import parse_lightonocr_markdown
+
+            document = parse_lightonocr_markdown(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
             )
         elif response_format == ResponseFormat.MARKDOWN:
             document = self._convert_text_page(
@@ -509,6 +617,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_no=page.page_no,
                     filename=conv_res.input.file.name or "file",
                     page_image=page.image,
+                    normalize_heading_levels=False,
                 )
             except ValueError as exc:
                 conv_res.errors.append(
@@ -521,6 +630,29 @@ class VlmPipeline(PaginatedPipeline):
                     )
                 )
                 document = DoclingDocument(name=f"page_{page.page_no}")
+        elif response_format == ResponseFormat.SURYA_HTML:
+            from docling.utils.surya_utils import parse_surya_html
+
+            try:
+                document = parse_surya_html(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                    normalize_heading_levels=False,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid Surya response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
         elif response_format == ResponseFormat.DOTS_JSON:
             document = self._dots_page_document(
                 conv_res, page, predicted_text, page.image
@@ -528,6 +660,19 @@ class VlmPipeline(PaginatedPipeline):
         elif response_format == ResponseFormat.NEMOTRON_PARSE_V2:
             document = self._nemotron_parse_v2_page_document(
                 conv_res, page, predicted_text, page.image
+            )
+        elif response_format == ResponseFormat.NEMOTRON_PARSE_V3_5:
+            from docling.utils.nemotron_parse_v3_5_utils import (
+                parse_nemotron_parse_v3_5,
+            )
+
+            document = parse_nemotron_parse_v3_5(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
             )
         elif response_format == ResponseFormat.MINERU2:
             from docling.utils.mineru_utils import parse_mineru2
@@ -586,7 +731,7 @@ class VlmPipeline(PaginatedPipeline):
             return DoclingDocument(name=f"page_{page.page_no}")
 
         try:
-            return DocLangDocDeserializer().deserialize_str(fragment)
+            document = DocLangDocDeserializer().deserialize_str(fragment)
         except Exception as exc:
             conv_res.errors.append(
                 ErrorItem(
@@ -598,6 +743,56 @@ class VlmPipeline(PaginatedPipeline):
                 )
             )
             return DoclingDocument(name=f"page_{page.page_no}")
+        self._scale_doclang_to_page(document, page)
+        return document
+
+    @staticmethod
+    def _scale_doclang_to_page(document: DoclingDocument, page: Page) -> None:
+        """Map DocLang grid locations onto the page.
+
+        The deserializer keeps locations on the DocLang grid (512x512 by
+        default) and sizes the page from that grid. Scale the boxes and the
+        page size to the real page, so that crops and provenance are in page
+        points like the other response formats.
+        """
+        if page.size is None:
+            return
+        scales: dict[int, tuple[float, float]] = {}
+        for page_no, page_item in document.pages.items():
+            grid = page_item.size
+            if grid.width <= 0 or grid.height <= 0:
+                continue
+            scales[page_no] = (
+                page.size.width / grid.width,
+                page.size.height / grid.height,
+            )
+            page_item.size = Size(width=page.size.width, height=page.size.height)
+        if not scales:
+            return
+        for item, _level in document.iterate_items(
+            with_groups=True,
+            traverse_pictures=True,
+            included_content_layers=set(ContentLayer),
+        ):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                scale = scales.get(provenance.page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                provenance.bbox = provenance.bbox.resize_by_scale(
+                    x_scale=sx, y_scale=sy
+                )
+            if isinstance(item, TableItem):
+                page_no = item.prov[0].page_no if item.prov else 1
+                scale = scales.get(page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                for cell in item.data.table_cells:
+                    if cell.bbox is not None:
+                        cell.bbox = cell.bbox.resize_by_scale(x_scale=sx, y_scale=sy)
 
     @staticmethod
     def _doctags_page_document(
@@ -646,6 +841,7 @@ class VlmPipeline(PaginatedPipeline):
             filename=conv_res.input.file.name or "file",
             page_image=page_image,
             model_image_size=model_image_size,
+            normalize_heading_levels=False,
         )
 
     def _nemotron_parse_v2_page_document(
@@ -683,6 +879,7 @@ class VlmPipeline(PaginatedPipeline):
             page_no=page.page_no,
             filename=conv_res.input.file.name or "file",
             page_image=page_image,
+            normalize_heading_levels=False,
         )
 
     def _extract_code_block(self, text: str) -> str:

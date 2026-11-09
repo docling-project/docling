@@ -30,6 +30,7 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import UTF8_BOM_ENCODING
 
 _log = logging.getLogger(__name__)
 
@@ -68,16 +69,16 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.content: str = ""
-        # utf-8-sig drops a leading BOM. The WebVTT file body grammar allows an
-        # optional U+FEFF before the "WEBVTT" signature, and keeping it makes
-        # verify_signature() reject the file. Equivalent to utf-8 without a BOM.
+        # The WebVTT file body grammar allows an optional U+FEFF before the
+        # "WEBVTT" signature, and keeping it makes verify_signature() reject the
+        # file. UTF8_BOM_ENCODING drops it, and reads as utf-8 when there is none.
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.content = TextIOWrapper(
-                    BytesIO(self.path_or_stream.getvalue()), encoding="utf-8-sig"
+                    BytesIO(self.path_or_stream.getvalue()), encoding=UTF8_BOM_ENCODING
                 ).read()
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8-sig") as f:
+                with open(self.path_or_stream, encoding=UTF8_BOM_ENCODING) as f:
                     self.content = f.read()
         except Exception as e:
             raise DocumentLoadError(

@@ -10,10 +10,12 @@ import warnings
 from copy import deepcopy
 from enum import Enum
 from html import unescape
+from html.entities import html5
 from io import BytesIO
 from pathlib import Path
 from typing import Literal, cast
 
+import yaml
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
@@ -37,8 +39,11 @@ from typing_extensions import Annotated, override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
-from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.markdown_html import (
+    MarkdownHTMLDocumentBackend,
+    serialize_markdown_for_html,
+)
 from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     MarkdownBackendOptions,
@@ -68,7 +73,11 @@ try:  # pragma: no cover - import-time guard
             if super().break_paragraph(source, lazy):
                 return True
             if "Table" in source.parser.block_elements:
+                # Paragraph.parse consumes the line through source.match, so the
+                # probe must restore it or a lazy continuation line never advances.
+                prev_match = source.match
                 matched = source.parser.block_elements["Table"].match(source)
+                source.match = prev_match
                 if matched:
                     source.reset()
                     return True
@@ -139,9 +148,7 @@ def _only_plain_line_breaks(children: list) -> bool:
     by LineBreak nodes (soft or hard), with at least one break present.
 
     Such content is fully handled by the pending-line-break merge paths and does
-    not need an inline_group wrapper.  Multiple plain runs without any LineBreak
-    (e.g. `RawText + Literal + RawText` from an escaped character) return False
-    so they still use the regular inline_group path.
+    not need an inline_group wrapper.
 
     Args:
         children: Inline child nodes of a marko Paragraph, Heading, or ListItem
@@ -159,6 +166,123 @@ def _only_plain_line_breaks(children: list) -> bool:
         or isinstance(c, marko.inline.LineBreak)
         for c in children
     )
+
+
+# As in Pandoc, an opening `---` followed by a blank line is a thematic break,
+# not frontmatter.
+_FRONTMATTER_PATTERN = re.compile(
+    r"\A---[ \t]*\r?\n(?![ \t]*\r?\n)(.*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+_CHAR_REFERENCE_PATTERN = re.compile(
+    r"&(?:#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]*);"
+)
+
+
+def _decode_char_references(text: str) -> str:
+    """Decode the HTML character references of a Markdown text, as CommonMark does.
+
+    Only a reference that ends with a semicolon and names a known entity or a
+    code point is decoded. `html.unescape` also decodes legacy names without a
+    semicolon (`&copy`), the longest legacy prefix of an unknown name
+    (`&notit;`) and remaps some numeric references (`&#128;` to `€`, `&#1;` to
+    nothing). CommonMark keeps the first two as literal text and maps a number
+    directly to its code point, except for 0, surrogates and values out of
+    range, which give U+FFFD.
+
+    Args:
+        text: Text of a marko `RawText` node or of a title.
+
+    Returns:
+        The text with each valid character reference replaced by its characters.
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        reference = match.group(0)
+        if reference[1] != "#":
+            return html5.get(reference[1:], reference)
+        if reference[2] in "xX":
+            code_point = int(reference[3:-1], 16)
+        else:
+            code_point = int(reference[2:-1])
+        if code_point == 0 or code_point > 0x10FFFF or 0xD800 <= code_point <= 0xDFFF:
+            return "\ufffd"
+        return chr(code_point)
+
+    return _CHAR_REFERENCE_PATTERN.sub(replace, text)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block (a ``---`` fenced YAML mapping)."""
+    match = _FRONTMATTER_PATTERN.match(text)
+    if match is None:
+        return text
+    try:
+        meta = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        return text
+    return text[match.end() :] if isinstance(meta, dict) else text
+
+
+def _text_run_piece(node: marko.inline.RawText | marko.inline.Literal) -> str:
+    """Return the final text of a run, with every `&` kept as an entity.
+
+    The character references of a `RawText` are decoded when the item is created.
+    Each piece is decoded here and its `&` is escaped again, so that this later
+    step returns the merged text unchanged and an escape still protects its
+    neighbors.
+    """
+    text = node.children if isinstance(node.children, str) else ""
+    if isinstance(node, marko.inline.RawText):
+        text = _decode_char_references(text)
+    return text.replace("&", "&amp;")
+
+
+def _merge_run(
+    run: list[marko.inline.RawText | marko.inline.Literal],
+) -> list[marko.element.Element]:
+    """Return the nodes that replace a run of neighboring text nodes.
+
+    A run of two or more nodes becomes one RawText. A single node stays as it is.
+    """
+    if len(run) < 2:
+        return list(run)
+    return [marko.inline.RawText("".join(_text_run_piece(node) for node in run))]
+
+
+def _merge_adjacent_text_runs(root: marko.element.Element) -> None:
+    """Merge neighboring RawText and Literal nodes into one RawText node.
+
+    A backslash escape (``snake\\_case``) is a Literal node between two RawText
+    nodes. Merging them keeps the escape in the text run around it.
+
+    Args:
+        root: The root of the marko AST. Its descendants are changed in place.
+    """
+    stack: list[marko.element.Element] = [root]
+    while stack:
+        element = stack.pop()
+        if not isinstance(
+            element, marko.block.BlockElement | marko.inline.InlineElement
+        ):
+            continue
+        children = element.children
+        if not isinstance(children, list):
+            continue
+        merged: list[marko.element.Element] = []
+        run: list[marko.inline.RawText | marko.inline.Literal] = []
+        for child in children:
+            if isinstance(child, marko.inline.RawText | marko.inline.Literal):
+                run.append(child)
+                continue
+            merged.extend(_merge_run(run))
+            run = []
+            merged.append(child)
+            stack.append(child)
+        merged.extend(_merge_run(run))
+        element.children = merged
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
@@ -273,6 +397,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # output.
         try:
             md_content = decode_text(self.path_or_stream, options.encoding)
+            md_content = _strip_frontmatter(md_content)
             # remove invalid sequences
             # very long sequences of underscores will lead to unnecessary long processing times.
             # In any proper Markdown files, underscores have to be escaped,
@@ -296,8 +421,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         """Return the plain-text content of a GFM `TableCell`.
 
         Unlike `_inline_text`, this method treats `CodeSpan` nodes as literal
-        text (no HTML unescaping) and HTML-unescapes only `RawText` and
-        `Literal` nodes.
+        text (no character reference decoding) and decodes the character
+        references of `RawText` and `Literal` nodes only.
 
         Args:
             cell: A parsed GFM `TableCell` element.
@@ -310,7 +435,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(node, marko.inline.CodeSpan):
                 return str(node.children)
             if isinstance(node.children, str):
-                return unescape(node.children)
+                return _decode_char_references(node.children)
             return "".join(_node_text(c) for c in node.children)
 
         return "".join(_node_text(child) for child in cell.children)
@@ -541,7 +666,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             raw = element.children if isinstance(element.children, str) else ""
-            text = unescape(raw.strip())
+            # Keep the raw fragment: its edge whitespace is the run boundary. Marko has
+            # already trimmed the cell edges, and whitespace-only runs are significant.
+            text = _decode_char_references(raw)
             if text:
                 item = doc.add_text(
                     label=DocItemLabel.TEXT,
@@ -570,7 +697,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             image_ref = self._load_image_ref(element.dest)
             fig_caption = None
             if element.title:
-                title = unescape(element.title)
+                title = _decode_char_references(element.title)
                 fig_caption = doc.add_text(
                     label=DocItemLabel.CAPTION,
                     text=title,
@@ -716,6 +843,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if element in visited:
             return
 
+        # The payloads below this size were pushed by enclosing elements.
+        creation_stack_size = len(creation_stack)
+
         # A line break only joins runs of the same paragraph. When no text run
         # follows the break inside it (for example, the paragraph ends in inline
         # HTML or a code span, or the next lines are table rows), the pending
@@ -816,9 +946,26 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         elif isinstance(element, marko.inline.Image):
             _log.debug(" - Image with alt: %s, url: %s", element.title, element.dest)
 
+            # An image without alt text emits no RawText. If it is the content of
+            # a list item or heading, create that item first, with empty text, so
+            # that the picture goes under the list item, as in the HTML backend.
+            if creation_stack and not element.children:
+                parent_item = self._flush_creation_stack(
+                    doc=doc,
+                    creation_stack=creation_stack,
+                    snippet_text="",
+                    parent_item=parent_item,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
+                    list_last_item_by_ref=list_last_item_by_ref,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+
             fig_caption: TextItem | None = None
             if element.title is not None and element.title != "":
-                title = unescape(element.title)
+                title = _decode_char_references(element.title)
                 fig_caption = doc.add_text(
                     label=DocItemLabel.CAPTION,
                     text=title,
@@ -847,7 +994,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 formatting, strikethrough=True
             )
 
-        elif isinstance(element, marko.inline.Link):
+        elif isinstance(element, marko.inline.Link | marko.inline.AutoLink):
+            # AutoLink covers <https://url> and the GFM bare-URL form (gfm_el.Url
+            # subclasses AutoLink).
             _log.debug(" - Link: %s", element.children)
             hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
 
@@ -856,13 +1005,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             original_text = (
                 element.children if isinstance(element.children, str) else ""
             )
-            snippet_text = unescape(original_text.strip())
-            if snippet_text:
+            # Keep the raw fragment: whitespace at a `RawText` edge is the boundary between
+            # inline runs (`Foo *emph* bar` -> `"Foo "`, `"emph"`, `" bar"`) and the serializers
+            # concatenate faithfully. Marko has already trimmed the block edges for us.
+            snippet_text = _decode_char_references(original_text)
+            stripped_text = _decode_char_references(original_text.strip())
+            # A whitespace-only run is kept between runs, but never becomes a heading/list item.
+            if snippet_text and (stripped_text or not creation_stack):
                 if creation_stack:
+                    # Headings and list items become one item's own text, not a run: trim.
                     parent_item = self._flush_creation_stack(
                         doc=doc,
                         creation_stack=creation_stack,
-                        snippet_text=snippet_text,
+                        snippet_text=stripped_text,
                         parent_item=parent_item,
                         list_ordered_flag_by_ref=list_ordered_flag_by_ref,
                         list_start_by_ref=list_start_by_ref,
@@ -898,7 +1053,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         doc.texts[-1].text += " " + snippet_text
                         doc.texts[-1].orig += " " + snippet_text
                     else:
-                        prefix = "\n" if self._pending_hard_line_break else ""
+                        # The break still separates the runs when they cannot merge.
+                        prefix = (
+                            "\n"
+                            if self._pending_hard_line_break
+                            else " "
+                            if self._pending_soft_line_break
+                            else ""
+                        )
                         doc.add_text(
                             label=DocItemLabel.TEXT,
                             parent=parent_item,
@@ -931,6 +1093,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._pending_soft_line_break = False
                 # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
                 return
+            if self._pending_hard_line_break or self._pending_soft_line_break:
+                # The break separator never goes inside the code run: give it a plain run.
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent_item,
+                    text="\n" if self._pending_hard_line_break else " ",
+                )
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
@@ -1049,6 +1218,30 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
 
+                # The content of a list item or heading had no text run, e.g.
+                # only inline HTML. Create the item with empty text now, or the
+                # next text run of the document, in a later block, would take it.
+                if len(creation_stack) > creation_stack_size and isinstance(
+                    element,
+                    marko.block.ListItem
+                    | marko.block.Heading
+                    | marko.block.SetextHeading,
+                ):
+                    pending = creation_stack[creation_stack_size:]
+                    del creation_stack[creation_stack_size:]
+                    self._flush_creation_stack(
+                        doc=doc,
+                        creation_stack=pending,
+                        snippet_text="",
+                        parent_item=parent_item,
+                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
+                        list_last_item_by_ref=list_last_item_by_ref,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
+
     def _get_image_loader(self) -> ImageResourceLoader:
         """Lazily build the shared image-resource loader.
 
@@ -1063,6 +1256,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 enable_local_fetch=md_options.enable_local_fetch,
                 enable_remote_fetch=md_options.enable_remote_fetch,
                 max_image_data_base64_bytes=md_options.max_image_data_base64_bytes,
+                max_image_pixels=md_options.max_image_pixels,
             )
         return self._image_loader
 
@@ -1078,7 +1272,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
-        return self._get_image_loader().load_image_ref(dest, base_path)
+        try:
+            return self._get_image_loader().load_image_ref(dest, base_path)
+        except ValueError as exc:
+            # Keep the document usable when a relative image escapes its local
+            # source directory. The image is omitted, while the loader still
+            # enforces the confinement check.
+            warnings.warn(f"Could not process an image from {dest}: {exc}")
+            return None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -1112,6 +1313,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # children per cell, enabling RichTableCell for formatted content.
             marko_parser = Markdown(extensions=[_GFM_EXTENSION])
             parsed_ast = marko_parser.parse(self.markdown)
+            _merge_adjacent_text_runs(parsed_ast)
             self._iterate_elements(
                 element=parsed_ast,
                 depth=0,
@@ -1126,23 +1328,28 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
 
             if self._html_blocks > 0:
-                html_backend_cls = HTMLDocumentBackend
-                html_str = doc.export_to_html()
+                html_backend_cls = MarkdownHTMLDocumentBackend
+                html_payload = serialize_markdown_for_html(
+                    doc, source_hash=self.document_hash
+                )
+                html_str = html_payload.text
 
-                def _restore_original_html(txt, regex):
-                    _txt, count = re.subn(regex, "", txt)
-                    if count != self._html_blocks:
-                        raise RuntimeError(
-                            "An internal error has occurred during Markdown conversion."
-                        )
-                    return _txt
-
-                # restore original HTML by removing previously added markers
-                for regex in [
-                    rf"<pre>\s*<code>\s*{_START_MARKER}",
-                    rf"{_STOP_MARKER}\s*</code>\s*</pre>",
-                ]:
-                    html_str = _restore_original_html(txt=html_str, regex=regex)
+                # Restore only the marked HTML blocks. The HTML serializer
+                # escapes code content, so decode each block before parsing it.
+                pattern = (
+                    rf"<pre>\s*<code>\s*{re.escape(_START_MARKER)}"
+                    rf"(.*?){re.escape(_STOP_MARKER)}\s*</code>\s*</pre>"
+                )
+                html_str, count = re.subn(
+                    pattern,
+                    lambda match: unescape(match.group(1)),
+                    html_str,
+                    flags=re.DOTALL,
+                )
+                if count != self._html_blocks:
+                    raise RuntimeError(
+                        "An internal error has occurred during Markdown conversion."
+                    )
                 self._html_blocks = 0
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
@@ -1166,6 +1373,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     in_doc=in_doc,
                     path_or_stream=stream,
                     options=html_options,
+                    picture_refs=html_payload.picture_refs,
                 )
                 doc = html_backend_obj.convert()
         else:
