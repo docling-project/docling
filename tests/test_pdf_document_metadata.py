@@ -27,6 +27,9 @@ from docling.utils.pdf_metadata import (
 
 # Catalog /Lang (en-US), an /Info dictionary and an XMP packet; built with pypdf.
 METADATA_PDF = Path("./tests/data/pdf/document_metadata.pdf")
+# Same shape, with the PDF/UA identification (pdfuaid:part 2, pdfuaid:rev 2024) and two PDF
+# Declarations (WTPDF accessibility 1.0, ISO/TS 32005) in the XMP packet; built with pypdf.
+DECLARATIONS_PDF = Path("./tests/data/pdf/document_metadata_declarations.pdf")
 # No /Lang, no /Info, no XMP.
 PLAIN_PDF = Path("./tests/data/pdf/text_with_vector_glyphs.pdf")
 
@@ -46,11 +49,38 @@ XMP_PACKET = """<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
    <dc:creator><rdf:Seq><rdf:li>Ada Lovelace</rdf:li><rdf:li>Charles Babbage</rdf:li></rdf:Seq></dc:creator>
    <dc:subject><rdf:Bag></rdf:Bag></dc:subject>
    <pdf:Producer> docling-machine-test-fixture </pdf:Producer>
+   <pdfuaid:rev>2024</pdfuaid:rev>
    <custom:ignored>outside the known namespaces</custom:ignored>
   </rdf:Description>
  </rdf:RDF>
 </x:xmpmeta>
 <?xpacket end="w"?>"""
+
+# PDF Declarations (WTPDF 1.0 clause 6.1; ISO/TS 32005 clause 4): a bag of structures, each
+# with a pdfd:conformsTo URI and optional pdfd:claimData. The third one uses the XMP attribute
+# shorthand for its conformsTo.
+DECLARATIONS_PACKET = """<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about=""
+    xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/"
+    xmlns:pdfd="http://pdfa.org/declarations/">
+   <pdfuaid:part>2</pdfuaid:part>
+   <pdfd:declarations><rdf:Bag>
+    <rdf:li rdf:parseType="Resource">
+     <pdfd:conformsTo>http://pdfa.org/declarations/wtpdf/#accessibility1.0</pdfd:conformsTo>
+     <pdfd:claimData><rdf:Bag><rdf:li rdf:parseType="Resource">
+      <pdfd:claimBy>Example Corp</pdfd:claimBy>
+      <pdfd:claimDate>2019-01-17</pdfd:claimDate>
+     </rdf:li></rdf:Bag></pdfd:claimData>
+    </rdf:li>
+    <rdf:li rdf:parseType="Resource">
+     <pdfd:conformsTo>https://pdfa.org/declarations#iso32005</pdfd:conformsTo>
+    </rdf:li>
+    <rdf:li pdfd:conformsTo="http://pdfa.org/declarations/wtpdf/#reuse1.0"/>
+   </rdf:Bag></pdfd:declarations>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>"""
 
 
 def _backend_metadata(path: Path, backend) -> _PdfDocumentMetadata:
@@ -66,12 +96,29 @@ def test_parse_xmp_properties_flattens_known_namespaces():
 
     assert props == {
         "pdfuaid:part": "2",  # property written as an rdf:Description attribute
+        "pdfuaid:rev": "2024",  # PDF/UA identification, simple element property
         "dc:title": "Fixture title",  # x-default alternative wins over document order
         "dc:creator": "Ada Lovelace, Charles Babbage",  # rdf:Seq joined
         "pdf:Producer": "docling-machine-test-fixture",  # whitespace stripped
     }
     assert "dc:subject" not in props  # empty array carries no value
     assert not any(key.startswith("custom:") for key in props)
+
+
+def test_parse_xmp_properties_collects_pdf_declarations():
+    props = parse_xmp_properties(DECLARATIONS_PACKET)
+
+    assert props == {
+        "pdfuaid:part": "2",
+        # every conformsTo URI under the declarations bag, verbatim, in document order
+        "pdfd:conformsTo": (
+            "http://pdfa.org/declarations/wtpdf/#accessibility1.0, "
+            "https://pdfa.org/declarations#iso32005, "
+            "http://pdfa.org/declarations/wtpdf/#reuse1.0"
+        ),
+    }
+    # the claim structures (who, when) are not flattened into properties
+    assert not any(key.startswith("pdfd:claim") for key in props)
 
 
 def test_parse_xmp_properties_tolerates_malformed_packet():
@@ -119,6 +166,23 @@ def test_docling_parse_backend_reads_lang_and_xmp():
     assert metadata.properties["pdfuaid:part"] == "2"
 
 
+def test_docling_parse_backend_reads_conformance_declarations():
+    metadata = _backend_metadata(DECLARATIONS_PDF, ThreadedDoclingParseDocumentBackend)
+
+    assert metadata.properties["pdfuaid:part"] == "2"
+    assert metadata.properties["pdfuaid:rev"] == "2024"
+    assert metadata.properties["pdfd:conformsTo"] == (
+        "http://pdfa.org/declarations/wtpdf/#accessibility1.0, "
+        "https://pdfa.org/declarations#iso32005"
+    )
+    # pypdfium2 reads /Info only, so the XMP-only conformance keys are absent there.
+    pdfium_metadata = _backend_metadata(DECLARATIONS_PDF, PyPdfiumDocumentBackend)
+    assert pdfium_metadata.properties["dc:title"] == "Declarations fixture"
+    assert not any(
+        key.startswith(("pdfuaid:", "pdfd:")) for key in pdfium_metadata.properties
+    )
+
+
 def test_pypdfium_backend_reads_lang_and_info():
     metadata = _backend_metadata(METADATA_PDF, PyPdfiumDocumentBackend)
 
@@ -148,6 +212,7 @@ def test_attach_document_metadata_fills_body_meta():
             properties={
                 "dc:title": "Fixture title",
                 "xmp:CreatorTool": "pypdf fixture builder",
+                "pdfd:conformsTo": "http://pdfa.org/declarations/wtpdf/#accessibility1.0",
             },
         ),
     )
@@ -161,6 +226,7 @@ def test_attach_document_metadata_fills_body_meta():
         "pdf__lang": "en-US",
         "dc__title": "Fixture title",
         "xmp__creator_tool": "pypdf fixture builder",
+        "pdfd__conforms_to": "http://pdfa.org/declarations/wtpdf/#accessibility1.0",
     }
     # The declared language survives JSON serialization of the document.
     dumped = DoclingDocument.model_validate_json(doc.model_dump_json())

@@ -127,6 +127,9 @@ docling report.pdf --from pdf --no-reading-order-separators --output /tmp/
 
 To keep a PDF's declared language (`/Lang`) and its `/Info` or XMP properties, add
 `--document-metadata`; they land on `body.meta` in the JSON export (off by default).
+With the docling-parse backend this includes the declared accessibility conformance:
+`pdfuaid__part`/`pdfuaid__rev` (PDF/UA) and `pdfd__conforms_to` (PDF Declarations such
+as WTPDF), as claimed by the producer.
 
 When diagnosing a VLM parser, add `--debug-vlm-native-output` to save each
 page's unparsed model response in the shared `debug_<document>/` directory.

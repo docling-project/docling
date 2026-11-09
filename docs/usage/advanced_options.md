@@ -477,7 +477,13 @@ them on `DoclingDocument.body.meta`, the document-level meta slot:
   `dc__title`, `dc__creator`, `pdf__producer`, `xmp__create_date`, `pdfuaid__part`.
   `/Info` keys are reported under the XMP names ISO 32000-2 pairs them with, so both PDF
   backends use the same vocabulary. The pypdfium2 backend reads `/Lang` and `/Info`; the
-  docling-parse backend reads `/Lang` and the XMP packet.
+  docling-parse backend reads `/Lang` and the XMP packet;
+- the declared accessibility conformance comes along with the XMP packet: the PDF/UA
+  identification as `pdfuaid__part` and `pdfuaid__rev` (ISO 14289, Appendix C), and the
+  PDF Declarations (WTPDF 1.0, clause 6.1; ISO/TS 32005, clause 4) as `pdfd__conforms_to`,
+  the `pdfd:conformsTo` URIs of every declaration joined with `", "`, for example
+  `http://pdfa.org/declarations/wtpdf/#accessibility1.0`. These are the producer's claims,
+  not a validation result.
 
 ```python
 from docling.datamodel.base_models import InputFormat

@@ -68,7 +68,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
 | `script_position_options` | Mark superscript and subscript runs; off by default |
-| `attach_document_metadata` | Record the PDF's `/Lang` and `/Info`/XMP properties on `doc.body.meta`; off by default (CLI: `--document-metadata`) |
+| `attach_document_metadata` | Record the PDF's `/Lang` and `/Info`/XMP properties on `doc.body.meta`, including the declared PDF/UA (`pdfuaid__part`, `pdfuaid__rev`) and PDF Declarations (`pdfd__conforms_to`, e.g. WTPDF) conformance; off by default (CLI: `--document-metadata`) |
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |

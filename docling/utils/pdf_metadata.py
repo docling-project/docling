@@ -71,8 +71,9 @@ class _PdfDocumentMetadata(BaseModel):
 
 
 # XMP namespaces whose properties are kept, keyed by URI (XMP Specification Part 1, 8.2 to 8.4,
-# plus the PDF/A and PDF/UA identification schemas). Prefixes are the ones the specification
-# registers; the packet's own prefixes are not trusted.
+# plus the PDF/A and PDF/UA identification schemas and the PDF Declarations schema). Prefixes
+# are the ones the specifications register; the packet's own prefixes are not trusted.
+_PDFD_NS = "http://pdfa.org/declarations/"
 _XMP_NAMESPACES: dict[str, str] = {
     "http://purl.org/dc/elements/1.1/": "dc",
     "http://ns.adobe.com/pdf/1.3/": "pdf",
@@ -83,7 +84,17 @@ _XMP_NAMESPACES: dict[str, str] = {
     "http://ns.adobe.com/photoshop/1.0/": "photoshop",
     "http://www.aiim.org/pdfa/ns/id/": "pdfaid",
     "http://www.aiim.org/pdfua/ns/id/": "pdfuaid",
+    _PDFD_NS: "pdfd",
 }
+# PDF Declarations (PDF Association; WTPDF 1.0 clause 6.1, ISO/TS 32005 clause 4): the
+# ``pdfd:declarations`` bag holds one structure per claim, whose ``pdfd:conformsTo`` names the
+# profile the file claims to conform to, such as
+# ``http://pdfa.org/declarations/wtpdf/#accessibility1.0``. Only those URIs are kept, as the
+# property ``pdfd:conformsTo``; the ``pdfd:claimData`` structures (who claimed it and when) are
+# not flattened.
+_PDFD_DECLARATIONS = f"{{{_PDFD_NS}}}declarations"
+_PDFD_CONFORMS_TO = f"{{{_PDFD_NS}}}conformsTo"
+_PDFD_CONFORMS_TO_PROPERTY = "pdfd:conformsTo"
 _RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 _RDF_DESCRIPTION = f"{{{_RDF_NS}}}Description"
 _RDF_LI = f"{{{_RDF_NS}}}li"
@@ -119,7 +130,9 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
     Simple properties keep their text. Language alternatives (``rdf:Alt``) yield the
     ``x-default`` entry, else the first. Ordered and unordered arrays (``rdf:Seq``,
     ``rdf:Bag``) are joined with ``", "``. Properties written as attributes of
-    ``rdf:Description`` are read too. Properties in other namespaces, and nested structures
+    ``rdf:Description`` are read too. The PDF Declarations bag (``pdfd:declarations``) yields
+    the ``pdfd:conformsTo`` URIs of every declaration it holds, joined with ``", "`` in document
+    order, as ``pdfd:conformsTo``. Properties in other namespaces, and other nested structures
     without a text value, are skipped. An unparsable packet yields no properties, and so does
     one that declares entities or a DTD: ``defusedxml`` refuses those as a defence against entity
     expansion, and metadata is never worth failing a conversion over.
@@ -134,6 +147,7 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
         return {}
 
     properties: dict[str, str] = {}
+    conforms_to: list[str] = []
     for description in root.iter(_RDF_DESCRIPTION):
         for attr_name, attr_value in description.attrib.items():
             name = _xmp_qualified_name(attr_name)
@@ -141,13 +155,35 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
             if name is not None and value:
                 properties.setdefault(name, value)
         for child in description:
+            if child.tag == _PDFD_DECLARATIONS:
+                conforms_to.extend(_pdf_declaration_uris(child))
+                continue
             name = _xmp_qualified_name(child.tag)
             if name is None:
                 continue
             value = _xmp_property_value(child)
             if value is not None:
                 properties.setdefault(name, value)
+    if conforms_to:
+        properties[_PDFD_CONFORMS_TO_PROPERTY] = ", ".join(conforms_to)
     return properties
+
+
+def _pdf_declaration_uris(declarations: ElementTree.Element) -> list[str]:
+    """Return the ``pdfd:conformsTo`` URIs under a ``pdfd:declarations`` bag, in document order.
+
+    Each is read whether written as an element or, in the XMP attribute shorthand, as an
+    attribute of the declaration structure.
+    """
+    uris: list[str] = []
+    for element in declarations.iter():
+        if element.tag == _PDFD_CONFORMS_TO:
+            uri = (element.text or "").strip()
+        else:
+            uri = (element.get(_PDFD_CONFORMS_TO) or "").strip()
+        if uri:
+            uris.append(uri)
+    return uris
 
 
 def _xmp_qualified_name(tag: str) -> str | None:
