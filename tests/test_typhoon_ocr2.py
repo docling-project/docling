@@ -2,16 +2,22 @@
 # SPDX-License-Identifier: MIT
 # Typhoon OCR V2 by the Typhoon team: https://huggingface.co/typhoon-ai/typhoon-ocr2-2b
 
-"""Typhoon OCR V2 layout parsing, without model downloads.
+"""Typhoon OCR V2 presets and layout parsing, without model downloads.
 
 Every reply below is written by hand from the output format in the model card and
-the typhoon-ocr2 reference package. They are not model output.
+the typhoon-ocr2 reference package. They are not model output. The API tests send
+their requests to a fake OpenAI-compatible server on a local socket.
 """
 
+import base64
+import hashlib
+import io
 import json
 import logging
+import re
 import unicodedata
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -27,11 +33,35 @@ from docling_core.types.doc import (
     Size,
     TextItem,
 )
+from PIL import Image
+from pydantic import AnyUrl
 
+from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.pipeline_options_vlm_model import (
+    ResponseFormat,
+    TransformersModelType,
+    TransformersPromptStyle,
+)
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.datamodel.vlm_prompts import TYPHOON_OCR2_PARSE_PROMPT
+from docling.document_converter import (
+    DocumentConverter,
+    ImageFormatOption,
+    PdfFormatOption,
+)
+from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.typhoon_ocr2_utils import parse_typhoon_ocr2_json
+from tests.fakes.http_service import FakeService
+from tests.fakes.openai_compatible import FakeOpenAiApi
 
 _SIZE = Size(width=612, height=792)
 _THAI = "ทำงาน หลาย ๆ ครั้ง กำไร ๑๒๓"
+# The prompt block of the 2B and 0.8B model cards.
+_PROMPT_SHA256 = "b55c0349b52deac3958a9f356966c99acf50fbb5be25f717f7d2c90cf4dac27a"
+_PDF = Path(__file__).parent / "data" / "pdf" / "sources" / "2305.03393v1-pg9.pdf"
 
 
 def _element(
@@ -414,3 +444,193 @@ def test_figure_keeps_box_and_unexpected_text() -> None:
     assert _box(first) == pytest.approx((61.2, 158.4, 550.8, 316.8))
     assert [item.text for item in doc.texts] == ["A bar chart"]
     assert _box(doc.texts[0]) == _box(second)
+
+
+@pytest.mark.parametrize(
+    ("preset_id", "repo_id"),
+    [
+        ("typhoon_ocr2_2b", "typhoon-ai/typhoon-ocr2-2b"),
+        ("typhoon_ocr2_08b", "typhoon-ai/typhoon-ocr2-0.8b"),
+    ],
+)
+def test_presets_pin_weights_and_engine_floors(preset_id: str, repo_id: str) -> None:
+    preset = VlmConvertOptions.get_preset(preset_id)
+    spec = preset.model_spec
+    transformers = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
+    vllm = spec.get_engine_config(VlmEngineType.VLLM)
+    mlx = spec.get_engine_config(VlmEngineType.MLX)
+    engines = (transformers, vllm, mlx)
+
+    # The models were trained with this prompt, so it must stay byte for byte.
+    assert hashlib.sha256(spec.prompt.encode()).hexdigest() == _PROMPT_SHA256
+    assert spec.response_format == ResponseFormat.TYPHOON_OCR2_JSON
+    assert [config.repo_id for config in engines] == [
+        repo_id,
+        repo_id,
+        f"{repo_id}-MLX-8bit",
+    ]
+    assert all(
+        re.fullmatch(r"[0-9a-f]{40}", config.revision or "") for config in engines
+    )
+    assert vllm.revision == transformers.revision
+    assert mlx.revision != transformers.revision
+    assert [config.min_engine_version for config in engines] == [
+        "5.15.1",
+        "0.33.0",
+        "0.7.6",
+    ]
+    assert transformers.torch_dtype == "bfloat16"
+    assert (
+        transformers.extra_config["transformers_model_type"]
+        == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
+    )
+    assert spec.get_runtime_input_extra_config(VlmEngineType.TRANSFORMERS) == {
+        "transformers_prompt_style": TransformersPromptStyle.CHAT,
+        "skip_special_tokens": True,
+    }
+    assert vllm.extra_config == {"max_model_len": 40960}
+    assert (spec.temperature, spec.max_new_tokens) == (0.0, 16384)
+    assert spec.chat_template_kwargs == {"enable_thinking": False}
+    assert not spec.trust_remote_code
+    # Ollama ignores chat_template_kwargs, so the thinking block would stay open.
+    assert not spec.is_engine_supported(VlmEngineType.API_OLLAMA)
+    assert preset.scale * 72 == pytest.approx(2048)
+    assert preset.max_size == 2048
+
+
+_PAGE_REPLY = _reply(
+    _element("header", "Annual Report 2025", [80, 30, 920, 50]),
+    _element("title", "1. Overview", [80, 80, 600, 110]),
+    _element("text", _THAI, [80, 120, 920, 200]),
+    _element(
+        "table",
+        "<table><tr><th>Year</th><th>Total</th></tr>"
+        "<tr><td>2025</td><td>12</td></tr></table>",
+        [80, 220, 920, 400],
+    ),
+    _element("footer", "1", [490, 950, 510, 970]),
+)
+_PAGE_LAYOUT = [
+    (DocItemLabel.PAGE_HEADER, ContentLayer.FURNITURE),
+    (DocItemLabel.SECTION_HEADER, ContentLayer.BODY),
+    (DocItemLabel.TEXT, ContentLayer.BODY),
+    (DocItemLabel.TABLE, ContentLayer.BODY),
+    (DocItemLabel.PAGE_FOOTER, ContentLayer.FURNITURE),
+]
+
+
+@pytest.fixture
+def api() -> Iterator[FakeOpenAiApi]:
+    service = FakeService()
+    fake = FakeOpenAiApi(completion=_PAGE_REPLY)
+    service.include(fake.router)
+    service.start()
+    fake.service = service
+    try:
+        yield fake
+    finally:
+        service.stop()
+
+
+def _convert(
+    api: FakeOpenAiApi,
+    source: Path,
+    engine_type: VlmEngineType = VlmEngineType.API_OPENAI,
+) -> ConversionResult:
+    options = VlmConvertOptions.from_preset(
+        "typhoon_ocr2_2b",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=engine_type,
+            url=AnyUrl(f"{api.service.base_url}/v1/chat/completions"),
+        ),
+    )
+    pipeline_options = VlmPipelineOptions(
+        vlm_options=options, enable_remote_services=True
+    )
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+            ),
+            InputFormat.IMAGE: ImageFormatOption(
+                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+            ),
+        }
+    )
+    return converter.convert(source)
+
+
+@pytest.mark.parametrize(
+    ("engine_type", "source", "image_size"),
+    [
+        (VlmEngineType.API, "pdf", (1583, 2048)),
+        (VlmEngineType.API_OPENAI, "pdf", (1583, 2048)),
+        (VlmEngineType.API_OPENAI, "png", (2048, 1536)),
+    ],
+)
+def test_api_request_matches_the_model_card(
+    api: FakeOpenAiApi,
+    tmp_path: Path,
+    engine_type: VlmEngineType,
+    source: str,
+    image_size: tuple[int, int],
+) -> None:
+    path = _PDF
+    if source == "png":
+        path = tmp_path / "page.png"
+        Image.new("RGB", (800, 600), "white").save(path)
+
+    result = _convert(api, path, engine_type)
+
+    (request,) = api.service.requests_for("POST", r"/v1/chat/completions")
+    body = request.json()
+    (message,) = body.pop("messages")
+    # The keys and values that the client of the model card sends.
+    assert body == {
+        "model": "typhoon-ocr2",
+        "max_tokens": 16384,
+        "temperature": 0.0,
+        "top_p": 1.0,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    assert message["role"] == "user"
+    image_part, text_part = message["content"]
+    assert text_part == {"type": "text", "text": TYPHOON_OCR2_PARSE_PROMPT}
+    prefix = "data:image/png;base64,"
+    assert image_part["image_url"]["url"].startswith(prefix)
+    image_bytes = base64.b64decode(image_part["image_url"]["url"].removeprefix(prefix))
+    # A page renders with a 2048-pixel long side. A PDF page can be 1 pixel off.
+    assert Image.open(io.BytesIO(image_bytes)).size == pytest.approx(image_size, abs=1)
+    assert result.status == ConversionStatus.SUCCESS
+    assert [
+        (item.label, item.content_layer) for item in _blocks(result.document)
+    ] == _PAGE_LAYOUT
+    assert result.document.texts[2].text == _THAI
+
+
+def test_cut_reply_gives_partial_success(api: FakeOpenAiApi) -> None:
+    api.completion = _PAGE_REPLY[: _PAGE_REPLY.index("<table>") + len("<table><tr>")]
+    api.finish_reason = "length"
+
+    result = _convert(api, _PDF)
+
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    assert [(error.error_message, error.page_no) for error in result.errors] == [
+        ("VLM output incomplete (stop_reason=length).", 1)
+    ]
+    assert [
+        (item.label, item.content_layer) for item in _blocks(result.document)
+    ] == _PAGE_LAYOUT[:3]
+
+
+def test_invalid_reply_is_a_page_error(api: FakeOpenAiApi) -> None:
+    api.completion = "I cannot read this page."
+
+    result = _convert(api, _PDF)
+
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    (error,) = result.errors
+    assert error.page_no == 1
+    assert error.error_message.startswith("Invalid Typhoon OCR V2 response: ")
+    assert list(result.document.iterate_items()) == []
+    assert list(result.document.pages) == [1]

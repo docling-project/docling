@@ -28,6 +28,7 @@ from docling.datamodel.vlm_prompts import (
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
     SURYA_OCR_PROMPT,
+    TYPHOON_OCR2_PARSE_PROMPT,
     UNLIMITED_OCR2_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
@@ -2145,6 +2146,104 @@ VLM_CONVERT_SURYA_OCR2_5 = StageModelPreset(
     scale=192 / 72,
     max_size=3072,
     default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# Typhoon OCR V2 by the Typhoon team: https://huggingface.co/typhoon-ai/typhoon-ocr2-2b
+# The presets keep the model card settings: the card prompt, greedy decoding, at most
+# 16384 new tokens and no thinking block. The chat template opens a thinking block
+# unless enable_thinking is False. Pages render with a 2048-pixel long side, as the
+# typhoon-ocr2 package renders PDF pages.
+_TYPHOON_OCR2_MAX_TOKENS = 16384
+_TYPHOON_OCR2_API = ApiModelConfig(
+    params={
+        # Matches `--served-model-name typhoon-ocr2` in the model card server command.
+        "model": "typhoon-ocr2",
+        "max_tokens": _TYPHOON_OCR2_MAX_TOKENS,
+        # The model card client sends these. API engines do not read the
+        # chat_template_kwargs of the model spec.
+        "top_p": 1.0,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+)
+
+
+def _typhoon_ocr2_preset(
+    size: str, preset_id: str, revision: str, mlx_revision: str
+) -> StageModelPreset:
+    repo_id = f"typhoon-ai/typhoon-ocr2-{size.lower()}"
+    return StageModelPreset(
+        preset_id=preset_id,
+        name=f"Typhoon OCR V2 {size}",
+        description=(
+            "Typhoon OCR V2 layout parsing of Thai and English pages with bounding "
+            f"boxes ({size} parameters)"
+        ),
+        model_spec=VlmModelSpec(
+            name=f"Typhoon-OCR-V2-{size}",
+            default_repo_id=repo_id,
+            revision=revision,
+            prompt=TYPHOON_OCR2_PARSE_PROMPT,
+            response_format=ResponseFormat.TYPHOON_OCR2_JSON,
+            supported_engines={
+                VlmEngineType.TRANSFORMERS,
+                VlmEngineType.MLX,
+                VlmEngineType.VLLM,
+                VlmEngineType.API,
+                VlmEngineType.API_OPENAI,
+            },
+            temperature=0.0,
+            max_new_tokens=_TYPHOON_OCR2_MAX_TOKENS,
+            chat_template_kwargs={"enable_thinking": False},
+            engine_overrides={
+                # The official 8-bit conversion, which the MLX model card recommends.
+                # 0.7.6 is the oldest mlx-vlm release tested with these checkpoints.
+                VlmEngineType.MLX: EngineModelConfig(
+                    repo_id=f"{repo_id}-MLX-8bit",
+                    revision=mlx_revision,
+                    min_engine_version="0.7.6",
+                ),
+                # 5.15.1 is the transformers release that the model card tests.
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    torch_dtype="bfloat16",
+                    min_engine_version="5.15.1",
+                    extra_config={
+                        # AUTOMODEL loads Qwen3_5Model, which has no language model head.
+                        "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                        "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                        # As the model card decodes; otherwise `<|im_end|>` stays in the text.
+                        "extra_generation_config": {"skip_special_tokens": True},
+                    },
+                ),
+                # The model card asks for vLLM 0.33.0 or newer.
+                VlmEngineType.VLLM: EngineModelConfig(
+                    min_engine_version="0.33.0",
+                    extra_config={"max_model_len": 40960},
+                ),
+            },
+            api_overrides={
+                VlmEngineType.API: _TYPHOON_OCR2_API,
+                VlmEngineType.API_OPENAI: _TYPHOON_OCR2_API,
+            },
+        ),
+        # Page.get_image lowers the scale to fit max_size, so each page gets a
+        # 2048-pixel long side. Keep max_size when you change the scale.
+        scale=2048 / 72,
+        max_size=2048,
+        default_engine_type=VlmEngineType.AUTO_INLINE,
+    )
+
+
+VLM_CONVERT_TYPHOON_OCR2_2B = _typhoon_ocr2_preset(
+    "2B",
+    "typhoon_ocr2_2b",
+    "fe525e5d3b4e11433b451d56d8b77436c1061f07",
+    "36584bc9835d946eb5d09ddf0c58201cf6ebfb9c",
+)
+VLM_CONVERT_TYPHOON_OCR2_08B = _typhoon_ocr2_preset(
+    "0.8B",
+    "typhoon_ocr2_08b",
+    "79ee847fd66114442d08d56f5d1df54a419bf76a",
+    "b09fed7f8798f1bf1f38de759b65facdb6af4824",
 )
 
 # NOTE: dots.ocr/mocr require transformers<=4.57.x for the transformers engine.
