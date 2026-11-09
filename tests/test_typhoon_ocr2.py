@@ -198,6 +198,7 @@ _THINKING = f"The page has a title.\n{_DRAFT}\nOK.\n</think>\n\n"
         (f"Here is the layout.\n```json\n{_BARE}\n```", 3),
         (f"</think>\n\n```json\n{_BARE}\n```", 3),
         (f"{_THINKING}```json\n{_BARE}\n```", 3),
+        (f"{_DRAFT}\n</think>\n\n```json\n{_BARE}\n```", 3),
         (f"<think>\n{_DRAFT}\n</think>\n\n```json\n{_BARE}\n```", 3),
         (json.dumps({"elements": _ELEMENTS}), 3),
         (json.dumps(_ELEMENTS[0]), 1),
@@ -210,6 +211,7 @@ _THINKING = f"The page has a title.\n{_DRAFT}\nOK.\n</think>\n\n"
         "prose_before_fence",
         "think_end_tag",
         "thinking_with_a_draft",
+        "thinking_starts_with_a_draft",
         "think_block_with_a_draft",
         "wrapper_object",
         "single_element_object",
@@ -232,22 +234,36 @@ _TAGGED = [
     # After a cut at the end tag, this `[]` reads as an empty list of elements.
     _element("text", "The reward starts from an empty list, rewards = []."),
 ]
+# After a cut at the end tag, this `[{}]` reads as a list of one object that is not
+# a layout element.
+_TAGGED_OBJECT = [_TAGGED[0], _element("text", "The log starts as logs = [{}].")]
 
 
 @pytest.mark.parametrize(
-    "content",
+    ("elements", "content"),
     [
-        _reply(*_TAGGED),
-        json.dumps(_TAGGED),
-        f"{_THINKING}{_reply(*_TAGGED)}",
-        f"<think>\n{_DRAFT}\n</think>\n\n{_reply(*_TAGGED)}",
+        (_TAGGED, _reply(*_TAGGED)),
+        (_TAGGED, json.dumps(_TAGGED)),
+        (_TAGGED, f"Here is the layout.\n{_reply(*_TAGGED)}"),
+        (_TAGGED_OBJECT, _reply(*_TAGGED_OBJECT)),
+        (_TAGGED, f"{_THINKING}{_reply(*_TAGGED)}"),
+        (_TAGGED, f"<think>\n{_DRAFT}\n</think>\n\n{_reply(*_TAGGED)}"),
     ],
-    ids=["fenced", "bare", "after_thinking", "after_a_think_block"],
+    ids=[
+        "fenced",
+        "bare",
+        "prose_before_fence",
+        "object_after_the_tag",
+        "after_thinking",
+        "after_a_think_block",
+    ],
 )
-def test_think_tags_in_page_text_stay_text(content: str) -> None:
+def test_think_tags_in_page_text_stay_text(
+    elements: list[dict[str, Any]], content: str
+) -> None:
     doc = _parse(content)
 
-    assert [item.text for item in doc.texts] == [e["text"] for e in _TAGGED]
+    assert [item.text for item in doc.texts] == [e["text"] for e in elements]
 
 
 _FULL = _reply(*_ELEMENTS)
@@ -263,8 +279,16 @@ _DEEP = "[" * 1_000_000
         _FULL[: _FULL.index('{"bbox": [300')],
         _FULL[: _FULL.index("[300, 210") + len("[300,")],
         _FULL[: _FULL.index('{"bbox": [300')] + _DEEP,
+        # Thinking is off, so this `</think>` is page text, not a thinking block.
+        _FULL[: _FULL.index("$$")] + "Models write </think>",
     ],
-    ids=["inside_latex", "after_a_comma", "inside_a_box", "deep_nesting"],
+    ids=[
+        "inside_latex",
+        "after_a_comma",
+        "inside_a_box",
+        "deep_nesting",
+        "after_a_think_tag",
+    ],
 )
 def test_cut_reply_keeps_complete_elements(
     content: str, caplog: pytest.LogCaptureFixture

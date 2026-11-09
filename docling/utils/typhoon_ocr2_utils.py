@@ -71,8 +71,7 @@ _CAPTION_OWNER_LABELS = {
 _FENCE = re.compile(r"```(?:json)?[ \t]*\r?\n(.*?)(?:\r?\n[ \t]*```|\Z)", re.DOTALL)
 _LIST_START = re.compile(r"\[\s*[{\]]")
 _DECODER = json.JSONDecoder()
-# A code fence or a JSON value: the start of an answer without a thinking block.
-_ANSWER_STARTS = ("```", "[", "{")
+_ELEMENT_KEYS = frozenset({"bbox", "category", "text"})
 
 
 def _decode_list(text: str, start: int) -> list[Any]:
@@ -107,19 +106,12 @@ def _decode_list(text: str, start: int) -> list[Any]:
     return values
 
 
-def _elements(content: str) -> list[Any]:
-    """Return the layout elements of one reply. A blank reply has none.
+def _answer_elements(text: str) -> list[Any]:
+    """Return the layout elements of one answer. A blank answer has none.
 
     Raises:
-        ValueError: If a reply that is not blank holds no layout elements.
+        ValueError: If an answer that is not blank holds no layout elements.
     """
-    # With thinking on, the chat template opens the thinking block in the prompt, so
-    # the reply starts with the thinking and its end tag. The thinking can hold a
-    # draft of the answer. Page text can also hold `</think>`, so a reply that
-    # starts with the answer has no thinking block.
-    thinking, end_tag, text = content.partition("</think>")
-    if not end_tag or thinking.lstrip().startswith(_ANSWER_STARTS):
-        text = content
     if (fence := _FENCE.search(text)) is not None:
         text = fence.group(1)
     text = text.strip()
@@ -137,7 +129,7 @@ def _elements(content: str) -> list[Any]:
     if isinstance(data, dict):
         # The prompt asks for "a single JSON object": accept one element or a
         # wrapper around the list. Check the element keys first: a box is a list.
-        if {"bbox", "category", "text"} & data.keys():
+        if _ELEMENT_KEYS & data.keys():
             data = [data]
         else:
             lists = [value for value in data.values() if isinstance(value, list)]
@@ -149,6 +141,36 @@ def _elements(content: str) -> list[Any]:
     ):
         raise ValueError("the reply is JSON but not a list of layout elements")
     return data
+
+
+def _elements(content: str) -> list[Any]:
+    """Return the layout elements of one reply. A blank reply has none.
+
+    Raises:
+        ValueError: If a reply that is not blank holds no layout elements.
+    """
+    # With thinking on, the chat template opens the thinking block in the prompt, so
+    # the reply starts with the thinking and its end tag, and the answer follows.
+    # The thinking can hold a draft of the answer.
+    _, end_tag, answer = content.partition("</think>")
+    if end_tag:
+        try:
+            elements = _answer_elements(answer)
+        except ValueError:
+            elements = []
+        if any(
+            isinstance(e, dict) and not _ELEMENT_KEYS.isdisjoint(e) for e in elements
+        ):
+            return elements
+    # Page text can also hold `</think>`. The text after it then starts inside a JSON
+    # string, and its `[]` or `[{}]` holds no element, so the whole reply is the
+    # answer. This also keeps the elements of a reply that is cut after the tag.
+    try:
+        return _answer_elements(content)
+    except ValueError:
+        if end_tag and not answer.strip():
+            return []  # A thinking block without an answer: the page is empty.
+        raise
 
 
 def _category(element: dict[str, Any]) -> str:
