@@ -336,7 +336,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             An `AnyUrl` or `Path` instance, or `None` when the destination
             cannot be parsed.
         """
-        return _LINK_DEST.validate_python(dest)
+        # marko keeps the character references of a destination; CommonMark
+        # decodes them, so `?a=1&amp;b=2` links to `?a=1&b=2`.
+        return _LINK_DEST.validate_python(_decode_char_references(dest))
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
         pattern = r"_+"
@@ -1272,6 +1274,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         md_options = cast(MarkdownBackendOptions, self.options)
         if not md_options.fetch_images or not dest:
             return None
+        dest = _decode_char_references(dest)
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
