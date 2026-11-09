@@ -4,9 +4,14 @@
 
 """Typhoon OCR V2 presets and layout parsing, without model downloads.
 
-Every reply below is written by hand from the output format in the model card and
-the typhoon-ocr2 reference package. They are not model output. The API tests send
-their requests to a fake OpenAI-compatible server on a local socket.
+The replies in ``tests/data/json_typhoon_ocr2/sources`` are real model output.
+Docling captured them unedited with the ``typhoon_ocr2_2b`` preset on the MLX
+engine; each ``.source.txt`` file gives the page, the model revision and the
+runtime. ``thai_rainwater.pdf`` is a page written for these tests. Every other
+reply below is written by hand from the output format in the model card and the
+typhoon-ocr2 reference package. The API tests send their requests to a fake
+OpenAI-compatible server on a local socket. Set ``DOCLING_TEST_TYPHOON_OCR2=1`` to
+also run a real conversion.
 """
 
 import base64
@@ -14,6 +19,7 @@ import hashlib
 import io
 import json
 import logging
+import os
 import re
 import unicodedata
 from collections.abc import Iterator, Sequence
@@ -29,8 +35,10 @@ from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
     PictureItem,
+    RichTableCell,
     SectionHeaderItem,
     Size,
+    TableItem,
     TextItem,
 )
 from PIL import Image
@@ -44,7 +52,10 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    AutoInlineVlmEngineOptions,
+)
 from docling.datamodel.vlm_prompts import TYPHOON_OCR2_PARSE_PROMPT
 from docling.document_converter import (
     DocumentConverter,
@@ -58,10 +69,27 @@ from tests.fakes.http_service import FakeService
 from tests.fakes.openai_compatible import FakeOpenAiApi
 
 _SIZE = Size(width=612, height=792)
-_THAI = "ทำงาน หลาย ๆ ครั้ง กำไร ๑๒๓"
 # The prompt block of the 2B and 0.8B model cards.
 _PROMPT_SHA256 = "b55c0349b52deac3958a9f356966c99acf50fbb5be25f717f7d2c90cf4dac27a"
-_PDF = Path(__file__).parent / "data" / "pdf" / "sources" / "2305.03393v1-pg9.pdf"
+_DATA = Path(__file__).parent / "data"
+_PDF = _DATA / "pdf" / "sources" / "2305.03393v1-pg9.pdf"
+_REPLIES = _DATA / "json_typhoon_ocr2" / "sources"
+_THAI_PDF = _REPLIES / "thai_rainwater.pdf"
+# The text elements of the Thai page, in reading order. The 2B reply has them
+# exactly as the page prints them.
+_THAI_TEXTS = [
+    "รายงานประจำเดือน ฉบับทดสอบที่ ๑๑/๒๕๖๙",
+    "การเก็บน้ำฝนของชุมชนตัวอย่าง",
+    "ชุมชนตัวอย่างเริ่มเก็บน้ำฝนไว้ใช้ในช่วงหน้าแล้ง โดยติดตั้งถังเก็บน้ำขนาด 2,000 ลิตร จำนวน ๑๒ ถัง ให้แก่บ้านที่อยู่ห่างจากแหล่งน้ำมากที่สุด",
+    "ถังทุกใบตั้งอยู่บนฐานปูนและมีก๊อกน้ำกับป้ายบอกวันที่ล้างถังครั้งล่าสุด",
+    "ผลการติดตามพบว่าแต่ละครัวเรือนใช้น้ำฝนได้นานขึ้นเรื่อย ๆ โดยเฉลี่ย 45 วันต่อปี และค่าน้ำประปาลดลงร้อยละ ๑๘ ร้านก๋วยเตี๋ยวในชุมชนก็ใช้น้ำฝนล้างผัก ส่วนเด็ก ๆ ช่วยกันจดระดับน้ำทุกเช้าแล้วนำไปรดแปลงผักที่ใส่ปุ๋ยหมัก",
+    "หน้า ๑",
+]
+
+
+def _real_reply(name: str) -> str:
+    """Return a captured model reply as it is stored, without a final newline."""
+    return (_REPLIES / f"{name}.txt").read_text(encoding="utf-8")
 
 
 def _element(
@@ -75,9 +103,9 @@ def _reply(*elements: dict[str, Any]) -> str:
     return f"```json\n{json.dumps(list(elements), ensure_ascii=False)}\n```"
 
 
-def _parse(content: str, **kwargs: Any) -> DoclingDocument:
+def _parse(content: str, size: Size = _SIZE, **kwargs: Any) -> DoclingDocument:
     return parse_typhoon_ocr2_json(
-        content, _SIZE, page_no=3, filename="page.pdf", **kwargs
+        content, size, page_no=3, filename="page.pdf", **kwargs
     )
 
 
@@ -368,16 +396,6 @@ def test_formula_exports_its_latex_once(latex: str) -> None:
     assert doc.export_to_markdown() == "$$a^2 + 8 = 12$$"
 
 
-def test_thai_text_is_kept_verbatim() -> None:
-    # NFKC splits SARA AM, so this text shows any normalization.
-    assert unicodedata.normalize("NFKC", _THAI) != _THAI
-
-    doc = _parse(_reply(_element("text", _THAI), _element("title", _THAI)))
-
-    assert [item.text for item in doc.texts] == [_THAI, _THAI]
-    assert doc.export_to_markdown() == f"{_THAI}\n\n## {_THAI}"
-
-
 def test_page_furniture_stays_out_of_markdown() -> None:
     doc = _parse(
         _reply(
@@ -446,6 +464,133 @@ def test_figure_keeps_box_and_unexpected_text() -> None:
     assert _box(doc.texts[0]) == _box(second)
 
 
+def test_real_table_page_keeps_order_layers_boxes_and_spans() -> None:
+    doc = _parse(_real_reply("2305.03393v1-pg9"))
+
+    blocks = _blocks(doc)
+    assert [(item.label, item.content_layer) for item in blocks] == [
+        (DocItemLabel.PAGE_HEADER, ContentLayer.FURNITURE),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.SECTION_HEADER, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        # The model labels the table caption as text, so it stays unlinked.
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TABLE, ContentLayer.BODY),
+        (DocItemLabel.SECTION_HEADER, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+    ]
+    header, table = blocks[0], blocks[5]
+    assert isinstance(header, DocItem)
+    # The reply box [312, 114, 786, 128] on the 612 x 792 pt page.
+    assert _box(header) == pytest.approx((190.944, 90.288, 481.032, 101.376))
+    assert header.prov[0].bbox.coord_origin == CoordOrigin.TOPLEFT
+    assert header.prov[0].page_no == 3
+    assert [
+        (item.text, item.level)
+        for item in blocks
+        if isinstance(item, SectionHeaderItem)
+    ] == [("5.1 Hyper Parameter Optimization", 1), ("5.2 Quantitative Results", 1)]
+
+    assert isinstance(table, TableItem)
+    grid = table.data.grid
+    assert (table.data.num_rows, table.data.num_cols) == (10, 8)
+    assert (grid[0][0].text, grid[0][0].row_span, grid[0][0].column_header) == (
+        "# enc-layers",
+        2,
+        True,
+    )
+    assert (grid[0][3].text, grid[0][3].col_span) == ("TEDs", 3)
+    assert [cell.text for cell in grid[2]] == [
+        "6",
+        "6",
+        "OTSL",
+        "0.965",
+        "0.934",
+        "0.955",
+        "0.88",
+        "2.73",
+    ]
+    # The reply writes <b>0.88</b>: the cell holds one bold run.
+    bold = grid[2][6]
+    assert isinstance(bold, RichTableCell)
+    runs = [ref.resolve(doc) for ref in bold.ref.resolve(doc).children]
+    assert [
+        (run.text, run.formatting is not None and run.formatting.bold)
+        for run in runs
+        if isinstance(run, TextItem)
+    ] == [("0.88", True)]
+
+    markdown = doc.export_to_markdown()
+    with_furniture = doc.export_to_markdown(included_content_layers=set(ContentLayer))
+    assert "## 5.1 Hyper Parameter Optimization\n\n" in markdown
+    assert "| **0.88** " in markdown
+    assert "Optimized Table Tokenization" not in markdown
+    header_line = "Optimized Table Tokenization for Table Structure Recognition 9"
+    assert with_furniture == f"{header_line}\n\n{markdown}"
+
+
+def test_real_formula_page_exports_latex_once() -> None:
+    doc = _parse(
+        _real_reply("code_and_formula-p2"), size=Size(width=595.276, height=841.89)
+    )
+
+    blocks = _blocks(doc)
+    assert [(item.label, item.content_layer) for item in blocks] == [
+        (DocItemLabel.SECTION_HEADER, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.FORMULA, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.PAGE_FOOTER, ContentLayer.FURNITURE),
+    ]
+    formula, footer = blocks[3], blocks[-1]
+    assert isinstance(formula, TextItem)
+    assert (formula.text, formula.orig) == ("a^2 + 8 = 12", "$$a^2 + 8 = 12$$")
+    assert isinstance(footer, TextItem)
+    assert footer.text == "1"
+
+    markdown = doc.export_to_markdown()
+    with_furniture = doc.export_to_markdown(included_content_layers=set(ContentLayer))
+    assert markdown.startswith("## Formula\n\n")
+    assert markdown.count("$$a^2 + 8 = 12$$") == 1
+    assert "$$$$" not in markdown
+    assert with_furniture == f"{markdown}\n\n1"
+
+
+def test_real_thai_page_keeps_text_cells_and_furniture() -> None:
+    # This reply is a bare JSON list, without a code fence.
+    doc = _parse(_real_reply("thai_rainwater"), size=Size(width=594.96, height=841.92))
+
+    assert [(item.label, item.content_layer) for item in _blocks(doc)] == [
+        (DocItemLabel.PAGE_HEADER, ContentLayer.FURNITURE),
+        (DocItemLabel.SECTION_HEADER, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TEXT, ContentLayer.BODY),
+        (DocItemLabel.TABLE, ContentLayer.BODY),
+        (DocItemLabel.PAGE_FOOTER, ContentLayer.FURNITURE),
+    ]
+    # NFKC splits SARA AM, so the text would show any normalization.
+    assert unicodedata.normalize("NFKC", _THAI_TEXTS[1]) != _THAI_TEXTS[1]
+    assert [item.text for item in doc.texts] == _THAI_TEXTS
+    (table,) = doc.tables
+    assert [[cell.text for cell in row] for row in table.data.grid] == [
+        # The page prints เต็ม ("full"); the model reads เติม. The cell keeps the reply.
+        ["เดือน", "ปริมาณน้ำฝน (มม.)", "จำนวนถังที่เติม"],
+        ["มิถุนายน", "๑๖๘", "7"],
+        ["กรกฎาคม", "๒๑๒", "10"],
+        ["สิงหาคม", "๒๔๕", "12"],
+    ]
+
+    markdown = doc.export_to_markdown()
+    with_furniture = doc.export_to_markdown(included_content_layers=set(ContentLayer))
+    assert markdown.startswith(f"## {_THAI_TEXTS[1]}\n\n{_THAI_TEXTS[2]}\n\n")
+    assert with_furniture == f"{_THAI_TEXTS[0]}\n\n{markdown}\n\n{_THAI_TEXTS[-1]}"
+
+
 @pytest.mark.parametrize(
     ("preset_id", "repo_id"),
     [
@@ -498,21 +643,13 @@ def test_presets_pin_weights_and_engine_floors(preset_id: str, repo_id: str) -> 
     assert preset.max_size == 2048
 
 
-_PAGE_REPLY = _reply(
-    _element("header", "Annual Report 2025", [80, 30, 920, 50]),
-    _element("title", "1. Overview", [80, 80, 600, 110]),
-    _element("text", _THAI, [80, 120, 920, 200]),
-    _element(
-        "table",
-        "<table><tr><th>Year</th><th>Total</th></tr>"
-        "<tr><td>2025</td><td>12</td></tr></table>",
-        [80, 220, 920, 400],
-    ),
-    _element("footer", "1", [490, 950, 510, 970]),
-)
+# The fake server answers with the real reply for the Thai page.
+_PAGE_REPLY = _real_reply("thai_rainwater")
 _PAGE_LAYOUT = [
     (DocItemLabel.PAGE_HEADER, ContentLayer.FURNITURE),
     (DocItemLabel.SECTION_HEADER, ContentLayer.BODY),
+    (DocItemLabel.TEXT, ContentLayer.BODY),
+    (DocItemLabel.TEXT, ContentLayer.BODY),
     (DocItemLabel.TEXT, ContentLayer.BODY),
     (DocItemLabel.TABLE, ContentLayer.BODY),
     (DocItemLabel.PAGE_FOOTER, ContentLayer.FURNITURE),
@@ -563,8 +700,9 @@ def _convert(
 @pytest.mark.parametrize(
     ("engine_type", "source", "image_size"),
     [
-        (VlmEngineType.API, "pdf", (1583, 2048)),
-        (VlmEngineType.API_OPENAI, "pdf", (1583, 2048)),
+        # The Thai page is 594.96 x 841.92 pt.
+        (VlmEngineType.API, "pdf", (1448, 2048)),
+        (VlmEngineType.API_OPENAI, "pdf", (1448, 2048)),
         (VlmEngineType.API_OPENAI, "png", (2048, 1536)),
     ],
 )
@@ -575,7 +713,7 @@ def test_api_request_matches_the_model_card(
     source: str,
     image_size: tuple[int, int],
 ) -> None:
-    path = _PDF
+    path = _THAI_PDF
     if source == "png":
         path = tmp_path / "page.png"
         Image.new("RGB", (800, 600), "white").save(path)
@@ -605,28 +743,30 @@ def test_api_request_matches_the_model_card(
     assert [
         (item.label, item.content_layer) for item in _blocks(result.document)
     ] == _PAGE_LAYOUT
-    assert result.document.texts[2].text == _THAI
+    # The Thai text survives the JSON response unchanged.
+    assert [item.text for item in result.document.texts] == _THAI_TEXTS
 
 
 def test_cut_reply_gives_partial_success(api: FakeOpenAiApi) -> None:
     api.completion = _PAGE_REPLY[: _PAGE_REPLY.index("<table>") + len("<table><tr>")]
     api.finish_reason = "length"
 
-    result = _convert(api, _PDF)
+    result = _convert(api, _THAI_PDF)
 
     assert result.status == ConversionStatus.PARTIAL_SUCCESS
     assert [(error.error_message, error.page_no) for error in result.errors] == [
         ("VLM output incomplete (stop_reason=length).", 1)
     ]
+    # The five elements before the cut table stay.
     assert [
         (item.label, item.content_layer) for item in _blocks(result.document)
-    ] == _PAGE_LAYOUT[:3]
+    ] == _PAGE_LAYOUT[:5]
 
 
 def test_invalid_reply_is_a_page_error(api: FakeOpenAiApi) -> None:
     api.completion = "I cannot read this page."
 
-    result = _convert(api, _PDF)
+    result = _convert(api, _THAI_PDF)
 
     assert result.status == ConversionStatus.PARTIAL_SUCCESS
     (error,) = result.errors
@@ -634,3 +774,37 @@ def test_invalid_reply_is_a_page_error(api: FakeOpenAiApi) -> None:
     assert error.error_message.startswith("Invalid Typhoon OCR V2 response: ")
     assert list(result.document.iterate_items()) == []
     assert list(result.document.pages) == [1]
+
+
+@pytest.mark.skipif(
+    os.getenv("DOCLING_TEST_TYPHOON_OCR2") != "1",
+    reason="set DOCLING_TEST_TYPHOON_OCR2=1 to run the Typhoon OCR V2 inference test",
+)
+def test_e2e_typhoon_ocr2() -> None:
+    """Convert a page with the 0.8B preset on the local engine that auto-inline picks."""
+    options = VlmConvertOptions.from_preset(
+        "typhoon_ocr2_08b", engine_options=AutoInlineVlmEngineOptions()
+    )
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=VlmPipeline,
+                pipeline_options=VlmPipelineOptions(vlm_options=options),
+            )
+        }
+    )
+
+    result = converter.convert(_PDF)
+
+    # SUCCESS excludes PARTIAL_SUCCESS, which a cut or invalid reply gives.
+    assert result.status == ConversionStatus.SUCCESS
+    doc = result.document
+    assert [table.data.num_cols for table in doc.tables] == [8]
+    assert "5.1 Hyper Parameter Optimization" in [
+        item.text for item in doc.texts if isinstance(item, SectionHeaderItem)
+    ]
+    assert any(
+        item.label == DocItemLabel.PAGE_HEADER
+        and item.content_layer == ContentLayer.FURNITURE
+        for item in doc.texts
+    )
