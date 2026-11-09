@@ -34,7 +34,7 @@ from docling.models.stages.tagged_structure.tagged_structure_model import (
     TaggedStructureModel,
 )
 
-TAGGED_PDF = Path("tests/data/pdf/sources/tagged_ua2_sample.pdf")
+TAGGED_PDF = Path("tests/data/pdf/tagged_ua2_sample.pdf")
 
 
 def _convert(mode: str):
