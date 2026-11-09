@@ -40,6 +40,10 @@ and retains the decoder error as its cause.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+In normal-flow HTML text, source newlines between inline elements collapse to
+spaces. For example, `<span>hello</span>\n<span>world</span>` keeps the word boundary
+as `hello world`.
+
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula
 children. The `metadata`, `authors`, and `affiliations` groups record source roles.

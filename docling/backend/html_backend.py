@@ -2472,13 +2472,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         and "\n" in node_text
                     ):
                         _flush_buffer()
-                    continue
-                else:
-                    buffer.extend(
-                        self._extract_text_and_hyperlink_recursively(
-                            node, find_parent_annotation=True, keep_newlines=False
-                        )
+                        continue
+                    # Keep consecutive <br> sentinels adjacent for paragraph splitting.
+                    if (
+                        isinstance(node.previous_sibling, NavigableString)
+                        and node.previous_sibling.endswith(_BR_SENTINEL)
+                        and isinstance(node.next_sibling, NavigableString)
+                        and node.next_sibling.startswith(_BR_SENTINEL)
+                    ):
+                        continue
+                # Source newlines between inline siblings carry a word boundary.
+                # Block-edge whitespace is removed when the buffer is normalized.
+                buffer.extend(
+                    self._extract_text_and_hyperlink_recursively(
+                        node, find_parent_annotation=True, keep_newlines=False
                     )
+                )
 
         _flush_buffer()
         return added_refs
