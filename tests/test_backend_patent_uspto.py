@@ -11,7 +11,15 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from docling_core.types import DoclingDocument
-from docling_core.types.doc import DocItemLabel, TableData, TextItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    InlineGroup,
+    RichTableCell,
+    Script,
+    TableCell,
+    TableData,
+    TextItem,
+)
 
 from docling.backend.xml.uspto_backend import (
     PatentUsptoDocumentBackend,
@@ -237,25 +245,60 @@ def test_table_out_of_range_namest_does_not_crash():
         ("SP", "SB"),  # grant v2.5
     ],
 )
-def test_table_cell_scripts_match_the_body_text(sup: str, sub: str) -> None:
-    """A table cell writes sub- and superscripts as the paragraphs of the patent do.
+def test_table_cell_scripts_are_rich_cells(sup: str, sub: str) -> None:
+    """A table entry with a sub- or superscript becomes a rich cell.
 
-    The cell text came from the plain text of the entry, so ``ZnSO<sub>4</sub>``
-    became ``ZnSO4`` in a table and ``ZnSO₄`` in the body.
+    The cell refers to an inline group under the table. Each text item of the
+    group has the script of its run. An entry without a script stays a plain cell.
     """
     xml = (
-        '<table><tgroup cols="2">'
+        '<table><tgroup cols="4">'
         '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        '<colspec colname="3" colwidth="1"/><colspec colname="4" colwidth="1"/>'
         "<tbody><row>"
+        "<entry>plain</entry>"
         f"<entry>ZnSO<{sub}>4</{sub}></entry>"
-        f"<entry>m<{sup}>&#x2212;2 </{sup}>s<{sup}>&#x2212;1</{sup}></entry>"
+        '<entry namest="3" nameend="4">'
+        f"m<{sup}>&#x2212;2 </{sup}>s<{sup}>&#x2212;1</{sup}></entry>"
         "</row></tbody></tgroup></table>"
     )
-
-    table = XmlTable(xml).parse()
-
+    doc = DoclingDocument(name="scripts")
+    item = doc.add_table(data=TableData(num_rows=0, num_cols=0, table_cells=[]))
+    table_parser = XmlTable(xml)
+    table = table_parser.parse()
     assert table is not None
-    assert [cell.text for cell in table.table_cells] == ["ZnSO₄", "m⁻² s⁻¹"]
+    item.data = table
+
+    table_parser.add_rich_cells(doc, item)
+
+    cells = item.data.table_cells
+    assert [type(cell) for cell in cells] == [
+        TableCell,
+        RichTableCell,
+        TableCell,  # the first copy of the spanning entry
+        RichTableCell,
+    ]
+    runs = []
+    for cell in cells:
+        if isinstance(cell, RichTableCell):
+            group = cell.ref.resolve(doc)
+            assert isinstance(group, InlineGroup)
+            assert group.parent is not None and group.parent.resolve(doc) is item
+            texts = [child.resolve(doc) for child in group.children]
+            assert all(isinstance(text, TextItem) for text in texts)
+            assert "".join(text.text for text in texts) == cell.text
+            runs.append([(text.text, text.formatting.script) for text in texts])
+    assert runs == [
+        [("ZnSO", Script.BASELINE), ("4", Script.SUB)],
+        [
+            ("m", Script.BASELINE),
+            ("\u22122 ", Script.SUPER),
+            ("s", Script.BASELINE),
+            ("\u22121", Script.SUPER),
+        ],
+    ]
+    # the document hierarchy stays valid
+    assert "ZnSO<sub>4</sub>" in doc.export_to_html()
 
 
 def test_extract_raw_tables_matches_line_leading_tables():
@@ -428,7 +471,7 @@ def test_patent_uspto_ice(patents):
 
     assert doc.name == file_name
     texts = doc.texts
-    assert len(texts) == 183
+    assert len(texts) == 188  # 5 text items of the rich table cells
     assert isinstance(texts[0], TextItem)
     assert texts[0].text == "LIGHT EMITTING DEVICE AND PLANT CULTIVATION METHOD"
     assert texts[0].label == DocItemLabel.TITLE
@@ -574,7 +617,7 @@ def test_patent_uspto_app_v1(patents):
 
     assert doc.name == file_name
     texts = doc.texts
-    assert len(texts) == 103
+    assert len(texts) == 118  # 15 text items of the rich table cells
     assert isinstance(texts[0], TextItem)
     assert texts[0].text == "Assay reagent"
     assert texts[0].label == DocItemLabel.TITLE

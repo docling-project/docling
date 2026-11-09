@@ -58,8 +58,12 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
+    RichTableCell,
+    Script,
     TableCell,
     TableData,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.document import LevelNumber
@@ -122,6 +126,37 @@ def _extract_raw_tables(content: str) -> list[str]:
         tables.append(content[start:pos])
 
     return tables
+
+
+def _add_tables(doc: DoclingDocument, content: str) -> None:
+    """Parse the tables of a patent and put them in the placeholder tables.
+
+    Args:
+        doc: The document with one empty placeholder table for each table.
+        content: The patent XML content.
+    """
+    raw_tables = _extract_raw_tables(content)
+    parsed_tables: list[tuple[XmlTable, TableData]] = []
+    _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
+    for table in raw_tables:
+        table_parser = XmlTable(XML_DECLARATION + "\n" + table)
+        try:
+            table_data = table_parser.parse()
+            if table_data:
+                parsed_tables.append((table_parser, table_data))
+        except Exception as exc_table:
+            _log.error(f"Error in parsing USPTO tables: {exc_table}")
+    if len(parsed_tables) != len(doc.tables):
+        _log.error(
+            f"Number of referenced ({len(doc.tables)}) and parsed "
+            f"({len(parsed_tables)}) tables differ."
+        )
+    else:
+        for item, (table_parser, table_data) in zip(
+            doc.tables, parsed_tables, strict=True
+        ):
+            item.data = table_data
+            table_parser.add_rich_cells(doc, item)
 
 
 @unique
@@ -288,25 +323,7 @@ class PatentUsptoIce(PatentUspto):
 
         doc = self.handler.doc
         if doc:
-            raw_tables = _extract_raw_tables(patent_content)
-            parsed_tables: list[TableData] = []
-            _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
-            for table in raw_tables:
-                table_parser = XmlTable(XML_DECLARATION + "\n" + table)
-                try:
-                    table_data = table_parser.parse()
-                    if table_data:
-                        parsed_tables.append(table_data)
-                except Exception as exc_table:
-                    _log.error(f"Error in parsing USPTO tables: {exc_table}")
-            if len(parsed_tables) != len(doc.tables):
-                _log.error(
-                    f"Number of referenced ({len(doc.tables)}) and parsed "
-                    f"({len(parsed_tables)}) tables differ."
-                )
-            else:
-                for idx, item in enumerate(parsed_tables):
-                    doc.tables[idx].data = item
+            _add_tables(doc, patent_content)
 
         return doc
 
@@ -638,25 +655,7 @@ class PatentUsptoGrantV2(PatentUspto):
 
         doc = self.handler.doc
         if doc:
-            raw_tables = _extract_raw_tables(patent_content)
-            parsed_tables: list[TableData] = []
-            _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
-            for table in raw_tables:
-                table_parser = XmlTable(XML_DECLARATION + "\n" + table)
-                try:
-                    table_data = table_parser.parse()
-                    if table_data:
-                        parsed_tables.append(table_data)
-                except Exception as exc_table:
-                    _log.error(f"Error in parsing USPTO tables: {exc_table}")
-            if len(parsed_tables) != len(doc.tables):
-                _log.error(
-                    f"Number of referenced ({len(doc.tables)}) and parsed "
-                    f"({len(parsed_tables)}) tables differ."
-                )
-            else:
-                for idx, item in enumerate(parsed_tables):
-                    doc.tables[idx].data = item
+            _add_tables(doc, patent_content)
 
         return doc
 
@@ -1212,25 +1211,7 @@ class PatentUsptoAppV1(PatentUspto):
 
         doc = self.handler.doc
         if doc:
-            raw_tables = _extract_raw_tables(patent_content)
-            parsed_tables: list[TableData] = []
-            _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
-            for table in raw_tables:
-                table_parser = XmlTable(XML_DECLARATION + "\n" + table)
-                try:
-                    table_data = table_parser.parse()
-                    if table_data:
-                        parsed_tables.append(table_data)
-                except Exception as exc_table:
-                    _log.error(f"Error in parsing USPTO tables: {exc_table}")
-            if len(parsed_tables) != len(doc.tables):
-                _log.error(
-                    f"Number of referenced ({len(doc.tables)}) and parsed "
-                    f"({len(parsed_tables)}) tables differ."
-                )
-            else:
-                for idx, item in enumerate(parsed_tables):
-                    doc.tables[idx].data = item
+            _add_tables(doc, patent_content)
 
         return doc
 
@@ -1564,7 +1545,8 @@ class XmlTable:
         self.nbr_messages = 0
         self.empty_text = ""
         self._soup = BeautifulSoup(input, features="xml")
-        self._style_html = HtmlEntity()
+        # script runs of the rich cells, by cell index in the table data
+        self._cell_runs: dict[int, list[tuple[str, Script]]] = {}
 
     def _create_tg_range(self, tgs: list[ColInfo]) -> dict[int, ColInfoType]:
         """Create a unified range along the table groups.
@@ -1731,6 +1713,7 @@ class XmlTable:
 
                         ncols = 0
                         local_row: list[TableCell] = []
+                        local_runs: dict[int, list[tuple[str, Script]]] = {}
                         is_row_empty = True
                         if entry_secs:
                             wrong_nbr_cols = False
@@ -1738,6 +1721,7 @@ class XmlTable:
                                 if not isinstance(entry_sec, Tag):
                                     continue
                                 text = entry_sec.get_text().strip()
+                                runs = self._get_script_runs(entry_sec)
 
                                 # start-end
                                 namest = entry_sec.get("namest")
@@ -1787,10 +1771,15 @@ class XmlTable:
                                             col_span=range_[1] - range_[0] + 1,
                                         )
                                     )
+                                # a rich cell cannot share its group, so only
+                                # the last copy (the one in the grid) is rich
+                                if runs:
+                                    local_runs[len(local_row) - 1] = runs
 
                             if wrong_nbr_cols:
                                 # keep empty text, not to introduce noise
                                 local_row = []
+                                local_runs = {}
                                 ncols = 0
 
                             # add empty cell up to ncols_max
@@ -1809,6 +1798,8 @@ class XmlTable:
                                 )
                         # do not add empty rows
                         if not is_row_empty:
+                            for icell, cell_runs in local_runs.items():
+                                self._cell_runs[len(table_data) + icell] = cell_runs
                             table_data.extend(local_row)
                             i_row_global += 1
 
@@ -1818,22 +1809,67 @@ class XmlTable:
 
         return dl_table
 
-    def _apply_scripts(self, table: Tag) -> None:
-        """Write the superscripts and subscripts of a table as the body text does.
-
-        The cell text is the plain text of an entry, so without this step
-        ``ZnSO<sub>4</sub>`` is ``ZnSO4`` in a table and ``ZnSO₄`` in a paragraph.
+    @staticmethod
+    def _get_script_runs(entry: Tag) -> list[tuple[str, Script]] | None:
+        """Split the text of a table entry into runs of the same script.
 
         Args:
-            table: The table element. Its script elements are replaced in place.
+            entry: The table entry element.
+
+        Returns:
+            The text runs and their script, or None if the entry has no
+            superscript or subscript text.
         """
-        for script in table.find_all(_TABLE_SUPERSCRIPTS + _TABLE_SUBSCRIPTS):
-            text = script.get_text()
-            if script.name in _TABLE_SUPERSCRIPTS:
-                styled = self._style_html.get_superscript(text)
+        runs: list[tuple[str, Script]] = []
+        for string in entry.strings:
+            script = Script.BASELINE
+            for parent in string.parents:
+                if parent is entry:
+                    break
+                if parent.name in _TABLE_SUPERSCRIPTS:
+                    script = Script.SUPER
+                    break
+                if parent.name in _TABLE_SUBSCRIPTS:
+                    script = Script.SUB
+                    break
+            if runs and runs[-1][1] == script:
+                runs[-1] = (runs[-1][0] + str(string), script)
             else:
-                styled = self._style_html.get_subscript(text)
-            script.replace_with(html.unescape(styled))
+                runs.append((str(string), script))
+
+        # strip the runs as the cell text is stripped
+        if runs:
+            runs[0] = (runs[0][0].lstrip(), runs[0][1])
+            runs[-1] = (runs[-1][0].rstrip(), runs[-1][1])
+        runs = [run for run in runs if run[0]]
+        if all(script == Script.BASELINE for _, script in runs):
+            return None
+
+        return runs
+
+    def add_rich_cells(self, doc: DoclingDocument, table: TableItem) -> None:
+        """Change the cells with superscript or subscript text to rich cells.
+
+        Each rich cell refers to an inline group under the table. The inline
+        group has one text item for each run, with the script of the run.
+
+        Args:
+            doc: The document that holds the table.
+            table: The table item with the data from `parse`.
+        """
+        for idx, runs in self._cell_runs.items():
+            group = doc.add_inline_group(parent=table)
+            for text, script in runs:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    parent=group,
+                    formatting=Formatting(script=script),
+                )
+            cell = table.data.table_cells[idx]
+            table.data.table_cells[idx] = RichTableCell(
+                **cell.model_dump(), ref=group.get_ref()
+            )
 
     def parse(self) -> TableData | None:
         """Parse the first table from an xml content.
@@ -1843,7 +1879,6 @@ class XmlTable:
         """
         section = self._soup.find("table")
         if isinstance(section, Tag):
-            self._apply_scripts(section)
             table = self._parse_table(section)
             if table.num_rows == 0 or table.num_cols == 0:
                 _log.warning("The parsed USPTO table is empty")
