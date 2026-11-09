@@ -209,6 +209,68 @@ Docling's layout and table models.
 An OpenAI-compatible server can serve the model through the API engines. vLLM support for
 MiniCPM-OCR merged upstream after v0.32.0, so use a newer vLLM build.
 
+### Typhoon OCR V2
+
+Typhoon OCR V2 by the Typhoon team reads Thai and English pages. It has two presets:
+`typhoon_ocr2_2b` and `typhoon_ocr2_08b`. They use the official
+[2B](https://huggingface.co/typhoon-ai/typhoon-ocr2-2b) and
+[0.8B](https://huggingface.co/typhoon-ai/typhoon-ocr2-0.8b) models at pinned revisions. The 2B
+model is more accurate. The 0.8B model is faster, and its model card recommends it as a page
+parser only. The model weights use the Apache-2.0 license.
+
+Local inference uses MLX with the official 8-bit conversions (`mlx-vlm>=0.7.6`), Transformers
+(`transformers>=5.15.1`), or vLLM (`vllm>=0.33.0`). On Apple Silicon, auto-inline selects MLX.
+
+For `docling-slim` installations, the parser also requires the Markdown extra:
+
+```bash
+pip install 'docling-slim[format-markdown]'
+```
+
+```bash
+docling report.pdf --vlm-model typhoon_ocr2_2b
+```
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.document_converter import (
+    DocumentConverter,
+    ImageFormatOption,
+    PdfFormatOption,
+)
+from docling.pipeline.vlm_pipeline import VlmPipeline
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("typhoon_ocr2_2b"),
+)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+        ),
+        InputFormat.IMAGE: ImageFormatOption(
+            pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+        ),
+    }
+)
+doc = converter.convert("report.pdf").document
+```
+
+The presets keep the settings of the model cards: the full-page prompt without change, greedy
+decoding, at most 16384 new tokens, and no thinking block. The Typhoon chat template opens a
+thinking block unless `enable_thinking` is `False`, so the presets set
+`chat_template_kwargs={"enable_thinking": False}` on the model spec. Any `VlmModelSpec` can set
+`chat_template_kwargs`: the Transformers, vLLM, and MLX engines pass these keyword arguments to
+the chat template. API engines do not use them, so set request parameters in `api_overrides` of
+the model spec or in `ApiVlmEngineOptions.params`.
+
+Pages and image files render with a 2048-pixel long side (`scale=2048/72` and `max_size=2048`).
+For image files, this is different from the `typhoon-ocr2` package. The package enlarges images
+under 1600 pixels to 1600 pixels and sends larger images at their own size. Keep `max_size` if
+you change `scale`. The [model catalog](model_catalog.md#vlm-convert-stage) describes the
+engines, a vLLM server, and the limits of these presets.
+
 ### Other models
 
 Other models can be configured by directly providing the Hugging Face `repo_id`, the prompt and a few more options.
@@ -328,11 +390,76 @@ The parser needs the header tokens in the reply. They are not special tokens, so
 Transformers, MLX, and vLLM keep them by default. A reply that the token limit cuts
 keeps its finished blocks, and a cut header at the end is dropped.
 
+## Typhoon OCR V2 output
+
+Use `ResponseFormat.TYPHOON_OCR2_JSON` with `TYPHOON_OCR2_PARSE_PROMPT`, or a
+`typhoon_ocr2_*` preset. Typhoon OCR V2 replies with a JSON list of layout elements in
+reading order, usually in a `json` code fence:
+
+```json
+[{"bbox": [62, 48, 938, 96], "category": "title", "text": "Annual Report 2025"},
+ {"bbox": [480, 950, 520, 968], "category": "footer", "text": "12"}]
+```
+
+Boxes are `[x1, y1, x2, y2]` on a 0–1000 grid relative to the page width and height.
+Docling scales each box to the page and gives it to the item of its element. Text runs
+and table cells in an element get no box of their own. An element without a valid box
+keeps its content without a box, and Docling logs a warning.
+
+| Category | Docling item | Content layer |
+|---|---|---|
+| `header`, `footer` | Page header, page footer | Furniture |
+| `title` | Section header | Body |
+| `text` | Text | Body |
+| `table` | Table | Body |
+| `formula` | Formula | Body |
+| `figure` | Picture | Body |
+| `figure_caption`, `table_caption`, `formula_caption` | Caption | Body |
+| `figure_footnote`, `table_footnote`, `page_footnote` | Footnote | Body |
+
+An unknown category becomes text, and Docling logs a warning.
+
+`export_to_markdown()` leaves out the furniture layer. To keep page headers and footers,
+pass `included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}`. Page
+footnotes stay in the body, as the footnotes of other Docling models do, so the Markdown
+keeps them. The `typhoon-ocr2` package leaves out headers, footers, and page footnotes
+from its Markdown, and the model cards evaluate the model in this way. To leave out the
+footnotes too, use
+`doc.export_to_markdown(labels=set(DocItemLabel) - {DocItemLabel.FOOTNOTE})`. This also
+leaves out figure and table footnotes.
+
+Each `title` is a section header, never the document title; see the heading depths
+below. In text, Markdown emphasis and inline HTML become formatted runs, and inline math
+becomes inline formulas. Docling does not change Thai text: it adds no spaces and applies
+no Unicode normalization. Lists and code blocks stay text, because the model has no
+category for them.
+
+Tables go through the shared HTML table mapper, with row and column spans and formatted
+cells. A table without HTML cells, for example a Markdown table, stays text. Formula
+items keep the LaTeX without its `$$` or `\[ \]` delimiters, so the Markdown export
+shows `$$...$$` once. The prompt asks for no text in a `figure` element. If the model
+gives text, it becomes a text item after the picture. To keep picture pixels, enable
+`generate_picture_images`.
+
+A `figure_caption` or `table_caption` links to a picture or table only when exactly one
+adjacent element, before or after it, is a compatible owner. Captions without exactly
+one such owner, captions with formatted text, `formula_caption` elements, and all
+footnotes stay standalone in reading order.
+
+A reply that the token limit cuts keeps its complete elements, and Docling logs a
+warning. A thinking block at the start of a reply is removed. A blank reply or an empty
+list gives an empty page. A reply that is not blank but has no layout elements gives a
+page error and `PARTIAL_SUCCESS`.
+
+Compared with the Markdown of the `typhoon-ocr2` package, the Docling Markdown export
+writes titles as headings, writes tables as Markdown tables instead of HTML, and keeps
+page footnotes.
+
 ## Heading depths in native layout output
 
 For Chandra, Surya, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, Unlimited-OCR 2,
-PaddleOCR-VL, and LightOnOCR-3 output, the layout label alone decides title versus
-section header.
+PaddleOCR-VL, LightOnOCR-3, and Typhoon OCR V2 output, the layout label alone decides
+title versus section header.
 LightOnOCR-3 has one exception: its `title` label covers all headings, so a `title`
 block with `##` or deeper is a section header. Docling
 exports a title as `#` and a section header one step below it. If no section
@@ -345,6 +472,10 @@ header without heading markup counts as `##`. Markdown has no heading deeper tha
 
 Unlimited-OCR 2 has one `title` label. A `title` with `<LEVELn>` is a section header
 of depth `n`, and a `title` without a level is the title.
+
+Typhoon OCR V2 has one `title` category for all headings and writes no heading markup.
+Each `title` is a section header: `#` markup, if present, gives its depth, and a `title`
+without markup counts as `##`. Typhoon OCR V2 output has no title item.
 
 The VLM pipeline applies this rule once to the whole document, so one depth gets
 the same level on all pages. Each mapper function applies it to its own page when

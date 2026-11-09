@@ -80,6 +80,8 @@ docling report.pdf --vlm-model lightonocr3_08b --output /tmp/
 docling report.pdf --vlm-model lightonocr3_4b --output /tmp/
 docling report.pdf --vlm-model surya_ocr2_5 --output /tmp/
 docling report.pdf --vlm-model minicpm_ocr --output /tmp/
+docling report.pdf --vlm-model typhoon_ocr2_2b --output /tmp/
+docling report.pdf --vlm-model typhoon_ocr2_08b --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
@@ -108,6 +110,14 @@ and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raise
 `minicpm_ocr` runs MiniCPM-OCR 1.0 in-process with `transformers>=5.21.0`. It
 returns Markdown. Pages that the model transcribes as plain text keep no
 word-level boxes.
+
+`typhoon_ocr2_2b` and `typhoon_ocr2_08b` run Typhoon OCR V2 on Thai and English
+pages, with page boxes. The 2B preset is more accurate; the 0.8B preset is faster
+and is for page parsing only. The CLI runs them with MLX on Apple Silicon
+(`mlx-vlm>=0.7.6`) and with Transformers elsewhere (`transformers>=5.15.1`, not on
+MPS). Page headers and footers go to the furniture layer, so Markdown leaves them
+out. For vLLM (`vllm>=0.33.0`) or your own server, use the SDK. See
+[python-sdk.md](python-sdk.md).
 
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not

@@ -265,6 +265,8 @@ Languages are given as BCP-47 tags for every engine; see
 | `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 | `surya_ocr2_5` | Surya-OCR-2.5 | 689M | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout blocks with HTML tables and math |
 | `minicpm_ocr` | MiniCPM-OCR 1.0 | 1.3B | ✅ | ❌ | OpenAI-compatible | ❌ | Markdown |
+| `typhoon_ocr2_2b` | Typhoon OCR V2 2B | 2B | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout JSON with Markdown text, HTML tables, and LaTeX formulas (Thai and English) |
+| `typhoon_ocr2_08b` | Typhoon OCR V2 0.8B | 0.8B | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout JSON with Markdown text, HTML tables, and LaTeX formulas (Thai and English) |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 
@@ -456,6 +458,110 @@ upstream client also retries a page at a higher temperature when it repeats. Doc
 
 The model weights use a modified OpenRAIL-M license. It is free for research, personal use, and
 organizations under USD 5M funding or revenue. Read the model card before commercial use.
+
+`typhoon_ocr2_2b` and `typhoon_ocr2_08b` run Typhoon OCR V2 by the Typhoon team
+([2B model card](https://huggingface.co/typhoon-ai/typhoon-ocr2-2b),
+[0.8B model card](https://huggingface.co/typhoon-ai/typhoon-ocr2-0.8b)) at pinned revisions. The
+models read Thai and English pages. For each page, they return the layout elements in reading
+order, each with a category, a box, and its text: HTML for tables, LaTeX for formulas, and
+Markdown for other text. Docling uses the models only for this full-page parsing.
+
+The 2B model is the more accurate of the two. On MDPBench, its model card reports 79.8, and 81.3
+on Thai pages. The 0.8B model card reports 77.4 and 77.2, and recommends that model as a page
+parser only. The 0.8B model is faster: on an Apple M2 Pro, MLX generated the reply for the
+one-page test file `tests/data/pdf/sources/2305.03393v1-pg9.pdf` in 35 seconds with
+`typhoon_ocr2_2b` (1538 tokens) and in 15 seconds with `typhoon_ocr2_08b` (1482 tokens).
+
+The presets keep the settings of the model cards:
+
+- the full-page prompt of the model cards without change (`TYPHOON_OCR2_PARSE_PROMPT`);
+- one user message for each page, with the page image first and then the prompt;
+- greedy decoding (temperature 0.0) and at most 16384 new tokens;
+- no thinking block.
+
+The Typhoon chat template opens a thinking block unless `enable_thinking` is `False`, and the
+model cards keep thinking off. The presets set `chat_template_kwargs={"enable_thinking": False}`
+on the model spec, and the Transformers, vLLM, and MLX engines pass it to the chat template. API
+engines do not use this field, so the API parameters of the presets send the same
+`chat_template_kwargs` with each request.
+
+The presets declare these engines:
+
+- **MLX** runs the official 8-bit conversions
+  ([2B](https://huggingface.co/typhoon-ai/typhoon-ocr2-2b-MLX-8bit),
+  [0.8B](https://huggingface.co/typhoon-ai/typhoon-ocr2-0.8b-MLX-8bit)), which the MLX model cards
+  recommend, and needs `mlx-vlm>=0.7.6`. Auto-inline selects it on Apple Silicon. The
+  `docling-slim[models-vlm-inline]` extra allows `mlx-vlm>=0.7.0`. With an older `mlx-vlm`,
+  auto-inline uses Transformers on the CPU, so upgrade `mlx-vlm`.
+- **Transformers** needs `transformers>=5.15.1`, the release that the model cards test. The
+  Docling Transformers engine runs on CPU, CUDA, or XPU, not on MPS.
+- **vLLM** needs `vllm>=0.33.0`. The preset sets `max_model_len=40960`, as the model cards do.
+  Auto-inline selects vLLM on CUDA with `AutoInlineVlmEngineOptions(prefer_vllm=True)`. The model
+  cards report much lower accuracy in the default compiled mode of vLLM 0.27.1 (MDPBench 70.8
+  against 80.0 in eager mode for the 2B model), and no drop in the default mode of vLLM 0.33.0.
+  The Docling vLLM engine uses `cudagraph_mode=PIECEWISE` by default, a mode that the cards do
+  not report. Change it with `VllmVlmEngineOptions.cudagraph_mode`.
+- **OpenAI-compatible API**: a server that you start yourself, for example with the vLLM command
+  of the model cards. This is the command for the 2B model:
+
+```shell
+vllm serve typhoon-ai/typhoon-ocr2-2b \
+  --served-model-name typhoon-ocr2 \
+  --max-model-len 40960 \
+  --limit-mm-per-prompt '{"image": 1}' \
+  --mm-processor-kwargs '{"min_pixels": 2048, "max_pixels": 16777216}' \
+  --default-chat-template-kwargs '{"enable_thinking": false}'
+```
+
+Use vLLM 0.33.0 or newer, as for the in-process engine. The model cards give `--enforce-eager`
+for older releases. The preset sends `model="typhoon-ocr2"`, the `--served-model-name` of this
+command. It also sends the request settings of the model card client: `max_tokens=16384`,
+`temperature=0.0`, `top_p=1.0`, and `chat_template_kwargs={"enable_thinking": False}`. Point the
+preset at the server in the Python SDK. The CLI has no option for the API URL.
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "typhoon_ocr2_2b",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:8000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+Limits of these presets:
+
+- **Image files.** Docling renders each page with a 2048-pixel long side (`scale=2048/72` and
+  `max_size=2048`). The `typhoon-ocr2` package renders PDF pages in the same way. For image
+  files, the package enlarges an image under 1600 pixels to 1600 pixels and sends a larger image
+  at its own size. Docling resizes every image file to a 2048-pixel long side. In a small test,
+  the 2B model card reports the same output at 1800 and 2200 pixels as at 1600 pixels, with more
+  image tokens.
+- **Pixel limit.** Docling page images have at most about 4.2 million pixels (2048 x 2048), so
+  the `max_pixels` value of the server command has no effect on Docling requests. The 2B model
+  card reports lower accuracy with a 4 MP limit than with the 16.7 MP limit of its benchmarks:
+  MDPBench 78.2 against 79.8, and 78.8 against 81.3 on Thai pages. This difference applies to
+  image files larger than 2048 pixels, which the package sends at their own size. If you change
+  `scale`, keep `max_size`: without it, the preset scale renders a Letter page at 17408 x 22528
+  pixels.
+- **Your own `params`.** If you set `params`, Docling does not send the preset parameters.
+  Include `model`, `top_p=1.0`, and `chat_template_kwargs={"enable_thinking": False}` yourself.
+  Docling still sends `temperature` and `max_tokens`.
+- **No repetition guard.** The model cards report that the model can repeat text until the token
+  limit. Such a page stops at 16384 tokens, and Docling keeps the complete elements of the reply.
+  With Transformers, vLLM, and API engines, the page is reported as incomplete and the
+  conversion gives `PARTIAL_SUCCESS`. The MLX engine does not report this stop reason.
+- **No Ollama or LM Studio configuration.** The presets declare no `API_OLLAMA` or
+  `API_LMSTUDIO` engine.
+
+The model weights use the Apache-2.0 license. See the model cards for details.
 
 #### Picture Description Stage
 
