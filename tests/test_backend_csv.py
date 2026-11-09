@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import csv
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -634,3 +635,19 @@ def test_repeated_backend_conversion_preserves_dialect(delimiter: str):
             "1",
         ]
     assert first.export_to_dict() == second.export_to_dict()
+
+
+def test_field_over_default_csv_limit_is_kept():
+    long_text = "x" * 200_000
+    payload = f"id,text\n1,{long_text}\n2,short\n".encode()
+    limit_before = csv.field_size_limit()
+
+    result = get_converter().convert(
+        DocumentStream(name="long_field.csv", stream=BytesIO(payload))
+    )
+
+    assert result.status == ConversionStatus.SUCCESS
+    table = result.document.tables[0].data
+    assert (table.num_rows, table.num_cols) == (3, 2)
+    assert table.table_cells[3].text == long_text
+    assert csv.field_size_limit() == limit_before
