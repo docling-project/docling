@@ -1351,11 +1351,6 @@ def test_rich_table_cell_inline_code():
             id="reference-link",
         ),
         pytest.param(
-            "<https://example.com/?a=1&amp;b=2>",
-            "https://example.com/?a=1&b=2",
-            id="autolink",
-        ),
-        pytest.param(
             "| c |\n|---|\n| [q](https://example.com/?a=1&amp;b=2) |",
             "https://example.com/?a=1&b=2",
             id="table-cell",
@@ -1369,6 +1364,29 @@ def test_link_destination_character_references_are_decoded(markdown, expected):
 
     hyperlinks = [str(item.hyperlink) for item in doc.texts if item.hyperlink]
     assert hyperlinks == [expected]
+
+
+@pytest.mark.parametrize(
+    "markdown",
+    [
+        pytest.param("<https://example.com/?a=1&amp;b=2>", id="autolink"),
+        pytest.param(
+            "| c |\n|---|\n| <https://example.com/?a=1&amp;b=2> |", id="table-cell"
+        ),
+        pytest.param("see https://example.com/?a=1&amp;b=2 here", id="bare-url"),
+        pytest.param(
+            "| c |\n|---|\n| https://example.com/?a=1&amp;b=2 |",
+            id="bare-url-table-cell",
+        ),
+    ],
+)
+def test_autolink_character_references_are_kept(markdown):
+    # An autolink URI is literal in CommonMark, and a GFM bare URL in
+    # cmark-gfm: `&amp;` stays in the link.
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    hyperlinks = [str(item.hyperlink) for item in doc.texts if item.hyperlink]
+    assert hyperlinks == ["https://example.com/?a=1&amp;b=2"]
 
 
 def test_image_destination_character_references_are_decoded(tmp_path: Path):
