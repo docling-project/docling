@@ -95,6 +95,8 @@ _XMP_NAMESPACES: dict[str, str] = {
 _PDFD_DECLARATIONS = f"{{{_PDFD_NS}}}declarations"
 _PDFD_CONFORMS_TO = f"{{{_PDFD_NS}}}conformsTo"
 _PDFD_CONFORMS_TO_PROPERTY = "pdfd:conformsTo"
+# A real packet declares a handful of conformance claims; the cap only bounds hostile input.
+_MAX_DECLARATIONS = 16
 _RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 _RDF_DESCRIPTION = f"{{{_RDF_NS}}}Description"
 _RDF_LI = f"{{{_RDF_NS}}}li"
@@ -148,7 +150,21 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
 
     properties: dict[str, str] = {}
     conforms_to: list[str] = []
+    # Everything below a ``pdfd:declarations`` bag belongs to the declarations, including the
+    # ``rdf:Description`` elements a producer may use instead of ``rdf:parseType="Resource"``
+    # for the declaration and claim structures. Those are read once, by
+    # ``_pdf_declaration_uris``, and skipped by the property walk below, so ``pdfd:claimBy`` and
+    # friends never surface as properties and no subtree is walked twice.
+    inside_declarations: set[int] = set()
+    for declarations in root.iter(_PDFD_DECLARATIONS):
+        if id(declarations) in inside_declarations:
+            continue
+        for element in declarations.iter():
+            if element is not declarations:
+                inside_declarations.add(id(element))
     for description in root.iter(_RDF_DESCRIPTION):
+        if id(description) in inside_declarations:
+            continue
         for attr_name, attr_value in description.attrib.items():
             name = _xmp_qualified_name(attr_name)
             value = attr_value.strip()
@@ -156,7 +172,9 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
                 properties.setdefault(name, value)
         for child in description:
             if child.tag == _PDFD_DECLARATIONS:
-                conforms_to.extend(_pdf_declaration_uris(child))
+                for uri in _pdf_declaration_uris(child):
+                    if uri not in conforms_to and len(conforms_to) < _MAX_DECLARATIONS:
+                        conforms_to.append(uri)
                 continue
             name = _xmp_qualified_name(child.tag)
             if name is None:
@@ -170,19 +188,40 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
 
 
 def _pdf_declaration_uris(declarations: ElementTree.Element) -> list[str]:
-    """Return the ``pdfd:conformsTo`` URIs under a ``pdfd:declarations`` bag, in document order.
+    """Return the ``pdfd:conformsTo`` URIs of a ``pdfd:declarations`` bag, in document order.
 
-    Each is read whether written as an element or, in the XMP attribute shorthand, as an
-    attribute of the declaration structure.
+    Only the bag's own structure is read (PDF Declarations, 8.2.1): the ``rdf:Bag`` or
+    ``rdf:Seq`` directly under ``pdfd:declarations``, its ``rdf:li`` members, and each member's
+    ``pdfd:conformsTo``, written as a child element, as the XMP attribute shorthand on the
+    member, or inside the ``rdf:Description`` a producer may use in place of
+    ``rdf:parseType="Resource"``. Nothing deeper is visited, so the ``pdfd:claimData``
+    structures are neither flattened nor walked.
     """
     uris: list[str] = []
-    for element in declarations.iter():
-        if element.tag == _PDFD_CONFORMS_TO:
-            uri = (element.text or "").strip()
-        else:
-            uri = (element.get(_PDFD_CONFORMS_TO) or "").strip()
-        if uri:
-            uris.append(uri)
+    for array in declarations:
+        if array.tag not in _RDF_ARRAYS:
+            continue
+        for member in array:
+            if member.tag != _RDF_LI:
+                continue
+            uri = (member.get(_PDFD_CONFORMS_TO) or "").strip()
+            if uri:
+                uris.append(uri)
+                continue
+            holders = [
+                member,
+                *(node for node in member if node.tag == _RDF_DESCRIPTION),
+            ]
+            for holder in holders:
+                uri = (holder.get(_PDFD_CONFORMS_TO) or "").strip()
+                if not uri:
+                    for child in holder:
+                        if child.tag == _PDFD_CONFORMS_TO:
+                            uri = (child.text or "").strip()
+                            break
+                if uri:
+                    uris.append(uri)
+                    break
     return uris
 
 

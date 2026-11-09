@@ -121,6 +121,57 @@ def test_parse_xmp_properties_collects_pdf_declarations():
     assert not any(key.startswith("pdfd:claim") for key in props)
 
 
+# The same declarations in the general RDF form: a nested rdf:Description instead of
+# rdf:parseType="Resource", a claim structure with its own description, one URI declared twice,
+# and a declaration bag nested inside a claim structure (not a declaration of the document).
+NESTED_DECLARATIONS_PACKET = """<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:pdfd="http://pdfa.org/declarations/">
+   <pdfd:declarations><rdf:Bag>
+    <rdf:li><rdf:Description>
+     <pdfd:conformsTo>http://pdfa.org/declarations/wtpdf/#accessibility1.0</pdfd:conformsTo>
+     <pdfd:claimData><rdf:Bag><rdf:li><rdf:Description>
+      <pdfd:claimBy>Example Corp</pdfd:claimBy>
+      <pdfd:declarations><rdf:Bag>
+       <rdf:li pdfd:conformsTo="http://example.com/not-a-document-declaration"/>
+      </rdf:Bag></pdfd:declarations>
+     </rdf:Description></rdf:li></rdf:Bag></pdfd:claimData>
+    </rdf:Description></rdf:li>
+    <rdf:li><rdf:Description pdfd:conformsTo="https://pdfa.org/declarations#iso32005"/></rdf:li>
+    <rdf:li rdf:parseType="Resource">
+     <pdfd:conformsTo>http://pdfa.org/declarations/wtpdf/#accessibility1.0</pdfd:conformsTo>
+    </rdf:li>
+   </rdf:Bag></pdfd:declarations>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>"""
+
+
+def test_parse_xmp_properties_reads_only_the_declaration_structures():
+    props = parse_xmp_properties(NESTED_DECLARATIONS_PACKET)
+
+    # each document declaration once, in document order; the claim structures and the bag
+    # nested inside one of them contribute nothing
+    assert props == {
+        "pdfd:conformsTo": (
+            "http://pdfa.org/declarations/wtpdf/#accessibility1.0, "
+            "https://pdfa.org/declarations#iso32005"
+        ),
+    }
+
+    # a hostile packet cannot grow the value without bound: the list is capped
+    members = "".join(
+        f'<rdf:li pdfd:conformsTo="http://example.com/claim/{i}"/>' for i in range(40)
+    )
+    flood = NESTED_DECLARATIONS_PACKET.replace(
+        "<pdfd:declarations><rdf:Bag>\n    <rdf:li><rdf:Description>",
+        f"<pdfd:declarations><rdf:Bag>{members}\n    <rdf:li><rdf:Description>",
+        1,
+    )
+    assert flood != NESTED_DECLARATIONS_PACKET
+    assert len(parse_xmp_properties(flood)["pdfd:conformsTo"].split(", ")) == 16
+
+
 def test_parse_xmp_properties_tolerates_malformed_packet():
     assert parse_xmp_properties("<x:xmpmeta><unclosed") == {}
 
