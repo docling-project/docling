@@ -330,8 +330,8 @@ Multi-pass page and detection requests use temperature 0.2 and repetition penalt
 1.05. Crop requests use 0.1 and 1.0. All stages use `top_k=50` and `top_p=1.0`.
 Detection has a 4096 token limit; page and crop requests have an 8744 token limit.
 Explicit API `params` override these request settings. Single-pass keeps the original
-preset settings. For every Transformers VLM preset, output that reaches the token
-limit without EOS is now reported as incomplete. The VLM pipeline returns
+preset settings. For every Transformers or MLX VLM preset, output that reaches the
+token limit without EOS is now reported as incomplete. The VLM pipeline returns
 `PARTIAL_SUCCESS` for these pages. Output that reaches EOS at the token limit
 remains complete.
 

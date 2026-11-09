@@ -272,6 +272,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 output_text = ""
                 num_tokens = 0
                 stop_reason = "unspecified"
+                finish_reason: str | None = None
 
                 generation_kwargs: dict[str, Any] = {
                     "max_tokens": input_data.max_new_tokens,
@@ -297,6 +298,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 ):
                     output_text += token.text
                     num_tokens += 1
+                    finish_reason = token.finish_reason
 
                     # Check for configured stop strings
                     if input_data.stop_strings:
@@ -341,13 +343,10 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
                 generation_time = time.time() - start_time
 
-                # mlx-vlm stops at max_tokens without an error. As the Transformers
-                # engine does, report a reply that reaches the limit as cut. The
-                # stream holds no end token, so an end token at the limit counts too.
-                if (
-                    stop_reason == "unspecified"
-                    and num_tokens >= input_data.max_new_tokens
-                ):
+                # mlx-vlm stops at max_tokens without an error. Its last result gives
+                # the reason: "stop" at an end token, "length" at the limit. As the
+                # Transformers engine does, report a reply that the limit cut.
+                if stop_reason == "unspecified" and finish_reason == "length":
                     stop_reason = "length"
 
                 _log.info(

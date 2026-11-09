@@ -132,9 +132,9 @@ def test_mlx_vlm_engine_records_generated_token_count() -> None:
     engine.apply_chat_template = lambda *_args, **_kwargs: "formatted prompt"
     engine.stream_generate = lambda *_args, **_kwargs: iter(
         [
-            SimpleNamespace(text="first "),
-            SimpleNamespace(text="second "),
-            SimpleNamespace(text="third"),
+            SimpleNamespace(text="first ", finish_reason=None),
+            SimpleNamespace(text="second ", finish_reason=None),
+            SimpleNamespace(text="third", finish_reason="stop"),
         ]
     )
 

@@ -52,7 +52,7 @@ def test_mlx_engine_forwards_optional_repetition_settings(
 
     def stream_generate(*args, **kwargs):
         captured.update(kwargs)
-        yield SimpleNamespace(text="ok")
+        yield SimpleNamespace(text="ok", finish_reason="stop")
 
     engine.stream_generate = stream_generate
 
@@ -92,7 +92,9 @@ def test_mlx_engine_passes_chat_template_kwargs() -> None:
         return "prompt"
 
     engine.apply_chat_template = apply_chat_template
-    engine.stream_generate = lambda *args, **kwargs: iter([SimpleNamespace(text="ok")])
+    engine.stream_generate = lambda *args, **kwargs: iter(
+        [SimpleNamespace(text="ok", finish_reason="stop")]
+    )
 
     engine.predict_batch(
         [
@@ -149,7 +151,7 @@ def test_mlx_engine_reports_the_stop_reason_declared_by_the_stopper(
     engine.config = object()
     engine.apply_chat_template = lambda *args, **kwargs: "prompt"
     engine.stream_generate = lambda *args, **kwargs: (
-        SimpleNamespace(text=token) for token in tokens
+        SimpleNamespace(text=token, finish_reason=None) for token in tokens
     )
 
     (output,) = engine.predict_batch(
@@ -166,16 +168,19 @@ def test_mlx_engine_reports_the_stop_reason_declared_by_the_stopper(
     assert output.stop_reason == expected_stop_reason.value
 
 
+# mlx-vlm yields a result for each token before the end token, then a last result
+# with the finish reason.
 @pytest.mark.parametrize(
-    ("results", "expected_stop_reason"),
+    ("results", "finish_reason", "expected_stop_reason"),
     [
-        pytest.param(4, VlmStopReason.UNSPECIFIED, id="ended-before-the-limit"),
-        # mlx-vlm yields a result for each of the 5 tokens and a last result.
-        pytest.param(6, VlmStopReason.LENGTH, id="cut-at-the-limit"),
+        pytest.param(4, "stop", VlmStopReason.UNSPECIFIED, id="ended-before-the-limit"),
+        # The end token is the last of the 5 allowed tokens.
+        pytest.param(5, "stop", VlmStopReason.UNSPECIFIED, id="ended-at-the-limit"),
+        pytest.param(6, "length", VlmStopReason.LENGTH, id="cut-at-the-limit"),
     ],
 )
 def test_mlx_engine_reports_a_reply_cut_at_the_token_limit(
-    results: int, expected_stop_reason: VlmStopReason
+    results: int, finish_reason: str, expected_stop_reason: VlmStopReason
 ) -> None:
     engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
     engine._initialized = True
@@ -184,7 +189,10 @@ def test_mlx_engine_reports_a_reply_cut_at_the_token_limit(
     engine.config = object()
     engine.apply_chat_template = lambda *args, **kwargs: "prompt"
     engine.stream_generate = lambda *args, **kwargs: (
-        SimpleNamespace(text="a") for _ in range(results)
+        SimpleNamespace(
+            text="a", finish_reason=finish_reason if index == results - 1 else None
+        )
+        for index in range(results)
     )
 
     (output,) = engine.predict_batch(
@@ -226,7 +234,7 @@ def test_mlx_engine_only_forwards_kwargs_known_to_mlx_vlm() -> None:
 
     def stream_generate(*args, **kwargs):
         captured.update(kwargs)
-        yield SimpleNamespace(text="ok")
+        yield SimpleNamespace(text="ok", finish_reason="stop")
 
     engine.stream_generate = stream_generate
 
