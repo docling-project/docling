@@ -24,6 +24,10 @@ branch ruleset (1), Mergify for changes in ``tests/data`` (2), and Mergify for
 breaking changes with ``!:`` in the title (3). Only approvals from owners,
 members, and collaborators count.
 
+``--label`` keeps only the PRs with that label, for example a format or a topic.
+If you repeat it, a PR needs one of the labels. The actions and ``--limit`` then
+apply only to these PRs.
+
 Actions (all of them are off by default):
 
 ``--comment-conflicts``
@@ -54,6 +58,7 @@ Examples::
     uv run python scripts/tools/sync_prs.py
     uv run python scripts/tools/sync_prs.py --comment-conflicts --approve-ci
     uv run python scripts/tools/sync_prs.py --pr 5115 --pr 5122
+    uv run python scripts/tools/sync_prs.py --label pdf --label docx
 """
 
 from __future__ import annotations
@@ -74,6 +79,31 @@ from typing import Any
 from tqdm import tqdm
 
 DEFAULT_REPO = "docling-project/docling"
+LABELS_HELP = f"""\
+labels for --label in {DEFAULT_REPO}:
+
+  formats:
+    asciidoc, audio, boxnote, calendar, csv, doclang, docx, email, epub, html,
+    image, iwork, jats, latex, markdown, odf, pdf, pdf parsing, plain text,
+    pptx, uspto, vtt, xbrl, xlsx, xml
+
+  other:
+    accelerators, ai:ci-needs-care, ai:ci-safe, ai:possible-duplicate,
+    ai:review-changes, ai:review-lgtm, asr, bug, chunker, CLI,
+    code agent slop, dependency mgmt, docling-document, document-viewer,
+    documentation, duplicate, enhancement, error-handling, Event,
+    good first issue, help wanted, icebox, invalid, language support, layout,
+    mimetype, needs investigation, no_junk_chunks, ocr, performance,
+    priority:high, priority:low, priority:medium, pytorch, question,
+    reading_order, rtl-language, smoldocling, sweeper:solved,
+    table cell intersection, table structure, tests, tests:full,
+    tests:heavy-examples, triage/close-answered, triage/close-fixed,
+    triage/close-implemented, triage/close-stale, triage/close-wontfix,
+    vlm-pipeline, windows, wontfix
+
+  Put names with spaces in quotes. For the current list, use:
+    gh label list -R {DEFAULT_REPO} --limit 200
+"""
 SAFE_LABEL = "ai:ci-safe"
 NEEDS_CARE_LABEL = "ai:ci-needs-care"
 APPROVAL_CONCLUSION = "action_required"
@@ -106,9 +136,9 @@ fragment PrFields on PullRequest {
 LIST_QUERY = (
     PR_FRAGMENT
     + """
-query($owner: String!, $name: String!, $size: Int!, $after: String) {
+query($owner: String!, $name: String!, $size: Int!, $after: String, $labels: [String!]) {
   repository(owner: $owner, name: $name) {
-    pullRequests(states: OPEN, first: $size, after: $after,
+    pullRequests(states: OPEN, labels: $labels, first: $size, after: $after,
                  orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes { ...PrFields }
@@ -283,9 +313,14 @@ def parse_time(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def graphql(query: str, **variables: str | int) -> dict[str, Any]:
+def graphql(query: str, **variables: str | int | list[str]) -> dict[str, Any]:
     command = ["gh", "api", "graphql", "-f", f"query={query}"]
     for key, value in variables.items():
+        if isinstance(value, list):
+            # gh sends key[]=item as a list. An empty list sends null: no filter.
+            for item in value:
+                command += ["-f", f"{key}[]={item}"]
+            continue
         flag = "-F" if isinstance(value, int) else "-f"
         command += [flag, f"{key}={value}"]
     for attempt in range(1, GRAPHQL_ATTEMPTS + 1):
@@ -320,7 +355,7 @@ def view_prs(repo: str, numbers: list[int], desc: str) -> list[PullRequest]:
     return prs
 
 
-def fetch_open_prs(repo: str, limit: int) -> list[PullRequest]:
+def fetch_open_prs(repo: str, limit: int, labels: list[str]) -> list[PullRequest]:
     owner, name = repo.split("/")
     prs: list[PullRequest] = []
     after: dict[str, str | int] = {}
@@ -329,7 +364,9 @@ def fetch_open_prs(repo: str, limit: int) -> list[PullRequest]:
         while len(prs) < limit:
             bar.set_postfix_str(f"page {page_number}")
             size = min(PAGE_SIZE, limit - len(prs))
-            data = graphql(LIST_QUERY, owner=owner, name=name, size=size, **after)
+            data = graphql(
+                LIST_QUERY, owner=owner, name=name, size=size, labels=labels, **after
+            )
             page = data["repository"]["pullRequests"]
             new = [PullRequest.from_graphql(node) for node in page["nodes"]]
             prs += new
@@ -346,13 +383,22 @@ def fetch_open_prs(repo: str, limit: int) -> list[PullRequest]:
     return prs
 
 
-def list_prs(repo: str, limit: int, numbers: list[int]) -> list[PullRequest]:
+def describe_labels(labels: list[str]) -> str:
+    return f" with label {' or '.join(labels)}" if labels else ""
+
+
+def list_prs(
+    repo: str, limit: int, numbers: list[int], labels: list[str]
+) -> list[PullRequest]:
     if numbers:
         Progress.info(f"Fetch {len(numbers)} PR(s) of {repo}.")
         prs = view_prs(repo, numbers, "Fetch PRs")
     else:
-        Progress.info(f"Fetch the {limit} most recently updated open PRs of {repo}.")
-        prs = fetch_open_prs(repo, limit)
+        Progress.info(
+            f"Fetch the {limit} most recently updated open PRs of {repo}"
+            f"{describe_labels(labels)}."
+        )
+        prs = fetch_open_prs(repo, limit, labels)
     unknown = [
         pr.number
         for pr in prs
@@ -718,7 +764,9 @@ def handle_waiting_ci(repo: str, prs: list[PullRequest], approve: bool) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=HelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, epilog=LABELS_HELP, formatter_class=HelpFormatter
+    )
     parser.add_argument("--repo", default=DEFAULT_REPO, help="GitHub repository.")
     parser.add_argument(
         "--limit", type=int, default=100, help="Number of recently updated open PRs."
@@ -730,6 +778,16 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=None,
         help="Only this PR (repeatable). None: the --limit latest open PRs.",
+    )
+    parser.add_argument(
+        "--label",
+        dest="labels",
+        action="append",
+        default=None,
+        help=(
+            "Only open PRs with this label, for example a format"
+            " (repeatable: any of them). Not with --pr. See the list below."
+        ),
     )
     parser.add_argument(
         "--cache-dir",
@@ -758,16 +816,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not show status lines and progress bars on stderr.",
     )
     args = parser.parse_args(argv)
+    if args.numbers and args.labels:
+        parser.error("use --pr or --label, not both")
     Progress.quiet = args.quiet
     started = time.monotonic()
     numbers: list[int] = args.numbers or []
+    labels: list[str] = args.labels or []
 
     repo_root = Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
     cache_dir = args.cache_dir
     if not cache_dir.is_absolute():
         cache_dir = repo_root / cache_dir
 
-    prs = list_prs(args.repo, args.limit, numbers)
+    prs = list_prs(args.repo, args.limit, numbers, labels)
 
     Progress.info("Read the CI runs that wait for maintainer approval.")
     waiting = waiting_runs_by_sha(args.repo)
@@ -810,7 +871,7 @@ def main(argv: list[str] | None = None) -> int:
         save_metadata(cache_dir, pr)
     Progress.info(f"Saved the pr.json files to {cache_dir}.")
 
-    print(f"# {len(prs)} open PR(s) in {args.repo}")
+    print(f"# {len(prs)} open PR(s) in {args.repo}{describe_labels(labels)}")
     print(f"Metadata: {cache_dir}/<number>/pr.json")
     print_lists(prs)
 
