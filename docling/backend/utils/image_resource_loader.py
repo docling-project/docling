@@ -29,7 +29,7 @@ import certifi
 import requests
 import urllib3
 from docling_core.types.doc.document import ImageRef
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import ValidationError
 from requests.utils import get_environ_proxies, select_proxy
 
@@ -373,6 +373,9 @@ class ImageResourceLoader:
                 # the pixels are decoded.
                 check_image_pixels(img.size, self.max_image_pixels)
                 img.load()
+                # A camera stores an orientation tag rather than rotated pixels,
+                # and a browser shows the image turned by it.
+                img = ImageOps.exif_transpose(img)
                 # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
                 dpi = int(img.info.get("dpi", (72,))[0]) or 72
                 return ImageRef.from_pil(normalize_image_for_png(img), dpi=dpi)
