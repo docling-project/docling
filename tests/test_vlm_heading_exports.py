@@ -34,6 +34,7 @@ from docling.utils.nemotron_parse_utils import parse_nemotron_parse_v2
 from docling.utils.nemotron_parse_v3_5_utils import parse_nemotron_parse_v3_5
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
 from docling.utils.surya_utils import parse_surya_html
+from docling.utils.typhoon_ocr2_utils import parse_typhoon_ocr2_json
 from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
 
 _SIZE = Size(width=600, height=800)
@@ -49,6 +50,7 @@ _FORMATS = {
     "unlimited": ResponseFormat.UNLIMITED_OCR_MARKDOWN,
     "unlimited2": ResponseFormat.UNLIMITED_OCR2,
     "lighton": ResponseFormat.LIGHTONOCR_MARKDOWN,
+    "typhoon": ResponseFormat.TYPHOON_OCR2_JSON,
 }
 _PARSERS = [*_FORMATS, "paddle"]
 
@@ -105,10 +107,19 @@ def _response(parser: str, blocks: list[_Block]) -> str:
         elif parser == "lighton":
             label = "title" if is_title else "section"
             parts.append(f"![{label}](100,{y},900,{y + 40}) {text}\n")
+        elif parser == "typhoon":
+            # One label covers all headings; is_title cannot be expressed.
+            parts.append(
+                json.dumps(
+                    {"bbox": [100, y, 900, y + 40], "category": "title", "text": text}
+                )
+            )
         else:
             raise AssertionError(parser)
     if parser == "dots":
         return f"[{', '.join(parts)}]"
+    if parser == "typhoon":
+        return f"```json\n[{', '.join(parts)}]\n```"
     return "".join(parts)
 
 
@@ -146,6 +157,8 @@ def _parse(parser: str, blocks: list[_Block], page_no: int = 1) -> DoclingDocume
         return parse_unlimited_ocr2(content, _SIZE, page_no=page_no)
     if parser == "lighton":
         return parse_lightonocr_markdown(content, _SIZE, page_no=page_no)
+    if parser == "typhoon":
+        return parse_typhoon_ocr2_json(content, _SIZE, page_no=page_no)
     return parse_unlimited_ocr_markdown(content, _SIZE, page_no=page_no)
 
 
@@ -177,8 +190,11 @@ def test_section_without_markup_is_depth_two(parser: str) -> None:
     assert _levels(_parse(parser, [(False, 1), (False, None)])) == [1, 2]
 
 
-# LightOnOCR-3 uses `title` for all headings, so its depth decides instead.
-@pytest.mark.parametrize("parser", [p for p in _PARSERS if p != "lighton"])
+# LightOnOCR-3 and Typhoon OCR V2 use `title` for all headings, so the label
+# cannot decide.
+@pytest.mark.parametrize(
+    "parser", [p for p in _PARSERS if p not in {"lighton", "typhoon"}]
+)
 def test_layout_label_alone_decides_title(parser: str) -> None:
     doc = _parse(parser, [(True, 2), (False, 1), (False, 2)])
 
@@ -198,6 +214,14 @@ def test_lighton_title_depth_decides_title() -> None:
         SectionHeaderItem,
     ]
     assert doc.export_to_markdown() == "# H0\n\n# H1\n\n## H2\n\n### H3"
+
+
+def test_typhoon_title_is_always_a_section_header() -> None:
+    doc = _parse("typhoon", [(True, None), (True, 1), (False, 3)])
+
+    assert all(isinstance(item, SectionHeaderItem) for item in doc.texts)
+    assert _levels(doc) == [2, 1, 3]
+    assert doc.export_to_markdown() == "### H0\n\n## H1\n\n#### H2"
 
 
 def test_html_fragment_records_raw_depth() -> None:
