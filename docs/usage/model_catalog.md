@@ -556,8 +556,7 @@ Limits of these presets:
   Docling still sends `temperature` and `max_tokens`.
 - **No repetition guard.** The model cards report that the model can repeat text until the token
   limit. Such a page stops at 16384 tokens, and Docling keeps the complete elements of the reply.
-  With Transformers, vLLM, and API engines, the page is reported as incomplete and the
-  conversion gives `PARTIAL_SUCCESS`. The MLX engine does not report this stop reason.
+  The engine reports the page as incomplete, and the conversion gives `PARTIAL_SUCCESS`.
 - **No Ollama or LM Studio configuration.** The presets declare no `API_OLLAMA` or
   `API_LMSTUDIO` engine.
 

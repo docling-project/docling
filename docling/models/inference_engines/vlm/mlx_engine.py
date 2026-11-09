@@ -341,6 +341,15 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
                 generation_time = time.time() - start_time
 
+                # mlx-vlm stops at max_tokens without an error. As the Transformers
+                # engine does, report a reply that reaches the limit as cut. The
+                # stream holds no end token, so an end token at the limit counts too.
+                if (
+                    stop_reason == "unspecified"
+                    and num_tokens >= input_data.max_new_tokens
+                ):
+                    stop_reason = "length"
+
                 _log.info(
                     "MLX generated %s tokens in %.2f sec. (%.2f tok/s, "
                     "stop_reason: %s)",

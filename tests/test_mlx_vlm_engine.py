@@ -166,6 +166,40 @@ def test_mlx_engine_reports_the_stop_reason_declared_by_the_stopper(
     assert output.stop_reason == expected_stop_reason.value
 
 
+@pytest.mark.parametrize(
+    ("results", "expected_stop_reason"),
+    [
+        pytest.param(4, VlmStopReason.UNSPECIFIED, id="ended-before-the-limit"),
+        # mlx-vlm yields a result for each of the 5 tokens and a last result.
+        pytest.param(6, VlmStopReason.LENGTH, id="cut-at-the-limit"),
+    ],
+)
+def test_mlx_engine_reports_a_reply_cut_at_the_token_limit(
+    results: int, expected_stop_reason: VlmStopReason
+) -> None:
+    engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
+    engine._initialized = True
+    engine.vlm_model = object()
+    engine.processor = object()
+    engine.config = object()
+    engine.apply_chat_template = lambda *args, **kwargs: "prompt"
+    engine.stream_generate = lambda *args, **kwargs: (
+        SimpleNamespace(text="a") for _ in range(results)
+    )
+
+    (output,) = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), "white"),
+                prompt="Prompt",
+                max_new_tokens=5,
+            )
+        ]
+    )
+
+    assert output.stop_reason == expected_stop_reason.value
+
+
 def _mlx_vlm_generation_kwargs() -> set[str]:
     types = pytest.importorskip(
         "mlx_vlm.generate.types", reason="mlx-vlm is only installed on Apple silicon"
