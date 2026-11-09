@@ -426,6 +426,33 @@ def test_page_furniture_stays_out_of_markdown() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "footnote",
+    [
+        "1 See page 4.",
+        "<sup>1</sup> See page 4.",
+        "$^{1}$ See page 4.",
+        "1 See *Smith et al.*",
+    ],
+)
+def test_documented_footnote_removal_drops_formatted_footnotes(footnote: str) -> None:
+    doc = _parse(
+        _reply(_element("text", "Body text."), _element("page_footnote", footnote))
+    )
+
+    # The recipe in docs/usage/vision_models.md. A formatted footnote keeps its
+    # runs under the footnote item, so they go with it.
+    no_footnotes = doc.model_copy(deep=True)
+    no_footnotes.delete_items(
+        node_items=[
+            item for item in no_footnotes.texts if item.label == DocItemLabel.FOOTNOTE
+        ]
+    )
+
+    assert no_footnotes.export_to_markdown() == "Body text."
+    assert (len(no_footnotes.texts), no_footnotes.groups) == (1, [])
+
+
 def test_table_fallbacks_keep_content(caplog: pytest.LogCaptureFixture) -> None:
     # 60 x 20 cells exceed the 1000-cell limit of the rich HTML table mapper.
     rows = "".join(

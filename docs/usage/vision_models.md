@@ -426,9 +426,24 @@ pass `included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}`. Page
 footnotes stay in the body, as the footnotes of other Docling models do, so the Markdown
 keeps them. The `typhoon-ocr2` package leaves out headers, footers, and page footnotes
 from its Markdown, and the model cards evaluate the model in this way. To leave out the
-footnotes too, use
-`doc.export_to_markdown(labels=set(DocItemLabel) - {DocItemLabel.FOOTNOTE})`. This also
-leaves out figure and table footnotes.
+footnotes too, delete them from a copy of the document before the export. This also
+deletes figure and table footnotes:
+
+```python
+from docling_core.types.doc import DocItemLabel
+
+no_footnotes = doc.model_copy(deep=True)
+no_footnotes.delete_items(
+    node_items=[
+        item for item in no_footnotes.texts if item.label == DocItemLabel.FOOTNOTE
+    ]
+)
+markdown = no_footnotes.export_to_markdown()
+```
+
+The `labels` argument of `export_to_markdown()` is not sufficient for this. It leaves out
+the footnote item, but not the text runs of a footnote with formatting, for example
+`<sup>1</sup>` or `$^{1}$`.
 
 Each `title` is a section header, never the document title; see the heading depths
 below. In text, Markdown emphasis and inline HTML become formatted runs, and inline math
