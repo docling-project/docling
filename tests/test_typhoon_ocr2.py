@@ -303,6 +303,23 @@ def test_reply_without_elements_raises(content: str) -> None:
         _parse(content)
 
 
+@pytest.mark.parametrize(
+    ("category", "text"),
+    [
+        ("table", "<table><tr><td>" * 400 + "x"),
+        ("text", "<b>" * 2000 + "x" + "</b>" * 2000),
+        ("text", "**" * 1000 + "x" + "**" * 1000),
+    ],
+    ids=["nested_tables", "nested_html", "nested_emphasis"],
+)
+def test_over_deep_markup_in_an_element_raises(category: str, text: str) -> None:
+    # A looping reply can nest markup past the recursion limit of the shared mappers.
+    content = _reply(_element("title", "Results"), _element(category, text))
+
+    with pytest.raises(ValueError, match="element 2 nests its markup too deeply"):
+        _parse(content)
+
+
 @pytest.mark.parametrize("content", ["", " \n", "```json\n[]\n```", "</think>\n\n"])
 def test_blank_reply_is_an_empty_page(content: str) -> None:
     doc = _parse(content)

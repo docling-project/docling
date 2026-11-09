@@ -470,7 +470,8 @@ with a code fence or a JSON value, Docling reads only the text after the first
 `</think>`. Page text can also contain `</think>`, for example in a paper about reasoning
 models. A reply that starts with the answer keeps this text. A blank reply or an empty
 list gives an empty page. A reply that is not blank but has no layout elements gives a
-page error and `PARTIAL_SUCCESS`.
+page error and `PARTIAL_SUCCESS`. An element with markup that is nested too deeply to
+read, for example from a looping reply, also gives a page error.
 
 Compared with the Markdown of the `typhoon-ocr2` package, the Docling Markdown export
 writes titles as headings, writes tables as Markdown tables instead of HTML, and keeps

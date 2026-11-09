@@ -248,7 +248,8 @@ def parse_typhoon_ocr2_json(
         A document for this page. A blank reply or an empty list gives an empty page.
 
     Raises:
-        ValueError: If a reply that is not blank holds no layout elements.
+        ValueError: If a reply that is not blank holds no layout elements, or if an
+            element nests its markup too deeply to read.
     """
     doc = DoclingDocument(
         name=Path(filename).stem,
@@ -289,7 +290,13 @@ def parse_typhoon_ocr2_json(
             without_box += 1
         if category in _CAPTION_OWNER_LABELS:
             caption_owners[index] = _CAPTION_OWNER_LABELS[category]
-        _add_element(doc, category, text, prov)
+        try:
+            _add_element(doc, category, text, prov)
+        except RecursionError:
+            # A looping reply can nest markup deeper than the shared mappers read.
+            raise ValueError(
+                f"element {index + 1} nests its markup too deeply"
+            ) from None
     if without_box:
         _log.warning(
             "Keeping %d Typhoon OCR V2 elements without a valid box", without_box
