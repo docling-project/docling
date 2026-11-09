@@ -226,6 +226,30 @@ def test_reply_shapes_give_the_same_items(content: str, count: int) -> None:
     assert _summary(_parse(content)) == expected[:count]
 
 
+# Page text can hold the tags, for example in a paper on reasoning models.
+_TAGGED = [
+    _element("text", "The reasoning goes in <think> </think> tags, then the answer."),
+    # After a cut at the end tag, this `[]` reads as an empty list of elements.
+    _element("text", "The reward starts from an empty list, rewards = []."),
+]
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        _reply(*_TAGGED),
+        json.dumps(_TAGGED),
+        f"{_THINKING}{_reply(*_TAGGED)}",
+        f"<think>\n{_DRAFT}\n</think>\n\n{_reply(*_TAGGED)}",
+    ],
+    ids=["fenced", "bare", "after_thinking", "after_a_think_block"],
+)
+def test_think_tags_in_page_text_stay_text(content: str) -> None:
+    doc = _parse(content)
+
+    assert [item.text for item in doc.texts] == [e["text"] for e in _TAGGED]
+
+
 _FULL = _reply(*_ELEMENTS)
 # A looping reply can nest lists past the recursion limit of the JSON decoder.
 _DEEP = "[" * 1_000_000

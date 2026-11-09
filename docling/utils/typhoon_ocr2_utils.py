@@ -73,6 +73,8 @@ _CAPTION_OWNER_LABELS = {
 _FENCE = re.compile(r"```(?:json)?[ \t]*\r?\n(.*?)(?:\r?\n[ \t]*```|\Z)", re.DOTALL)
 _LIST_START = re.compile(r"\[\s*[{\]]")
 _DECODER = json.JSONDecoder()
+# A code fence or a JSON value: the start of an answer without a thinking block.
+_ANSWER_STARTS = ("```", "[", "{")
 
 
 def _decode_list(text: str, start: int) -> list[Any]:
@@ -114,9 +116,12 @@ def _elements(content: str) -> list[Any]:
         ValueError: If a reply that is not blank holds no layout elements.
     """
     # With thinking on, the chat template opens the thinking block in the prompt, so
-    # the reply holds only its end tag. As the template does, read the text after
-    # the last end tag: the thinking can hold a draft of the answer.
-    text = content.rpartition("</think>")[2]
+    # the reply starts with the thinking and its end tag. The thinking can hold a
+    # draft of the answer. Page text can also hold `</think>`, so a reply that
+    # starts with the answer has no thinking block.
+    thinking, end_tag, text = content.partition("</think>")
+    if not end_tag or thinking.lstrip().startswith(_ANSWER_STARTS):
+        text = content
     if (fence := _FENCE.search(text)) is not None:
         text = fence.group(1)
     text = text.strip()
