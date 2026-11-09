@@ -38,7 +38,6 @@ from PIL import Image as PILImage
 from docling.utils.chandra_utils import _add_html_table
 from docling.utils.deepseekocr_utils import _parse_table_html
 from docling.utils.dots_utils import _add_inline_text, _unescape_markdown_literals
-from docling.utils.lightonocr_utils import _THINK
 from docling.utils.nemotron_parse_v3_5_utils import _add_rich_text
 from docling.utils.unlimited_ocr2_utils import _strip_table_tags
 from docling.utils.vlm_utils import (
@@ -113,7 +112,10 @@ def _elements(content: str) -> list[Any]:
     Raises:
         ValueError: If a reply that is not blank holds no layout elements.
     """
-    text = _THINK.sub("", content)
+    # With thinking on, the chat template opens the thinking block in the prompt, so
+    # the reply holds only its end tag. As the template does, read the text after
+    # the last end tag: the thinking can hold a draft of the answer.
+    text = content.rpartition("</think>")[2]
     if (fence := _FENCE.search(text)) is not None:
         text = fence.group(1)
     text = text.strip()

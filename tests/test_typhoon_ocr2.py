@@ -187,8 +187,10 @@ _ELEMENTS = [
     _element("formula", "$$\\frac{a}{b}$$", [300, 210, 700, 260]),
 ]
 _BARE = json.dumps(_ELEMENTS)
-# With thinking on, a reply can hold a draft before the answer.
+# With thinking on, the chat template ends the prompt with `<think>`, so the reply
+# starts with the thinking, which can hold a draft of the answer.
 _DRAFT = _reply(_element("text", "A draft of the answer."))
+_THINKING = f"The page has a title.\n{_DRAFT}\nOK.\n</think>\n\n"
 
 
 @pytest.mark.parametrize(
@@ -200,6 +202,7 @@ _DRAFT = _reply(_element("text", "A draft of the answer."))
         (f"```json\n{_BARE}\n```<|im_end|>", 3),
         (f"Here is the layout.\n```json\n{_BARE}\n```", 3),
         (f"</think>\n\n```json\n{_BARE}\n```", 3),
+        (f"{_THINKING}```json\n{_BARE}\n```", 3),
         (f"<think>\n{_DRAFT}\n</think>\n\n```json\n{_BARE}\n```", 3),
         (json.dumps({"elements": _ELEMENTS}), 3),
         (json.dumps(_ELEMENTS[0]), 1),
@@ -211,6 +214,7 @@ _DRAFT = _reply(_element("text", "A draft of the answer."))
         "end_token_after_fence",
         "prose_before_fence",
         "think_end_tag",
+        "thinking_with_a_draft",
         "think_block_with_a_draft",
         "wrapper_object",
         "single_element_object",

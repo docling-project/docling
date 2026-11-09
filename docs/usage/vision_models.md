@@ -449,7 +449,8 @@ one such owner, captions with formatted text, `formula_caption` elements, and al
 footnotes stay standalone in reading order.
 
 A reply that the token limit cuts keeps its complete elements, and Docling logs a
-warning. A thinking block at the start of a reply is removed. A blank reply or an empty
+warning. If a reply has the end tag `</think>` of a thinking block, Docling reads only
+the text after the last end tag, as the chat template does. A blank reply or an empty
 list gives an empty page. A reply that is not blank but has no layout elements gives a
 page error and `PARTIAL_SUCCESS`.
 
