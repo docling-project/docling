@@ -4046,7 +4046,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Still a code-block boundary: outside code must not merge with
             # code inside the cell.
             self._force_new_code_block = True
-            self._walk_linear(cell_element._element, doc)
+            # Return the items made from the cell so that a container holding
+            # this table (a rich table cell, a text box, a content control)
+            # groups them inside itself instead of leaving them in the body.
+            _, elem_ref = self._walk_linear(cell_element._element, doc)
             self._force_new_code_block = True
             return elem_ref
 
