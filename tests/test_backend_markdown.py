@@ -1337,6 +1337,69 @@ def test_rich_table_cell_inline_code():
     assert code_items2[0].text == "&amp;"
 
 
+@pytest.mark.parametrize(
+    ("markdown", "expected"),
+    [
+        pytest.param(
+            "[q](https://example.com/?a=1&amp;b=2)",
+            "https://example.com/?a=1&b=2",
+            id="inline-link",
+        ),
+        pytest.param(
+            "[q]\n\n[q]: https://example.com/?a=1&#38;b=2",
+            "https://example.com/?a=1&b=2",
+            id="reference-link",
+        ),
+        pytest.param(
+            "<https://example.com/?a=1&amp;b=2>",
+            "https://example.com/?a=1&b=2",
+            id="autolink",
+        ),
+        pytest.param(
+            "| c |\n|---|\n| [q](https://example.com/?a=1&amp;b=2) |",
+            "https://example.com/?a=1&b=2",
+            id="table-cell",
+        ),
+    ],
+)
+def test_link_destination_character_references_are_decoded(markdown, expected):
+    # CommonMark decodes character references in a link destination (spec
+    # examples 32, 33 and 503); the raw `&amp;` used to reach the hyperlink.
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    hyperlinks = [str(item.hyperlink) for item in doc.texts if item.hyperlink]
+    assert hyperlinks == [expected]
+
+
+def test_image_destination_character_references_are_decoded(tmp_path: Path):
+    # The image source is a destination too: `a&amp;b.png` names `a&b.png`.
+    image_path = tmp_path / "a&b.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = tmp_path / "doc.md"
+    md_path.write_text("![alt](a&amp;b.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+
+
 def test_rich_table_cell_hyperlink():
     """Links inside table cells are stored as RichTableCell with hyperlink."""
     from docling_core.types.doc import RichTableCell
