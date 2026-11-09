@@ -48,6 +48,10 @@ _COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
 _LIST_START_ATTR_RE = re.compile(
     r'^\[(?:[^\]]*,)?\s*start\s*=\s*"?(\d+)"?\s*(?:,[^\]]*)?\]$'
 )
+_TABLE_COLS_ATTR_RE: Final = re.compile(
+    r"""[\[,]\s*cols\s*=\s*(?:"([^"]*)"|'([^']*)'|([^,\]\s]+))"""
+)
+_COLUMN_SPEC_REPEAT_RE: Final = re.compile(r"(\d+)\*")
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
@@ -273,6 +277,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # not start at 1, by the reference of its group.
         pending_list_start: int | None = None
         next_list_numbers: dict[str, int] = {}
+        pending_table_cols: int | None = None
+        table_cols: int | None = None
 
         parents: dict[int, Union[GroupItem, None]] = {}
         indents: dict[int, Union[GroupItem, None]] = {}
@@ -324,10 +330,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 pending_list_start = (
                     int(start_match.group(1)) if start_match else pending_list_start
                 )
+                pending_table_cols = (
+                    self._table_column_count(stripped_line) or pending_table_cols
+                )
                 continue
 
             list_start, pending_list_start = self._take_list_start(
                 line, pending_list_start
+            )
+            block_table_cols, pending_table_cols = self._take_list_start(
+                line, pending_table_cols
             )
 
             # Title
@@ -439,15 +451,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             elif line.strip() == "|===":  # start or end of table
                 if in_table:
                     self._add_table_if_nonempty(
-                        doc, table_data, caption_data, self._get_current_parent(parents)
+                        doc,
+                        table_data,
+                        caption_data,
+                        self._get_current_parent(parents),
+                        table_cols,
                     )
                     caption_data = []
                     in_table = False
                     in_delimited_table = False
                     table_data = []
+                    table_cols = None
                 else:
                     in_table = True
                     in_delimited_table = True
+                    table_cols = block_table_cols
 
             elif self._is_table_line(line):  # within a table
                 in_table = True
@@ -510,7 +528,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         if in_table:
             # An unclosed table still consumes its pending caption below.
             self._add_table_if_nonempty(
-                doc, table_data, caption_data, self._get_current_parent(parents)
+                doc,
+                table_data,
+                caption_data,
+                self._get_current_parent(parents),
+                table_cols,
             )
         elif caption_data:
             # A block title never followed by a floating element must still
@@ -1267,6 +1289,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         table_data: list[list[_TableCellSource]],
         caption_data: list[str],
         parent: NodeItem | None,
+        num_cols: int | None = None,
     ) -> None:
         if not table_data:
             return
@@ -1278,12 +1301,30 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
 
-        data = AsciiDocBackend._populate_table_as_grid(table_data)
+        data = AsciiDocBackend._populate_table_as_grid(table_data, num_cols)
         doc.add_table(data=data, parent=parent, caption=caption)
+
+    @staticmethod
+    def _table_column_count(attribute_line: str) -> int | None:
+        match = _TABLE_COLS_ATTR_RE.search(attribute_line)
+        if match is None:
+            return None
+        value = next(group for group in match.groups() if group is not None)
+        records = value.replace(" ", "")
+        if not records:
+            return None
+        if records.isdigit():
+            return int(records) or None
+        count = 0
+        for record in records.split("," if "," in records else ";"):
+            repeat = _COLUMN_SPEC_REPEAT_RE.match(record)
+            count += int(repeat.group(1)) if repeat else 1
+        return count or None
 
     @staticmethod
     def _group_table_rows(
         table_data: list[list[_TableCellSource]],
+        num_cols: int | None = None,
     ) -> list[list[_TableCellSource]]:
         """Group the cells of a table into its rows.
 
@@ -1301,7 +1342,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             [replace(cell, repeat=1) for cell in line for _ in range(cell.repeat)]
             for line in table_data
         ]
-        num_cols = sum(cell.col_span for cell in table_data[0])
+        num_cols = num_cols or sum(cell.col_span for cell in table_data[0])
         rows: list[list[_TableCellSource]] = []
         covered: dict[int, int] = {}
         row: list[_TableCellSource] = []
@@ -1333,7 +1374,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _populate_table_as_grid(
-        cls, table_data: list[list[_TableCellSource]]
+        cls,
+        table_data: list[list[_TableCellSource]],
+        num_cols: int | None = None,
     ) -> TableData:
         """Place each cell on the grid, with its spans.
 
@@ -1341,7 +1384,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         no rowspan from a row above already covers. A rowspan is cut at the
         last row of the table.
         """
-        rows = cls._group_table_rows(table_data)
+        rows = cls._group_table_rows(table_data, num_cols)
         num_rows = len(rows)
         occupied: set[tuple[int, int]] = set()
         cells: list[TableCell] = []
