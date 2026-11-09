@@ -262,8 +262,10 @@ decoding, at most 16384 new tokens, and no thinking block. The Typhoon chat temp
 thinking block unless `enable_thinking` is `False`, so the presets set
 `chat_template_kwargs={"enable_thinking": False}` on the model spec. Any `VlmModelSpec` can set
 `chat_template_kwargs`: the Transformers, vLLM, and MLX engines pass these keyword arguments to
-the chat template. API engines do not use them, so set request parameters in `api_overrides` of
-the model spec or in `ApiVlmEngineOptions.params`.
+the chat template. Docling rejects the `apply_chat_template` arguments that the engines control,
+for example `add_generation_prompt` and `tokenize`. API engines do not use
+`chat_template_kwargs`, so set request parameters in `api_overrides` of the model spec or in
+`ApiVlmEngineOptions.params`.
 
 Pages and image files render with a 2048-pixel long side (`scale=2048/72` and `max_size=2048`).
 For image files, this is different from the `typhoon-ocr2` package. The package enlarges images

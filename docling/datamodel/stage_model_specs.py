@@ -38,7 +38,10 @@ from docling.models.inference_engines.image_classification.base import (
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineType,
 )
-from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.models.inference_engines.vlm.base import (
+    ChatTemplateKwargs,
+    VlmEngineType,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.image_classification_engine_options import (
@@ -194,11 +197,14 @@ class VlmModelSpec(BaseModel):
         default_factory=dict, description="Additional generation configuration"
     )
 
-    chat_template_kwargs: Dict[str, Any] = Field(
+    chat_template_kwargs: ChatTemplateKwargs = Field(
         default_factory=dict,
         description=(
             "Keyword arguments for the chat template of the in-process engines "
             "(Transformers, vLLM, MLX), for example {'enable_thinking': False}. "
+            "The arguments of apply_chat_template that the engines control "
+            "(add_generation_prompt, num_images, return_dict, return_messages, "
+            "tokenize) are rejected. "
             "API engines do not use them: set request parameters in api_overrides."
         ),
     )

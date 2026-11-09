@@ -19,10 +19,13 @@ from unittest.mock import patch
 import pytest
 import torch
 from PIL import Image
+from pydantic import ValidationError
 from tokenizers import Tokenizer, models
 from transformers import PreTrainedTokenizerFast
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.stage_model_specs import VlmModelSpec
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.inference_engines.vlm.base import VlmEngineInput
 from docling.models.inference_engines.vlm.transformers_engine import (
@@ -162,3 +165,19 @@ def test_vllm_engine_passes_chat_template_kwargs(
         engine.predict_batch([_engine_input(chat_template_kwargs)])
 
     assert llm.prompts == [_USER_TURN + generation_prompt]
+
+
+# The Transformers engine sets tokenize, all engines set add_generation_prompt, and
+# the MLX engine sets num_images.
+@pytest.mark.parametrize("key", ["tokenize", "add_generation_prompt", "num_images"])
+def test_engine_arguments_are_rejected_as_chat_template_kwargs(key: str) -> None:
+    with pytest.raises(ValidationError, match=key):
+        VlmModelSpec(
+            name="Model",
+            default_repo_id="org/model",
+            prompt=_PROMPT,
+            response_format=ResponseFormat.MARKDOWN,
+            chat_template_kwargs={key: False},
+        )
+    with pytest.raises(ValidationError, match=key):
+        _engine_input({key: False})

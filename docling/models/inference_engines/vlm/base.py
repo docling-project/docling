@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     ClassVar,
     Dict,
@@ -20,7 +21,14 @@ from typing import (
 )
 
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, Field, SerializeAsAny, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializeAsAny,
+    field_validator,
+)
 from pydantic_core import PydanticUndefined
 
 if TYPE_CHECKING:
@@ -138,6 +146,35 @@ class VlmEngineOptionsMixin(BaseModel):
         return value
 
 
+# Arguments of apply_chat_template that the engines control. As chat template kwargs,
+# they collide with the engine call, change the prompt, or change the result type.
+_ENGINE_CHAT_TEMPLATE_ARGUMENTS = frozenset(
+    {
+        "add_generation_prompt",
+        "num_images",
+        "return_dict",
+        "return_messages",
+        "tokenize",
+    }
+)
+
+
+def _validate_chat_template_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    reserved = sorted(_ENGINE_CHAT_TEMPLATE_ARGUMENTS.intersection(kwargs))
+    if reserved:
+        raise ValueError(
+            f"chat_template_kwargs cannot set {reserved}: these are arguments of "
+            "apply_chat_template that the engines control"
+        )
+    return kwargs
+
+
+# Keyword arguments for a chat template, without the engine arguments.
+ChatTemplateKwargs = Annotated[
+    Dict[str, Any], AfterValidator(_validate_chat_template_kwargs)
+]
+
+
 class VlmEngineInput(BaseModel):
     """Input to a VLM inference engine.
 
@@ -160,7 +197,7 @@ class VlmEngineInput(BaseModel):
     extra_generation_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional generation configuration"
     )
-    chat_template_kwargs: Dict[str, Any] = Field(
+    chat_template_kwargs: ChatTemplateKwargs = Field(
         default_factory=dict,
         description="Keyword arguments for the chat template (in-process engines only)",
     )
