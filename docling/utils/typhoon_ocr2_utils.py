@@ -35,11 +35,9 @@ from docling_core.types.doc import (
 )
 from PIL import Image as PILImage
 
-from docling.utils.chandra_utils import _add_html_table
-from docling.utils.deepseekocr_utils import _parse_table_html
 from docling.utils.dots_utils import _add_inline_text, _unescape_markdown_literals
 from docling.utils.nemotron_parse_v3_5_utils import _add_rich_text
-from docling.utils.unlimited_ocr2_utils import _strip_table_tags
+from docling.utils.unlimited_ocr2_utils import _add_table, _strip_table_tags
 from docling.utils.vlm_utils import (
     link_adjacent_captions,
     normalize_section_header_levels,
@@ -189,21 +187,6 @@ def _provenance(
     )
 
 
-def _add_table(doc: DoclingDocument, html: str, prov: ProvenanceItem | None) -> bool:
-    """Add a table and return False if the HTML gives no cells."""
-    if prov is not None:
-        try:
-            return _add_html_table(doc, html, prov) is not None
-        except ValueError as exc:
-            # A dense page can pass the grid limit of the shared table mapper.
-            _log.warning("Reading a large Typhoon OCR V2 table without spans: %s", exc)
-    data = _parse_table_html(html)
-    if not data.table_cells:
-        return False
-    doc.add_table(data=data, prov=prov)
-    return True
-
-
 def _add_element(
     doc: DoclingDocument, category: str, text: str, prov: ProvenanceItem | None
 ) -> None:
@@ -230,7 +213,7 @@ def _add_element(
         doc.add_formula(text=strip_math_delimiters(text), orig=text, prov=prov)
         return
     if category == "table":
-        if _add_table(doc, text, prov):
+        if _add_table(doc, text, prov, "Typhoon OCR V2"):
             return
         _log.warning("Keeping a Typhoon OCR V2 table without cells as text")
         text = _strip_table_tags(text)

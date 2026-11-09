@@ -208,14 +208,20 @@ def _provenance(block: _Block, page_size: Size, page_no: int) -> ProvenanceItem 
     )
 
 
-def _add_table(doc: DoclingDocument, html: str, prov: ProvenanceItem | None) -> bool:
-    """Add a table and return False if the HTML gives no cells."""
+def _add_table(
+    doc: DoclingDocument, html: str, prov: ProvenanceItem | None, model: str
+) -> bool:
+    """Add a table and return False if the HTML gives no cells.
+
+    The Typhoon OCR V2 parser also uses this function. ``model`` names the model in
+    the log.
+    """
     if prov is not None:
         try:
             return _add_html_table(doc, html, prov) is not None
         except ValueError as exc:
             # A dense page can pass the grid limit of the shared table mapper.
-            _log.warning("Reading a large Unlimited-OCR 2 table without spans: %s", exc)
+            _log.warning("Reading a large %s table without spans: %s", model, exc)
     data = _parse_table_html(html)
     if not data.table_cells:
         return False
@@ -249,7 +255,7 @@ def _add_block(
         doc.add_formula(text=strip_math_delimiters(text), orig=text, prov=prov)
         return None
     if block.label == "table":
-        if _add_table(doc, text, prov):
+        if _add_table(doc, text, prov, "Unlimited-OCR 2"):
             return None
         _log.warning("Keeping an unreadable Unlimited-OCR 2 table as text")
         text = _strip_table_tags(text)
