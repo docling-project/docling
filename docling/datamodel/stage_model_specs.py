@@ -133,7 +133,9 @@ class ApiModelConfig(BaseModel):
         Returns:
             Merged configuration with overrides applied
         """
-        merged_params = {**base_params, **self.params}
+        # Copy nested values too, such as chat_template_kwargs: a change to the
+        # result must not change the preset.
+        merged_params = deepcopy({**base_params, **self.params})
         return ApiModelConfig(params=merged_params)
 
 

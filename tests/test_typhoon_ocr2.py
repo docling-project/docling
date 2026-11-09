@@ -643,6 +643,21 @@ def test_presets_pin_weights_and_engine_floors(preset_id: str, repo_id: str) -> 
     assert preset.max_size == 2048
 
 
+def test_changed_api_params_leave_the_preset_unchanged() -> None:
+    # The docs ask for chat_template_kwargs in your own params. A deep copy keeps
+    # the parts that the preset shares between engines shared.
+    spec = VlmConvertOptions.get_preset("typhoon_ocr2_2b").model_spec
+    spec = spec.model_copy(deep=True)
+
+    params = spec.get_api_params(VlmEngineType.API_OPENAI)
+    params["chat_template_kwargs"]["enable_thinking"] = True
+
+    assert [
+        spec.get_api_params(engine_type)["chat_template_kwargs"]
+        for engine_type in (VlmEngineType.API, VlmEngineType.API_OPENAI)
+    ] == [{"enable_thinking": False}] * 2
+
+
 # The fake server answers with the real reply for the Thai page.
 _PAGE_REPLY = _real_reply("thai_rainwater")
 _PAGE_LAYOUT = [
