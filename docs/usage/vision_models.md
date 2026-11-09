@@ -473,8 +473,10 @@ Docling then reads the whole reply and keeps the page text. A blank reply or an 
 list gives an empty page. A thinking block without an answer also gives an empty page,
 unless the thinking holds a draft: then Docling reads the draft. A reply that is not
 blank but has no layout elements gives a page error and `PARTIAL_SUCCESS`. An element
-with markup that is nested too deeply to read, for example from a looping reply, also
-gives a page error.
+with markup that is nested too deeply, for example from a looping reply, also gives a
+page error. The limit is 64 levels of items, and each nested table or list in a table
+cell adds two levels. Without it, such a page would convert, but its DocTags, DocLang,
+or HTML export could fail.
 
 Compared with the Markdown of the `typhoon-ocr2` package, the Docling Markdown export
 writes titles as headings, writes tables as Markdown tables instead of HTML, and keeps

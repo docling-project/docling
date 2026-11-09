@@ -31,6 +31,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     ImageRef,
     ProvenanceItem,
+    RefItem,
     Size,
 )
 from PIL import Image as PILImage
@@ -48,6 +49,10 @@ from docling.utils.vlm_utils import (
 _log = logging.getLogger(__name__)
 
 _GRID = 1000
+# The exports of docling-core recurse at each level of the item tree, and the
+# DocLang export and chunking fail at about 200 levels, before the mappers do. A
+# nested table or a list in a table cell adds two levels. Real pages nest a few.
+_MAX_TREE_DEPTH = 64
 # `_add_rich_text` moves the items of a page header or footer to the furniture layer.
 _TEXT_LABELS = {
     "text": DocItemLabel.TEXT,
@@ -209,6 +214,17 @@ def _provenance(
     )
 
 
+def _tree_depth(doc: DoclingDocument, refs: list[RefItem]) -> int:
+    """Return how many levels the items under ``refs`` nest, without recursion."""
+    deepest = 0
+    stack = [(ref, 1) for ref in refs]
+    while stack:
+        ref, depth = stack.pop()
+        deepest = max(deepest, depth)
+        stack.extend((child, depth + 1) for child in ref.resolve(doc).children)
+    return deepest
+
+
 def _add_element(
     doc: DoclingDocument, category: str, text: str, prov: ProvenanceItem | None
 ) -> None:
@@ -271,7 +287,8 @@ def parse_typhoon_ocr2_json(
 
     Raises:
         ValueError: If a reply that is not blank holds no layout elements, or if an
-            element nests its markup too deeply to read.
+            element nests its markup too deeply: more than 64 levels of items, or
+            deeper than the mappers read.
     """
     doc = DoclingDocument(
         name=Path(filename).stem,
@@ -312,13 +329,16 @@ def parse_typhoon_ocr2_json(
             without_box += 1
         if category in _CAPTION_OWNER_LABELS:
             caption_owners[index] = _CAPTION_OWNER_LABELS[category]
+        # A looping reply can nest markup deeper than the exports or the shared
+        # mappers read.
         try:
             _add_element(doc, category, text, prov)
+            added = doc.body.children[block_starts[-1] :]
+            too_deep = _tree_depth(doc, added) > _MAX_TREE_DEPTH
         except RecursionError:
-            # A looping reply can nest markup deeper than the shared mappers read.
-            raise ValueError(
-                f"element {index + 1} nests its markup too deeply"
-            ) from None
+            too_deep = True
+        if too_deep:
+            raise ValueError(f"element {index + 1} nests its markup too deeply")
     if without_box:
         _log.warning(
             "Keeping %d Typhoon OCR V2 elements without a valid box", without_box

@@ -333,15 +333,42 @@ def test_reply_without_elements_raises(content: str) -> None:
         ("table", "<table><tr><td>" * 400 + "x"),
         ("text", "<b>" * 2000 + "x" + "</b>" * 2000),
         ("text", "**" * 1000 + "x" + "**" * 1000),
+        # The mappers read these, but the DocTags or HTML export of the page fails.
+        ("table", "<table><tr><td>" * 140 + "x"),
+        ("table", "<table><tr><td>" + "<ul><li>" * 200 + "x</td></tr></table>"),
     ],
-    ids=["nested_tables", "nested_html", "nested_emphasis"],
+    ids=[
+        "nested_tables",
+        "nested_html",
+        "nested_emphasis",
+        "tables_too_deep_to_export",
+        "lists_too_deep_to_export",
+    ],
 )
 def test_over_deep_markup_in_an_element_raises(category: str, text: str) -> None:
-    # A looping reply can nest markup past the recursion limit of the shared mappers.
+    # A looping reply can nest markup deeper than the exports or the mappers read.
     content = _reply(_element("title", "Results"), _element(category, text))
 
     with pytest.raises(ValueError, match="element 2 nests its markup too deeply"):
         _parse(content)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "<table><tr><td>" * 32 + "x",
+        "<table><tr><td>" + "<ul><li>" * 31 + "x</td></tr></table>",
+    ],
+    ids=["nested_tables", "lists_in_a_cell"],
+)
+def test_deepest_accepted_table_still_exports(text: str) -> None:
+    # The items nest 63 and 64 levels deep, within the limit of the parser.
+    doc = _parse(_reply(_element("table", text)))
+
+    assert doc.export_to_doctags()
+    assert doc.export_to_doclang()
+    assert doc.export_to_html()
+    assert doc.export_to_markdown()
 
 
 @pytest.mark.parametrize("content", ["", " \n", "```json\n[]\n```", "</think>\n\n"])
