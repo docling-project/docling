@@ -11,14 +11,12 @@ item-0 at level 0: unspecified: group _root_
         item-10 at level 4: list_item: Germany
         item-11 at level 4: list_item: Switzerland
           item-12 at level 5: list: group list
-            item-13 at level 6: list_item: 
-              item-14 at level 7: list: group list
-                item-15 at level 8: list_item: Bern
-                item-16 at level 8: list_item: Aargau
-        item-17 at level 4: list_item: Italy
-          item-18 at level 5: list: group list
-            item-19 at level 6: list_item: 
-              item-20 at level 7: list: group list
-                item-21 at level 8: list_item: Piedmont
-                item-22 at level 8: list_item: Liguria
-    item-23 at level 2: list_item: Africa
+            item-13 at level 6: list: group list
+              item-14 at level 7: list_item: Bern
+              item-15 at level 7: list_item: Aargau
+        item-16 at level 4: list_item: Italy
+          item-17 at level 5: list: group list
+            item-18 at level 6: list: group list
+              item-19 at level 7: list_item: Piedmont
+              item-20 at level 7: list_item: Liguria
+    item-21 at level 2: list_item: Africa

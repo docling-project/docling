@@ -1162,6 +1162,36 @@ def test_list_item_without_text():
     assert "5. Fifth." in doc.export_to_markdown()
 
 
+def test_list_item_without_text_or_marker():
+    """A <li> without text that hides its marker in a <ul> only indents its list."""
+    html = (
+        b"<html><body><ul><li>Switzerland<ul>"
+        b"<li style='list-style-type: none;'><ul><li>Bern</li></ul></li>"
+        b"</ul></li></ul>"
+        b"<ol><li style='list-style-type: none;'><ul><li>Nested.</li></ul></li>"
+        b"<li>Second.</li></ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    # In the <ul>, no empty item; in the <ol>, the empty item keeps the numbering.
+    assert [item.text for item in list_items] == [
+        "Switzerland",
+        "Bern",
+        "",
+        "Nested.",
+        "Second.",
+    ]
+    assert "2. Second." in doc.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     "inner",
     [
