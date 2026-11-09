@@ -539,11 +539,11 @@ pipeline_options = VlmPipelineOptions(
 Limits of these presets:
 
 - **Image files.** Docling renders each page with a 2048-pixel long side (`scale=2048/72` and
-  `max_size=2048`). The `typhoon-ocr2` package renders PDF pages in the same way. For image
-  files, the package enlarges an image under 1600 pixels to 1600 pixels and sends a larger image
-  at its own size. Docling resizes every image file to a 2048-pixel long side. In a small test,
-  the 2B model card reports the same output at 1800 and 2200 pixels as at 1600 pixels, with more
-  image tokens.
+  `max_size=2048`). The `typhoon-ocr2` package renders PDF pages with the same long side. For
+  image files, the package enlarges an image under 1600 pixels to 1600 pixels and sends a larger
+  image at its own size. Docling resizes every image file to a 2048-pixel long side. In a small
+  test, the 2B model card reports the same output at 1800 and 2200 pixels as at 1600 pixels, with
+  more image tokens.
 - **Pixel limit.** Docling page images have at most about 4.2 million pixels (2048 x 2048), so
   the `max_pixels` value of the server command has no effect on Docling requests. The 2B model
   card reports lower accuracy with a 4 MP limit than with the 16.7 MP limit of its benchmarks:
@@ -551,6 +551,12 @@ Limits of these presets:
   image files larger than 2048 pixels, which the package sends at their own size. If you change
   `scale`, keep `max_size`: without it, the preset scale renders a Letter page at 17408 x 22528
   pixels.
+- **PDF renderer.** The `typhoon-ocr2` package renders PDF pages with pypdfium2. The default PDF
+  backend of Docling renders them with docling-parse. In a test PDF with shaped Thai text, made
+  with fpdf2, docling-parse 7.23.0 drew wrong glyphs for some vowels and tone marks, for example
+  in น้ำ, and the reply of the model changed. pypdfium2 drew the page correctly. If the model
+  misreads Thai text that the PDF shows correctly, pass `backend=PyPdfiumDocumentBackend` (from
+  `docling.backend.pypdfium2_backend`) to the `PdfFormatOption` of the VLM pipeline.
 - **Your own `params`.** If you set `params`, Docling does not send the preset parameters.
   Include `model`, `top_p=1.0`, and `chat_template_kwargs={"enable_thinking": False}` yourself.
   Docling still sends `temperature` and `max_tokens`.

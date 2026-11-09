@@ -352,7 +352,10 @@ The presets switch off the thinking block of the chat template. They also send
 `params`, Docling sends no preset parameters, so include `model`, `top_p=1.0`, and
 `chat_template_kwargs`. Page headers and footers go to the furniture layer; page
 footnotes stay in the body. Image files render with a 2048-pixel long side, as PDF
-pages do. Slim installs need `docling-slim[format-markdown]`.
+pages do. If the model misreads Thai text that the PDF shows correctly, pass
+`backend=PyPdfiumDocumentBackend` to `PdfFormatOption`: the default docling-parse page
+render drew wrong Thai glyphs for one test PDF. Slim installs need
+`docling-slim[format-markdown]`.
 
 Model presets (`docling.datamodel.vlm_model_specs`):
 
