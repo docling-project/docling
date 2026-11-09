@@ -387,3 +387,23 @@ def test_create_image_ref_skips_undecodable_image():
 
     with pytest.warns(UserWarning, match="Could not process an image"):
         assert ImageResourceLoader().create_image_ref(truncated, None) is None
+
+
+def test_create_image_ref_applies_exif_orientation():
+    # A 200x100 readout with a black corner, tagged to be turned a quarter
+    # clockwise: a browser shows it 100x200 with the corner at the top right.
+    image = Image.new("RGB", (200, 100), "white")
+    image.paste((0, 0, 0), (0, 0, 20, 20))
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", exif=exif)
+
+    ref = ImageResourceLoader().create_image_ref(
+        _jpeg_data_uri(buffer.getvalue()), None
+    )
+
+    assert ref is not None
+    assert ref.pil_image is not None
+    assert ref.pil_image.size == (100, 200)
+    assert min(ref.pil_image.getpixel((ref.pil_image.width - 3, 2))) < 128
