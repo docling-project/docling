@@ -550,18 +550,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     def _generate_prov(
         self, shape, slide_ind, text="", slide_size=Size(width=1, height=1)
     ):
-        if None not in (shape.left, shape.top, shape.width, shape.height):
-            left = shape.left
-            top = shape.top
-            width = shape.width
-            height = shape.height
-        else:
+        # Each of these walks the layout and master for a placeholder that
+        # inherits its position, so read them once.
+        left, top, width, height = shape.left, shape.top, shape.width, shape.height
+        has_position = None not in (left, top, width, height)
+        if not has_position:
             left = 0
             top = 0
             width = slide_size.width
             height = slide_size.height
         shape_bbox = [left, top, left + width, top + height]
-        if None not in (shape.left, shape.top, shape.width, shape.height):
+        if has_position:
             shape_bbox = self._to_slide_coordinates(shape, shape_bbox)
         # python-pptx reports left and top as EMU from the slide's top-left, with
         # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
@@ -1123,6 +1122,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         ):
             content_layer = ContentLayer.FURNITURE
 
+        # Every paragraph gets the box of its shape. For a placeholder that
+        # inherits its position, python-pptx looks up each coordinate in the
+        # slide layout and master, so compute the box once for the shape.
+        shape_prov = self._generate_prov(shape, slide_ind, "", slide_size)
+
+        def make_prov(text: str) -> ProvenanceItem:
+            return ProvenanceItem(
+                page_no=shape_prov.page_no,
+                charspan=[0, len(text)],
+                bbox=shape_prov.bbox.model_copy(),
+            )
+
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
             is_a_list, bullet_type, auto_number_scheme = self._is_list_item(paragraph)
@@ -1132,7 +1143,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             p_text = "".join(text for _, text in fragments)
             has_equations = any(label == DocItemLabel.FORMULA for label, _ in fragments)
 
-            prov = self._generate_prov(shape, slide_ind, p_text, slide_size)
+            prov = make_prov(p_text)
 
             if is_a_list:
                 enum_marker = ""
@@ -1190,9 +1201,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             label=label,
                             parent=inline_group,
                             text=text,
-                            prov=self._generate_prov(
-                                shape, slide_ind, text, slide_size
-                            ),
+                            prov=make_prov(text),
                             content_layer=content_layer,
                         )
             else:  # is paragraph not a list item
@@ -1233,9 +1242,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                                 label=label,
                                 parent=parent,
                                 text=text,
-                                prov=self._generate_prov(
-                                    shape, slide_ind, text, slide_size
-                                ),
+                                prov=make_prov(text),
                                 content_layer=content_layer,
                             )
                 else:
