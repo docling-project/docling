@@ -17,16 +17,13 @@ downstream has to learn a new element kind. Untagged pages, and every page when
 the option is ``off``, pass through unchanged.
 """
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Iterable
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from docling_core.types.doc import BoundingBox, DocItemLabel
-from docling_parse.pdf_parser import (
-    PdfMarkedContentRef,
-    PdfStructure,
-    PdfStructureElement,
-)
 
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import (
@@ -39,6 +36,14 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+
+# docling-parse is an optional dependency (the `format-pdf-docling` extra) and
+# this module is imported by the standard PDF pipeline, hence by
+# DocumentConverter, on every install. Keep the import type-only and dispatch
+# on the `kind` discriminator of the structure kids at run time.
+# See https://github.com/docling-project/docling/issues/3613.
+if TYPE_CHECKING:
+    from docling_parse.pdf_parser import PdfStructure, PdfStructureElement
 
 _log = logging.getLogger(__name__)
 
@@ -65,24 +70,8 @@ _LEAF_LABELS: dict[str, DocItemLabel] = {
 for _level in range(1, 7):
     _LEAF_LABELS[f"/H{_level}"] = DocItemLabel.SECTION_HEADER
 
-# Grouping types: no element of their own, their children are walked.
-_CONTAINERS = frozenset(
-    {
-        "/Document",
-        "/DocumentFragment",
-        "/Part",
-        "/Art",
-        "/Sect",
-        "/Div",
-        "/BlockQuote",
-        "/Aside",
-        "/NonStruct",
-        "/Private",
-        "/L",
-        "/Form",
-        "/Annot",
-    }
-)
+# Every other type (/Document, /Part, /Sect, /Div, /L, /Form, ... and unknown
+# or custom types) is a grouping: no element of its own, its children are walked.
 
 # Fraction of a model cluster that must lie inside tagged clusters for it to
 # count as already covered in ``prefer`` mode.
@@ -104,10 +93,10 @@ def _mcids_on_page(element: PdfStructureElement, page_no: int) -> set[int]:
     while stack:
         current = stack.pop()
         for kid in current.kids:
-            if isinstance(kid, PdfMarkedContentRef):
+            if kid.kind == "mcid":
                 if kid.page_no == page_no:
                     found.add(kid.mcid)
-            elif isinstance(kid, PdfStructureElement):
+            elif kid.kind == "element":
                 stack.append(kid)
     return found
 
@@ -117,21 +106,17 @@ class TaggedStructureModel(BasePageModel):
 
     def __init__(self, *, mode: TaggedStructureMode) -> None:
         self.mode = mode
-        self._structures: dict[int, PdfStructure | None] = {}
 
-    def _structure_for(self, conv_res: ConversionResult) -> PdfStructure | None:
-        key = id(conv_res)
-        if key not in self._structures:
-            backend = conv_res.input._backend
-            # Only PDF backends expose the structure tree; the pipeline's input
-            # type is not narrowed, so check the backend family explicitly.
-            structure = (
-                backend.get_structure()
-                if isinstance(backend, PdfDocumentBackend)
-                else None
-            )
-            self._structures[key] = structure
-        return self._structures[key]
+    @staticmethod
+    def _structure_for(conv_res: ConversionResult) -> PdfStructure | None:
+        # The document backend reads the tree once and caches it, so the stage
+        # keeps no state of its own: the model outlives any single conversion.
+        backend = conv_res.input._backend
+        # Only PDF backends expose the structure tree; the pipeline's input
+        # type is not narrowed, so check the backend family explicitly.
+        if isinstance(backend, PdfDocumentBackend):
+            return backend.get_structure()
+        return None
 
     def _clusters_from_structure(
         self,
@@ -163,12 +148,11 @@ class TaggedStructureModel(BasePageModel):
         def visit(element: PdfStructureElement) -> None:
             kind = element.resolved_type(structure.role_map)
             label = _LEAF_LABELS.get(kind)
-            if label is None and kind not in _CONTAINERS:
-                # Unknown block type: treat as a container so nothing is lost.
-                label = None
             if label is None:
+                # A grouping type, or an unknown block type: walk the children
+                # as a container so nothing is lost.
                 for kid in element.kids:
-                    if isinstance(kid, PdfStructureElement):
+                    if kid.kind == "element":
                         visit(kid)
                 return
             boxes = [

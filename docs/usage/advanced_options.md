@@ -222,6 +222,7 @@ cells need `do_table_structure=True`. Raw widget metadata is not stored in the
 `DoclingDocument`; keep parsed pages with `generate_parsed_pages=True` when
 that PDF-specific data is needed. Field items are not supported by the DocTags
 export.
+
 ### Use the tagged-PDF structure tree
 
 Tagged PDFs (ISO 32000-2, 14.7; PDF/UA) carry the author's logical structure:
