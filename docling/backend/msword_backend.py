@@ -208,6 +208,26 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
 )
 """Matches Strict OOXML namespace/relationship URIs."""
 
+_PLAIN_PARAGRAPH_CHILDREN: Final[frozenset[str]] = frozenset(
+    f"{_W_NS_CLARK}{name}"
+    for name in (
+        "pPr",
+        "r",
+        "proofErr",
+        "bookmarkStart",
+        "bookmarkEnd",
+        "commentRangeStart",
+        "commentRangeEnd",
+        "permStart",
+        "permEnd",
+        "moveFromRangeStart",
+        "moveFromRangeEnd",
+        "moveToRangeStart",
+        "moveToRangeEnd",
+    )
+)
+"""Children of a ``w:p`` that are runs or empty markers, with no text nested in them."""
+
 _MAX_HEADING_LEVEL: Final[int] = 9
 """OOXML headings are 1-9. Values outside that range are clamped."""
 
@@ -2667,11 +2687,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         fields, smart tags and tracked insertions. A cell has no content layer of
         its own, so fully hidden paragraphs are left out.
         """
-        return "\n".join(
-            self._get_paragraph_text(paragraph)
-            for paragraph in cell.paragraphs
-            if not self._is_hidden_paragraph(paragraph)
-        )
+        lines: list[str] = []
+        for paragraph in cell.paragraphs:
+            if self._is_hidden_paragraph(paragraph):
+                continue
+            # Skip resolving the run formatting when only plain runs are present.
+            if not self._uses_hidden_text and all(
+                child.tag in _PLAIN_PARAGRAPH_CHILDREN for child in paragraph._p
+            ):
+                lines.append(paragraph.text)
+            else:
+                lines.append(self._get_paragraph_text(paragraph))
+        return "\n".join(lines)
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
