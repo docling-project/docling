@@ -1732,3 +1732,33 @@ def test_character_reference_is_decoded_only_when_terminated(
         ("cell", cell.text) for table in doc.tables for cell in table.data.table_cells
     ]
     assert items == expected_items
+
+
+def test_image_caption_is_parented_under_its_picture():
+    """An image caption must be a child of its picture, not at the body top level."""
+    markdown = (
+        '- Item with image ![alt](http://x.y/a.png "List caption")\n'
+        "\n"
+        "| Cell |\n"
+        "| --- |\n"
+        '| ![alt](http://x.y/b.png "Table caption") |\n'
+    )
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    captions = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    assert len(captions) == 2
+
+    list_caption = next(c for c in captions if c.text == "List caption")
+    table_caption = next(c for c in captions if c.text == "Table caption")
+
+    list_picture = list_caption.parent.resolve(doc)
+    table_picture = table_caption.parent.resolve(doc)
+
+    assert isinstance(list_picture, PictureItem)
+    assert list_caption.get_ref() in list_picture.captions
+
+    assert isinstance(table_picture, PictureItem)
+    assert table_caption.get_ref() in table_picture.captions
+
+    assert list_picture.parent.cref != "#/body"
+    assert table_picture.parent.cref != "#/body"
