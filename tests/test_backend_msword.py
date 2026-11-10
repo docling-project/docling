@@ -953,11 +953,10 @@ def test_block_sdt_tables_are_extracted():
 
 
 def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
-    """A plain table cell keeps runs nested in inline wrappers.
+    """A table cell keeps the text of runs nested in inline wrappers.
 
-    Body paragraphs already read the runs inside content controls, simple
-    fields, smart tags and tracked insertions; a plain cell dropped them, so a
-    form filled in with content controls came out with empty answers.
+    The wrappers are content controls, simple fields, smart tags and tracked
+    insertions. Deleted text stays out, and each paragraph is one line.
     """
     w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
     wrapped_runs = {
@@ -977,13 +976,24 @@ def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
             f'<w:ins {w} w:id="1" w:author="Reviewer">'
             "<w:r><w:t>1200</w:t></w:r></w:ins>"
         ),
+        "Removed": (
+            f'<w:del {w} w:id="2" w:author="Reviewer">'
+            "<w:r><w:delText>Old value</w:delText></w:r></w:del>"
+        ),
     }
 
     document = Document()
-    table = document.add_table(rows=len(wrapped_runs), cols=2)
+    table = document.add_table(rows=len(wrapped_runs) + 1, cols=2)
     for row_idx, (label, wrapped_run) in enumerate(wrapped_runs.items()):
         table.cell(row_idx, 0).text = label
         table.cell(row_idx, 1).paragraphs[0]._p.append(etree.fromstring(wrapped_run))
+
+    last_row = len(wrapped_runs)
+    table.cell(last_row, 0).text = "Two paragraphs"
+    table.cell(last_row, 1).paragraphs[0].add_run("First")
+    table.cell(last_row, 1).add_paragraph()._p.append(
+        etree.fromstring(wrapped_runs["Name"])
+    )
 
     doc = _convert_built(document, tmp_path)
 
@@ -996,6 +1006,10 @@ def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
         "Paris",
         "Amount",
         "1200",
+        "Removed",
+        "",
+        "Two paragraphs",
+        "First\nJane Doe",
     ]
 
 
