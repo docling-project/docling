@@ -993,10 +993,13 @@ def _odf_cell_text(cell: Any) -> str:
     if _odf_cell_has_rich_content(cell):
         return _strip_odf_image_reference_text(child_text, cell.get_images())
 
-    if cell.value is not None:
-        return str(cell.value)
+    # The text:p content is the text the application displays (a rounded
+    # number, a percentage, a currency or date format). The typed value is
+    # only a fallback for a cell that stores no text.
     if child_text:
         return child_text
+    if cell.value is not None:
+        return str(cell.value)
     if cell.children:
         return ""
 
