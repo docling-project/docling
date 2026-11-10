@@ -39,6 +39,22 @@ def _blue_png() -> bytes:
     return buffer.getvalue()
 
 
+def _cmyk_jpeg() -> bytes:
+    buffer = BytesIO()
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def _quarter_turn_jpeg() -> bytes:
+    image = Image.new("RGB", (200, 100), "white")
+    image.paste((0, 0, 0), (0, 0, 20, 20))
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", exif=exif)
+    return buffer.getvalue()
+
+
 def _archive(
     html: str,
     extra_parts: str = "",
@@ -214,6 +230,24 @@ def test_embedded_images_resolve_by_location_and_cid():
     assert all(picture.get_image(doc).size == (1, 1) for picture in doc.pictures)
 
 
+def test_embedded_image_with_zero_dpi_defaults_to_72_dpi():
+    buffer = BytesIO()
+    Image.new("RGB", (1, 1)).save(buffer, format="PNG", dpi=(0, 0))
+    png = base64.b64encode(buffer.getvalue()).decode()
+    parts = (
+        "--B\r\nContent-Type: image/png\r\n"
+        "Content-ID: <zero-dpi@example>\r\n"
+        f"Content-Transfer-Encoding: base64\r\n\r\n{png}\r\n"
+    )
+    html = '<html><body><img src="cid:zero-dpi@example"></body></html>'
+    doc = _convert_stream(
+        _archive(html, parts), options=HTMLBackendOptions(fetch_images=True)
+    )
+
+    assert doc.pictures[0].image is not None
+    assert doc.pictures[0].image.dpi == 72
+
+
 def test_embedded_relative_location_resolves_with_file_root():
     png = base64.b64encode(_red_png()).decode()
     parts = (
@@ -229,6 +263,49 @@ def test_embedded_relative_location_resolves_with_file_root():
     doc = _convert_stream(data, options=HTMLBackendOptions(fetch_images=True))
 
     assert doc.pictures[0].image is not None
+
+
+def test_cmyk_picture_in_mhtml_is_kept():
+    jpeg = base64.b64encode(_cmyk_jpeg()).decode()
+    parts = (
+        "--B\r\nContent-Type: image/jpeg\r\n"
+        "Content-ID: <image1@example>\r\n"
+        f"Content-Transfer-Encoding: base64\r\n\r\n{jpeg}\r\n"
+    )
+    html = '<html><body><img src="cid:image1@example"></body></html>'
+
+    doc = _convert_stream(
+        _archive(html, parts), options=HTMLBackendOptions(fetch_images=True)
+    )
+
+    assert len(doc.pictures) == 1
+    image_ref = doc.pictures[0].image
+    assert image_ref is not None
+    image = image_ref.pil_image
+    assert image is not None
+    assert image.size == (200, 100)
+    assert image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
+
+
+def test_embedded_image_follows_exif_orientation():
+    jpeg = base64.b64encode(_quarter_turn_jpeg()).decode()
+    parts = (
+        "--B\r\nContent-Type: image/jpeg\r\n"
+        "Content-ID: <photo@example>\r\n"
+        f"Content-Transfer-Encoding: base64\r\n\r\n{jpeg}\r\n"
+    )
+    html = '<html><body><img src="cid:photo@example"></body></html>'
+
+    doc = _convert_stream(
+        _archive(html, parts), options=HTMLBackendOptions(fetch_images=True)
+    )
+
+    image_ref = doc.pictures[0].image
+    assert image_ref is not None
+    image = image_ref.pil_image
+    assert image is not None
+    assert image.size == (100, 200)
+    assert min(image.convert("RGB").getpixel((image.width - 3, 2))) < 128
 
 
 def test_default_fetch_images_leaves_archive_image_as_placeholder():

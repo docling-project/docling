@@ -12,16 +12,19 @@ are based on open-access articles:
 4. pntd.0008301.nxml - CC0 1.0 (Burgert-Brucker et al. 2020, PMC7289444, https://doi.org/10.1371/journal.pntd.0008301)
 """
 
+import re
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     GroupLabel,
     ListItem,
     PictureItem,
+    RichTableCell,
     TextItem,
 )
 from docling_core.types.doc.document import Script
@@ -128,9 +131,10 @@ def get_pictures(doc: DoclingDocument) -> list[PictureItem]:
     return [item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)]
 
 
-def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
+def convert_jats_article_meta(article_meta: str, body: str = "") -> DoclingDocument:
     xml = JATS_WRAPPER.format(
         content=f"<front><article-meta>{article_meta}</article-meta></front>"
+        + (f"<body>{body}</body>" if body else "")
     )
     stream = DocumentStream(name="article-meta-test.nxml", stream=BytesIO(xml.encode()))
     return get_converter().convert(stream).document
@@ -885,6 +889,19 @@ def test_jats_plain_paragraph_stays_a_single_text_item():
     assert texts == ["Plain text with a 1 citation."]
 
 
+def test_jats_inline_term_keeps_its_text():
+    # <term> marks a defined term inside running text; its words are part of the sentence.
+    doc = convert_jats_body(
+        "<sec><title>The <term>PCR</term> step</title>"
+        "<p>The <term>polymerase chain reaction</term> amplifies DNA.</p></sec>"
+    )
+
+    headings = [t.text for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert headings == ["The PCR step"]
+    assert texts == ["The polymerase chain reaction amplifies DNA."]
+
+
 @pytest.mark.parametrize(
     ("body", "expected"),
     [
@@ -1241,6 +1258,103 @@ def test_jats_figure_image_blocks_path_traversal(
     assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
+def test_jats_table_published_as_image_keeps_its_caption():
+    """A <table-wrap> with a <graphic> instead of a <table> becomes a picture in place."""
+    doc = convert_jats_body(
+        "<sec><title>Methods</title>"
+        "<p>The items are listed in Table 1.</p>"
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Items of data extraction.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/></table-wrap>'
+        "<p>Text after the table.</p></sec>"
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Items of data extraction."
+    markdown = doc.export_to_markdown()
+    before = markdown.index("The items are listed in Table 1.")
+    table_caption = markdown.index("Table 1 Items of data extraction.")
+    picture = markdown.index("<!-- image -->")
+    after = markdown.index("Text after the table.")
+    assert before < table_caption < picture < after
+
+
+def test_jats_table_published_as_alternative_images_is_one_picture():
+    doc = convert_jats_body(
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Two renditions.</p></caption>"
+        '<alternatives><graphic xlink:href="table1.tif"/>'
+        '<graphic xlink:href="table1.jpg"/></alternatives></table-wrap>'
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Two renditions."
+
+
+def test_jats_table_with_cells_and_graphic_stays_a_table():
+    """When a <table-wrap> has both cells and a <graphic>, only the table is added."""
+    doc = convert_jats_body(
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Cells and image.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/>'
+        "<table><tr><td>A</td><td>B</td></tr></table></table-wrap>"
+    )
+
+    assert len(doc.tables) == 1
+    assert get_pictures(doc) == []
+    assert doc.tables[0].captions[0].resolve(doc).text == "Table 1 Cells and image."
+
+
+def test_jats_table_published_as_image_without_caption_keeps_its_label():
+    doc = convert_jats_body(
+        '<table-wrap id="T2"><label>Table 2</label>'
+        '<graphic xlink:href="table2.jpg"/></table-wrap>'
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].captions[0].resolve(doc).text == "Table 2"
+
+
+def test_jats_table_wrap_without_table_or_graphic_adds_nothing():
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        '<table-wrap id="T3"><label>Table 3</label>'
+        "<caption><p>Only a caption.</p></caption></table-wrap></sec>"
+    )
+
+    assert doc.tables == []
+    assert get_pictures(doc) == []
+
+
+def test_jats_table_published_as_image_embeds_image_when_enabled(
+    tmp_path: Path, local_fetch_converter: DocumentConverter
+):
+    _make_test_image(tmp_path / "table1.png", color=(0, 0, 255))
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>A blue table.</p></caption>"
+        '<graphic xlink:href="table1.png"/></table-wrap>',
+    )
+
+    doc = local_fetch_converter.convert(jats_path).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
 def test_jats_element_citation_surname_only_does_not_crash():
     """Citations with only a surname are rendered with that surname."""
     doc = convert_jats_body(
@@ -1457,6 +1571,98 @@ def test_jats_author_affiliations_still_map_from_xref():
     assert "Example University" in md
 
 
+def _furniture_statements(doc: DoclingDocument) -> list[list[tuple[str, str | None]]]:
+    """Return the (text, hyperlink) runs of each furniture text, in document order.
+
+    The runs of a text with styling or links share an inline group.
+    """
+    statements: dict[str, list[tuple[str, str | None]]] = {}
+    for item in doc.texts:
+        if item.content_layer != ContentLayer.FURNITURE:
+            continue
+        key = item.self_ref
+        if item.parent is not None:
+            parent = item.parent.resolve(doc)
+            if parent.label == GroupLabel.INLINE:
+                assert parent.content_layer == ContentLayer.FURNITURE
+                key = parent.self_ref
+        statements.setdefault(key, []).append(
+            (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        )
+    return list(statements.values())
+
+
+def test_jats_license_and_funding_statements_are_furniture():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Control</article-title></title-group>
+      <permissions><license xlink:href="https://example.org/c3-licence"><license-p>CHARLIE-LICENCE terms of the
+      <ext-link ext-link-type="uri" xlink:href="https://example.org/c3-licence">licence</ext-link>.</license-p></license></permissions>
+      <abstract><p>CHARLIE-ABSTRACT paragraph.</p></abstract>
+      <funding-group><funding-statement>CHARLIE-FUNDING statement.</funding-statement></funding-group>
+""",
+        "<sec><title>S</title><p>Body.</p></sec>",
+    )
+
+    assert _furniture_statements(doc) == [
+        [
+            ("CHARLIE-LICENCE terms of the ", None),
+            ("licence", "https://example.org/c3-licence"),
+            (".", None),
+        ],
+        [("CHARLIE-FUNDING statement.", None)],
+    ]
+    # The default export keeps to the body.
+    body_markdown = doc.export_to_markdown()
+    assert "CHARLIE-ABSTRACT paragraph." in body_markdown
+    assert "CHARLIE-LICENCE" not in body_markdown
+    assert "CHARLIE-FUNDING" not in body_markdown
+    # On request, the statements follow the article content.
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert (
+        markdown.index("Body.")
+        < markdown.index("CHARLIE-LICENCE")
+        < markdown.index("CHARLIE-FUNDING")
+    )
+
+
+def test_jats_copyright_and_each_license_paragraph_are_kept_in_order():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Permissions</article-title></title-group>
+      <permissions>
+        <copyright-statement>© The Authors 2026.</copyright-statement>
+        <copyright-year>2026</copyright-year>
+        <license license-type="cc-by" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+          <license-p>Distributed under the CC BY licence.</license-p>
+          <license-p>Funded by SCOAP<sup>3</sup></license-p>
+        </license>
+      </permissions>
+      <funding-group>
+        <award-group><funding-source>Agency</funding-source></award-group>
+        <funding-statement>First grant.</funding-statement>
+        <funding-statement>Second grant.</funding-statement>
+      </funding-group>
+"""
+    )
+
+    assert _furniture_statements(doc) == [
+        [("© The Authors 2026.", None)],
+        [("Distributed under the CC BY licence.", None)],
+        [("Funded by SCOAP", None), ("3", None)],
+        [("First grant.", None)],
+        [("Second grant.", None)],
+    ]
+    superscripts = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.script == Script.SUPER
+    ]
+    assert superscripts == ["3"]
+
+
 @pytest.mark.parametrize("use_stream", [False, True])
 def test_e2e_jats_conversions(use_stream: bool):
     jats_paths = get_jats_paths()
@@ -1479,6 +1685,11 @@ def test_e2e_jats_conversions(use_stream: bool):
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
+        )
+        # Core's hierarchy dump adds a separator space even for empty wrappers.
+        # Remove only that separator in JATS fixtures; leave text runs unchanged.
+        pred_itxt = re.sub(
+            r"(?m)^( *item-\d+ at level \d+: footnote:) $", r"\1", pred_itxt
         )
         assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
             "export to indented-text"
@@ -1523,3 +1734,101 @@ def test_jats_table_with_an_empty_label_produces_no_caption():
     )
 
     assert _caption_texts(doc) == []
+
+
+def test_jats_table_cell_keeps_scripts_and_their_whitespace():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td> H<sub>2</sub>O in km<sup>2</sup> <!-- note --></td><td>plain</td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    rich, plain = doc.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+    assert isinstance(rich, RichTableCell)
+    inline = rich.ref.resolve(doc).children[0].resolve(doc)
+    runs = [child.resolve(doc) for child in inline.children]
+    assert [run.text for run in runs] == ["H", "2", "O in km", "2"]
+    assert [run.formatting.script if run.formatting else None for run in runs] == [
+        None,
+        Script.SUB,
+        None,
+        Script.SUPER,
+    ]
+    assert "H2O in km2" in doc.export_to_markdown()
+    assert "H<sub>2</sub>O in km<sup>2</sup>" in doc.export_to_html()
+
+
+def test_jats_table_cell_is_rich_only_when_more_than_plain_text():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody><tr>
+        <td>a <bold>b</bold></td>
+        <td><ext-link xmlns:xlink="http://www.w3.org/1999/xlink"
+            xlink:href="https://example.com/">site</ext-link></td>
+        <td>a <inline-formula><alternatives><tex-math>$$x^2$$</tex-math>
+            <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>x</mml:mi></mml:math>
+            </alternatives></inline-formula> b</td>
+        <td>a <named-content>b</named-content></td>
+        </tr></tbody></table></table-wrap>"""
+    )
+
+    bold, link, formula, plain = doc.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+
+    assert isinstance(bold, RichTableCell)
+    inline = bold.ref.resolve(doc).children[0].resolve(doc)
+    assert inline.children[1].resolve(doc).formatting.bold
+
+    assert isinstance(link, RichTableCell)
+    run = link.ref.resolve(doc).children[0].resolve(doc)
+    assert (run.text, str(run.hyperlink)) == ("site", "https://example.com/")
+
+    assert isinstance(formula, RichTableCell)
+    inline = formula.ref.resolve(doc).children[0].resolve(doc)
+    runs = [child.resolve(doc) for child in inline.children]
+    assert [run.label for run in runs] == [
+        DocItemLabel.TEXT,
+        DocItemLabel.FORMULA,
+        DocItemLabel.TEXT,
+    ]
+    assert runs[1].text == "x^2"
+
+
+def test_jats_rich_table_cell_keeps_the_boundary_between_blocks():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td><p>x<sup>1</sup></p><p>Next</p></td>
+        <td><list><list-item><p>a<sup>2</sup></p></list-item>
+        <list-item><p>b</p></list-item></list></td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    paragraphs, items = doc.tables[0].data.table_cells
+    assert isinstance(paragraphs, RichTableCell)
+    assert isinstance(items, RichTableCell)
+    markdown = doc.export_to_markdown()
+    assert "x1 Next" in markdown
+    assert "a2 b" in markdown
+
+
+def test_jats_table_cell_with_only_a_blank_script_stays_plain():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td><sub> </sub></td><td> <sup> </sup>x</td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    blank, text = doc.tables[0].data.table_cells
+    assert not isinstance(blank, RichTableCell)
+    assert not isinstance(text, RichTableCell)
+    assert doc.groups == []
+
+
+def test_jats_nested_table_is_skipped_and_keeps_no_table_item():
+    doc = convert_jats_body(
+        """<sec><p>Text.</p><table-wrap id="t1"><table><tbody><tr><td>
+        <table><tbody><tr><td>x<sub>1</sub></td></tr></tbody></table>
+        </td></tr></tbody></table></table-wrap></sec>"""
+    )
+
+    assert doc.tables == []

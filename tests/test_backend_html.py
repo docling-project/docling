@@ -14,6 +14,7 @@ import pytest
 import requests
 from bs4 import BeautifulSoup
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     GroupLabel,
     PictureItem,
@@ -702,6 +703,38 @@ def test_table_and_image_inside_figure_are_parsed():
 
     # The table should NOT have the caption
     assert len(doc.tables[0].captions) == 0
+
+
+@pytest.mark.parametrize(
+    "figure",
+    [
+        '<figure><img src="x.png" alt="x"><figcaption>Caption text</figcaption></figure>',
+        '<img src="x.png" alt="Caption text">',
+    ],
+)
+def test_image_caption_stays_in_the_section_of_its_image(figure: str):
+    html = (
+        f"<html><body><h1>One</h1>{figure}<p>Para one.</p>"
+        "<h1>Two</h1><p>Para two.</p></body></html>"
+    ).encode()
+    doc = _convert_html(html)
+
+    picture = doc.pictures[0]
+    section = picture.parent.resolve(doc)
+    assert section.text == "One"
+    # The caption is a child of its picture, so it stays in section "One"
+    caption = picture.captions[0].resolve(doc)
+    assert caption.text == "Caption text"
+    assert [child.cref for child in picture.children] == [caption.self_ref]
+    para = next(t for t in doc.texts if t.text == "Para one.")
+    assert [child.cref for child in section.children] == [
+        picture.self_ref,
+        para.self_ref,
+    ]
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TITLE,
+        DocItemLabel.TITLE,
+    ]
 
 
 @pytest.mark.parametrize(
@@ -1436,6 +1469,75 @@ def test_code_language_hint_prefers_prefixed_class():
     assert HTMLDocumentBackend._code_language_hint(plain.pre) is None
 
 
+@pytest.mark.parametrize(
+    ("pre_html", "expected"),
+    [
+        (
+            "<pre><code>\n    if ok:\n        run()\n\n</code></pre>",
+            "    if ok:\n        run()",
+        ),
+        (
+            '<pre><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>\n    <span class="k">return</span> <span class="mi">1</span>\n</pre>',
+            "def f():\n    return 1",
+        ),
+        (
+            "<pre><code>line one</code>\n<code>line two</code>\n<code>line three</code></pre>",
+            "line one\nline two\nline three",
+        ),
+        ("<pre><code>x = 'a  b'</code> <code>y</code></pre>", "x = 'a  b' y"),
+        ("<pre>first<br>second</pre>", "first\nsecond"),
+        ("<pre>before<!-- hidden -->after</pre>", "beforeafter"),
+        ("<pre>before<?hidden instruction?>after</pre>", "beforeafter"),
+        ("<pre>before<!DOCTYPE hidden>after</pre>", "beforeafter"),
+        ("<pre>before<![CDATA[hidden]]>after</pre>", "beforeafter"),
+        ("<pre>before<script>hidden()</script>after</pre>", "beforeafter"),
+    ],
+)
+def test_preformatted_blocks_preserve_inline_whitespace(pre_html: str, expected: str):
+    raw_html = f"<html><body>{pre_html}</body></html>".encode()
+    doc = _convert_html(raw_html)
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == [expected]
+
+
+def test_preformatted_hyperlinks_keep_run_whitespace():
+    raw_html = b"<html><body><pre>See <a href='https://example.com/docs'>the docs</a> first</pre></body></html>"
+    doc = _convert_html(raw_html)
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["See ", "the docs", " first"]
+    assert str(code_items[1].hyperlink) == "https://example.com/docs"
+
+
+def test_preformatted_inherited_hyperlink_is_kept():
+    doc = _convert_html(
+        b"<html><body><a href='https://example.com/docs'><pre>read()</pre></a></body></html>"
+    )
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["read()"]
+    assert str(code_items[0].hyperlink) == "https://example.com/docs"
+
+
+def test_preformatted_styles_keep_run_whitespace():
+    doc = _convert_html(
+        b"<html><body><pre>before <b>bold</b> after</pre></body></html>"
+    )
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["before ", "bold", " after"]
+    assert code_items[0].formatting is None
+    assert code_items[1].formatting.bold
+    assert code_items[2].formatting is None
+
+
+def test_empty_preformatted_block_emits_no_code_item():
+    doc = _convert_html(b"<html><body><pre>\n\n</pre></body></html>")
+
+    assert not any(isinstance(item, CodeItem) for item in doc.texts)
+
+
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search
@@ -1575,6 +1677,40 @@ def test_local_file_uri_source_resolves_images(tmp_path: Path):
     ]
     assert len(pictures) == 1
     assert pictures[0].get_image(doc) is not None
+
+
+def test_cmyk_picture_is_kept(tmp_path: Path):
+    # Images in modes that cannot be written as PNG (e.g. CMYK) must still
+    # make it through the conversion as normalized RGB pictures.
+    buffer = BytesIO()
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(buffer, format="JPEG")
+    (tmp_path / "cmyk.jpg").write_bytes(buffer.getvalue())
+
+    source = tmp_path / "cmyk.html"
+    source.write_text('<html><body><img src="cmyk.jpg"></body></html>')
+
+    backend_options = HTMLBackendOptions(
+        enable_local_fetch=True, fetch_images=True, source_uri=str(source)
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    result = converter.convert(source)
+
+    assert result.status == ConversionStatus.SUCCESS
+    num_pic = 0
+    for element, _ in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            assert element.image
+            image = element.image.pil_image
+            assert image is not None
+            assert image.size == (200, 100)
+            assert image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
+            num_pic += 1
+    assert num_pic == 1, "The CMYK picture was not kept in the converted file"
 
 
 def test_html_furniture():

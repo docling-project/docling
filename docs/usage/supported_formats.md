@@ -24,12 +24,13 @@ Below you can find a listing of all supported input and output formats.
 | MHTML, MHT | MIME HTML archives |
 | CSV | |
 | PNG, JPEG, TIFF, BMP, WEBP | Image formats |
-| WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
-| MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
+| WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `audio` or `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
+| MP4, AVI, MOV, MKV, WEBM | Video formats — audio track is extracted and transcribed (requires `audio` or `asr` extra, and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
+| iCalendar | Calendar files |
 
 For Markdown, CSV, and AsciiDoc, a byte-order mark (BOM) selects the text encoding
 unless the backend's `encoding` option is set. If the bytes are not valid in the
@@ -38,6 +39,11 @@ and retains the decoder error as its cause.
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
+
+Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
+text in `<footer>` elements is retained in the furniture content layer. Default
+Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
+`included_content_layers` to export it.
 
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula
@@ -53,7 +59,7 @@ Schema-specific support:
 | DocLang archive | Zipped DocLang bundle including page images; supported extension: `.dclx` |
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
-| XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
+| XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard; also inline XBRL (iXBRL) reports in `.htm`, `.html` and `.xhtml` files; needs the `xbrl` extra |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
 

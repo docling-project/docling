@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -29,16 +28,13 @@ from docling.models.inference_engines.vlm.base import (
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
-
-# Global lock for MLX model calls - MLX models are not thread-safe
-# All MLX models share this lock to prevent concurrent MLX operations
-_MLX_GLOBAL_LOCK = threading.Lock()
 
 # mlx-vlm injects enable_thinking=False into processor.apply_chat_template for any
 # processor whose signature accepts **kwargs. Models whose chat template does not
@@ -246,7 +242,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # MLX models are not thread-safe - use global lock to serialize access
-        with _MLX_GLOBAL_LOCK:
+        with MLX_GLOBAL_LOCK:
             _log.debug("MLX model: Acquired global lock for thread safety")
 
             for input_data in input_batch:

@@ -20,6 +20,7 @@ uv run python scripts/tools/sync_prs.py --comment-conflicts   # comment on confl
 uv run python scripts/tools/sync_prs.py --approve-ci          # approve safe CI runs
 uv run python scripts/tools/sync_prs.py --open-ci-greens-in-tabs
 uv run python scripts/tools/sync_prs.py --pr 5115 --pr 5122   # only these PRs
+uv run python scripts/tools/sync_prs.py --label pdf           # only PRs with this label
 ```
 
 A run over 100 PRs takes about 75 seconds. Use `-h` to see all options and
@@ -29,6 +30,36 @@ While it runs, the script shows status lines (`▸ ...`) and progress bars
 with the PR that it reads, on stderr. The report goes to stdout, so
 `> report.md` gives a clean Markdown file. Use `--quiet` to turn off the
 status lines and progress bars.
+
+### Filter by label
+
+Use `--label` to keep only the PRs with a label. Any label works. These labels
+are for formats:
+
+| Label | Format |
+| --- | --- |
+| `pdf`, `pdf parsing` | PDF (`pdf parsing` is for docling-parse) |
+| `docx`, `pptx`, `xlsx` | Microsoft Office |
+| `odf` | OpenDocument (ODT, ODS, ODP) |
+| `iwork` | Apple Pages, Numbers, and Keynote |
+| `html`, `markdown`, `asciidoc`, `latex`, `csv` | Markup and text tables |
+| `plain text` | Plain text (the Markdown backend reads it) |
+| `epub`, `boxnote`, `calendar`, `email` | EPUB, Box Notes, iCalendar, EML and MSG |
+| `image` | Images (PNG, TIFF, JPEG, ...) |
+| `audio`, `vtt` | Audio (WAV, MP3) and WebVTT |
+| `xml` | All XML formats, also with one of the next labels |
+| `jats`, `uspto`, `xbrl`, `doclang` | One XML format |
+
+A format label is present only on PRs that a rule or a maintainer labeled. See
+`.github/scripts/pr_topic_labels.py`.
+
+- If you repeat `--label`, a PR needs one of the labels, not all of them.
+- GitHub applies the filter, so `--limit` counts only the matching PRs.
+- The actions apply only to the matching PRs.
+- A label that does not exist gives an empty report, not an error.
+- You cannot use `--label` together with `--pr`.
+- `-h` lists all labels. This is a fixed list in the script. Update
+  `LABELS_HELP` when the repository labels change.
 
 ### Output
 

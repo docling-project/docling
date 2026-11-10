@@ -42,20 +42,26 @@ def _get_backend(fname: Path) -> DeclarativeDocumentBackend:
     return doc_backend
 
 
+def _convert_adoc(
+    source: bytes | str, options: AsciiDocBackendOptions | None = None
+) -> DoclingDocument:
+    raw = source if isinstance(source, bytes) else source.encode("utf-8")
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="test.adoc",
+        backend_options=options,
+    )
+    return in_doc._backend.convert()
+
+
 def test_list_dedent_to_base_does_not_crash() -> None:
     # A list that starts indented and then dedents back to the base level used
     # to raise "TypeError: '<' not supported between instances of 'int' and
     # 'NoneType'": the dedent loop walked past level 0, where the base indent is
     # never set. It should keep both items instead.
-    src = b"  * a\n* b\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="dedent.asciidoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(b"  * a\n* b\n")
     assert [item.text for item in doc.texts] == ["a", "b"]
 
 
@@ -65,15 +71,7 @@ def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
     # specifier pattern required a leading digit, so _is_table_line rejected the
     # line, the block loop read that as the end of the table, and the row after
     # it leaked into the document as literal text.
-    src = b"|===\n|A |B\n.2+|tall |x\n|y\n|===\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="rowspan.asciidoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(b"|===\n|A |B\n.2+|tall |x\n|y\n|===\n")
     assert doc.tables, "the table was dropped entirely"
     table = doc.tables[0]
     # The trailing single-cell row "|y" is kept: cells flow into the grid, so it
@@ -94,15 +92,7 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
     # padded with an empty cell (matching how Asciidoctor fills the grid), so no
     # empty phantom table is emitted and no cell content is lost.
     for row, first in ((b"|3", "3"), (b"2+|wide", "wide")):
-        src = b"|===\n|A |B\n" + row + b"\n|===\n"
-        in_doc = InputDocument(
-            path_or_stream=BytesIO(src),
-            format=InputFormat.ASCIIDOC,
-            backend=AsciiDocBackend,
-            filename="single-cell-row.adoc",
-        )
-        doc = in_doc._backend.convert()
-
+        doc = _convert_adoc(b"|===\n|A |B\n" + row + b"\n|===\n")
         assert len(doc.tables) == 1
         assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (2, 2)
         assert [cell.text for cell in doc.tables[0].data.table_cells] == [
@@ -117,15 +107,7 @@ def test_single_cell_per_line_table_is_not_truncated() -> None:
     # be read as the end of the table: the first such line was silently
     # dropped, the remaining ones leaked into the document as literal text, and
     # the closing |=== reopened an empty table that vanished at EOF.
-    src = b"|===\n|Name\n|Age\n|Alice\n|30\n|===\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="vertical-table.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(b"|===\n|Name\n|Age\n|Alice\n|30\n|===\n")
     assert len(doc.tables) == 1
     assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (4, 1)
     assert [cell.text for cell in doc.tables[0].data.table_cells] == [
@@ -137,6 +119,90 @@ def test_single_cell_per_line_table_is_not_truncated() -> None:
     assert [item.text for item in doc.texts] == []
 
 
+def _table_grid(src: bytes) -> tuple[int, list[tuple[str, int, int, int, int]]]:
+    data = _convert_adoc(src).tables[0].data
+    cells = [
+        (c.text, c.start_row_offset_idx, c.start_col_offset_idx, c.row_span, c.col_span)
+        for c in data.table_cells
+    ]
+    return data.num_cols, cells
+
+
+def _table_rows(src: bytes) -> list[list[str]]:
+    _, cells = _table_grid(src)
+    rows: dict[int, list[str]] = {}
+    for text, r, _, _, _ in cells:
+        rows.setdefault(r, []).append(text)
+    return [rows[idx] for idx in sorted(rows)]
+
+
+def test_table_row_written_over_several_lines() -> None:
+    # Asciidoctor takes the column count from the first line and fills each
+    # row with that many cells, so its basic table example writes one cell per
+    # line after a header on one line. Each line used to become its own row.
+    src = (
+        b"|===\n"
+        b"|Column 1, header row |Column 2, header row\n\n"
+        b"|Cell in column 1, row 2\n|Cell in column 2, row 2\n\n"
+        b"|Cell in column 1, row 3\n|Cell in column 2, row 3\n"
+        b"|===\n"
+    )
+    assert _table_rows(src) == [
+        ["Column 1, header row", "Column 2, header row"],
+        ["Cell in column 1, row 2", "Cell in column 2, row 2"],
+        ["Cell in column 1, row 3", "Cell in column 2, row 3"],
+    ]
+
+
+def test_table_spans_take_their_grid_positions() -> None:
+    # Each cell carries its spans and starts at the first column that no
+    # column span to its left and no row span from above covers.
+    # (text, row, col, row_span, col_span)
+    assert _table_grid(b"|===\n|A |B\n2+|wide\n|x\n|y\n|===\n") == (
+        2,
+        [
+            ("A", 0, 0, 1, 1),
+            ("B", 0, 1, 1, 1),
+            ("wide", 1, 0, 1, 2),
+            ("x", 2, 0, 1, 1),
+            ("y", 2, 1, 1, 1),
+        ],
+    )
+    assert _table_grid(b"|===\n|A |B\n.2+|tall\n|x\n|y\n|z\n|===\n") == (
+        2,
+        [
+            ("A", 0, 0, 1, 1),
+            ("B", 0, 1, 1, 1),
+            ("tall", 1, 0, 2, 1),
+            ("x", 1, 1, 1, 1),
+            ("y", 2, 1, 1, 1),
+            ("z", 3, 0, 1, 1),
+        ],
+    )
+    # A row span below the last row is cut at the end of the table.
+    assert _table_grid(b"|===\n|A |B\n.3+|tall |x\n|===\n")[1][2] == (
+        "tall",
+        1,
+        0,
+        1,
+        1,
+    )
+
+
+def test_table_rows_over_several_lines_count_duplicated_cells() -> None:
+    # "2*|x" writes the cell twice, so a first line "2*|x |y" sets three
+    # columns, as Asciidoctor reads it. A line continuing the cell's text
+    # applies to both copies.
+    assert _table_rows(b"|===\n2*|x |y\n|z\n|p\n|q\n|===\n") == [
+        ["x", "x", "y"],
+        ["z", "p", "q"],
+    ]
+    assert _table_rows(b"|===\n|A |B |C\n2*|x\nmore\n|y\n|===\n") == [
+        ["A", "B", "C"],
+        ["x more", "x more", "y"],
+    ]
+
+
 def test_blank_line_inside_table_does_not_split_it() -> None:
     # Inside |=== ... |=== a blank line only separates rows: Asciidoctor's own
     # examples put one after the header row. It used to end the table, so the
@@ -146,14 +212,7 @@ def test_blank_line_inside_table_does_not_split_it() -> None:
         b".Formats\n|===\n|Format |Extension\n\n|Markdown |.md\n|JSON |.json\n|===\n",
         b".Formats\n|===\n\n|Format |Extension\n\n|Markdown |.md\n\n|JSON |.json\n|===\n",
     ):
-        in_doc = InputDocument(
-            path_or_stream=BytesIO(src),
-            format=InputFormat.ASCIIDOC,
-            backend=AsciiDocBackend,
-            filename="blank-line-table.adoc",
-        )
-        doc = in_doc._backend.convert()
-
+        doc = _convert_adoc(src)
         assert len(doc.tables) == 1
         table = doc.tables[0]
         assert (table.data.num_rows, table.data.num_cols) == (3, 2)
@@ -176,14 +235,7 @@ def test_wrapped_cell_text_stays_in_its_cell() -> None:
         b"|===\n|Format |Extension\n|Markdown |.md or\n(also .markdown)\n"
         b"|JSON |.json\n|===\nAfter.\n"
     )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="wrapped-cell-table.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(src)
     assert len(doc.tables) == 1
     assert [cell.text for cell in doc.tables[0].data.table_cells] == [
         "Format",
@@ -206,14 +258,7 @@ def test_escaped_pipe_stays_inside_its_cell() -> None:
         b"|--format |json\\|yaml\n"
         b"|--level |debug\\|info\\|warn\n|===\n"
     )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="escaped-pipe.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(src)
     assert len(doc.tables) == 1
     table = doc.tables[0]
     assert (table.data.num_rows, table.data.num_cols) == (3, 2)
@@ -231,33 +276,16 @@ def test_source_listing_block_becomes_code_item() -> None:
     # "[source,python] / ---- / ... / ----" is a listing block: it must become a
     # code item carrying the declared language, not a paragraph with the block
     # markers leaked into the text.
-    src = b"[source,python]\n----\nx = 1\ny = 2\n----\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="listing.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(b"[source,python]\n----\nx = 1\ny = 2\n----\n")
     code_items = [item for item in doc.texts if item.label == DocItemLabel.CODE]
     assert len(code_items) == 1
     assert code_items[0].text == "x = 1\ny = 2"
     assert code_items[0].code_language == CodeLanguageLabel.PYTHON
-    # no marker or attribute text may leak into the body
     assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == []
 
 
 def test_listing_block_without_language_stays_code() -> None:
-    src = b"----\nplain listing\n----\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="listing_no_lang.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(b"----\nplain listing\n----\n")
     code_items = [item for item in doc.texts if item.label == DocItemLabel.CODE]
     assert len(code_items) == 1
     assert code_items[0].text == "plain listing"
@@ -268,14 +296,7 @@ def test_content_block_delimiters_do_not_leak() -> None:
     # Example (====), sidebar (****), open (--) blocks carry regular content:
     # the delimiter lines must be consumed, not echoed into the text.
     src = b"====\nexample content\n====\n\n****\nsidebar text\n****\n\n--\nopen content\n--\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="content_blocks.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(src)
     texts = [item.text for item in doc.texts]
     assert "example content" in texts
     assert "sidebar text" in texts
@@ -287,20 +308,22 @@ def test_content_block_delimiters_do_not_leak() -> None:
 def test_stray_dashes_are_not_swallowed() -> None:
     # A lone "--" line without a matching closer (e.g. a changelog separator)
     # must not be treated as an open-block delimiter consuming the document.
-    src = b"before\n--\nafter\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="stray_dashes.adoc",
-    )
-    doc = in_doc._backend.convert()
-
-    # the content after the stray "--" must survive; the unmatched open-block
-    # marker breaks the paragraph instead of rendering as text (matching
-    # asciidoctor, where an unclosed open block starts a separate block)
+    doc = _convert_adoc(b"before\n--\nafter\n")
     texts = [item.text for item in doc.texts]
     assert texts == ["before", "after"]
+
+
+def test_trailing_plus_is_a_hard_line_break() -> None:
+    # A line ending in " +" breaks the line in AsciiDoc; the "+" is not text.
+    src = b"Roses are red, +\nviolets are blue.\n\nA *bold* line +\nand more.\n"
+    doc = _convert_adoc(src)
+    texts = [item.text for item in doc.texts]
+    assert texts == [
+        "Roses are red,\nviolets are blue.",
+        "A ",
+        "bold",
+        " line\nand more.",
+    ]
 
 
 def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
@@ -316,28 +339,13 @@ def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
         b"\n"
         b"[NOTE]\nThis is a caveat.\n"
     )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="attributes.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(src)
     assert len(doc.tables) == 1
     assert [item.text for item in doc.texts] == ["This is a caveat."]
 
 
 def test_unclosed_table_at_end_keeps_caption() -> None:
-    src = b".End table\n|===\n|A |B"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="unclosed-table.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(b".End table\n|===\n|A |B")
     assert len(doc.tables) == 1
     assert [caption.resolve(doc).text for caption in doc.tables[0].captions] == [
         "End table"
@@ -357,14 +365,7 @@ def test_auto_numbered_list_keeps_items_and_following_text() -> None:
 
 If the installer fails, check the log file.
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="ordered-list.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     list_items = [item for item in doc.texts if isinstance(item, ListItem)]
     assert [item.text for item in list_items] == [
         "Download the archive",
@@ -373,6 +374,39 @@ If the installer fails, check the log file.
     ]
     assert all(item.enumerated for item in list_items)
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
+
+
+def test_ordered_list_start_attribute_sets_the_first_number() -> None:
+    # "[start=4]" was skipped as metadata, so the list was numbered from 1.
+    source = b"""[start=4]
+. four
+. five
+.. nested
+. six
+
+.Steps
+[arabic, start="2"]
+
+. two
+. three
+
+[start=7]
+Not a list.
+
+. one
+"""
+    doc = _convert_adoc(source)
+    assert doc.export_to_markdown() == (
+        "4. four\n"
+        "5. five\n"
+        "    1. nested\n"
+        "6. six\n\n"
+        "**Steps**\n\n"
+        "2. two\n"
+        "3. three\n\n"
+        "Not a list.\n\n"
+        "1. one"
+    )
 
 
 def test_line_starting_with_an_abbreviation_is_not_a_list_item() -> None:
@@ -386,13 +420,7 @@ Fig. 2 shows the architecture.
 a. First option
 b. Second option
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="abbreviation.adoc",
-    )
-    doc = in_doc._backend.convert()
+    doc = _convert_adoc(source)
 
     paragraphs = [item.text for item in doc.texts if item.label == "paragraph"]
     assert paragraphs == [
@@ -412,14 +440,7 @@ def test_nested_list_belongs_to_the_item_above_it() -> None:
 .. Pick the file for your platform
 . Run the installer
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="nested-ordered-list.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     download, pick, run = (item for item in doc.texts if isinstance(item, ListItem))
     nested_list = pick.parent.resolve(doc)
     assert nested_list.parent == download.get_ref()
@@ -442,14 +463,7 @@ def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
 ** banana bread
 * cherry
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="nested-list.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     list_items = [item for item in doc.texts if isinstance(item, ListItem)]
     assert [item.text for item in list_items] == [
         "apple",
@@ -481,14 +495,7 @@ After the list.
 
 * mango
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="nested-list-end.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     paragraph = next(item for item in doc.texts if item.text == "After the list.")
     assert paragraph.parent == doc.body.get_ref()
     mango = next(item for item in doc.texts if item.text == "mango")
@@ -516,14 +523,7 @@ Separate paragraph.
 ** y2
 . z
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="mixed-list.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     list_items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
     assert [text for text, item in list_items.items() if item.enumerated] == [
         "one",
@@ -565,14 +565,7 @@ Separate paragraph.
 - three
 . four
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="bullet-markers.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     list_items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
     assert list_items["a"].parent == list_items["d"].parent
     assert list_items["b"].parent.resolve(doc).parent == list_items["a"].get_ref()
@@ -608,14 +601,7 @@ second line
 
 After the block.
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="literal-block.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
     assert [item.text for item in code_items] == ["raw literal\nsecond line"]
     assert "After the block." in doc.export_to_markdown()
@@ -631,14 +617,7 @@ raw literal
 
 image::next.png[]
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="captioned-literal-block.adoc",
-    )
-    doc = in_doc._backend.convert()
-
+    doc = _convert_adoc(source)
     code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
     assert len(code_items) == 1
     assert code_items[0].text == "raw literal"
@@ -655,13 +634,7 @@ def test_block_title_before_list_renders_as_bold_paragraph() -> None:
 . First step
 . Second step
 """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(source),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="block-title-list.adoc",
-    )
-    doc = in_doc._backend.convert()
+    doc = _convert_adoc(source)
 
     from docling_core.types.doc import Formatting
 
@@ -706,15 +679,19 @@ def test_parse_picture() -> None:
     )
 
 
+def _cell_texts(line: str) -> list[str]:
+    return [cell.text for cell in AsciiDocBackend._parse_table_cells(line)]
+
+
 def test_table_cell_format_specifiers() -> None:
     # A header row whose cells carry alignment + style specifiers ("^.^h|")
     # must still be detected as a table line and parsed into clean cells.
     line = "^.^h|Field               ^.^h| Description"
     assert AsciiDocBackend._is_table_line(line)
-    assert AsciiDocBackend._parse_table_line(line) == ["Field", "Description"]
+    assert _cell_texts(line) == ["Field", "Description"]
 
     # A column-spanning specifier ("2+^|") is dropped from the cell text.
-    assert AsciiDocBackend._parse_table_line("2+^|Spanned ^|Next") == [
+    assert _cell_texts("2+^|Spanned ^|Next") == [
         "Spanned",
         "Next",
     ]
@@ -723,8 +700,8 @@ def test_table_cell_format_specifiers() -> None:
 def test_table_cell_content_preserved() -> None:
     # Single-letter cells that coincide with style operators (s, h, m, ...) and
     # words ending in one (Eth) must not be mistaken for cell specifiers.
-    assert AsciiDocBackend._parse_table_line("| s | Strong") == ["s", "Strong"]
-    assert AsciiDocBackend._parse_table_line("| eth | Eth | Ethernet") == [
+    assert _cell_texts("| s | Strong") == ["s", "Strong"]
+    assert _cell_texts("| eth | Eth | Ethernet") == [
         "eth",
         "Eth",
         "Ethernet",

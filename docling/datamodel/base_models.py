@@ -133,6 +133,7 @@ class InputFormat(str, Enum):
     IWORK_NUMBERS = "iwork_numbers"
     EBCDIC = "ebcdic"
     AFP = "afp"
+    CALENDAR = "calendar"
 
 
 class OutputFormat(str, Enum):
@@ -161,7 +162,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
-    InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_XBRL: ["xml", "xbrl", "htm", "html", "xhtml"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"],
@@ -187,6 +188,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.IWORK_NUMBERS: ["numbers"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
     InputFormat.AFP: ["afp"],
+    InputFormat.CALENDAR: ["ics", "ical", "icalendar", "ifb"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -289,6 +291,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
     InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
+    InputFormat.CALENDAR: ["text/calendar"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
