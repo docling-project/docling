@@ -2980,3 +2980,63 @@ def test_single_char_spans_do_not_compact_across_a_boundary():
     )
     doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
     assert doc.export_to_markdown() == "Hi to"
+
+
+@pytest.mark.parametrize(
+    ("body", "text", "markdown"),
+    [
+        # Source wrapped in the middle of the sentence, one line per word group.
+        (
+            b"<div><em>hello</em>\n<em>world</em></div>",
+            "hello world",
+            "*hello* *world*",
+        ),
+        # The same paragraph wrapped: the newline between two plain runs.
+        (
+            b"<p><span>hello</span>\n<span>world</span></p>",
+            "hello world",
+            "hello world",
+        ),
+        # A newline-only node between a plain run and a formatted one.
+        (
+            b"<div>hello <em>big</em>\n<em>world</em></div>",
+            "hello big world",
+            "hello *big* *world*",
+        ),
+        # Collapsing must not survive as an empty run when the node is only spaces.
+        (b"<p>a<strong>b</strong>   <strong>c</strong></p>", "ab c", "a**b** **c**"),
+    ],
+)
+def test_inline_newline_between_runs_separates_words(body, text, markdown):
+    """A whitespace-only text node between inline tags is the space between the words.
+
+    HTML folds the newline of wrapped source into one space (CSS Text, section break
+    transformation). Dropping it turns `hello world` into `helloworld`.
+    """
+    html = b"<html><body>" + body + b"</body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+    assert doc.export_to_text() == text
+    assert doc.export_to_markdown() == markdown
+
+
+def test_inline_newline_does_not_pad_the_block_edge():
+    """A whitespace-only node at the start or end of a block still gets trimmed."""
+    html = (
+        b"<html><body><div>\n<em>only</em>\n</div>"
+        b"<div><span>  </span><em>padded</em><span>  </span></div></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+    assert doc.texts[0].text == "only"
+    assert doc.texts[-1].text == "padded"
