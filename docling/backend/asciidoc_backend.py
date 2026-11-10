@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -148,21 +148,11 @@ class _DataTableBlock:
     rows: list[list[str]]
 
 
-class _DsvDialect(csv.Dialect):
-    delimiter = ":"
-    quotechar = '"'
-    escapechar = "\\"
-    doublequote = False
-    skipinitialspace = False
-    lineterminator = "\n"
-    quoting = csv.QUOTE_NONE
-
-
 _DATA_TABLE_DELIMITERS: Final = {",===": "csv", ":===": "dsv"}
-_DATA_TABLE_DIALECTS: Final[dict[str, type[csv.Dialect]]] = {
-    "csv": csv.excel,
-    "tsv": csv.excel_tab,
-    "dsv": _DsvDialect,
+_DATA_TABLE_FORMATS: Final[dict[str, dict[str, Any]]] = {
+    "csv": {"dialect": "excel"},
+    "tsv": {"dialect": "excel-tab"},
+    "dsv": {"delimiter": ":", "escapechar": "\\", "quoting": csv.QUOTE_NONE},
 }
 _TABLE_FORMAT_ATTR_RE: Final = re.compile(
     r"""^\[(?:[^\]]*,)?\s*format\s*=\s*["']?(csv|dsv|tsv)["']?\s*(?:,[^\]]*)?\]$""",
@@ -755,7 +745,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             end += 1
         rows = csv.reader(
             StringIO("\n".join(lines[body_start:end])),
-            dialect=_DATA_TABLE_DIALECTS[table_format],
+            **_DATA_TABLE_FORMATS[table_format],
         )
         return _DataTableBlock(
             rows=[[value.strip() for value in row] for row in rows if row]
