@@ -2586,6 +2586,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             text for text, _format, _hyperlink in self._get_paragraph_content(paragraph)
         )
 
+    def _get_cell_text(self, cell: _Cell) -> str:
+        """Return a table cell's visible text, one line per paragraph.
+
+        ``_Cell.text`` only reads runs and hyperlinks that are direct children
+        of a paragraph, so it misses the text nested in content controls, simple
+        fields, smart tags and tracked insertions. A cell has no content layer of
+        its own, so fully hidden paragraphs are left out.
+        """
+        return "\n".join(
+            self._get_paragraph_text(paragraph)
+            for paragraph in cell.paragraphs
+            if not self._is_hidden_paragraph(paragraph)
+        )
+
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
         Extract paragraph elements along with their formatting and hyperlink
@@ -4102,29 +4116,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue
 
                 cell = _Cell(tc, table)
-
-                # cell.text includes hidden runs, so rebuild it from the
-                # paragraphs' visible content when the cell has any. A cell has
-                # no layer of its own, so fully hidden paragraphs are left out.
-                cell_text = cell.text
-                if self._uses_hidden_text and any(
-                    self._is_hidden_run(Run(r_el, p), self._get_style_chain(p.style))
-                    for p in cell.paragraphs
-                    for r_el in p._p.xpath(".//w:r")
-                ):
-                    cell_text = "\n".join(
-                        self._get_paragraph_text(p)
-                        for p in cell.paragraphs
-                        if not self._is_hidden_paragraph(p)
-                    )
+                cell_text = self._get_cell_text(cell)
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
                     element=cell._element, text=cell_text
                 )
-                if len(equations) == 0:
-                    text = cell_text
-                else:
+                if len(equations) > 0:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
