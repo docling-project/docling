@@ -27,6 +27,12 @@ from docling_core.types.doc import (
 from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.asciidoc_attributes import (
+    INTRINSIC_ATTRIBUTES,
+    RESTORE_MARKS,
+    apply_attribute_entry,
+    substitute_attributes,
+)
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -65,59 +71,6 @@ _CELL_REPEAT_RE: Final = re.compile(r"(?P<repeat>\d+)\*(?![\d.])")
 # An ordered marker with a letter has one letter only ("a.", "B."), so a line
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
-
-# An attribute entry ":name: value" sets a document attribute; ":name!:" and
-# ":!name:" unset it. A reference "{name}" is replaced by the value of the
-# attribute, "\{name}" is kept as the literal "{name}", and a reference to an
-# attribute that is not set stays as written (Asciidoctor's default
-# attribute-missing behavior).
-_ATTRIBUTE_ENTRY_RE: Final = re.compile(
-    r"^:(?P<unset_before>!)?(?P<name>\w[\w.-]*?)(?P<unset_after>!)?:(?:\s+(?P<value>.*))?$"
-)
-_ATTRIBUTE_REFERENCE_RE: Final = re.compile(r"(?P<escape>\\)?\{(?P<name>\w[\w-]*)\}")
-# Attributes that Asciidoctor predefines for characters that are awkward to type
-# or would otherwise be read as markup.
-_INTRINSIC_ATTRIBUTES: Final = {
-    "empty": "",
-    "blank": "",
-    "sp": " ",
-    "nbsp": "\u00a0",
-    "zwsp": "\u200b",
-    "wj": "\u2060",
-    "apos": "'",
-    "quot": '"',
-    "lsquo": "\u2018",
-    "rsquo": "\u2019",
-    "ldquo": "\u201c",
-    "rdquo": "\u201d",
-    "deg": "\u00b0",
-    "plus": "+",
-    "brvbar": "\u00a6",
-    "vbar": "|",
-    "amp": "&",
-    "lt": "<",
-    "gt": ">",
-    "startsb": "[",
-    "endsb": "]",
-    "caret": "^",
-    "asterisk": "*",
-    "tilde": "~",
-    "backslash": "\\",
-    "backtick": "`",
-    "two-colons": "::",
-    "two-semicolons": ";;",
-    "cpp": "C++",
-    "pp": "++",
-}
-
-# Asciidoctor replaces attribute references after inline formatting, so marks
-# that come from an attribute value ("{asterisk}", "{backtick}") are literal
-# text. Paragraph text is formatted after the references are replaced, so the
-# marks in a value are swapped for private-use stand-ins until then.
-_PROTECTED_MARKS: Final = {"*": "\ue000", "_": "\ue001", "`": "\ue002"}
-_PROTECT_MARKS: Final = str.maketrans(_PROTECTED_MARKS)
-_RESTORE_MARKS: Final = str.maketrans({v: k for k, v in _PROTECTED_MARKS.items()})
-
 
 # URL schemes that Asciidoctor turns into links without a macro name.
 _URL_SCHEME: Final = r"(?:https?|file|ftp|irc)://"
@@ -360,7 +313,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # never body content. Table rows are split into cells before
             # references are replaced, so a value containing "|" (e.g.
             # "{vbar}") stays cell text.
-            if self._apply_attribute_entry(stripped_line, attributes) or (
+            if apply_attribute_entry(stripped_line, attributes) or (
                 in_delimited_table
                 and self._continue_table(table_data, line, attributes)
             ):
@@ -368,10 +321,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Every other line has its attribute references replaced before
             # its text is used.
-            text_line = self._substitute_attributes(line, attributes)
-            paragraph_line = self._substitute_attributes(
-                line, attributes, protect_marks=True
-            )
+            text_line = substitute_attributes(line, attributes)
+            paragraph_line = substitute_attributes(line, attributes, protect_marks=True)
 
             in_list, last_list_item, list_continuation = self._close_list_if_needed(
                 line=line,
@@ -599,7 +550,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         the first blank line, plus any attribute entries and comments above
         the title.
         """
-        attributes = dict(_INTRINSIC_ATTRIBUTES)
+        attributes = dict(INTRINSIC_ATTRIBUTES)
         seen_title = False
         for line in lines:
             stripped = line.strip()
@@ -612,51 +563,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             if not seen_title and cls._is_title(line):
                 seen_title = True
                 continue
-            if cls._apply_attribute_entry(stripped, attributes):
+            if apply_attribute_entry(stripped, attributes):
                 continue
             if not seen_title:
                 # Content before any title: the document has no header.
                 break
             # Author and revision lines of the header.
         return attributes
-
-    @staticmethod
-    def _apply_attribute_entry(line: str, attributes: dict[str, str]) -> bool:
-        """Set or unset an attribute if `line` is an attribute entry."""
-        match = _ATTRIBUTE_ENTRY_RE.match(line)
-        if match is None:
-            return False
-        name = match.group("name").lower()
-        if match.group("unset_before") or match.group("unset_after"):
-            attributes.pop(name, None)
-        else:
-            value = (match.group("value") or "").strip()
-            attributes[name] = AsciiDocBackend._substitute_attributes(value, attributes)
-        return True
-
-    @staticmethod
-    def _substitute_attributes(
-        text: str, attributes: dict[str, str], protect_marks: bool = False
-    ) -> str:
-        """Replace the attribute references in `text` by their values.
-
-        With `protect_marks`, inline formatting marks in the values are
-        replaced by stand-ins that `_flush_text_data` turns back into the
-        marks after formatting, so they stay literal text.
-        """
-        if "{" not in text:
-            return text
-
-        def replace(match: re.Match[str]) -> str:
-            name = match.group("name")
-            if match.group("escape"):
-                return "{" + name + "}"
-            value = attributes.get(name.lower())
-            if value is None:
-                return match.group(0)
-            return value.translate(_PROTECT_MARKS) if protect_marks else value
-
-        return _ATTRIBUTE_REFERENCE_RE.sub(replace, text)
 
     @staticmethod
     def _get_current_level(parents):
@@ -1103,7 +1016,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             return []
         text = AsciiDocBackend._join_lines(text_data)
         runs = [
-            replace(run, text=run.text.translate(_RESTORE_MARKS))
+            replace(run, text=run.text.translate(RESTORE_MARKS))
             for run in AsciiDocBackend._parse_inline(text, bold=bold)
         ]
         if not any(
@@ -1113,7 +1026,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 text=(
                     "".join(run.text for run in runs)
                     if bold
-                    else text.translate(_RESTORE_MARKS)
+                    else text.translate(RESTORE_MARKS)
                 ),
                 label=DocItemLabel.PARAGRAPH,
                 parent=parent,
@@ -1366,7 +1279,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         if stripped and not table_data:
             return False
         if stripped:
-            stripped = cls._substitute_attributes(stripped, attributes)
+            stripped = substitute_attributes(stripped, attributes)
             cell = table_data[-1][-1]
             cell.text = f"{cell.text} {stripped}".lstrip()
         return True
@@ -1378,7 +1291,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         """Split a table line into its cells and resolve attribute references."""
         cells = cls._parse_table_cells(line)
         for cell in cells:
-            cell.text = cls._substitute_attributes(cell.text, attributes)
+            cell.text = substitute_attributes(cell.text, attributes)
         return cells
 
     @staticmethod
