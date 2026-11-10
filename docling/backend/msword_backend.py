@@ -83,7 +83,7 @@ try:  # pragma: no cover - import-time guard
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
     from docx.styles.style import BaseStyle, CharacterStyle, ParagraphStyle
-    from docx.table import Table, _Cell
+    from docx.table import Table, _Cell, _Row
     from docx.text.hyperlink import Hyperlink
     from docx.text.paragraph import Paragraph
     from docx.text.run import Run
@@ -3967,34 +3967,57 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return ref_for_rich_cell
 
     @staticmethod
-    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
-        """Return a row's ``w:tc`` cells in document order.
+    def _unwrapped_children(
+        parent: BaseOxmlElement, target: str
+    ) -> list[BaseOxmlElement]:
+        """Return the ``target`` elements under ``parent``, looking through wrappers.
 
-        Word wraps a cell in a content control (``w:sdt``) for date pickers and
-        for fields bound to document properties, so the cell then sits at
-        ``w:tr/w:sdt/w:sdtContent/w:tc``. ``CT_Row.tc_lst`` only yields direct
-        ``w:tc`` children, so such a cell would be skipped entirely and every
-        later cell in the row would take its grid column.
+        ``w:customXml`` and content controls (``w:sdt/w:sdtContent``) may wrap
+        rows and cells. Elements inside them are returned in document order, as
+        if they were direct children. Use this instead of python-docx accessors
+        such as ``CT_Tbl.tr_lst`` and ``CT_Row.tc_lst``, which only see direct
+        children.
 
         Args:
-            row_element: The ``w:tr`` element, or a ``w:sdtContent`` inside one.
+            parent: The element to search, or a wrapper inside it.
+            target: The local name of the elements to return, e.g. ``"tc"``.
 
         Returns:
-            The row's cells, with content-control wrappers unwrapped.
+            The matching elements, with the wrappers unwrapped.
         """
-        cells: list[BaseOxmlElement] = []
-        for child in row_element:
+        found: list[BaseOxmlElement] = []
+        for child in parent:
             tag_name = etree.QName(child).localname
-            if tag_name == "tc":
-                cells.append(child)
+            if tag_name == target:
+                found.append(child)
+            elif tag_name == "customXml":
+                found.extend(MsWordDocumentBackend._unwrapped_children(child, target))
             elif tag_name == "sdt":
                 sdt_content = child.find(
                     "./w:sdtContent",
                     namespaces=_OOXML_NAMESPACES,
                 )
                 if sdt_content is not None:
-                    cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
-        return cells
+                    found.extend(
+                        MsWordDocumentBackend._unwrapped_children(sdt_content, target)
+                    )
+        return found
+
+    @staticmethod
+    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
+        """Return a row's ``w:tc`` cells in document order.
+
+        Cells inside ``w:customXml`` or a content control, such as a date
+        picker or a field bound to a document property, are included at their
+        position in the row.
+
+        Args:
+            row_element: The ``w:tr`` element.
+
+        Returns:
+            The row's cells, with the wrappers unwrapped.
+        """
+        return MsWordDocumentBackend._unwrapped_children(row_element, "tc")
 
     def _handle_tables(
         self,
@@ -4019,7 +4042,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
-        num_rows = len(table.rows)
+        rows = [
+            _Row(tr, table)
+            for tr in MsWordDocumentBackend._unwrapped_children(element, "tr")
+        ]
+        num_rows = len(rows)
         # Some producers omit the grid or declare fewer columns than the rows use.
         grid = element.find(qn("w:tblGrid"))
         declared_cols = len(grid.findall(qn("w:gridCol"))) if grid is not None else 0
@@ -4028,7 +4055,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 row.grid_cols_before
                 + sum(tc.grid_span for tc in self._row_cells(row._tr))
                 + row.grid_cols_after
-                for row in table.rows
+                for row in rows
             ),
             default=0,
         )
@@ -4036,7 +4063,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:
-            single_row_cells = MsWordDocumentBackend._row_cells(table.rows[0]._tr)
+            single_row_cells = MsWordDocumentBackend._row_cells(rows[0]._tr)
             if not single_row_cells:
                 return elem_ref
             cell_element = _Cell(single_row_cells[0], table)
@@ -4058,7 +4085,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref.append(docling_table.get_ref())
 
         open_cells: dict[int, TableCell] = {}
-        for row_idx, row in enumerate(table.rows):
+        for row_idx, row in enumerate(rows):
             grid_col = row.grid_cols_before
             for tc in MsWordDocumentBackend._row_cells(row._tr):
                 if grid_col >= num_cols:
