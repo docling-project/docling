@@ -258,7 +258,12 @@ _RUN_TEXT_XPATH: Final[str] = (
 )
 """Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
 
-_SYMBOL_FONT: Final[str] = "Symbol"
+_SYMBOL_FONT: Final[str] = "symbol"
+
+
+def _is_symbol_font(font_name: str | None) -> bool:
+    """Return True if ``font_name`` resolves to the Symbol font."""
+    return (font_name or "").strip().lower() == _SYMBOL_FONT
 
 
 def _map_symbol_font_char(char: str) -> str:
@@ -266,6 +271,12 @@ def _map_symbol_font_char(char: str) -> str:
 
     Word stores the font byte either as is or shifted to ``U+F000``-``U+F0FF``.
     Characters without a mapping are kept unchanged.
+
+    Args:
+        char: The character or single code point to map.
+
+    Returns:
+        The mapped Unicode character string, or the input character if unmapped.
     """
     code = ord(char)
     if 0xF000 <= code <= 0xF0FF:
@@ -274,12 +285,19 @@ def _map_symbol_font_char(char: str) -> str:
 
 
 def _get_sym_text(sym: BaseOxmlElement) -> str:
-    """Return the character of a ``w:sym`` element (Insert > Symbol in Word)."""
+    """Return the character of a ``w:sym`` element (Insert > Symbol in Word).
+
+    Args:
+        sym: The ``w:sym`` oxml element.
+
+    Returns:
+        The extracted (and possibly mapped) character string.
+    """
     try:
         char = chr(int(sym.get(f"{_W_NS_CLARK}char", ""), 16))
     except ValueError:
         return ""
-    if sym.get(f"{_W_NS_CLARK}font") == _SYMBOL_FONT:
+    if _is_symbol_font(sym.get(f"{_W_NS_CLARK}font")):
         return _map_symbol_font_char(char)
     return char
 
@@ -289,8 +307,14 @@ def _get_run_text(run: Run) -> str:
 
     python-docx ``Run.text`` skips ``w:sym``, so these characters are lost.
     Text set in the Symbol font is mapped to Unicode.
+
+    Args:
+        run: The docx Run object.
+
+    Returns:
+        The full extracted text of the run including symbols.
     """
-    symbol_font = run.font.name == _SYMBOL_FONT
+    symbol_font = _is_symbol_font(run.font.name)
     parts: list[str] = []
     for child in run._r.xpath(_RUN_TEXT_XPATH):
         if child.tag == f"{_W_NS_CLARK}sym":

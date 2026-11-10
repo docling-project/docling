@@ -40,7 +40,9 @@ Notice of the source file:
      attached.
 """
 
-SYMBOL_FONT_TO_UNICODE: dict[int, str] = {
+from typing import Final
+
+SYMBOL_FONT_TO_UNICODE: Final[dict[int, str]] = {
     0x20: "\u0020",  # SPACE
     0x21: "\u0021",  # EXCLAMATION MARK
     0x22: "\u2200",  # FOR ALL

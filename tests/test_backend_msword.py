@@ -3095,3 +3095,19 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
     assert formulas == ["x=1", "x=1"]
     cell_texts = [cell.text for cell in doc.tables[0].data.table_cells]
     assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
+
+
+def test_symbol_font_case_and_whitespace_resilience(tmp_path):
+    """Symbol font detection handles case and whitespace variations defensively."""
+    docx_path = tmp_path / "symbol_font_casing.docx"
+    document = Document()
+    p1 = document.add_paragraph()
+    r1 = p1.add_run("a")
+    r1.font.name = " symbol "
+    p2 = document.add_paragraph()
+    _append_sym(p2, " SYMBOL ", "F061")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert texts == ["\N{GREEK SMALL LETTER ALPHA}", "\N{GREEK SMALL LETTER ALPHA}"]
