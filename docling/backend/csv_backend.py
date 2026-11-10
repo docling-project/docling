@@ -202,12 +202,13 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                 dialect = _SepDialect
             else:
                 dialect = _sniff_dialect(head, read_sample)
-            if dialect.delimiter not in _DELIMITERS:
-                raise RuntimeError(
-                    f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
-                )
-            else:
-                _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
+                # The separator hint names the delimiter; only a sniffed one is
+                # limited to the candidates the sniffer was given.
+                if dialect.delimiter not in _DELIMITERS:
+                    raise RuntimeError(
+                        f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
+                    )
+            _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
         except csv.Error as e:
             # Fall back to comma (e.g. single-column or insufficient data to detect).
             _log.info(

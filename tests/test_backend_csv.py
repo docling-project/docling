@@ -420,6 +420,8 @@ def test_utf8_bom_is_not_part_of_the_first_cell(tmp_path):
         ("Sep=;\nName;Price\nApple;1,50\n", ["Name", "Price", "Apple", "1,50"]),
         ("sep=,\r\nName,Price\r\nApple,1.50\r\n", ["Name", "Price", "Apple", "1.50"]),
         ("sep=\t\nName\tPrice\nApple\t1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=^\nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep= \nName Price\nApple 1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("\ufeffsep=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("\ufeffSEP=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
     ],
@@ -430,7 +432,9 @@ def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
     Excel writes and reads this line, typically for files whose values contain
     the delimiter the sniffer would otherwise pick, such as decimal commas.
     The keyword matches in any letter case, so `SEP=;` is the same instruction
-    as `sep=;` and is not kept as a header row.
+    as `sep=;` and is not kept as a header row. The hint is not limited to the
+    candidates the sniffer uses, so a custom delimiter such as `^` or a space
+    is accepted too.
     """
     conv_result = get_converter().convert(
         DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
