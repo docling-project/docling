@@ -54,13 +54,13 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import OMML_NS, oMath2Latex
-from docling.backend.docx.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.backend.utils.archive_limits import (
     ArchiveLimits,
     check_archive_limits,
     read_member,
 )
 from docling.backend.utils.image import normalize_image_for_png
+from docling.backend.utils.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
