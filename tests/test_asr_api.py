@@ -7,15 +7,17 @@ The server is a stand-in running in a thread: no speech model is downloaded or r
 """
 
 import json
+import shutil
 import threading
 from email import message_from_bytes
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import TrackSource
 
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.pipeline_options import AsrPipelineOptions, VideoPipelineOptions
 from docling.datamodel.pipeline_options_asr_model import ApiAsrOptions
 from docling.document_converter import AudioFormatOption, DocumentConverter
@@ -24,6 +26,8 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.asr_transcriber import _ApiAsrModel, _AsrModelFactory
 
 SAMPLE_AUDIO = Path("./tests/data/audio/sources/sample_10s.mp3")
+
+_HAS_FFMPEG = shutil.which("ffmpeg") is not None
 
 VERBOSE_JSON = {
     "task": "transcribe",
@@ -296,3 +300,43 @@ class TestApiAsrConversion:
 
         assert result.status == ConversionStatus.FAILURE
         assert "JSON" in result.errors[0].error_message
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+class TestApiAsrChunking:
+    def test_long_audio_is_sent_in_pieces_with_shifted_times(self, server):
+        # The 10 s sample cut at 4 s gives three pieces; the stand-in server
+        # answers each one with the same two segments (0-3.5 s and 3.5-9 s).
+        converter = _converter(ApiAsrOptions(url=server.url, max_chunk_seconds=4))
+
+        result = converter.convert(SAMPLE_AUDIO)
+
+        assert result.status == ConversionStatus.SUCCESS
+        assert len(server.requests) == 3
+        assert {r["file"]["content_type"] for r in server.requests} == {"audio/x-wav"}
+        starts = [t.source[0].start_time for t in result.document.texts]
+        assert starts == pytest.approx([0.0, 3.5, 4.0, 7.5, 8.0, 11.5], abs=0.05)
+
+    def test_audio_stream_is_split_too(self, server):
+        converter = _converter(ApiAsrOptions(url=server.url, max_chunk_seconds=4))
+        stream = DocumentStream(
+            name="sample.mp3", stream=BytesIO(SAMPLE_AUDIO.read_bytes())
+        )
+
+        result = converter.convert(stream)
+
+        assert result.status == ConversionStatus.SUCCESS
+        assert len(server.requests) == 3
+
+    def test_audio_shorter_than_a_piece_is_one_request(self, server):
+        converter = _converter(ApiAsrOptions(url=server.url, max_chunk_seconds=60))
+
+        result = converter.convert(SAMPLE_AUDIO)
+
+        assert result.status == ConversionStatus.SUCCESS
+        assert len(server.requests) == 1
+
+
+def test_max_chunk_seconds_must_be_positive():
+    with pytest.raises(ValueError):
+        ApiAsrOptions(max_chunk_seconds=0)

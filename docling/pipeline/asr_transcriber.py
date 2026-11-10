@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import wave
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
@@ -61,6 +62,7 @@ from docling.pipeline.asr_transformers import TransformersAsrDecoder
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+from docling.utils.video_frame_sampling import FfmpegRunner, ffmpeg_base_args
 
 _log = logging.getLogger(__name__)
 
@@ -92,6 +94,97 @@ _AUDIO_SUFFIX_TO_MIMETYPE = {
 def _audio_mimetype(filename: str) -> str:
     suffix = Path(filename).suffix.lower()
     return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/x-wav")
+
+
+# FFmpeg demuxer forced for each audio extension, so that the file content cannot
+# select another demuxer (a playlist saved as .mp3 is refused, not followed).
+_AUDIO_DEMUXER_BY_SUFFIX: Final[dict[str, str]] = {
+    ".wav": "wav",
+    ".mp3": "mp3",
+    ".m4a": "mov",
+    ".aac": "aac",
+    ".ogg": "ogg",
+    ".flac": "flac",
+}
+
+
+def _split_audio(
+    fpath: Path, max_seconds: float, out_dir: Path
+) -> list[tuple[Path, float]]:
+    """Cut an audio file into 16 kHz mono WAV pieces of at most ``max_seconds``.
+
+    Returns each piece with its start time in the original audio. The start times
+    add up the real lengths of the pieces, so they stay exact where FFmpeg cuts a
+    little after the requested time.
+    """
+    demuxer = _AUDIO_DEMUXER_BY_SUFFIX.get(fpath.suffix.lower())
+    if demuxer is None:
+        raise RuntimeError(
+            f"Cannot split audio with the extension {fpath.suffix!r}; expected one "
+            f"of {sorted(_AUDIO_DEMUXER_BY_SUFFIX)}."
+        )
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError(
+            "FFmpeg is required to split the audio (max_chunk_seconds) but was not "
+            "found on PATH."
+        )
+    argv = [
+        *ffmpeg_base_args(),
+        "-protocol_whitelist",
+        "file",
+        "-f",
+        demuxer,
+        "-i",
+        f"file:{fpath.resolve()}",
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-c:a",
+        "pcm_s16le",
+        "-f",
+        "segment",
+        "-segment_time",
+        str(max_seconds),
+        "-reset_timestamps",
+        "1",
+        str(out_dir / "piece%05d.wav"),
+    ]
+    if not FfmpegRunner().run(argv, "Audio splitting"):
+        raise RuntimeError("FFmpeg could not split the audio into pieces.")
+    pieces: list[tuple[Path, float]] = []
+    start = 0.0
+    for piece in sorted(out_dir.glob("piece*.wav")):
+        with wave.open(str(piece), "rb") as wav:
+            length = wav.getnframes() / wav.getframerate()
+        pieces.append((piece, start))
+        start += length
+    return pieces
+
+
+def _shift(item: "_ConversationItem", offset: float) -> "_ConversationItem":
+    """Return ``item`` with its times and its words' times moved by ``offset``."""
+
+    def moved(time: float | None) -> float | None:
+        return None if time is None else time + offset
+
+    words = [
+        word.model_copy(
+            update={
+                "start_time": moved(word.start_time),
+                "end_time": moved(word.end_time),
+            }
+        )
+        for word in item.words or []
+    ]
+    return item.model_copy(
+        update={
+            "start_time": moved(item.start_time),
+            "end_time": moved(item.end_time),
+            "words": words if item.words is not None else None,
+        }
+    )
 
 
 def _process_conversation(
@@ -1003,13 +1096,32 @@ class _ApiAsrModel:
         return convo
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
-        return self._to_conversation(self._post(fpath.name, fpath.read_bytes()))
+        max_seconds = self.asr_options.max_chunk_seconds
+        if max_seconds is None:
+            return self._to_conversation(self._post(fpath.name, fpath.read_bytes()))
+        with tempfile.TemporaryDirectory() as tmp:
+            return [
+                _shift(item, start)
+                for piece, start in _split_audio(fpath, max_seconds, Path(tmp))
+                for item in self._to_conversation(
+                    self._post(piece.name, piece.read_bytes())
+                )
+            ]
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         try:
-            if isinstance(path_or_stream, BytesIO):
+            if (
+                isinstance(path_or_stream, BytesIO)
+                and self.asr_options.max_chunk_seconds is not None
+            ):
+                # Splitting needs a file for FFmpeg to read
+                with tempfile.TemporaryDirectory() as tmp:
+                    fpath = Path(tmp) / Path(conv_res.input.file.name).name
+                    fpath.write_bytes(path_or_stream.getvalue())
+                    conversation = self.transcribe(fpath)
+            elif isinstance(path_or_stream, BytesIO):
                 conversation = self._to_conversation(
                     self._post(conv_res.input.file.name, path_or_stream.getvalue())
                 )
