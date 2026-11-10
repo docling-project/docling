@@ -492,9 +492,16 @@ The presets declare these engines:
   [0.8B](https://huggingface.co/typhoon-ai/typhoon-ocr2-0.8b-MLX-8bit)), which the MLX model cards
   recommend, and needs `mlx-vlm>=0.7.6`. Auto-inline selects it on Apple Silicon. The
   `docling-slim[models-vlm-inline]` extra allows `mlx-vlm>=0.7.0`. With an older `mlx-vlm`,
-  auto-inline uses Transformers on the CPU, so upgrade `mlx-vlm`.
+  auto-inline uses Transformers on the CPU, which takes hours for one page, so upgrade
+  `mlx-vlm`.
 - **Transformers** needs `transformers>=5.15.1`, the release that the model cards test. The
-  Docling Transformers engine runs on CPU, CUDA, or XPU, not on MPS.
+  Docling Transformers engine runs on CPU, CUDA, or XPU, not on MPS. On a CPU, it takes hours
+  for one page with these models, so use MLX on Apple Silicon or a CUDA GPU. For example, on
+  the CPU of an Apple M2 Pro, `typhoon_ocr2_08b` took about 5 minutes before the first token
+  of `tests/data/pdf/sources/2305.03393v1-pg9.pdf` and then about 4 seconds for each token.
+  At this rate, the 1482 tokens of the MLX reply for this page take about 2 hours.
+  `transformers` logs that it uses slower reference kernels because `flash-linear-attention`
+  and `causal-conv1d` are not installed.
 - **vLLM** needs `vllm>=0.33.0`. The preset sets `max_model_len=40960`, as the model cards do.
   Auto-inline selects vLLM on CUDA with `AutoInlineVlmEngineOptions(prefer_vllm=True)`. The model
   cards report much lower accuracy in the default compiled mode of vLLM 0.27.1 (MDPBench 70.8

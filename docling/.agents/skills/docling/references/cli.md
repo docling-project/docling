@@ -115,8 +115,9 @@ word-level boxes.
 pages, with page boxes. The 2B preset is more accurate; the 0.8B preset is faster
 and is for page parsing only. The CLI runs them with MLX on Apple Silicon
 (`mlx-vlm>=0.7.6`) and with Transformers elsewhere (`transformers>=5.15.1`, not on
-MPS). Page headers and footers go to the furniture layer, so Markdown leaves them
-out. For vLLM (`vllm>=0.33.0`) or your own server, use the SDK. See
+MPS). On a CPU, Transformers takes hours for one page, so use Apple Silicon or a
+CUDA GPU. Page headers and footers go to the furniture layer, so Markdown leaves
+them out. For vLLM (`vllm>=0.33.0`) or your own server, use the SDK. See
 [python-sdk.md](python-sdk.md).
 
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`

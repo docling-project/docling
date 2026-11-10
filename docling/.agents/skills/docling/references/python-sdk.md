@@ -322,7 +322,7 @@ pipeline_options = VlmPipelineOptions(
 ```
 
 Auto-inline picks MLX on Apple Silicon (`mlx-vlm>=0.7.6`) and Transformers elsewhere
-(`transformers>=5.15.1`). On CUDA, pass
+(`transformers>=5.15.1`). On a CPU, Transformers takes hours for one page. On CUDA, pass
 `engine_options=AutoInlineVlmEngineOptions(prefer_vllm=True)` to `from_preset` to
 pick vLLM (`vllm>=0.33.0`).
 
