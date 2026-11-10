@@ -219,7 +219,7 @@ model is more accurate. The 0.8B model is faster, and its model card recommends 
 parser only. The model weights use the Apache-2.0 license.
 
 Local inference uses MLX with the official 8-bit conversions (`mlx-vlm>=0.7.6`), Transformers
-(`transformers>=5.15.1`), or vLLM (`vllm>=0.33.0`). On Apple Silicon, auto-inline selects MLX.
+(`transformers>=5.15.1`), or vLLM (`vllm>=0.30.0`). On Apple Silicon, auto-inline selects MLX.
 On a CPU, the Transformers engine takes hours for one page with these models, so use MLX on
 Apple Silicon or a CUDA GPU.
 

@@ -502,10 +502,11 @@ The presets declare these engines:
   At this rate, the 1482 tokens of the MLX reply for this page take about 2 hours.
   `transformers` logs that it uses slower reference kernels because `flash-linear-attention`
   and `causal-conv1d` are not installed.
-- **vLLM** needs `vllm>=0.33.0`. The preset sets `max_model_len=40960`, as the model cards do.
+- **vLLM** needs `vllm>=0.30.0`. The preset sets `max_model_len=40960`, as the model cards do.
   Auto-inline selects vLLM on CUDA with `AutoInlineVlmEngineOptions(prefer_vllm=True)`. The model
   cards report much lower accuracy in the default compiled mode of vLLM 0.27.1 (MDPBench 70.8
-  against 80.0 in eager mode for the 2B model), and no drop in the default mode of vLLM 0.33.0.
+  against 80.0 in eager mode for the 2B model), and no drop in the default mode from vLLM 0.30.0
+  on (79.6 with 0.30.0 and 79.7 with 0.33.0).
   The Docling vLLM engine uses `cudagraph_mode=PIECEWISE` by default, a mode that the cards do
   not report. Change it with `VllmVlmEngineOptions.cudagraph_mode`.
 - **OpenAI-compatible API**: a server that you start yourself, for example with the vLLM command
@@ -520,7 +521,7 @@ vllm serve typhoon-ai/typhoon-ocr2-2b \
   --default-chat-template-kwargs '{"enable_thinking": false}'
 ```
 
-Use vLLM 0.33.0 or newer, as for the in-process engine. The model cards give `--enforce-eager`
+Use vLLM 0.30.0 or newer, as for the in-process engine. The model cards give `--enforce-eager`
 for older releases. The preset sends `model="typhoon-ocr2"`, the `--served-model-name` of this
 command. It also sends the request settings of the model card client: `max_tokens=16384`,
 `temperature=0.0`, `top_p=1.0`, and `chat_template_kwargs={"enable_thinking": False}`. Point the

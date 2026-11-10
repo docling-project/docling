@@ -757,7 +757,7 @@ def test_presets_pin_weights_and_engine_floors(preset_id: str, repo_id: str) -> 
     assert mlx.revision != transformers.revision
     assert [config.min_engine_version for config in engines] == [
         "5.15.1",
-        "0.33.0",
+        "0.30.0",
         "0.7.6",
     ]
     assert transformers.torch_dtype == "bfloat16"

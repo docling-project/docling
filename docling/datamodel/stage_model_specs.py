@@ -2222,9 +2222,9 @@ def _typhoon_ocr2_preset(
                         "extra_generation_config": {"skip_special_tokens": True},
                     },
                 ),
-                # The model card asks for vLLM 0.33.0 or newer.
+                # The model cards ask for vLLM 0.30.0 or newer.
                 VlmEngineType.VLLM: EngineModelConfig(
-                    min_engine_version="0.33.0",
+                    min_engine_version="0.30.0",
                     extra_config={"max_model_len": 40960},
                 ),
             },
@@ -2244,13 +2244,13 @@ def _typhoon_ocr2_preset(
 VLM_CONVERT_TYPHOON_OCR2_2B = _typhoon_ocr2_preset(
     "2B",
     "typhoon_ocr2_2b",
-    "fe525e5d3b4e11433b451d56d8b77436c1061f07",
+    "4c1e80214db8b85b222e9158afb5ddadd4c47f32",
     "36584bc9835d946eb5d09ddf0c58201cf6ebfb9c",
 )
 VLM_CONVERT_TYPHOON_OCR2_08B = _typhoon_ocr2_preset(
     "0.8B",
     "typhoon_ocr2_08b",
-    "79ee847fd66114442d08d56f5d1df54a419bf76a",
+    "b256ba3f332a55d073f6f483a7b60b3041ccdc2b",
     "b09fed7f8798f1bf1f38de759b65facdb6af4824",
 )
 
