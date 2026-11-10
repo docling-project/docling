@@ -21,6 +21,7 @@ from docling_core.types.doc import (
     ListItem,
     PictureClassificationLabel,
     PictureItem,
+    TableData,
     TableItem,
 )
 from docx import Document
@@ -1178,51 +1179,58 @@ def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
     assert build((0, 2)) == row
 
 
-def _table_with_wrapped_rows_and_cells(path: Path) -> None:
-    """Write a 2-column table whose rows and one cell sit inside wrappers.
+def _tc(text: str, vmerge: str | None = None) -> str:
+    """Return the XML of a ``w:tc`` holding one paragraph with ``text``."""
+    merge = f'<w:vMerge w:val="{vmerge}"/>' if vmerge else ""
+    return (
+        f'<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/>{merge}</w:tcPr>'
+        f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
+    )
 
-    Row order: a plain row, a row inside ``w:customXml``, a row inside a
-    content control (``w:sdt``), and a plain row whose second cell is inside
-    ``w:customXml``. Both wrappers are allowed there by the OOXML schema
-    (``EG_ContentRowContent`` and ``EG_ContentCellContent``).
+
+def _convert_table_xml(tmp_path: Path, rows_xml: str, grid_cols: int = 2) -> TableData:
+    """Convert a ``w:tbl`` built from ``rows_xml`` and return its table data.
+
+    Args:
+        tmp_path: Directory for the generated DOCX file.
+        rows_xml: The children of ``w:tbl`` that follow ``w:tblGrid``.
+        grid_cols: Number of ``w:gridCol`` entries to declare.
+
+    Returns:
+        The data of the first table in the converted document.
     """
     w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-
-    def cell(text: str) -> str:
-        return (
-            '<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/></w:tcPr>'
-            f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
-        )
-
+    grid = '<w:gridCol w:w="2000"/>' * grid_cols
     tbl = parse_xml(
         f'<w:tbl xmlns:w="{w_ns}">'
         '<w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>'
-        '<w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>'
-        f"<w:tr>{cell('A1')}{cell('A2')}</w:tr>"
-        f'<w:customXml w:element="Tagged"><w:tr>{cell("B1")}{cell("B2")}</w:tr></w:customXml>'
-        f"<w:sdt><w:sdtPr/><w:sdtContent><w:tr>{cell('C1')}{cell('C2')}</w:tr></w:sdtContent></w:sdt>"
-        f'<w:tr>{cell("D1")}<w:customXml w:element="Tagged">{cell("D2")}</w:customXml></w:tr>'
-        "</w:tbl>"
+        f"<w:tblGrid>{grid}</w:tblGrid>{rows_xml}</w:tbl>"
     )
     doc = Document()
     body = doc.element.body
     body.insert(len(body) - 1, tbl)
+    path = tmp_path / "table.docx"
     doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    return converter.convert(path).document.tables[0].data
 
 
 def test_table_rows_and_cells_wrapped_in_custom_xml_or_content_control(tmp_path):
-    """Rows under ``w:customXml``/``w:sdt`` and cells under ``w:customXml``.
+    """Wrapped rows and cells are read at their grid position.
 
-    ``Table.rows`` only yields direct ``w:tr`` children of ``w:tbl``, so a
-    wrapped row was silently dropped and the table came out with too few
-    rows. A cell wrapped in ``w:customXml`` was dropped in the same way; the
-    ``w:sdt`` cell case was already handled.
+    Both ``w:customXml`` and ``w:sdt`` may wrap a row, and ``w:customXml`` may
+    wrap a cell (``EG_ContentRowContent`` and ``EG_ContentCellContent``). Row
+    order: a plain row, a ``w:customXml`` row, a ``w:sdt`` row, and a plain row
+    whose second cell is inside ``w:customXml``.
     """
-    path = tmp_path / "wrapped_rows.docx"
-    _table_with_wrapped_rows_and_cells(path)
-
-    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
-    data = converter.convert(path).document.tables[0].data
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}{_tc('A2')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>'
+        f"<w:sdt><w:sdtPr/><w:sdtContent><w:tr>{_tc('C1')}{_tc('C2')}</w:tr></w:sdtContent></w:sdt>"
+        f'<w:tr>{_tc("D1")}<w:customXml w:element="Tagged">{_tc("D2")}</w:customXml></w:tr>',
+    )
 
     assert data.num_rows == 4
     assert data.num_cols == 2
@@ -1233,41 +1241,18 @@ def test_table_rows_and_cells_wrapped_in_custom_xml_or_content_control(tmp_path)
 
 
 def test_vertical_merge_continues_into_a_wrapped_row(tmp_path):
-    """A ``vMerge="continue"`` cell inside a ``w:customXml``-wrapped row.
+    """A ``vMerge="continue"`` cell inside a ``w:customXml`` row extends the merge.
 
-    The continuation row used to be invisible, so the merge that started in
-    the row above ended early (``row_span`` 1) and the wrapped row's other
-    cell was lost with it. Row order: restart row, wrapped continuation row,
-    plain row.
+    Row order: restart row, wrapped continuation row, plain row.
     """
-    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-
-    def cell(text: str, vmerge: str | None = None) -> str:
-        merge = f'<w:vMerge w:val="{vmerge}"/>' if vmerge else ""
-        return (
-            f'<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/>{merge}</w:tcPr>'
-            f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
-        )
-
-    tbl = parse_xml(
-        f'<w:tbl xmlns:w="{w_ns}">'
-        '<w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>'
-        '<w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>'
-        f"<w:tr>{cell('merged', 'restart')}{cell('A2')}</w:tr>"
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('merged', 'restart')}{_tc('A2')}</w:tr>"
         '<w:customXml w:element="Tagged">'
-        f"<w:tr>{cell('', 'continue')}{cell('B2')}</w:tr>"
+        f"<w:tr>{_tc('', 'continue')}{_tc('B2')}</w:tr>"
         "</w:customXml>"
-        f"<w:tr>{cell('C1')}{cell('C2')}</w:tr>"
-        "</w:tbl>"
+        f"<w:tr>{_tc('C1')}{_tc('C2')}</w:tr>",
     )
-    doc = Document()
-    body = doc.element.body
-    body.insert(len(body) - 1, tbl)
-    path = tmp_path / "wrapped_vmerge.docx"
-    doc.save(str(path))
-
-    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
-    data = converter.convert(path).document.tables[0].data
 
     assert data.num_rows == 3
     merged = next(c for c in data.table_cells if c.text == "merged")
@@ -1276,6 +1261,27 @@ def test_vertical_merge_continues_into_a_wrapped_row(tmp_path):
     assert merged.end_row_offset_idx == 2
     texts = {c.text for c in data.table_cells}
     assert {"A2", "B2", "C1", "C2"} <= texts
+
+
+def test_wrapped_row_wider_than_the_declared_grid_widens_the_table(tmp_path):
+    """The column count includes a ``w:customXml`` row wider than ``w:tblGrid``.
+
+    The grid declares one column and the plain row uses one, but the wrapped
+    row has two cells.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>',
+        grid_cols=1,
+    )
+
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    positions = {
+        c.text: (c.start_row_offset_idx, c.start_col_offset_idx)
+        for c in data.table_cells
+    }
+    assert positions == {"A1": (0, 0), "B1": (1, 0), "B2": (1, 1)}
 
 
 def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):

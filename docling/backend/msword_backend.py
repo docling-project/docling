@@ -3967,70 +3967,57 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return ref_for_rich_cell
 
     @staticmethod
+    def _unwrapped_children(
+        parent: BaseOxmlElement, target: str
+    ) -> list[BaseOxmlElement]:
+        """Return the ``target`` elements under ``parent``, looking through wrappers.
+
+        ``w:customXml`` and content controls (``w:sdt/w:sdtContent``) may wrap
+        rows and cells. Elements inside them are returned in document order, as
+        if they were direct children. Use this instead of python-docx accessors
+        such as ``CT_Tbl.tr_lst`` and ``CT_Row.tc_lst``, which only see direct
+        children.
+
+        Args:
+            parent: The element to search, or a wrapper inside it.
+            target: The local name of the elements to return, e.g. ``"tc"``.
+
+        Returns:
+            The matching elements, with the wrappers unwrapped.
+        """
+        found: list[BaseOxmlElement] = []
+        for child in parent:
+            tag_name = etree.QName(child).localname
+            if tag_name == target:
+                found.append(child)
+            elif tag_name == "customXml":
+                found.extend(MsWordDocumentBackend._unwrapped_children(child, target))
+            elif tag_name == "sdt":
+                sdt_content = child.find(
+                    "./w:sdtContent",
+                    namespaces=_OOXML_NAMESPACES,
+                )
+                if sdt_content is not None:
+                    found.extend(
+                        MsWordDocumentBackend._unwrapped_children(sdt_content, target)
+                    )
+        return found
+
+    @staticmethod
     def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
         """Return a row's ``w:tc`` cells in document order.
 
-        Word wraps a cell in a content control (``w:sdt``) for date pickers and
-        for fields bound to document properties, and in ``w:customXml`` for
-        custom XML markup, so the cell then sits at
-        ``w:tr/w:sdt/w:sdtContent/w:tc`` or ``w:tr/w:customXml/w:tc``.
-        ``CT_Row.tc_lst`` only yields direct ``w:tc`` children, so such a cell
-        would be skipped entirely and every later cell in the row would take
-        its grid column.
+        Cells inside ``w:customXml`` or a content control, such as a date
+        picker or a field bound to a document property, are included at their
+        position in the row.
 
         Args:
-            row_element: The ``w:tr`` element, or a wrapper inside one.
+            row_element: The ``w:tr`` element.
 
         Returns:
             The row's cells, with the wrappers unwrapped.
         """
-        cells: list[BaseOxmlElement] = []
-        for child in row_element:
-            tag_name = etree.QName(child).localname
-            if tag_name == "tc":
-                cells.append(child)
-            elif tag_name == "customXml":
-                cells.extend(MsWordDocumentBackend._row_cells(child))
-            elif tag_name == "sdt":
-                sdt_content = child.find(
-                    "./w:sdtContent",
-                    namespaces=_OOXML_NAMESPACES,
-                )
-                if sdt_content is not None:
-                    cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
-        return cells
-
-    @staticmethod
-    def _table_rows(table_element: BaseOxmlElement) -> list[BaseOxmlElement]:
-        """Return a table's ``w:tr`` rows in document order.
-
-        A row may be wrapped in ``w:customXml`` or in a content control
-        (``w:sdt``), so it then sits at ``w:tbl/w:customXml/w:tr`` or
-        ``w:tbl/w:sdt/w:sdtContent/w:tr``. ``CT_Tbl.tr_lst`` only yields direct
-        ``w:tr`` children, so such a row would be dropped and the table would
-        come out with too few rows.
-
-        Args:
-            table_element: The ``w:tbl`` element, or a wrapper inside one.
-
-        Returns:
-            The table's rows, with the wrappers unwrapped.
-        """
-        rows: list[BaseOxmlElement] = []
-        for child in table_element:
-            tag_name = etree.QName(child).localname
-            if tag_name == "tr":
-                rows.append(child)
-            elif tag_name == "customXml":
-                rows.extend(MsWordDocumentBackend._table_rows(child))
-            elif tag_name == "sdt":
-                sdt_content = child.find(
-                    "./w:sdtContent",
-                    namespaces=_OOXML_NAMESPACES,
-                )
-                if sdt_content is not None:
-                    rows.extend(MsWordDocumentBackend._table_rows(sdt_content))
-        return rows
+        return MsWordDocumentBackend._unwrapped_children(row_element, "tc")
 
     def _handle_tables(
         self,
@@ -4055,7 +4042,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
-        rows = [_Row(tr, table) for tr in MsWordDocumentBackend._table_rows(element)]
+        rows = [
+            _Row(tr, table)
+            for tr in MsWordDocumentBackend._unwrapped_children(element, "tr")
+        ]
         num_rows = len(rows)
         # Some producers omit the grid or declare fewer columns than the rows use.
         grid = element.find(qn("w:tblGrid"))
