@@ -178,7 +178,7 @@ class XMLComponents(TypedDict):
     title: str
     authors: list[Author]
     abstract: list[Abstract]
-    # Copyright, license and funding statement nodes, walked at emit time.
+    # Author footnotes, copyright, license and funding nodes, walked at emit time.
     statements: list[etree._Element]
 
 
@@ -320,7 +320,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if self.root:
                 for sub_article in sub_articles:
                     self._add_sub_article(doc, self.root, sub_article)
-            # add the copyright, license and funding statements as furniture
+            # add author footnotes and article statements as furniture
             self._add_statements(doc, xml_components)
         except Exception:
             _log.error(traceback.format_exc())
@@ -550,7 +550,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return text
 
     def _parse_statements(self) -> list[etree._Element]:
-        """Return the copyright, license and funding statements of the metadata."""
+        """Return author footnotes and article statements in source order."""
         meta: etree._Element | None = self._find_metadata()
         if meta is None:
             return []
@@ -559,6 +559,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             "permissions/copyright-statement"
             "|permissions/license/license-p"
             "|funding-group/funding-statement"
+            "|author-notes/fn"
         )
 
     def _parse_metadata(self) -> XMLComponents:
@@ -611,7 +612,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _add_statements(
         self, doc: DoclingDocument, xml_components: XMLComponents
     ) -> None:
-        """Add the copyright, license and funding statements of the metadata.
+        """Add author footnotes and article statements as furniture.
 
         Like page headers and footers in other backends, the statements go into
         the furniture layer: available on request, but out of the reading order.
@@ -619,12 +620,27 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if self.root is None:
             return
         for statement in xml_components["statements"]:
+            segments = (
+                JatsDocumentBackend._walk_author_footnote(statement)
+                if statement.tag == "fn"
+                else self._walk_linear(doc, self.root, statement)
+            )
             JatsDocumentBackend._emit_inline(
                 doc,
                 self.root,
-                self._walk_linear(doc, self.root, statement),
+                segments,
                 content_layer=ContentLayer.FURNITURE,
             )
+
+    @staticmethod
+    def _walk_author_footnote(fn: etree._Element) -> list[InlineSegment]:
+        """Walk an author ``fn`` into coalesced FOOTNOTE and formula segments."""
+        merged: list[InlineSegment] = []
+        JatsDocumentBackend._extend_segments(
+            merged,
+            JatsDocumentBackend._walk_inline_formula(fn, resolve_ext_links=True),
+        )
+        return JatsDocumentBackend._as_footnote_segments(merged)
 
     def _add_authors(self, doc: DoclingDocument, xml_components: XMLComponents) -> None:
         # TODO: once docling supports text formatting, add affiliation reference to
@@ -867,6 +883,18 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             get_text=lambda segment: segment.text,
             with_text=lambda segment, text: replace(segment, text=text),
         )
+
+    @staticmethod
+    def _as_footnote_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
+        """Label the text runs as FOOTNOTE; formulas keep their own label."""
+        return [
+            (
+                replace(segment, label=DocItemLabel.FOOTNOTE)
+                if segment.label == DocItemLabel.TEXT
+                else segment
+            )
+            for segment in segments
+        ]
 
     @staticmethod
     def _walk_inline_formula(
@@ -1406,14 +1434,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 continue
             # Keep table-note text distinguishable from body text for export
             # filtering and chunk metadata; formulas retain their own label.
-            segments = [
-                (
-                    replace(segment, label=DocItemLabel.FOOTNOTE)
-                    if segment.label == DocItemLabel.TEXT
-                    else segment
-                )
-                for segment in segments
-            ]
+            segments = JatsDocumentBackend._as_footnote_segments(segments)
             # The note's rich content lives in inline child runs of an empty
             # FOOTNOTE item, like the items of the article-level footnote list.
             footnote = doc.add_text(
@@ -1498,17 +1519,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 JatsDocumentBackend._walk_inline_formula(fn)
             )
             if segments:
-                # Keep the FOOTNOTE label on plain text runs; formulas stay
-                # labeled as formulas.
                 footnote_segments.append(
-                    [
-                        (
-                            replace(segment, label=DocItemLabel.FOOTNOTE)
-                            if segment.label == DocItemLabel.TEXT
-                            else segment
-                        )
-                        for segment in segments
-                    ]
+                    JatsDocumentBackend._as_footnote_segments(segments)
                 )
         if not footnote_segments:
             return
