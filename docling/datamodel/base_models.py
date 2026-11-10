@@ -162,7 +162,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
-    InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_XBRL: ["xml", "xbrl", "htm", "html", "xhtml"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"],
