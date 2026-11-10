@@ -6,7 +6,7 @@ import logging
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, replace
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Final, Optional, Union
 
@@ -28,6 +28,7 @@ from docling_core.types.doc import (
 from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.csv_backend import csv_rows_to_table_data
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -147,8 +148,22 @@ class _DataTableBlock:
     rows: list[list[str]]
 
 
+class _DsvDialect(csv.Dialect):
+    delimiter = ":"
+    quotechar = '"'
+    escapechar = "\\"
+    doublequote = False
+    skipinitialspace = False
+    lineterminator = "\n"
+    quoting = csv.QUOTE_NONE
+
+
 _DATA_TABLE_DELIMITERS: Final = {",===": "csv", ":===": "dsv"}
-_DATA_TABLE_SEPARATORS: Final = {"dsv": ":", "tsv": "\t"}
+_DATA_TABLE_DIALECTS: Final[dict[str, type[csv.Dialect]]] = {
+    "csv": csv.excel,
+    "tsv": csv.excel_tab,
+    "dsv": _DsvDialect,
+}
 _TABLE_FORMAT_ATTR_RE: Final = re.compile(
     r"""^\[(?:[^\]]*,)?\s*format\s*=\s*["']?(csv|dsv|tsv)["']?\s*(?:,[^\]]*)?\]$""",
     re.IGNORECASE,
@@ -738,14 +753,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         end = body_start
         while end < len(lines) and lines[end].strip() != stripped:
             end += 1
-        records = [line for line in lines[body_start:end] if line.strip()]
-        separator = _DATA_TABLE_SEPARATORS.get(table_format)
-        rows = (
-            [record.split(separator) for record in records]
-            if separator is not None
-            else list(csv.reader(records))
+        rows = csv.reader(
+            StringIO("\n".join(lines[body_start:end])),
+            dialect=_DATA_TABLE_DIALECTS[table_format],
         )
-        return _DataTableBlock(rows=[row for row in rows if row]), end + 1
+        return _DataTableBlock(
+            rows=[[value.strip() for value in row] for row in rows if row]
+        ), end + 1
 
     def _add_picture_item(
         self,
@@ -816,15 +830,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             text_data = self._flush_text_data(
                 doc=doc, text_data=text_data, parent=parent
             )
-            self._add_table_if_nonempty(
-                doc,
-                [
-                    [_TableCellSource(text=value.strip()) for value in row]
-                    for row in block.rows
-                ],
-                caption_data,
-                parent,
-            )
+            if block.rows:
+                caption = None
+                if caption_data:
+                    text, hyperlink = self._caption_text(caption_data)
+                    caption = doc.add_text(
+                        text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
+                    )
+                doc.add_table(
+                    data=csv_rows_to_table_data(block.rows),
+                    parent=parent,
+                    caption=caption,
+                )
             return text_data, [], in_list, last_list_item, list_continuation
         return self._add_literal_block(
             doc=doc,
