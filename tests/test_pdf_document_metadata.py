@@ -6,6 +6,7 @@
 import logging
 from pathlib import Path
 
+import pypdfium2.raw as pdfium_c
 import pytest
 from docling_core.types.doc.common.meta import BaseMeta, LanguageMetaField
 from docling_core.types.doc.document import DoclingDocument
@@ -14,6 +15,7 @@ from docling_core.types.doc.labels import HumanLanguageLabel
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
 )
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -21,6 +23,7 @@ from docling.utils.pdf_metadata import (
     LANGUAGE_SOURCE_PDF_CATALOG,
     _PdfDocumentMetadata,
     attach_document_metadata,
+    extract_metadata_from_docling_parse,
     parse_xmp_properties,
     pdf_date_to_iso8601,
 )
@@ -32,6 +35,8 @@ METADATA_PDF = Path("./tests/data/pdf/document_metadata.pdf")
 DECLARATIONS_PDF = Path("./tests/data/pdf/document_metadata_declarations.pdf")
 # No /Lang, no /Info, no XMP.
 PLAIN_PDF = Path("./tests/data/pdf/text_with_vector_glyphs.pdf")
+# An image input: its backend has no PDF catalog to read.
+PLAIN_IMAGE = Path("./tests/data/ocr/sources/rotated_180_dense_text.png")
 
 XMP_PACKET = """<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
@@ -51,6 +56,7 @@ XMP_PACKET = """<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
    <pdf:Producer> docling-machine-test-fixture </pdf:Producer>
    <pdfuaid:rev>2024</pdfuaid:rev>
    <custom:ignored>outside the known namespaces</custom:ignored>
+   <unqualified>no namespace at all</unqualified>
   </rdf:Description>
  </rdf:RDF>
 </x:xmpmeta>
@@ -83,8 +89,10 @@ DECLARATIONS_PACKET = """<x:xmpmeta xmlns:x="adobe:ns:meta/">
 </x:xmpmeta>"""
 
 
-def _backend_metadata(path: Path, backend) -> _PdfDocumentMetadata:
-    in_doc = InputDocument(path_or_stream=path, format=InputFormat.PDF, backend=backend)
+def _backend_metadata(
+    path: Path, backend, input_format: InputFormat = InputFormat.PDF
+) -> _PdfDocumentMetadata:
+    in_doc = InputDocument(path_or_stream=path, format=input_format, backend=backend)
     try:
         return in_doc._backend.get_document_metadata()
     finally:
@@ -102,7 +110,9 @@ def test_parse_xmp_properties_flattens_known_namespaces():
         "pdf:Producer": "docling-machine-test-fixture",  # whitespace stripped
     }
     assert "dc:subject" not in props  # empty array carries no value
+    # properties in an unknown namespace, or in none, are skipped
     assert not any(key.startswith("custom:") for key in props)
+    assert not any("unqualified" in key for key in props)
 
 
 def test_parse_xmp_properties_collects_pdf_declarations():
@@ -170,6 +180,35 @@ def test_parse_xmp_properties_reads_only_the_declaration_structures():
     )
     assert flood != NESTED_DECLARATIONS_PACKET
     assert len(parse_xmp_properties(flood)["pdfd:conformsTo"].split(", ")) == 16
+
+
+# A declarations bag that does not follow the schema: a conformsTo directly under
+# pdfd:declarations (no array), an array member that is not rdf:li, and a declaration that
+# carries claim data but no conformsTo. Only the last member is a usable declaration.
+MALFORMED_DECLARATIONS_PACKET = """<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:pdfd="http://pdfa.org/declarations/">
+   <pdfd:declarations>
+    <pdfd:conformsTo>http://example.com/outside-the-bag</pdfd:conformsTo>
+    <rdf:Bag>
+     <rdf:Description pdfd:conformsTo="http://example.com/not-a-list-member"/>
+     <rdf:li rdf:parseType="Resource">
+      <pdfd:claimData><rdf:Bag><rdf:li rdf:parseType="Resource">
+       <pdfd:claimBy>Example Corp</pdfd:claimBy>
+      </rdf:li></rdf:Bag></pdfd:claimData>
+     </rdf:li>
+     <rdf:li pdfd:conformsTo="https://pdfa.org/declarations#iso32005"/>
+    </rdf:Bag>
+   </pdfd:declarations>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>"""
+
+
+def test_parse_xmp_properties_skips_malformed_declarations():
+    assert parse_xmp_properties(MALFORMED_DECLARATIONS_PACKET) == {
+        "pdfd:conformsTo": "https://pdfa.org/declarations#iso32005"
+    }
 
 
 def test_parse_xmp_properties_tolerates_malformed_packet():
@@ -247,11 +286,42 @@ def test_pypdfium_backend_reads_lang_and_info():
     }
 
 
+def test_pypdfium_backend_reads_info_without_catalog_language_api(monkeypatch):
+    # pypdfium2 4.30.0, the oldest release docling accepts, ships a pdfium build without
+    # FPDFCatalog_GetLanguage. The language is then unknown; the /Info properties still read.
+    monkeypatch.delattr(pdfium_c, "FPDFCatalog_GetLanguage")
+
+    metadata = _backend_metadata(METADATA_PDF, PyPdfiumDocumentBackend)
+
+    assert metadata.language is None
+    assert metadata.properties["dc:title"] == "Fixture title"
+
+
 @pytest.mark.parametrize(
-    "backend", [ThreadedDoclingParseDocumentBackend, PyPdfiumDocumentBackend]
+    ("path", "input_format", "backend"),
+    [
+        (PLAIN_PDF, InputFormat.PDF, ThreadedDoclingParseDocumentBackend),
+        (PLAIN_PDF, InputFormat.PDF, PyPdfiumDocumentBackend),
+        # no catalog at all: the pipeline still asks the backend when the option is on
+        (PLAIN_IMAGE, InputFormat.IMAGE, ImageDocumentBackend),
+    ],
 )
-def test_backends_report_nothing_for_plain_pdf(backend):
-    assert _backend_metadata(PLAIN_PDF, backend).is_empty()
+def test_backends_report_nothing_without_metadata(path, input_format, backend):
+    assert _backend_metadata(path, backend, input_format).is_empty()
+
+
+def test_extractors_report_nothing_without_a_native_document():
+    # docling-parse returns no annotations object for a document that has none.
+    assert extract_metadata_from_docling_parse(None).is_empty()
+
+    # A closed pypdfium2 backend has released its native document.
+    in_doc = InputDocument(
+        path_or_stream=METADATA_PDF,
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+    )
+    in_doc._backend.unload()
+    assert in_doc._backend.get_document_metadata().is_empty()
 
 
 def test_attach_document_metadata_fills_body_meta():
@@ -283,6 +353,18 @@ def test_attach_document_metadata_fills_body_meta():
     dumped = DoclingDocument.model_validate_json(doc.model_dump_json())
     assert dumped.body.meta is not None
     assert dumped.body.meta.get_custom_part()["pdf__lang"] == "en-US"
+
+
+def test_attach_document_metadata_without_declared_language():
+    # Properties without a catalog /Lang: no language field and no pdf__lang.
+    doc = DoclingDocument(name="fixture")
+    attach_document_metadata(
+        doc, _PdfDocumentMetadata(properties={"dc:title": "Fixture title"})
+    )
+
+    assert doc.body.meta is not None
+    assert doc.body.meta.language is None
+    assert doc.body.meta.get_custom_part() == {"dc__title": "Fixture title"}
 
 
 def test_attach_document_metadata_keeps_full_tag_when_subtag_unknown():

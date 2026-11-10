@@ -287,10 +287,9 @@ def extract_metadata_from_pdfium(pdoc: pdfium.PdfDocument) -> _PdfDocumentMetada
         language = _pdfium_catalog_language(pdoc)
 
     properties: dict[str, str] = {}
-    for key, raw_value in info.items():
-        name = _INFO_TO_XMP.get(key)
-        value = raw_value.strip()
-        if name is None or not value:
+    for key, name in _INFO_TO_XMP.items():
+        value = info.get(key, "").strip()
+        if not value:
             continue
         properties[name] = (
             pdf_date_to_iso8601(value) if name in _XMP_DATE_PROPERTIES else value
