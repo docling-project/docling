@@ -26,7 +26,8 @@ _log = logging.getLogger(__name__)
 _SNIFF_SAMPLE_SIZE: Final[int] = 4096
 _DELIMITERS: Final[str] = ",;\t|:"
 # Excel reads a first line `sep=<char>` as the delimiter and does not show it.
-_SEP_LINE: Final[re.Pattern[str]] = re.compile(r"sep=(.)")
+# The keyword is case-insensitive: real files use both `sep=;` and `SEP=;`.
+_SEP_LINE: Final[re.Pattern[str]] = re.compile(r"sep=(.)", re.IGNORECASE)
 
 
 def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialect]:
