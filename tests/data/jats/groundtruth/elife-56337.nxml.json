@@ -1630,33 +1630,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/339"
-        },
-        {
           "$ref": "#/texts/340"
         },
         {
           "$ref": "#/texts/341"
-        }
-      ],
-      "content_layer": "furniture",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/75",
-      "parent": {
-        "$ref": "#/texts/0"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/342"
-        },
-        {
-          "$ref": "#/texts/343"
-        },
-        {
-          "$ref": "#/texts/344"
         }
       ],
       "content_layer": "furniture",
@@ -1717,13 +1697,13 @@
           "$ref": "#/texts/320"
         },
         {
+          "$ref": "#/texts/339"
+        },
+        {
           "$ref": "#/groups/74"
         },
         {
-          "$ref": "#/groups/75"
-        },
-        {
-          "$ref": "#/texts/345"
+          "$ref": "#/texts/343"
         }
       ],
       "content_layer": "body",
@@ -6617,43 +6597,19 @@
     {
       "self_ref": "#/texts/339",
       "parent": {
-        "$ref": "#/groups/74"
+        "$ref": "#/texts/0"
       },
       "children": [],
       "content_layer": "furniture",
       "label": "footnote",
       "prov": [],
-      "orig": "†",
-      "text": "†"
+      "orig": "† CeMM Research Center for Molecular Medicine of the Austrian Academy of Sciences, Vienna, Austria.",
+      "text": "† CeMM Research Center for Molecular Medicine of the Austrian Academy of Sciences, Vienna, Austria."
     },
     {
       "self_ref": "#/texts/340",
       "parent": {
         "$ref": "#/groups/74"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "footnote",
-      "prov": [],
-      "orig": " ",
-      "text": " "
-    },
-    {
-      "self_ref": "#/texts/341",
-      "parent": {
-        "$ref": "#/groups/74"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "footnote",
-      "prov": [],
-      "orig": "CeMM Research Center for Molecular Medicine of the Austrian Academy of Sciences, Vienna, Austria.",
-      "text": "CeMM Research Center for Molecular Medicine of the Austrian Academy of Sciences, Vienna, Austria."
-    },
-    {
-      "self_ref": "#/texts/342",
-      "parent": {
-        "$ref": "#/groups/75"
       },
       "children": [],
       "content_layer": "furniture",
@@ -6663,9 +6619,9 @@
       "text": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the "
     },
     {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/341",
       "parent": {
-        "$ref": "#/groups/75"
+        "$ref": "#/groups/74"
       },
       "children": [],
       "content_layer": "furniture",
@@ -6676,9 +6632,9 @@
       "hyperlink": "http://creativecommons.org/publicdomain/zero/1.0/"
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/342",
       "parent": {
-        "$ref": "#/groups/75"
+        "$ref": "#/groups/74"
       },
       "children": [],
       "content_layer": "furniture",
@@ -6688,7 +6644,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/345",
+      "self_ref": "#/texts/343",
       "parent": {
         "$ref": "#/texts/0"
       },

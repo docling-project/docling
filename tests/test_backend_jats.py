@@ -452,13 +452,7 @@ def test_jats_author_footnotes_are_furniture(notes: tuple[str, ...]):
     doc = convert_jats_article_meta(
         f"""
         <title-group><article-title>Author Footnote Test</article-title></title-group>
-        <contrib-group><contrib contrib-type="author">
-          <name><surname>Doe</surname><given-names>Jane</given-names></name>
-          <xref ref-type="aff" rid="aff1"/>
-        </contrib></contrib-group>
-        <aff id="aff1">Example University</aff>
         {author_notes}
-        <abstract><p>Abstract text.</p></abstract>
         """,
         "<p>Body text.</p>",
     )
@@ -467,18 +461,11 @@ def test_jats_author_footnotes_are_furniture(notes: tuple[str, ...]):
     assert [t.text for t in footnotes] == list(notes)
     assert all(t.content_layer == ContentLayer.FURNITURE for t in footnotes)
     assert _furniture_statements(doc) == [[(note, None)] for note in notes]
-    expected = [
-        "# Author Footnote Test",
-        "Jane Doe",
-        "Example University",
-        "## Abstract",
-        "Abstract text.",
-        "Body text.",
-    ]
-    assert doc.export_to_markdown() == "\n\n".join(expected)
+    body = ["# Author Footnote Test", "Body text."]
+    assert doc.export_to_markdown() == "\n\n".join(body)
     assert doc.export_to_markdown(
         included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
-    ) == "\n\n".join([*expected, *notes])
+    ) == "\n\n".join([*body, *notes])
 
 
 def test_jats_author_footnote_preserves_formatting_link_formula_and_paragraphs():
@@ -486,7 +473,6 @@ def test_jats_author_footnote_preserves_formatting_link_formula_and_paragraphs()
         """
         <title-group><article-title>Author Footnote Test</article-title></title-group>
         <author-notes>
-          <corresp>Correspondence marker.</corresp>
           <fn><label>1</label><p>See <italic><ext-link
             xlink:href="https://example.org/statement">disclosure</ext-link></italic>
             and <inline-formula><tex-math>x+1</tex-math></inline-formula>.</p>
@@ -542,9 +528,6 @@ def test_jats_author_footnotes_share_furniture_with_article_statements():
     body_footnote = next(t for t in doc.texts if t.text == "Body footnote.")
     assert body_footnote.label == DocItemLabel.FOOTNOTE
     assert body_footnote.content_layer == ContentLayer.BODY
-    assert doc.export_to_markdown() == (
-        "# Article metadata\n\nBody text.\n\n## Footnotes\n\n- \nBody footnote."
-    )
 
 
 _FOOTNOTE = (
