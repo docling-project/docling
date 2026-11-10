@@ -40,6 +40,11 @@ and retains the decoder error as its cause.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
+text in `<footer>` elements is retained in the furniture content layer. Default
+Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
+`included_content_layers` to export it.
+
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula
 children. The `metadata`, `authors`, and `affiliations` groups record source roles.
