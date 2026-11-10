@@ -60,6 +60,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils._inline_runs import trim_run_edges
+from docling.utils.code_language import detect_code_language
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -840,6 +841,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _add_code_block(
+        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
+    ) -> None:
+        # <preformat> and <code> hold verbatim text such as code or console
+        # output: keep its line breaks and indentation. Only <code> names its
+        # language.
+        code = "".join(node.itertext()).strip("\n")
+        if code.strip():
+            doc.add_code(
+                text=code,
+                code_language=detect_code_language(code, hint=node.get("language")),
+                parent=parent,
+            )
+
     @staticmethod
     def _extract_tex_math(node: etree._Element) -> str | None:
         if not node.text:
@@ -1575,7 +1590,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if text:
             self.hlevel -= 1
 
-    def _walk_linear(
+    def _walk_linear(  # noqa: C901
         self,
         doc: DoclingDocument,
         parent: NodeItem,
@@ -1583,7 +1598,16 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         formatting: Formatting | None = None,
         hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
-        flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
+        flush_tags = [
+            "ack",
+            "sec",
+            "list",
+            "boxed-text",
+            "disp-formula",
+            "fig",
+            "preformat",
+            "code",
+        ]
         new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         current_hyperlink = hyperlink
@@ -1687,6 +1711,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 stop_walk = True
             elif child.tag == "tex-math":
                 self._add_equation(doc, parent, child)
+                stop_walk = True
+            elif child.tag in ("preformat", "code"):
+                self._add_code_block(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
                 # Inline formula: tex-math stays inline, unlike block <disp-formula>.
