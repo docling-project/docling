@@ -297,13 +297,18 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # src is a URL; decode percent-escapes of its path, without the
-            # query or fragment, to get the archive entry name.
-            src_path = urlsplit(src).path
-            if not src_path:
+            # Only a plain relative reference names an archive entry. Leave a
+            # malformed src, or one with a scheme or host, unchanged.
+            try:
+                parts = urlsplit(src)
+            except ValueError:
                 return match.group(0)
+            if parts.scheme or parts.netloc or not parts.path:
+                return match.group(0)
+
+            # Decode after the split: an escaped "#" or "?" belongs to the file name.
             image_path = posixpath.normpath(
-                posixpath.join(content_dir, unquote(src_path))
+                posixpath.join(content_dir, unquote(parts.path))
             )
             return 'src="{}"'.format(image_path.replace('"', "&quot;"))
 

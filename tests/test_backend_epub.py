@@ -18,6 +18,7 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 """
 
 import logging
+import warnings
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -601,36 +602,27 @@ def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
     assert all(pic.image is not None for pic in doc.pictures)
 
 
-def test_epub_image_source_query_and_fragment_are_not_part_of_the_name(
-    tmp_path: Path,
-):
-    """Only the path of an image src names the archive entry.
+def _convert_epub_with_one_image(
+    tmp_path: Path, src: str, archive_images: list[str]
+) -> DoclingDocument:
+    """Convert a one-chapter EPUB with a single image between two paragraphs.
 
-    A query or fragment is not part of the file name, but an escaped "#" in
-    the path is. A src that decodes to a path outside the archive only drops
-    its own image, with a warning; the rest of the document is kept.
+    ``archive_images`` are PNG files stored in the archive, relative to
+    ``OEBPS/``.
     """
     buf = BytesIO()
     Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
     png = buf.getvalue()
 
-    bodies = [
-        "<p>Maps.</p>"
-        '<img src="../Images/map.png?v=1" alt="query"/>'
-        '<img src="../Images/map.png#top" alt="fragment"/>'
-        '<img src="../Images/map%231.png" alt="escaped"/>'
-        '<img src="..%2F..%2F..%2Fsecret.png" alt="outside"/>'
-        "<p>End.</p>"
-    ]
     epub_path = _build_epub_with_hrefs(
         tmp_path / "images.epub",
         hrefs=["Text/ch1.xhtml"],
         names=["Text/ch1.xhtml"],
-        bodies=bodies,
+        bodies=[f'<p>Start.</p><img src="{src}" alt="img"/><p>End.</p>'],
     )
     with zipfile.ZipFile(epub_path, "a") as z:
-        z.writestr("OEBPS/Images/map.png", png)
-        z.writestr("OEBPS/Images/map#1.png", png)
+        for name in archive_images:
+            z.writestr(f"OEBPS/{name}", png)
 
     converter = DocumentConverter(
         allowed_formats=[InputFormat.EPUB],
@@ -642,13 +634,53 @@ def test_epub_image_source_query_and_fragment_are_not_part_of_the_name(
             )
         },
     )
-    with pytest.warns(UserWarning, match="Could not process an image"):
-        doc = converter.convert(epub_path, raises_on_error=True).document
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return converter.convert(epub_path, raises_on_error=True).document
 
-    assert [pic.image is not None for pic in doc.pictures] == [
-        True,
-        True,
-        True,
-        False,
-    ]
-    assert doc.texts[-1].text == "End."
+
+@pytest.mark.parametrize(
+    ("src", "archive_image"),
+    [
+        ("../Images/map.png?v=1", "Images/map.png"),
+        ("../Images/map.png#top", "Images/map.png"),
+        ("../Images/map%231.png", "Images/map#1.png"),
+    ],
+)
+def test_epub_image_source_ignores_query_and_fragment(
+    tmp_path: Path, src: str, archive_image: str
+):
+    """A query or fragment is not part of the file name; an escaped "#" is."""
+    doc = _convert_epub_with_one_image(tmp_path, src, [archive_image])
+
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+    texts = [t.text for t in doc.texts]
+    assert texts[0] == "Start."
+    assert texts[-1] == "End."
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "cid:foo.png",
+        "foo://[bad/x.png",
+        "#top",
+    ],
+)
+def test_epub_image_source_that_is_not_a_relative_path_is_not_loaded(
+    tmp_path: Path, src: str
+):
+    """A src with a scheme, a malformed src or one with no path is left as is.
+
+    It must not resolve to an archive file of the same name, and it must not
+    drop the text of its chapter.
+    """
+    doc = _convert_epub_with_one_image(
+        tmp_path, src, ["Text/foo.png", "Text/x.png", "Text/top"]
+    )
+
+    assert all(pic.image is None for pic in doc.pictures)
+    texts = [t.text for t in doc.texts]
+    assert texts[0] == "Start."
+    assert texts[-1] == "End."
