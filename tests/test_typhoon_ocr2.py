@@ -237,6 +237,8 @@ _TAGGED = [
 # After a cut at the end tag, this `[{}]` reads as a list of one object that is not
 # a layout element.
 _TAGGED_OBJECT = [_TAGGED[0], _element("text", "The log starts as logs = [{}].")]
+# After a cut at the end tag, the rest holds no JSON value at all.
+_TAGGED_PROSE = [_element("text", "The tag </think> closes the reasoning.")]
 
 
 @pytest.mark.parametrize(
@@ -246,6 +248,7 @@ _TAGGED_OBJECT = [_TAGGED[0], _element("text", "The log starts as logs = [{}].")
         (_TAGGED, json.dumps(_TAGGED)),
         (_TAGGED, f"Here is the layout.\n{_reply(*_TAGGED)}"),
         (_TAGGED_OBJECT, _reply(*_TAGGED_OBJECT)),
+        (_TAGGED_PROSE, _reply(*_TAGGED_PROSE)),
         (_TAGGED, f"{_THINKING}{_reply(*_TAGGED)}"),
         (_TAGGED, f"<think>\n{_DRAFT}\n</think>\n\n{_reply(*_TAGGED)}"),
     ],
@@ -254,6 +257,7 @@ _TAGGED_OBJECT = [_TAGGED[0], _element("text", "The log starts as logs = [{}].")
         "bare",
         "prose_before_fence",
         "object_after_the_tag",
+        "no_json_after_the_tag",
         "after_thinking",
         "after_a_think_block",
     ],
@@ -462,6 +466,23 @@ def test_captions_link_to_one_adjacent_owner() -> None:
     ]
 
 
+def test_elements_that_are_not_objects_are_skipped() -> None:
+    # A skipped element still separates its neighbors, so the caption stays unlinked.
+    elements = [
+        _element("figure", ""),
+        "Figure 3",
+        7,
+        _element("figure_caption", "Figure 3. Sales."),
+    ]
+    doc = _parse(f"```json\n{json.dumps(elements)}\n```")
+
+    assert [item.label for item in _blocks(doc)] == [
+        DocItemLabel.PICTURE,
+        DocItemLabel.CAPTION,
+    ]
+    assert doc.pictures[0].captions == []
+
+
 def test_title_is_always_a_section_header() -> None:
     reply = _reply(_element("title", "Intro"), _element("title", "## Method"))
 
@@ -477,6 +498,25 @@ def test_title_is_always_a_section_header() -> None:
     assert [
         item.level for item in normalized.texts if isinstance(item, SectionHeaderItem)
     ] == [1, 1]
+
+
+def test_formatted_title_keeps_its_bold_and_math() -> None:
+    doc = _parse(_reply(_element("title", "**Results** for $x^2$")))
+
+    (heading,) = _blocks(doc)
+    assert isinstance(heading, SectionHeaderItem)
+    runs = [item for item, _ in doc.iterate_items(root=heading) if item is not heading]
+    assert [
+        (run.label, run.text, run.formatting is not None and run.formatting.bold)
+        for run in runs
+        if isinstance(run, TextItem)
+    ] == [
+        (DocItemLabel.TEXT, "Results", True),
+        (DocItemLabel.TEXT, " for ", False),
+        (DocItemLabel.FORMULA, "x^2", False),
+    ]
+    # The runs replace the heading text; the Markdown keeps the title once.
+    assert doc.export_to_markdown() == "## **Results** for $x^2$"
 
 
 @pytest.mark.parametrize("latex", ["$$a^2 + 8 = 12$$", "\\[a^2 + 8 = 12\\]"])
