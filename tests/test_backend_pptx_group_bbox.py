@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Tests for the provenance boxes of shapes inside PowerPoint groups."""
+"""Tests for the provenance boxes of PowerPoint shapes in groups and placeholders."""
 
 from pathlib import Path
 
@@ -84,3 +84,46 @@ def test_pptx_grouped_shape_bbox_follows_group_transform(tmp_path: Path):
         "flip-left": inches(3, 6, 4, 7),
         "flip-right": inches(1, 6, 2, 7),
     }
+
+
+def test_pptx_placeholder_paragraphs_get_the_inherited_box(tmp_path: Path):
+    """Each paragraph of a placeholder gets the box the placeholder is drawn at.
+
+    A placeholder that was not moved on its slide takes its position from the
+    slide layout; one that was moved has its own.
+    """
+    prs = Presentation()
+    layout = prs.slide_layouts[1]
+    for title, moved in (("Inherited", False), ("Moved", True)):
+        slide = prs.slides.add_slide(layout)
+        slide.shapes.title.text = title
+        body = slide.placeholders[1]
+        body.text_frame.text = f"{title} first"
+        body.text_frame.add_paragraph().text = f"{title} second"
+        body.text_frame.add_paragraph().text = f"{title} third"
+        if moved:
+            body.left, body.top = Inches(1), Inches(1)
+            body.width, body.height = Inches(4), Inches(2)
+
+    path = tmp_path / "placeholders.pptx"
+    prs.save(path)
+
+    def box(shape):
+        return (
+            shape.left,
+            shape.top,
+            shape.left + shape.width,
+            shape.top + shape.height,
+        )
+
+    title_box = box(layout.placeholders.get(idx=0))
+    body_boxes = {
+        "Inherited": box(layout.placeholders.get(idx=1)),
+        "Moved": (Inches(1), Inches(1), Inches(5), Inches(3)),
+    }
+    expected = {"Inherited": title_box, "Moved": title_box}
+    for title, body_box in body_boxes.items():
+        for word in ("first", "second", "third"):
+            expected[f"{title} {word}"] = body_box
+
+    assert _boxes_by_text(path) == expected

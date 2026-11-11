@@ -683,6 +683,24 @@ Relative image paths are resolved against the current working directory. The
 in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
 through the CLI again with its images.
 
+### Load local JATS figure images
+
+JATS figure images require both `fetch_images=True` and
+`enable_local_fetch=True` on `JatsBackendOptions`. For a `DocumentStream`, set
+`source_uri` to the source document path or its `file://` URI. The source
+document need not exist, but its directory must contain the referenced images.
+Relative figure paths stay within that directory. Remote image references and
+remote source URIs do not enable downloads, even with `enable_remote_fetch=True`.
+
+File URIs with no authority or with `localhost` work on all supported platforms.
+Other authorities, such as `file://server/share/article.nxml`, require Windows
+UNC paths. JATS skips file URIs that identify only a filesystem root or a UNC
+share root, including empty file URIs normalized to `file:///`. Use a document
+location such as `file:///path/to/article.nxml` instead.
+
+Missing or damaged images produce a warning. The figure, its caption, and the
+rest of the article remain in the converted document. SVG figures are skipped.
+
 ### Fetch HTML images from remote hosts
 
 The HTML backend only downloads images referenced by a page when you opt in with
@@ -748,6 +766,25 @@ both, and applies them to every reference:
 - Other URL schemes are refused.
 
 A refused reference stops the conversion with an error that lists it.
+
+The same options apply to inline XBRL (iXBRL) reports. Docling recognizes them
+by the inline XBRL namespace that the root `html` element declares, and converts
+them with the XBRL backend instead of the HTML backend. Without the `xbrl`
+extra, converting such a report raises an error that asks you to install it.
+
+Reports from SEC EDGAR reference their company-specific extension taxonomy with
+a relative path. When you convert from a URL with `enable_remote_fetch=True`,
+Docling resolves these references against the URL of the report. For a local
+file or a stream, put the extension taxonomy in the `taxonomy` folder, or set
+`XBRLBackendOptions.source_uri` to the URL where the report was published. A
+file in the `taxonomy` folder takes precedence over a remote one.
+
+Docling takes the value of an iXBRL fact from Arelle, which applies the inline
+XBRL transformation named in the `format` attribute of the fact. If Arelle does
+not implement the transformation (for example `ixt-sec:numwordsen`, which turns
+the text "one" into the number 1), the value of the fact is
+`(ixTransformValueError)`. The value of the same fact in the XBRL instance of the
+filing is the number.
 
 ## Impose limits on the document size
 

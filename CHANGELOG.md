@@ -1,3 +1,17 @@
+## [v2.150.0](https://github.com/docling-project/docling/releases/tag/v2.150.0) - 2026-11-10
+
+### Feature
+
+* **xbrl:** Support iXBRL input and remote taxonomy resolution with source_uri ([#4689](https://github.com/docling-project/docling/issues/4689)) ([`43c016c`](https://github.com/docling-project/docling/commit/43c016caedf076b3016fe6cdd4ec4d2b53b5acc1))
+
+### Fix
+
+* **email:** Preserve furniture from HTML message bodies ([#5228](https://github.com/docling-project/docling/issues/5228)) ([`75a7dbc`](https://github.com/docling-project/docling/commit/75a7dbc75caadddbdb1c283c8141fb1857ff8bc6))
+* **odf:** Show the displayed text of typed table cells ([#5232](https://github.com/docling-project/docling/issues/5232)) ([`b92f77c`](https://github.com/docling-project/docling/commit/b92f77cfcddd31ad5d849d9eef02072b43c51d45))
+* **example:** Avoid exposing original PII by default ([#5182](https://github.com/docling-project/docling/issues/5182)) ([`e77fcc2`](https://github.com/docling-project/docling/commit/e77fcc22863cca3097a1cb20c0496e83ef831c18))
+* Apply the EXIF orientation when loading document images ([#5246](https://github.com/docling-project/docling/issues/5246)) ([`550cba5`](https://github.com/docling-project/docling/commit/550cba58c9d33efd47327ba584a98a7e6770e1af))
+* **jats:** Keep the license and funding statements of the article ([#4866](https://github.com/docling-project/docling/issues/4866)) ([`896f2fd`](https://github.com/docling-project/docling/commit/896f2fd973d0b0b43b2adfd73e2f51c75210ddd2))
+
 ## [v2.149.0](https://github.com/docling-project/docling/releases/tag/v2.149.0) - 2026-11-08
 
 ### Feature

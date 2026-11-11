@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
@@ -31,6 +31,12 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# A start tag such as <a href="ch2.xhtml#n">. Only its attributes are markup: the
+# same characters in text, like a code listing that shows an HTML tag, have their
+# "<" escaped, since XML text cannot hold a literal "<", and must stay as written.
+# An attribute value cannot hold a literal "<" either, but it can hold a ">".
+_START_TAG = re.compile(r"""<[A-Za-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>""")
 
 
 class EpubDocumentBackend(DeclarativeDocumentBackend):
@@ -297,15 +303,28 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # src is a URL; decode percent-escapes to get the archive entry name.
-            image_path = posixpath.normpath(posixpath.join(content_dir, unquote(src)))
+            # Only a plain relative reference names an archive entry. Leave a
+            # malformed src, or one with a scheme or host, unchanged.
+            try:
+                parts = urlsplit(src)
+            except ValueError:
+                return match.group(0)
+            if parts.scheme or parts.netloc or not parts.path:
+                return match.group(0)
+
+            # Decode after the split: an escaped "#" or "?" belongs to the file name.
+            image_path = posixpath.normpath(
+                posixpath.join(content_dir, unquote(parts.path))
+            )
             return 'src="{}"'.format(image_path.replace('"', "&quot;"))
 
         # Group 1: the opening quote (" or '). Group 2: the value, up to the
         # matching closing quote. The lookbehind skips attributes that only end
         # in "src", such as data-src.
         pattern = r"""(?<![\w-])src=(["'])((?:(?!\1).)+)\1"""
-        return re.sub(pattern, replace_image_src, html_content)
+        return _START_TAG.sub(
+            lambda tag: re.sub(pattern, replace_image_src, tag.group(0)), html_content
+        )
 
     def _fix_internal_links(self, html_content: str) -> str:
         """Reduce a link into another content document to its anchor.
@@ -336,7 +355,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # Replace with just the anchor part
-        fixed_content = re.sub(pattern, r"href=\1\3\1", html_content)
+        fixed_content = _START_TAG.sub(
+            lambda tag: re.sub(pattern, r"href=\1\3\1", tag.group(0)), html_content
+        )
 
         return fixed_content
 
