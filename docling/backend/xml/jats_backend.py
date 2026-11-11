@@ -936,6 +936,26 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return InlineSegment(label=DocItemLabel.TEXT, text=text) if text else None
 
     @staticmethod
+    def _display_textual_form(node: etree._Element) -> str | None:
+        """Return the text of a `textual-form` that stands for a display formula.
+
+        It is the text of a `disp-formula`, directly or in its `alternatives`,
+        unless the formula also has a `tex-math`, which the walk reads instead.
+        """
+        wrapper = node.getparent()
+        if wrapper is not None and wrapper.tag == "alternatives":
+            if wrapper.find("tex-math") is not None:
+                return None
+            wrapper = wrapper.getparent()
+        if wrapper is None or wrapper.tag != "disp-formula":
+            return None
+        if wrapper.find("tex-math") is not None:
+            return None
+        return (
+            JatsDocumentBackend._normalize_whitespace("".join(node.itertext())) or None
+        )
+
+    @staticmethod
     def _mathml_text(node: etree._Element) -> str:
         """Return the text of the tokens of a MathML `math`, without annotations.
 
@@ -2053,6 +2073,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 stop_walk = True
             elif child.tag == "tex-math":
                 self._add_equation(doc, parent, child)
+                stop_walk = True
+            elif child.tag == "textual-form" and (
+                textual := JatsDocumentBackend._display_textual_form(child)
+            ):
+                # a display formula given as text is a block in place
+                doc.add_text(label=DocItemLabel.TEXT, text=textual, parent=parent)
                 stop_walk = True
             elif isinstance(child.tag, str) and child.tag.endswith("}math"):
                 mathml = JatsDocumentBackend._read_mathml(child)

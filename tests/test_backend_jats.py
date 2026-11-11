@@ -1748,6 +1748,69 @@ def test_jats_textual_form_is_read_instead_of_its_mathml(body, line):
     assert md.count("β") == 1
 
 
+_MML_BETA = _MML.format("<mml:mi>β</mml:mi>")
+_TEXTUAL_FORM = "<textual-form><italic>β</italic></textual-form>"
+
+
+@pytest.mark.parametrize(
+    ("body", "lines"),
+    [
+        pytest.param(
+            "<sec><title>S</title><p>before</p><disp-formula><alternatives>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</alternatives></disp-formula>"
+            "<p>after</p></sec>",
+            ["before", "β", "after"],
+            id="alternatives",
+        ),
+        pytest.param(
+            "<sec><title>S</title><p>before</p><disp-formula>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</disp-formula><p>after</p></sec>",
+            ["before", "β", "after"],
+            id="in-wrapper",
+        ),
+        pytest.param(
+            f"<sec><title>S</title><p>before</p><disp-formula>{_TEXTUAL_FORM}"
+            "</disp-formula><p>after</p></sec>",
+            ["before", "β", "after"],
+            id="textual-form-only",
+        ),
+        pytest.param(
+            "<sec><title>S</title><p>Minimize<disp-formula><alternatives>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</alternatives></disp-formula>"
+            "subject to y.</p></sec>",
+            ["Minimize", "β", "subject to y."],
+            id="in-paragraph",
+        ),
+        pytest.param(
+            "<list><list-item><p>Do<disp-formula><alternatives>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</alternatives></disp-formula>"
+            "then.</p></list-item></list>",
+            ["- Do", "β", "then."],
+            id="in-list-item",
+        ),
+    ],
+)
+def test_jats_display_formula_keeps_its_textual_form(body, lines):
+    doc = convert_jats_body(body)
+
+    md_lines = [line for line in doc.export_to_markdown().splitlines() if line]
+    positions = [md_lines.index(line) for line in lines]
+    assert positions == sorted(positions)
+    assert sum(line.count("β") for line in md_lines) == 1
+
+
+def test_jats_display_formula_prefers_tex_math_over_textual_form():
+    doc = convert_jats_body(
+        "<sec><title>S</title><disp-formula><alternatives>"
+        f"<tex-math>\\beta</tex-math>{_MML_BETA}{_TEXTUAL_FORM}"
+        "</alternatives></disp-formula></sec>"
+    )
+
+    md = doc.export_to_markdown()
+    assert "$$\\beta$$" in md
+    assert "β" not in md
+
+
 @pytest.mark.parametrize(
     ("float_xml", "text"),
     [
