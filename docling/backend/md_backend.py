@@ -13,7 +13,7 @@ from html import unescape
 from html.entities import html5
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, cast
+from typing import Final, Literal, cast
 
 import yaml
 from docling_core.types.doc import (
@@ -226,6 +226,9 @@ def _strip_frontmatter(text: str) -> str:
     return text[match.end() :] if isinstance(meta, dict) else text
 
 
+_LINK_DEST: Final = TypeAdapter(AnyUrl | Path | None)
+
+
 def _text_run_piece(node: marko.inline.RawText | marko.inline.Literal) -> str:
     """Return the final text of a run, with every `&` kept as an entity.
 
@@ -333,7 +336,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             An `AnyUrl` or `Path` instance, or `None` when the destination
             cannot be parsed.
         """
-        return TypeAdapter(AnyUrl | Path | None).validate_python(dest)
+        return _LINK_DEST.validate_python(dest)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
         pattern = r"_+"
