@@ -18,6 +18,8 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 """
 
 import logging
+import shutil
+import tempfile
 import warnings
 import zipfile
 from io import BytesIO
@@ -759,3 +761,56 @@ def test_epub_image_source_that_is_not_a_relative_path_is_not_loaded(
     texts = [t.text for t in doc.texts]
     assert texts[0] == "Start."
     assert texts[-1] == "End."
+
+
+def test_epub_convert_removes_extraction_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """convert() removes the extracted archive; the picture stays usable."""
+    temp_root = tmp_path / "temp"
+    temp_root.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(temp_root))
+
+    doc = _convert_epub_with_one_image(tmp_path, "pic.png", ["Text/pic.png"])
+
+    assert list(temp_root.iterdir()) == []
+    stored = DoclingDocument.model_validate_json(doc.model_dump_json())
+    image = stored.pictures[0].image
+    assert image is not None and image.pil_image is not None
+    assert image.pil_image.size == (4, 3)
+
+
+def test_epub_release_retries_failed_removal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """If convert() cannot remove the directory, release() removes it."""
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "text.epub", hrefs=["ch1.xhtml"], names=["ch1.xhtml"]
+    )
+    temp_root = tmp_path / "temp"
+    temp_root.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(temp_root))
+    real_rmtree = shutil.rmtree
+    failures = [PermissionError("busy")]
+
+    def rmtree_failing_once(path, *args, **kwargs):
+        if failures:
+            raise failures.pop()
+        real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree_failing_once)
+    in_doc = InputDocument(
+        path_or_stream=epub_path,
+        format=InputFormat.EPUB,
+        backend=EpubDocumentBackend,
+        backend_options=EpubBackendOptions(fetch_images=True, enable_local_fetch=True),
+    )
+
+    backend = in_doc._backend
+    assert isinstance(backend, EpubDocumentBackend)
+
+    backend.convert()
+    assert len(list(temp_root.iterdir())) == 1
+
+    in_doc.release()
+    assert list(temp_root.iterdir()) == []
