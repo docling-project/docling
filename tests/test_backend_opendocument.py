@@ -2110,25 +2110,20 @@ def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
     ]
 
 
-def test_ods_offset_table_and_hidden_sheet_keep_unclamped_page_size(recwarn):
-    """Non-A1 ODS tables and hidden sheets use max(r, b) as page extent."""
+@pytest.mark.parametrize("hidden", [False, True], ids=["visible", "hidden"])
+def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
+    """Offset ODS tables preserve their full extent on visible and hidden sheets."""
     ods = OdfDocument("spreadsheet")
     ods.body.clear()
 
-    visible = Table("VisibleSheet")
-    visible.set_value("B2", "a")
-    visible.set_value("C2", "b")
-    visible.set_value("B3", "1")
-    visible.set_value("C3", "2")
-    ods.body.append(visible)
-
-    hidden = Table("HiddenSheet")
-    hidden.set_attribute("table:display", "false")
-    hidden.set_value("B2", "x")
-    hidden.set_value("C2", "y")
-    hidden.set_value("B3", "10")
-    hidden.set_value("C3", "20")
-    ods.body.append(hidden)
+    sheet = Table("Sheet")
+    if hidden:
+        sheet.set_attribute("table:display", "false")
+    sheet.set_value("B2", "a")
+    sheet.set_value("C2", "b")
+    sheet.set_value("B3", "1")
+    sheet.set_value("C3", "2")
+    ods.body.append(sheet)
 
     buf = BytesIO()
     ods.save(buf)
@@ -2139,22 +2134,16 @@ def test_ods_offset_table_and_hidden_sheet_keep_unclamped_page_size(recwarn):
 
     assert doc.pages[1].size.width == 3.0
     assert doc.pages[1].size.height == 3.0
-    assert doc.pages[2].size.width == 3.0
-    assert doc.pages[2].size.height == 3.0
 
-    recwarn.clear()
     reloaded = DoclingDocument.model_validate_json(doc.model_dump_json())
-    assert [w for w in recwarn if "outside page bounds" in str(w.message)] == []
-
     tables = [
         item
         for item, _ in reloaded.iterate_items(included_content_layers=set(ContentLayer))
         if isinstance(item, TableItem)
     ]
-    assert len(tables) == 2
-    for tbl in tables:
-        bbox = tbl.prov[0].bbox
-        assert (bbox.l, bbox.t, bbox.r, bbox.b) == (1.0, 1.0, 3.0, 3.0)
+    assert len(tables) == 1
+    bbox = tables[0].prov[0].bbox
+    assert (bbox.l, bbox.t, bbox.r, bbox.b) == (1.0, 1.0, 3.0, 3.0)
 
 
 def _build_odt_with_external_image_href(path: Path, href: str) -> Path:

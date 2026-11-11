@@ -2651,13 +2651,18 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
     @staticmethod
     def _find_page_size(doc: DoclingDocument, page_no: int) -> tuple[float, float]:
-        """Return (width, height) for the given page in cell-index units.
+        """Compute page dimensions from item bounding boxes.
 
-        Width and height are the maximum ``r`` and ``b`` bbox coordinates seen
-        across all items on the page, regardless of content layer. Because
-        bboxes use ``CoordOrigin.TOPLEFT`` with the sheet origin at ``(0, 0)``,
-        the page extent equals the largest right/bottom value — not the span
-        between the leftmost/topmost and rightmost/bottommost edges.
+        Width and height are the largest ``r`` and ``b`` bbox values on the
+        page, in every content layer. Bboxes count cells from ``(0, 0)``, so
+        the extent is the maximum edge.
+
+        Args:
+            doc: Document containing converted page items.
+            page_no: 1-based page number to measure.
+
+        Returns:
+            The (width, height) of the page in cell-index units.
         """
         width: float = 0.0
         height: float = 0.0
@@ -2670,7 +2675,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                if provenance.page_no != page_no or provenance.bbox is None:
+                if provenance.page_no != page_no:
                     continue
                 width = max(width, provenance.bbox.r)
                 height = max(height, provenance.bbox.b)
