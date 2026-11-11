@@ -2468,10 +2468,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
     def _get_hyperlink_target(self, hyperlink: Hyperlink) -> AnyUrl | Path | None:
-        """Resolve a hyperlink's address to a URL or a local path.
+        """Resolve a hyperlink's address and fragment to a URL or a local path.
+
+        The result includes the ``w:anchor`` fragment, which Word stores
+        separately from the address, e.g. ``https://example.com/page#section``.
 
         Addresses without a URL scheme are treated as (relative) filesystem
-        paths. Addresses with a scheme are parsed as URLs.
+        paths. Such a ``Path`` can carry a ``#fragment`` suffix, e.g.
+        ``Path("manual.docx#Installation")``, which does not point to a real
+        file. Addresses with a scheme are parsed as URLs.
 
         Malformed URLs (e.g. an address containing spaces) are handled
         gracefully: the invalid target is dropped and ``None`` is returned so
@@ -2488,7 +2493,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             hyperlink's relationship has been removed from the part.
         """
         try:
-            # Word can store the URL fragment separately in w:anchor.
             address = hyperlink.url
         except KeyError:
             # Relationship removed from the part (e.g. by _sanitize_docx); drop target.
