@@ -19,6 +19,7 @@ from docling.pipeline.asr_transcriber import (
     _AsrTranscriber,
     _ConversationItem,
     _ConversationWord,
+    _MlxAudioModel,
     _MlxWhisperModel,
     _NativeWhisperModel,
     _process_conversation,
@@ -40,6 +41,7 @@ class AsrPipeline(BasePipeline):
             asr_options=self.pipeline_options.asr_options,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
+            enable_remote_services=pipeline_options.enable_remote_services,
         )
 
     def _has_text(self, document: "DoclingDocument") -> bool:

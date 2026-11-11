@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Reader for the charts of an iWork 2013+ document.
+"""Reader for the charts of an iWork 2013+ document, and the kinds of iWork '09 ones.
 
 Pages, Numbers and Keynote draw their charts with one shared engine, ``TSCH``,
 so a chart on a Keynote slide is the same archive as a chart on a Numbers sheet:
@@ -157,6 +157,39 @@ CHART_TYPES: dict[int, ChartType] = {
 
 The multi-data kinds are what the apps call interactive charts. Anything not
 listed here, including ``undefinedChartType`` (0), is read as ``OTHER``.
+"""
+
+LEGACY_CHART_TYPES: dict[int, ChartType] = {
+    1: ChartType(ChartKind.PIE),  # pie_2d
+    2: ChartType(ChartKind.COLUMN),  # vertical_bar_2d
+    3: ChartType(ChartKind.COLUMN, stacked=True),  # stacked_vertical_bar_2d
+    4: ChartType(ChartKind.BAR),  # horizontal_bar_2d
+    5: ChartType(ChartKind.BAR, stacked=True),  # stacked_horizontal_bar_2d
+    6: ChartType(ChartKind.PIE),  # pie_3d
+    7: ChartType(ChartKind.COLUMN),  # vertical_bar_3d
+    8: ChartType(ChartKind.COLUMN, stacked=True),  # stacked_vertical_bar_3d
+    9: ChartType(ChartKind.BAR),  # horizontal_bar_3d
+    10: ChartType(ChartKind.BAR, stacked=True),  # stacked_horizontal_bar_3d
+    11: ChartType(ChartKind.AREA),  # area_2d
+    12: ChartType(ChartKind.AREA, stacked=True),  # stacked_area_2d
+    13: ChartType(ChartKind.LINE),  # line_2d
+    14: ChartType(ChartKind.LINE),  # line_3d
+    15: ChartType(ChartKind.AREA),  # area_3d
+    16: ChartType(ChartKind.AREA, stacked=True),  # stacked_area_3d
+    17: ChartType(ChartKind.SCATTER),  # scatterplot_2d
+}
+"""The kind of an iWork '09 chart, by the ``sf:chart-type`` its XML stores.
+
+iWork '09 numbers its kinds differently from ``TSCH.ChartType``: the value is
+the position, counted from one, of the kind in the ``add chart`` command of
+Keynote '09's AppleScript dictionary, whose names are in the comments. Three
+real Numbers '09 charts agree with that list, each from evidence of its own: a
+1 that Numbers draws as a pie in the thumbnail it saved and that Numbers 3
+stores as ``pieChartType2D``; a 15 whose thumbnail is a 3D area chart and whose
+style holds ``SFC3DAreaChartScaleProperty``; and a 7 whose style holds
+``SFC3DColumnChartScaleProperty``. The mixed and two-axis charts the apps also
+draw are not in the dictionary, so they are read as ``OTHER``, as is anything
+else not listed here.
 """
 
 

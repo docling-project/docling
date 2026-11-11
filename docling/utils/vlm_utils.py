@@ -12,11 +12,14 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     FloatingItem,
+    ProvenanceItem,
+    SectionHeaderItem,
     Size,
     TextItem,
 )
 
 _MARKDOWN_HEADING_PATTERN = re.compile(r"^(#{1,6})[ \t]+(.*?)\s*$", re.DOTALL)
+_CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
 
 def link_adjacent_captions(
@@ -63,12 +66,71 @@ def link_adjacent_captions(
             owners[0].captions.append(caption.get_ref())
 
 
+def append_text_fragment(
+    item: TextItem,
+    text: str,
+    orig: str,
+    prov: ProvenanceItem | None,
+) -> None:
+    """Join a continuation block to a text item.
+
+    The space separator is part of the new provenance range. DocLang saves only
+    the provenance ranges, so a space outside them is lost after reload.
+    """
+    separator = "" if _CJK_PATTERN.search(text) else " "
+    start = len(item.text)
+    item.text += separator + text
+    item.orig += separator + orig
+    if prov is not None:
+        prov.charspan = (start, len(item.text))
+        item.prov.append(prov)
+
+
 def parse_markdown_heading(text: str) -> tuple[str, int | None]:
     """Strip an optional Markdown heading marker and return its depth."""
     match = _MARKDOWN_HEADING_PATTERN.match(text)
     if match is None:
         return text, None
     return match.group(2), len(match.group(1))
+
+
+def normalize_section_header_levels(doc: DoclingDocument) -> None:
+    """Turn the raw heading depths of a whole document into section levels.
+
+    VLM mappers store a section header with N Markdown ``#`` or HTML ``<hN>``
+    at level N, and one without markup at level 2 (like ``##``). Docling exports
+    section level N one step deeper, below the title. If no section header has
+    level 1, all levels go up one step, so exports keep the source depth.
+    Otherwise nothing changes, so two source depths never share one level.
+    The layout label alone decides title versus section header. Call this once
+    per document, after pages are joined, so a depth maps to one level on all
+    pages. ``doc.texts`` holds every text item, in every layer and container.
+    """
+    headers = [item for item in doc.texts if isinstance(item, SectionHeaderItem)]
+    if all(item.level > 1 for item in headers):
+        for item in headers:
+            item.level -= 1
+
+
+# `\(` and `\)` are not math symbols, so in a formula they are delimiters; `\\` stays.
+_INLINE_MATH_DELIMITER = re.compile(r"\\\\|\\[()]")
+_OUTER_MATH = re.compile(
+    r"\$\$((?:(?!\$\$).)*)\$\$|\\\[((?:(?!\\[\[\]]).)*)\\\]|\$([^$]*)\$", re.DOTALL
+)
+
+
+def strip_math_delimiters(text: str) -> str:
+    """Formula LaTeX without math delimiters; the serializer adds its own.
+
+    VLMs can wrap each segment in ``\\(...\\)``, often with text between them
+    (``(6) \\(x_1=a\\), \\(x_2=b\\)``), and leave single ones in truncated output.
+    """
+    text = _INLINE_MATH_DELIMITER.sub(
+        lambda match: match.group() if match.group() == "\\\\" else "", text
+    ).strip()
+    while (outer := _OUTER_MATH.fullmatch(text)) is not None:
+        text = next(group for group in outer.groups() if group is not None).strip()
+    return text
 
 
 def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:

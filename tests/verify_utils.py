@@ -438,10 +438,6 @@ def verify_md(doc_pred_md: str, doc_true_md: str, fuzzy: bool):
     return verify_text(doc_true_md, doc_pred_md, fuzzy)
 
 
-def verify_dt(doc_pred_dt: str, doc_true_dt: str, fuzzy: bool):
-    return verify_text(doc_true_dt, doc_pred_dt, fuzzy)
-
-
 class VerificationFailure(BaseModel):
     """A single ground-truth check of a conversion result that did not match."""
 
@@ -454,7 +450,6 @@ def check_conversion_result_v2(
     doc_result: ConversionResult,
     generate: bool = False,
     fuzzy: bool = False,
-    verify_doctags: bool = True,
     indent: int = 2,
 ) -> list[VerificationFailure]:
     """Compare a conversion result against ground truth and collect every mismatch.
@@ -494,12 +489,9 @@ def check_conversion_result_v2(
     doc_pred_md = _normalize_newlines(
         doc_result.document.export_to_markdown(compact_tables=True)
     )
-    doc_pred_dt = _normalize_newlines(doc_result.document.export_to_doctags())
-
     pages_path = gt.pages_meta
     json_path = gt.doc_json
     md_path = gt.md
-    dt_path = gt.doctags
 
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
@@ -520,10 +512,6 @@ def check_conversion_result_v2(
         with open(md_path, mode="w", encoding="utf-8", newline="") as fw:
             fw.write(doc_pred_md)
 
-        if verify_doctags:
-            dt_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(dt_path, mode="w", encoding="utf-8", newline="") as fw:
-                fw.write(doc_pred_dt)
     else:  # default branch in test
         with open(pages_path, encoding="utf-8") as fr:
             doc_true_pages_meta = PageMetaList.validate_json(fr.read())
@@ -533,10 +521,6 @@ def check_conversion_result_v2(
 
         with open(md_path, encoding="utf-8", newline="") as fr:
             doc_true_md = fr.read()
-
-        if verify_doctags:
-            with open(dt_path, encoding="utf-8", newline="") as fr:
-                doc_true_dt = fr.read()
 
         if not fuzzy:
             run_check(
@@ -562,13 +546,6 @@ def check_conversion_result_v2(
             f"Mismatch in Markdown prediction for {input_path}",
         )
 
-        if verify_doctags:
-            run_check(
-                "doctags",
-                lambda: verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy),
-                f"Mismatch in DocTags prediction for {input_path}",
-            )
-
     return failures
 
 
@@ -577,7 +554,6 @@ def verify_conversion_result_v2(
     doc_result: ConversionResult,
     generate: bool = False,
     fuzzy: bool = False,
-    verify_doctags: bool = True,
     indent: int = 2,
 ):
     failures = check_conversion_result_v2(
@@ -585,7 +561,6 @@ def verify_conversion_result_v2(
         doc_result=doc_result,
         generate=generate,
         fuzzy=fuzzy,
-        verify_doctags=verify_doctags,
         indent=indent,
     )
     if failures:
@@ -628,7 +603,10 @@ def verify_export(
         return True
 
     with file.open(encoding="utf-8", newline="") as fr:
-        true_text = fr.read()
+        # The ground-truth file may carry CRLF line endings on Windows
+        # checkouts for extensions not covered by an `eol=lf` gitattribute;
+        # normalize it just like the prediction so the comparison is LF-only.
+        true_text = _normalize_newlines(fr.read())
 
     pred_text = _strip_embedded_image_data(pred_text)
     true_text = _strip_embedded_image_data(true_text)

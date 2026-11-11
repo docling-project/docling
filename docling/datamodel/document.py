@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import codecs
 import csv
 import json
 import logging
@@ -13,7 +14,7 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 from enum import Enum
 from io import BytesIO
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -33,6 +34,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     PictureItem,
     SectionHeaderItem,
+    Size,
     TableItem,
     TextItem,
 )
@@ -73,11 +75,13 @@ from docling.datamodel.base_models import (
     MimeTypeToFormat,
     Page,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
+from docling.utils.xbrl_utils import is_ixbrl, is_xbrl
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
@@ -149,7 +153,7 @@ class InputDocument(BaseModel):
     )
     page_count: int = Field(0, description="Number of pages in the input document.")
 
-    _backend: AbstractDocumentBackend
+    _backend: Optional[AbstractDocumentBackend] = None
     # Reason this input was flagged invalid, if any (transient, not serialized).
     _rejection: Optional[InputRejection] = PrivateAttr(default=None)
 
@@ -200,7 +204,7 @@ class InputDocument(BaseModel):
                 )
 
             # For paginated backends, check if the maximum page count is exceeded.
-            if self.valid and self._backend.is_valid():
+            if self.valid and self._backend is not None and self._backend.is_valid():
                 if self._backend.supports_pagination() and isinstance(
                     self._backend, PaginatedDocumentBackend
                 ):
@@ -335,6 +339,22 @@ class InputDocument(BaseModel):
                 message="The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
+
+    def release(self) -> None:
+        """Release resources held by the input document's backend.
+
+        Call this after conversion and any work that requires the input backend
+        has finished. The backend is unloaded and its reference is cleared;
+        input streams owned by the backend are closed. Input metadata and the
+        converted ``DoclingDocument`` remain available.
+
+        Repeated calls, including on inputs without a backend, are safe. If
+        unloading fails, the exception is propagated and the backend reference
+        is retained so that cleanup can be retried.
+        """
+        if self._backend is not None:
+            self._backend.unload()
+            self._backend = None
 
 
 def get_input_rejection_cause(in_doc: "InputDocument") -> Optional[BaseException]:
@@ -595,6 +615,18 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+    # Set by `BasePipeline.execute` for the duration of one conversion.
+    _progress: ProgressReporter = PrivateAttr(default_factory=ProgressReporter)
+    # Page sizes recorded while the PDF pipeline produces pages, so that pages which
+    # fail later can still be added to the document with their real size. Kept on the
+    # conversion result (not on the pipeline) because one pipeline instance is shared
+    # by every conversion made through the same DocumentConverter.
+    _page_sizes_by_no: dict[int, Size] = PrivateAttr(default_factory=dict)
+    # Absolute (monotonic-clock) deadline for the whole conversion, derived from
+    # `document_timeout` when set. Private transient plumbing, same rationale as
+    # above: the assembly stage reads it to bound work that runs after the page
+    # stages (e.g. reading-order separator extraction).
+    _conversion_deadline: Optional[float] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):
@@ -614,6 +646,59 @@ class _DummyBackend(AbstractDocumentBackend):
 
     def unload(self):
         return super().unload()
+
+
+_OFFICE_OPEN_XML_ROOT = "application/vnd.openxmlformats-officedocument"
+
+_CONTENT_SNIFF_BYTES = 8192
+"""How much of a document ``_guess_format`` reads to probe its content.
+
+A path and a stream read the same amount: a limit that differed between them
+would make one document's format depend on how it was handed over, and the
+smaller limit silently drops a document whose first format marker -- an
+``<html>`` root, an XML declaration, a LaTeX preamble -- sits past it.
+"""
+
+_ODF_MIMETYPE_MAX_BYTES = 256
+"""Longest ``mimetype`` member that ZIP detection accepts as OpenDocument.
+
+The member holds a short ASCII media type such as
+``application/vnd.oasis.opendocument.text``; a longer one is not ODF and is not
+read in full.
+"""
+
+_ZIP_SUFFIX_MIMETYPES = {
+    ".xlsx": _OFFICE_OPEN_XML_ROOT + ".spreadsheetml.sheet",
+    ".docx": _OFFICE_OPEN_XML_ROOT + ".wordprocessingml.document",
+    ".pptx": _OFFICE_OPEN_XML_ROOT + ".presentationml.presentation",
+    ".pages": FormatToMimeType[InputFormat.IWORK_PAGES][0],
+    ".numbers": FormatToMimeType[InputFormat.IWORK_NUMBERS][0],
+    ".key": FormatToMimeType[InputFormat.IWORK_KEYNOTE][0],
+}
+"""Formats that are ZIP containers, by the extension that tells them apart.
+
+``filetype`` can only see the ZIP, so a member of this family is identified by
+its name and confirmed no further; anything else that arrives as a ZIP is looked
+at inside instead.
+"""
+
+
+def _is_macos_archive_metadata(path: PurePosixPath) -> bool:
+    """Return True for a ZIP member that macOS adds to an archive, not a document.
+
+    Finder stores resource forks and extended attributes as AppleDouble files
+    named ``._<name>``, under a top-level ``__MACOSX/`` folder, and the view
+    settings of a folder as ``.DS_Store``. A skipped member is logged at debug
+    level.
+    """
+    is_metadata = (
+        path.parts[:1] == ("__MACOSX",)
+        or path.name.startswith("._")
+        or path.name == ".DS_Store"
+    )
+    if is_metadata:
+        _log.debug("Skipping macOS metadata member of a ZIP archive: %s", path)
+    return is_metadata
 
 
 class _DocumentConversionInput(BaseModel):
@@ -680,6 +765,107 @@ class _DocumentConversionInput(BaseModel):
                 obj = item
                 backend_input = item
             format = self._guess_format(obj)
+            if format is None:
+                path_or_stream = obj if isinstance(obj, Path) else obj.stream
+                try:
+                    with zipfile.ZipFile(path_or_stream) as archive:
+                        members = [
+                            info
+                            for info in archive.infolist()
+                            if not info.is_dir()
+                            and not PurePosixPath(info.filename).is_absolute()
+                            and ".." not in PurePosixPath(info.filename).parts
+                            and not _is_macos_archive_metadata(
+                                PurePosixPath(info.filename)
+                            )
+                        ]
+                        if members:
+                            expanded_size = 0
+                            for info in members:
+                                member_name = (
+                                    f"{obj.name}/{PurePosixPath(info.filename)}"
+                                )
+                                if info.file_size > self.limits.max_file_size:
+                                    yield self._build_invalid_input_document(
+                                        name=member_name,
+                                        format_options=format_options,
+                                        file_size=info.file_size,
+                                        rejection=InputRejection(
+                                            message=(
+                                                f"File size {info.file_size} exceeds "
+                                                f"the max_file_size limit of "
+                                                f"{self.limits.max_file_size} bytes."
+                                            ),
+                                            category=FailureCategory.POLICY,
+                                        ),
+                                    )
+                                    continue
+                                if (
+                                    expanded_size + info.file_size
+                                    > self.limits.max_file_size
+                                ):
+                                    yield self._build_invalid_input_document(
+                                        name=member_name,
+                                        format_options=format_options,
+                                        file_size=info.file_size,
+                                        rejection=InputRejection(
+                                            message=(
+                                                "Expanded ZIP contents exceed the "
+                                                f"max_file_size limit of "
+                                                f"{self.limits.max_file_size} bytes."
+                                            ),
+                                            category=FailureCategory.POLICY,
+                                        ),
+                                    )
+                                    continue
+
+                                try:
+                                    member_content = archive.read(info)
+                                except (
+                                    OSError,
+                                    RuntimeError,
+                                    zipfile.BadZipFile,
+                                ) as exc:
+                                    yield self._build_invalid_input_document(
+                                        name=member_name,
+                                        format_options=format_options,
+                                        file_size=info.file_size,
+                                        rejection=InputRejection(
+                                            message=f"Could not read ZIP member: {exc}",
+                                            category=FailureCategory.POLICY,
+                                        ),
+                                    )
+                                    continue
+                                expanded_size += info.file_size
+                                member = DocumentStream(
+                                    name=member_name,
+                                    stream=BytesIO(member_content),
+                                )
+                                member_format = self._guess_format(member)
+                                option = format_options.get(member_format)
+                                member_backend = (
+                                    option.backend
+                                    if option is not None
+                                    else _DummyBackend
+                                )
+                                member_backend_options = (
+                                    option.backend_options_for_input(member)
+                                    if option is not None
+                                    else None
+                                )
+                                yield InputDocument(
+                                    path_or_stream=member.stream,
+                                    format=member_format or next(iter(format_options)),
+                                    filename=member.name,
+                                    limits=self.limits,
+                                    backend=member_backend,
+                                    backend_options=member_backend_options,
+                                )
+                            continue
+                except (OSError, RuntimeError, zipfile.BadZipFile):
+                    # A malformed archive falls through and is reported as an
+                    # unsupported input by the normal conversion path.
+                    pass
             backend: Type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
             if not format or format not in format_options:
@@ -773,12 +959,17 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
-            mime = filetype.guess_mime(str(obj))
             # Lower-cased so that an upper-case extension (NOTES.VTT, page.HTML)
             # maps to its format the same way it does for a DocumentStream.
             obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
-            if mime is None:
-                mime = _DocumentConversionInput._mime_from_extension(obj_ext)
+            ext_mime = _DocumentConversionInput._mime_from_extension(obj_ext)
+            # Read the head of HTML files to tell iXBRL apart from HTML.
+            if ext_mime is not None and ext_mime.lower() == "text/html":
+                with obj.open("rb") as f:
+                    content = f.read(_CONTENT_SNIFF_BYTES)
+                mime = filetype.guess_mime(content) or ext_mime
+            else:
+                mime = filetype.guess_mime(str(obj)) or ext_mime
             needs_content_sniff = mime is None or (
                 mime is not None
                 and mime.lower()
@@ -790,20 +981,11 @@ class _DocumentConversionInput(BaseModel):
             )
             if needs_content_sniff:
                 with obj.open("rb") as f:
-                    content = f.read(1024)
+                    content = f.read(_CONTENT_SNIFF_BYTES)
             if mime is not None and mime.lower() == "application/zip":
-                mime_root = "application/vnd.openxmlformats-officedocument"
-                suffix = obj.suffix.lower()
-                if suffix == ".xlsx":
-                    mime = mime_root + ".spreadsheetml.sheet"
-                elif suffix == ".docx":
-                    mime = mime_root + ".wordprocessingml.document"
-                elif suffix == ".pptx":
-                    mime = mime_root + ".presentationml.presentation"
-                elif suffix == ".pages":
-                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
-                elif suffix == ".key":
-                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
+                named = _ZIP_SUFFIX_MIMETYPES.get(obj.suffix.lower())
+                if named is not None:
+                    mime = named
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -816,7 +998,7 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
-            content = obj.stream.read(8192)
+            content = obj.stream.read(_CONTENT_SNIFF_BYTES)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
             obj_ext = (
@@ -827,24 +1009,24 @@ class _DocumentConversionInput(BaseModel):
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext.lower())
             if mime is not None and mime.lower() == "application/zip":
-                objname = obj.name.lower()
-                mime_root = "application/vnd.openxmlformats-officedocument"
-                if objname.endswith(".xlsx"):
-                    mime = mime_root + ".spreadsheetml.sheet"
-                elif objname.endswith(".docx"):
-                    mime = mime_root + ".wordprocessingml.document"
-                elif objname.endswith(".pptx"):
-                    mime = mime_root + ".presentationml.presentation"
-                elif objname.endswith(".pages"):
-                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
-                elif objname.endswith(".key"):
-                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
+                named = next(
+                    (
+                        named
+                        for suffix, named in _ZIP_SUFFIX_MIMETYPES.items()
+                        if obj.name.lower().endswith(suffix)
+                    ),
+                    None,
+                )
+                if named is not None:
+                    mime = named
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
                     )
                     if office_mime is not None:
                         mime = office_mime
+
+        mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
@@ -854,8 +1036,12 @@ class _DocumentConversionInput(BaseModel):
             if detected_afp := _DocumentConversionInput._detect_afp(content):
                 mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
+        mime = mime or _DocumentConversionInput._detect_latex(content, obj_ext)
+        mime = mime or _DocumentConversionInput._detect_calendar(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
+        if mime.lower() == "text/html" and is_ixbrl(content):
+            mime = "application/xhtml+xml"
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")
 
@@ -870,6 +1056,28 @@ class _DocumentConversionInput(BaseModel):
             return None
 
     @staticmethod
+    def _resolve_ole2_mime(mime: Optional[str], ext: Optional[str]) -> Optional[str]:
+        """Let the extension choose between the OLE2 based formats.
+
+        ``filetype`` tells .doc, .ppt and .xls apart from a few bytes after the
+        OLE2 header, which is not conclusive: a file whose first sector is a FAT
+        sector is reported as Excel (or PowerPoint) whatever it really holds.
+        That includes an Outlook .msg, which is an OLE2 container as well.
+        """
+        if mime is None or ext is None:
+            return mime
+        ole2_formats = (InputFormat.DOC, InputFormat.PPT, InputFormat.XLS)
+        ole2_mimes = {m for fmt in ole2_formats for m in FormatToMimeType[fmt]}
+        if mime.lower() not in ole2_mimes:
+            return mime
+        for fmt in ole2_formats:
+            if ext.lower() in FormatToExtensions[fmt]:
+                return FormatToMimeType[fmt][0]
+        if ext.lower() == "msg":
+            return _DocumentConversionInput._mime_from_extension("msg")
+        return mime
+
+    @staticmethod
     def _has_doclang_extension(name: str) -> bool:
         lower_name = name.lower()
         return lower_name.endswith((".dclg", ".dclg.xml"))
@@ -882,10 +1090,20 @@ class _DocumentConversionInput(BaseModel):
     def _detect_office_mime_from_zip(
         source: Union[Path, BytesIO],
     ) -> Optional[str]:
-        """Detect Office Open XML format by inspecting ZIP archive contents.
+        """Detect Office Open XML or ODF format by inspecting ZIP archive contents.
 
-        Useful when the filename has no extension (e.g. pre-signed URLs)
-        and filetype only reports ``application/zip``.
+        Useful when the filename has no extension (e.g. pre-signed URLs) and
+        filetype only reports ``application/zip``. For Office Open XML formats,
+        only the member list is inspected. For ODF archives, the ``mimetype``
+        member is also read, unless it exceeds ``_ODF_MIMETYPE_MAX_BYTES``.
+
+        Args:
+            source: The ZIP file to inspect, as a path or an in-memory stream.
+                A stream is rewound to position 0 after the call.
+
+        Returns:
+            The MIME type of the Office Open XML or ODF document, or None if
+            the source is not a ZIP archive or has no known Office/ODF structure.
         """
         try:
             with zipfile.ZipFile(source) as zf:
@@ -897,10 +1115,18 @@ class _DocumentConversionInput(BaseModel):
                     return mime_root + ".spreadsheetml.sheet"
                 elif "ppt/presentation.xml" in names:
                     return mime_root + ".presentationml.presentation"
-                if "mimetype" in names:
-                    odf_mime = zf.read("mimetype").decode("ascii", errors="ignore")
-                    if odf_mime.startswith("application/vnd.oasis.opendocument."):
-                        return odf_mime.strip()
+                if (
+                    "mimetype" in names
+                    and zf.getinfo("mimetype").file_size <= _ODF_MIMETYPE_MAX_BYTES
+                ):
+                    # Read one byte past the limit so that a member whose real
+                    # size differs from the declared one is still rejected.
+                    with zf.open("mimetype") as fp:
+                        raw = fp.read(_ODF_MIMETYPE_MAX_BYTES + 1)
+                    if len(raw) <= _ODF_MIMETYPE_MAX_BYTES:
+                        odf_mime = raw.decode("ascii", errors="ignore")
+                        if odf_mime.startswith("application/vnd.oasis.opendocument."):
+                            return odf_mime.strip()
         except (zipfile.BadZipFile, OSError):
             pass
         finally:
@@ -935,10 +1161,8 @@ class _DocumentConversionInput(BaseModel):
             # the outcome -- while a strict decode would abort the whole batch.
             content_str = content.decode("utf-8", errors="replace")
 
-            if (
-                InputFormat.XML_XBRL in formats
-                and "http://www.xbrl.org/2003/instance" in content_str
-                and "<xbrl" in content_str.lower()
+            if InputFormat.XML_XBRL in formats and (
+                is_xbrl(content_str) or is_ixbrl(content)
             ):
                 return InputFormat.XML_XBRL
 
@@ -988,7 +1212,7 @@ class _DocumentConversionInput(BaseModel):
         return input_format
 
     @staticmethod
-    def _mime_from_extension(ext):
+    def _mime_from_extension(ext: Optional[str]) -> Optional[str]:
         mime = None
         if ext in FormatToExtensions[InputFormat.ASCIIDOC]:
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
@@ -1044,6 +1268,8 @@ class _DocumentConversionInput(BaseModel):
                 if ext == "msg"
                 else FormatToMimeType[InputFormat.EMAIL][0]
             )
+        elif ext in FormatToExtensions[InputFormat.CALENDAR]:
+            mime = FormatToMimeType[InputFormat.CALENDAR][0]
         return mime
 
     @staticmethod
@@ -1103,6 +1329,51 @@ class _DocumentConversionInput(BaseModel):
         ):
             return "application/xml"
 
+        return None
+
+    @staticmethod
+    def _detect_latex(content: bytes, ext: Optional[str] = None) -> Optional[str]:
+        """Guess the mime type of a LaTeX document from its content.
+
+        Args:
+            content: A short piece of a document from its beginning.
+            ext: The file extension, if any. A plain-text extension keeps its
+              Markdown fallback even when the text quotes LaTeX.
+
+        Returns:
+            The LaTeX mime type if a line starts with ``\\documentclass`` (or
+              LaTeX 2.09 ``\\documentstyle``), or None.
+        """
+        if (ext or "").lower() in FormatToExtensions[InputFormat.MD]:
+            return None
+        content_str = content.decode("utf-8", errors="ignore").lstrip("﻿")
+        if re.search(r"^[ \t]*\\document(?:class|style)\b", content_str, re.MULTILINE):
+            return FormatToMimeType[InputFormat.LATEX][0]
+        return None
+
+    @staticmethod
+    def _detect_calendar(content: bytes, ext: Optional[str] = None) -> Optional[str]:
+        """Guess the mime type of an iCalendar file from its first line.
+
+        Args:
+            content: A short piece of a document from its beginning.
+            ext: The file extension, if any. A plain-text extension keeps its
+              Markdown fallback.
+
+        Returns:
+            The iCalendar mime type if the first non-blank line is
+              ``BEGIN:VCALENDAR``, or None.
+        """
+        if (ext or "").lower() in FormatToExtensions[InputFormat.MD]:
+            return None
+        codec = (
+            "utf-16"
+            if content.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
+            else "utf-8"
+        )
+        content_str = content.decode(codec, errors="ignore").lstrip("﻿ \t\r\n")
+        if re.match(r"BEGIN:VCALENDAR\b", content_str, re.IGNORECASE):
+            return FormatToMimeType[InputFormat.CALENDAR][0]
         return None
 
     @staticmethod

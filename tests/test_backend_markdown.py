@@ -4,11 +4,14 @@
 import base64
 from io import BytesIO
 from pathlib import Path
+from threading import Thread
 
 import pytest
 from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
+    DocItemLabel,
+    GroupLabel,
     ListGroup,
     ListItem,
     PictureItem,
@@ -23,7 +26,7 @@ from docling.datamodel.document import (
     DoclingDocument,
     InputDocument,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, MarkdownFormatOption
 from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -148,6 +151,58 @@ def test_convert_list_item_codespan_only():
     assert "- raw\\_ops.Abs" in pred_md
 
 
+def test_list_item_with_only_an_image_keeps_its_place():
+    """An image without alt text emits no text run. Its list item is still
+    created, with the picture under it, so the next item does not take its place.
+    """
+    doc = (
+        get_converter()
+        .convert_string(
+            "1. ![](a.png)\n2. Second step\n3. Third step\n", format=InputFormat.MD
+        )
+        .document
+    )
+
+    items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [(item.marker, item.text) for item in items] == [
+        ("1.", ""),
+        ("2.", "Second step"),
+        ("3.", "Third step"),
+    ]
+    assert len({item.parent.cref for item in items}) == 1
+    assert doc.pictures[0].parent == items[0].get_ref()
+
+
+def test_sub_list_of_an_image_only_item_is_not_duplicated():
+    doc = (
+        get_converter()
+        .convert_string("- ![](a.png)\n  - nested\n- next\n", format=InputFormat.MD)
+        .document
+    )
+
+    items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+    assert [item.text for item in doc.texts] == ["", "nested", "next"]
+    assert items["nested"].parent.resolve(doc).parent == items[""].get_ref()
+
+
+@pytest.mark.parametrize(
+    "heading",
+    ["# ![](logo.png)", '# <img src="logo.png" width="80">', "![](logo.png)\n==="],
+    ids=["image", "inline-html", "setext-image"],
+)
+def test_heading_without_text_does_not_take_the_next_paragraph(heading: str):
+    doc = (
+        get_converter()
+        .convert_string(f"{heading}\n\nIntro paragraph.\n", format=InputFormat.MD)
+        .document
+    )
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.TITLE, ""),
+        (DocItemLabel.TEXT, "Intro paragraph."),
+    ]
+
+
 def _convert_markdown(
     markdown: str, options: MarkdownBackendOptions
 ) -> DoclingDocument:
@@ -223,6 +278,135 @@ def test_convert_embedded_base64_image_enforces_size_limit():
     assert pictures[0].image is None
 
 
+@pytest.mark.parametrize("as_path", [False, True], ids=["str", "Path"])
+def test_local_relative_image_resolves_from_document_dir(tmp_path: Path, as_path: bool):
+    """A local Markdown source resolves relative images from its own directory."""
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = tmp_path / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(md_path if as_path else str(md_path)).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+
+
+def test_local_relative_image_accepts_file_uri_source(tmp_path: Path):
+    """A file URI source must resolve relative images like a local path."""
+    source_dir = tmp_path / "with space"
+    source_dir.mkdir()
+    image_path = source_dir / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = source_dir / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+
+
+def test_local_file_uri_source_respects_local_fetch(tmp_path: Path):
+    """A file URI base does not enable local image fetching by itself."""
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = tmp_path / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=False,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    with pytest.warns(UserWarning, match="Fetching local resources"):
+        doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is None
+
+
+def test_local_file_uri_source_keeps_document_on_path_traversal(
+    tmp_path: Path,
+):
+    """A path-traversal image must not abort Markdown conversion."""
+    source_dir = tmp_path / "docs"
+    source_dir.mkdir()
+    outside_image = tmp_path / "outside.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(outside_image)
+    md_path = source_dir / "doc.md"
+    md_path.write_text("# Title\n\n![alt](../outside.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    with pytest.warns(UserWarning, match="Path traversal blocked"):
+        doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is None
+
+
 def test_code_block_language_detection():
     markdown = (
         "```python\n"
@@ -269,6 +453,11 @@ def test_code_block_keeps_first_line_indentation():
         "\n"
         "    after blank line\n"
         "```\n"
+        "\n"
+        "```\n"
+        "   \n"
+        "    after spaces-only line\n"
+        "```\n"
     )
     conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
     assert conv_result.status == ConversionStatus.SUCCESS
@@ -280,19 +469,27 @@ def test_code_block_keeps_first_line_indentation():
         "  key: 1\n  sub:\n    x: 2",
         "  deeper\nbase",
         "    after blank line",
+        "    after spaces-only line",
     ]
 
 
 def test_convert_table_keeps_inline_code_spans():
-    """A code span inside a GFM table cell is part of that cell.
+    """Code spans inside GFM table cells are parsed and their text is literal.
 
-    The span keeps the words around it, a pipe inside it is not a column
-    separator, and its text is literal, so an entity in it is not decoded.
+    Per the GFM specification, table cells are split on ``|`` before inline
+    elements are processed, so a bare ``|`` inside a code span is treated as a
+    column separator.  A backslash-escaped pipe (``\\|``) inside a code span is
+    resolved to a literal ``|`` by the inline parser and is not a separator.
+
+    What this test verifies:
+    - A code span embedded in running text is preserved as a CodeItem.
+    - A ``\\|`` inside a code span becomes a literal pipe in the cell text.
+    - The text of a code span is literal: HTML entities are not decoded.
     """
     markdown = """| Command | Description |
 | --- | --- |
 | run `build` now | builds it |
-| `a | b` | keeps the pipe |
+| `a \\| b` | keeps the pipe |
 | `&amp;` | stays literal |
 | clean | removes it |
 """
@@ -412,6 +609,10 @@ def test_convert_table_without_leading_pipes_formatted_header():
     delimiter row out of second place. The header then measured one cell, and
     since rows are trimmed to the header's cell count the data cells went with
     it -- a 2x2 table silently arrived as 1x2, first column dropped to prose.
+
+    With RichTableCell support, formatted header cells produce TextItem objects
+    parented under the table (not the document body), so we verify that no text
+    items are rooted directly in the body rather than checking doc.texts == [].
     """
     bold_first = """**Region** | Q1
 --- | ---
@@ -435,7 +636,11 @@ North | 10
         table_data = conv_result.document.tables[0].data
         assert table_data.num_cols == 2
         assert [cell.text for cell in table_data.table_cells] == expected
-        assert conv_result.document.texts == []
+        # No stray items should be emitted directly under the document body;
+        # formatted header cells now live inside the table as RichTableCell
+        # children, not as top-level prose.
+        body_child_crefs = {ref.cref for ref in conv_result.document.body.children}
+        assert body_child_crefs == {"#/tables/0"}
 
 
 def test_convert_pipes_in_prose_stay_text():
@@ -704,7 +909,7 @@ def test_convert_line_breaks():
     # leading '\n' on the run that follows, since the runs cannot be merged.
     doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
     assert len(doc.texts) == 3
-    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].text == "Author "
     assert doc.texts[0].formatting is None
     assert doc.texts[1].text == "John"
     assert doc.texts[1].formatting is not None
@@ -812,24 +1017,43 @@ def test_convert_line_break_next_to_code_span():
         doc = _convert_markdown(markdown, opt)
         return [(str(t.label), t.text) for t in doc.texts]
 
-    expected = [("text", "Already in"), ("code", "Reference/"), ("text", ". Done.")]
+    # Runs keep their boundary whitespace; a soft break before the code span
+    # becomes a plain " " run, never a space inside the code run.
 
     # No break: the reference behaviour
-    assert items("Already in `Reference/`. Done.") == expected
+    assert items("Already in `Reference/`. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break before the code span
-    assert items("Already in\n`Reference/`. Done.") == expected
+    assert items("Already in\n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", " "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Hard break before the code span
-    assert items("Already in  \n`Reference/`. Done.") == expected
+    assert items("Already in  \n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", "\n"),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break after the code span
-    assert items("Already in `Reference/`\n. Done.") == expected
+    assert items("Already in `Reference/`\n. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", " . Done."),
+    ]
 
     # Hard break after the code span: the break is kept as a leading '\\n' on
     # the run that follows, as across a formatting boundary.
     assert items("Already in `Reference/`  \n. Done.") == [
-        ("text", "Already in"),
+        ("text", "Already in "),
         ("code", "Reference/"),
         ("text", "\n. Done."),
     ]
@@ -837,8 +1061,9 @@ def test_convert_line_break_next_to_code_span():
     # Two code spans after a soft break
     assert items("Already in\n`Reference/` and `Other/`. Done.") == [
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
-        ("text", "and"),
+        ("text", " and "),
         ("code", "Other/"),
         ("text", ". Done."),
     ]
@@ -847,6 +1072,7 @@ def test_convert_line_break_next_to_code_span():
     assert items("- Already in\n  `Reference/`. Done.") == [
         ("list_item", ""),
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
         ("text", ". Done."),
     ]
@@ -905,6 +1131,22 @@ def test_ordered_list_split_by_prose_preserves_numbers():
     ]
 
 
+def test_ordered_list_numbers_survive_html_block():
+    """A Markdown file with an HTML block is converted again through HTML.
+
+    The list numbers must survive that round trip, like in a file without HTML.
+    """
+    markdown = "5. foo\n6. bar\n\nRestart the shell.\n\n7. baz\n\n<div>note</div>\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    items = [item for item in conv_result.document.texts if item.label == "list_item"]
+    assert [item.marker for item in items] == ["5.", "6.", "7."]
+    assert conv_result.document.export_to_markdown() == (
+        "5. foo\n6. bar\n\nRestart the shell.\n\n7. baz\n\nnote"
+    )
+
+
 def test_standard_ordered_list_still_starts_at_one():
     """Ordinary 1-based ordered lists must continue to export as 1-based."""
     markdown = "1. alpha\n2. beta\n3. gamma\n"
@@ -945,6 +1187,42 @@ def test_convert_table_cell_whitespace_around_inline_emphasis():
         "z",
         "italic and bold",
         "w",
+    ]
+
+
+def test_rich_table_cell_runs_keep_boundary_whitespace():
+    """Rich-cell runs carry their own boundary whitespace; only the cell edges are trimmed."""
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Cell | Note |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| **A** **B** | y |\n"
+        "|  Install with `pip install x` first.  | z |\n"
+    )
+    doc = get_converter().convert_string(markdown, format=InputFormat.MD).document
+
+    runs = [
+        [
+            ref.resolve(doc).text
+            for ref in cell.ref.resolve(doc).children[0].resolve(doc).children
+        ]
+        for cell in doc.tables[0].data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+    assert runs == [
+        ["C", " Cadre"],
+        ["A", " ", "B"],
+        ["Install with ", "pip install x", " first."],
+    ]
+    rows = [
+        line.split("|")[1].strip() for line in doc.export_to_markdown().splitlines()
+    ]
+    assert rows[2:] == [
+        "**C** Cadre",
+        "**A** **B**",
+        "Install with `pip install x` first.",
     ]
 
 
@@ -991,6 +1269,7 @@ def test_line_break_does_not_cross_block_boundary():
     # A code span at the end of a paragraph does not take in the next paragraph
     assert items("Intro\n`code`\n\nAfter") == [
         ("text", "Intro"),
+        ("text", " "),
         ("code", "code"),
         ("text", "After"),
     ]
@@ -1002,3 +1281,541 @@ def test_line_break_does_not_cross_block_boundary():
         ("text", "block"),
         ("text", "After"),
     ]
+
+
+def test_rich_table_cell_bold_and_italic():
+    """Cells with bold or italic content are emitted as RichTableCell.
+
+    The ``cell.text`` property returns the plain-text summary; the rich
+    content (formatting and inline children) is accessible through
+    ``RichTableCell.ref``.
+    """
+    from docling_core.types.doc import Formatting, RichTableCell, TableCell, TextItem
+
+    markdown = (
+        "| **Header** | Plain |\n"
+        "| --- | --- |\n"
+        "| *italic* value | plain value |\n"
+        "| **bold** and normal | data |\n"
+        "| plain only | also plain |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert len(conv_result.document.tables) == 1
+    table = conv_result.document.tables[0]
+    cells = table.data.table_cells
+
+    # Header row: first cell is rich (bold), second is plain
+    assert isinstance(cells[0], RichTableCell)
+    assert cells[0].text == "Header"
+    assert cells[0].column_header is True
+    assert isinstance(cells[1], TableCell)
+    assert not isinstance(cells[1], RichTableCell)
+    assert cells[1].text == "Plain"
+
+    # Data row 1: first cell has italic
+    italic_cell = cells[2]
+    assert isinstance(italic_cell, RichTableCell)
+    assert italic_cell.text == "italic value"
+    doc = conv_result.document
+    group = italic_cell.ref.resolve(doc)
+    inline = group.children[0].resolve(doc)
+    items = [ref.resolve(doc) for ref in inline.children]
+    fmt_items = [
+        i
+        for i in items
+        if isinstance(i, TextItem) and i.formatting is not None and i.formatting.italic
+    ]
+    assert fmt_items, "Expected at least one italic TextItem inside the cell"
+
+    # Data row 2: mixed bold + plain
+    mixed_cell = cells[4]
+    assert isinstance(mixed_cell, RichTableCell)
+    assert mixed_cell.text == "bold and normal"
+
+    # Data row 3: fully plain — plain TableCell
+    plain_cell = cells[6]
+    assert not isinstance(plain_cell, RichTableCell)
+    assert plain_cell.text == "plain only"
+
+
+def test_rich_table_cell_inline_code():
+    """Code spans in table cells are preserved as CodeItem objects.
+
+    The CodeItem text is literal — HTML entities inside a code span are not
+    decoded.  ``cell.text`` provides the plain-text summary of the whole cell.
+    """
+    from docling_core.types.doc import CodeItem, RichTableCell
+
+    markdown = (
+        "| Command | Result |\n"
+        "| --- | --- |\n"
+        "| run `build` now | ok |\n"
+        "| check `&amp;` entity | literal |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+
+    # "run `build` now" → RichTableCell; cell.text is the plain-text summary
+    run_cell = cells[2]
+    assert isinstance(run_cell, RichTableCell)
+    assert run_cell.text == "run build now"
+
+    # Verify a CodeItem exists inside the cell with text "build"
+    group = run_cell.ref.resolve(doc)
+    inline = group.children[0].resolve(doc)
+    code_items = [
+        ref.resolve(doc)
+        for ref in inline.children
+        if isinstance(ref.resolve(doc), CodeItem)
+    ]
+    assert len(code_items) == 1
+    assert code_items[0].text == "build"
+
+    # "check `&amp;` entity" — cell.text uses literal code text (not decoded)
+    entity_cell = cells[4]
+    assert isinstance(entity_cell, RichTableCell)
+    assert entity_cell.text == "check &amp; entity"
+
+    # The CodeItem inside the entity cell must hold the un-decoded entity
+    group2 = entity_cell.ref.resolve(doc)
+    inline2 = group2.children[0].resolve(doc)
+    code_items2 = [
+        ref.resolve(doc)
+        for ref in inline2.children
+        if isinstance(ref.resolve(doc), CodeItem)
+    ]
+    assert len(code_items2) == 1
+    assert code_items2[0].text == "&amp;"
+
+
+def test_rich_table_cell_hyperlink():
+    """Links inside table cells are stored as RichTableCell with hyperlink."""
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Source | Notes |\n"
+        "| --- | --- |\n"
+        "| [Docling](https://github.com/docling-project/docling) | repo |\n"
+        "| plain | text |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    cells = doc.tables[0].data.table_cells
+
+    # Link cell must be rich
+    link_cell = cells[2]
+    assert isinstance(link_cell, RichTableCell)
+    assert link_cell.text == "Docling"
+
+    # The TextItem inside should carry the hyperlink
+    group = link_cell.ref.resolve(doc)
+    inline = group.children[0].resolve(doc)
+    linked = [ref.resolve(doc) for ref in inline.children if ref.resolve(doc).hyperlink]
+    assert linked, "Expected a TextItem with a hyperlink inside the link cell"
+    assert "docling-project" in str(linked[0].hyperlink)
+
+
+def test_rich_table_cell_autolinks():
+    """Angle-bracket autolinks and bare GFM URLs in cells become RichTableCell.
+
+    All three link syntaxes supported in GFM table cells must produce a
+    ``RichTableCell`` whose inline ``TextItem`` carries the hyperlink:
+
+    - ``<https://url>`` — CommonMark angle-bracket autolink
+      (``marko.inline.AutoLink``)
+    - ``https://url`` — GFM bare-URL extension (``gfm_el.Url``, a subclass
+      of ``AutoLink``)
+    - ``[label](url)`` — explicit inline link (``marko.inline.Link``)
+    """
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Type | URL |\n"
+        "| --- | --- |\n"
+        "| angle bracket | <https://example.com/ab> |\n"
+        "| gfm bare | https://example.com/gfm |\n"
+        "| explicit | [label](https://example.com/ex) |\n"
+        "| plain | no link |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    cells = doc.tables[0].data.table_cells
+
+    def _hyperlinks(cell):
+        group = cell.ref.resolve(doc)
+        inline = group.children[0].resolve(doc)
+        return [
+            str(ref.resolve(doc).hyperlink)
+            for ref in inline.children
+            if ref.resolve(doc).hyperlink
+        ]
+
+    # Angle-bracket autolink (row 1, col 1 → cells[3])
+    ab_cell = cells[3]
+    assert isinstance(ab_cell, RichTableCell)
+    assert ab_cell.text == "https://example.com/ab"
+    assert any("example.com/ab" in h for h in _hyperlinks(ab_cell))
+
+    # GFM bare URL (row 2, col 1 → cells[5])
+    gfm_cell = cells[5]
+    assert isinstance(gfm_cell, RichTableCell)
+    assert gfm_cell.text == "https://example.com/gfm"
+    assert any("example.com/gfm" in h for h in _hyperlinks(gfm_cell))
+
+    # Explicit link — label text, not the URL itself (row 3, col 1 → cells[7])
+    ex_cell = cells[7]
+    assert isinstance(ex_cell, RichTableCell)
+    assert ex_cell.text == "label"
+    assert any("example.com/ex" in h for h in _hyperlinks(ex_cell))
+
+    # Plain cell — no RichTableCell (row 4, col 1 → cells[9])
+    plain_cell = cells[9]
+    assert not isinstance(plain_cell, RichTableCell)
+
+
+def test_autolinks_outside_table_cells():
+    """Autolinks in paragraphs, list items and headings keep their hyperlink.
+
+    ``marko.inline.AutoLink`` (``<https://url>``, and the GFM bare URL
+    ``gfm_el.Url``, a subclass of ``AutoLink``) is not a subclass of
+    ``marko.inline.Link``, so it needs its own check, as in table cells.
+    """
+    markdown = (
+        "# Heading <https://example.com/h>\n\n"
+        "See <https://example.com/ab> and https://example.com/gfm.\n\n"
+        "- item <https://example.com/li>\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    hyperlinks = {
+        item.text: str(item.hyperlink)
+        for item, _ in conv_result.document.iterate_items()
+        if getattr(item, "hyperlink", None)
+    }
+    assert hyperlinks == {
+        "https://example.com/h": "https://example.com/h",
+        "https://example.com/ab": "https://example.com/ab",
+        "https://example.com/gfm": "https://example.com/gfm",
+        "https://example.com/li": "https://example.com/li",
+    }
+
+
+def test_rich_table_cell_no_stray_body_items():
+    """Items created for rich table cells must not appear at the body level."""
+    markdown = "| **Bold** | *Italic* | plain |\n| --- | --- | --- |\n| a | b | c |\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    # The only direct body child must be the table itself.
+    body_crefs = {ref.cref for ref in doc.body.children}
+    assert body_crefs == {"#/tables/0"}
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # A soft-wrapped paragraph renders as one line with a space at the wrap point.
+        (
+            "After the swim,\nit is time to eat\nsomething nice\n",
+            "After the swim, it is time to eat something nice",
+        ),
+        # Emphasis boundaries keep the source spacing, and none is invented.
+        ("Foo *emph* bar\n", "Foo *emph* bar"),
+        (
+            "The pipe (| or `|`) only in tables.\n",
+            "The pipe (| or `|`) only in tables.",
+        ),
+        # No space at the boundary in the source, so none in the output.
+        ("a*b*c\n", "a*b*c"),
+    ],
+)
+def test_inline_whitespace_round_trips_through_markdown(source, expected):
+    """Marko run boundaries survive: the export reproduces the source line."""
+    stream = BytesIO(source.encode())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="test.md",
+    )
+    doc = MarkdownDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+    assert doc.export_to_markdown() == expected
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected"),
+    [
+        pytest.param(
+            "---\ntitle: T\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="basic",
+        ),
+        pytest.param(
+            "---\r\ntitle: T\r\n---\r\n\r\n# H\r\n\r\nbody\r\n",
+            "# H\n\nbody",
+            id="crlf",
+        ),
+        pytest.param(
+            "---\ntitle: T\n\ntags: [a, b]\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="blank-line-inside-frontmatter",
+        ),
+        pytest.param(
+            "---\ntitle: T\n...\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="dots-terminator",
+        ),
+        pytest.param(
+            "---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="thematic-break-opening",
+        ),
+        pytest.param(
+            "---\n\nNote: this is important.\n\n---\n\nbody\n",
+            "Note: this is important.\n\nbody",
+            id="thematic-break-then-yaml-like-paragraph",
+        ),
+        pytest.param(
+            "---\nJust a sentence\n---\n\nbody\n",
+            "## Just a sentence\n\nbody",
+            id="setext-block-is-not-frontmatter",
+        ),
+        pytest.param(
+            "---\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="empty-frontmatter-not-a-mapping",
+        ),
+        pytest.param(
+            "---\ntitle: T\n---",
+            "",
+            id="closing-delimiter-at-eof",
+        ),
+        pytest.param(
+            "---   \ntitle: T\n---  \n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="trailing-spaces-on-delimiters",
+        ),
+    ],
+)
+def test_convert_strips_leading_frontmatter(markdown: str, expected: str) -> None:
+    converter = get_converter()
+    conv_result = converter.convert_string(markdown, format=InputFormat.MD)
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert conv_result.document.export_to_markdown() == expected
+
+
+def test_convert_frontmatter_followed_by_content_keeps_the_content():
+    """Frontmatter directly followed by content must not swallow the content,
+    even when a later thematic break is present in the document."""
+    converter = get_converter()
+    markdown = "---\ntitle: T\n---\nIntro\nSection\n---\n\nbody\n"
+
+    conv_result = converter.convert_string(markdown, format=InputFormat.MD)
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    pred_md = conv_result.document.export_to_markdown()
+    assert "title: T" not in pred_md
+    assert "Intro" in pred_md
+    assert "Section" in pred_md
+    assert "body" in pred_md
+
+
+def test_pipe_in_lazy_continuation_line_does_not_hang():
+    """The hang is an infinite loop, so a daemon thread turns it into a failure."""
+    convert = get_converter().convert_string
+    md = "- a\n  - b\n  |x| y\n"
+    result: list[ConversionResult] = []
+    thread = Thread(
+        target=lambda: result.append(convert(md, format=InputFormat.MD)), daemon=True
+    )
+    thread.start()
+    thread.join(timeout=30)
+    assert not thread.is_alive()
+    assert "|x| y" in result[0].document.export_to_markdown().replace("\\", "")
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param(
+            r"snake\_case here", [("text", "snake_case here")], id="underscore"
+        ),
+        pytest.param(
+            r"Price is \$5 and 50\% off",
+            [("text", "Price is $5 and 50% off")],
+            id="dollar-and-percent",
+        ),
+        pytest.param(r"\*not emphasis\*", [("text", "*not emphasis*")], id="stars"),
+        pytest.param(r"1\. not a list", [("text", "1. not a list")], id="list-marker"),
+        pytest.param(
+            r"- item with \* star", [("list_item", "item with * star")], id="list-item"
+        ),
+        pytest.param(r"# Head \# x", [("title", "Head # x")], id="heading"),
+        pytest.param(r"> quote \* star", [("text", "quote * star")], id="quote"),
+        pytest.param(
+            r"Use `x` and snake\_case",
+            [("text", "Use "), ("code", "x"), ("text", " and snake_case")],
+            id="inline-code-stays-separate",
+        ),
+        pytest.param(
+            r"**bold \* star** plain",
+            [("text", "bold * star"), ("text", " plain")],
+            id="emphasis-stays-separate",
+        ),
+        # An escape protects the entity around it: the text stays as written.
+        pytest.param(r"a \&amp; b", [("text", "a &amp; b")], id="escaped-ampersand"),
+        pytest.param(r"&\#35;x", [("text", "&#35;x")], id="entity-split-by-hash"),
+        pytest.param(
+            r"&amp\; e", [("text", "&amp; e")], id="entity-split-by-semicolon"
+        ),
+        pytest.param(
+            r"&\#169; vs &#169;",
+            [("text", "&#169; vs ©")],
+            id="escaped-and-real-entity",
+        ),
+        pytest.param(
+            r"R&D &amp; \_x &#169;",
+            [("text", "R&D & _x ©")],
+            id="entities-around-escape",
+        ),
+    ],
+)
+def test_backslash_escape_stays_in_its_text_run(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A backslash escape is part of the text run around it, not a separate item."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert [(str(item.label), item.text) for item in doc.texts] == expected_items
+    # One run of text is one item, so no inline group wraps it.
+    if len(expected_items) == 1:
+        assert not [g for g in doc.groups if g.label == GroupLabel.INLINE]
+
+
+def test_backslash_escape_in_link_text_keeps_the_hyperlink():
+    """An escape inside link text stays in the one text item that has the link."""
+    doc = _convert_markdown(r"[a\_b](http://x.y)", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["a_b"]
+    assert str(doc.texts[0].hyperlink) == "http://x.y/"
+
+
+def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
+    """The runs inside a rich cell are `z` and `* w`, not `z`, `*` and `w`."""
+    doc = _convert_markdown("| h |\n|---|\n| **z**\\* w |", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["z", "* w"]
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param(
+            "&copy; &notin; &#169; &#xA9; &#XA9; &lt;b&gt; &amp; c",
+            [("text", "© ∉ © © © <b> & c")],
+            id="terminated",
+        ),
+        # CommonMark maps a number to its code point, without the HTML5 remapping.
+        pytest.param(
+            "&#128; &#x80; &#1; &#0; &#xD800; &#x110000; &#1114111;",
+            [("text", "\x80 \x80 \x01 \ufffd \ufffd \ufffd \U0010ffff")],
+            id="numeric-code-point",
+        ),
+        # CommonMark decodes only a reference that ends with a semicolon.
+        pytest.param("&copy a &amp b", [("text", "&copy a &amp b")], id="no-semicolon"),
+        pytest.param("&notit; a", [("text", "&notit; a")], id="legacy-prefix"),
+        pytest.param("&nosuch; a", [("text", "&nosuch; a")], id="unknown-name"),
+        pytest.param(
+            "&#xyz; &#; &#12345678;",
+            [("text", "&#xyz; &#; &#12345678;")],
+            id="invalid-number",
+        ),
+        pytest.param(
+            r"&copy a\_b &copy;", [("text", "&copy a_b ©")], id="in-merged-run"
+        ),
+        pytest.param("# &copy x &copy;", [("title", "&copy x ©")], id="heading"),
+        pytest.param("- &copy x &copy;", [("list_item", "&copy x ©")], id="list-item"),
+        pytest.param(
+            "[&copy a &copy;](http://x.y)", [("text", "&copy a ©")], id="link-text"
+        ),
+        pytest.param(
+            '![alt](http://x.y/a.png "&copy a &copy;")',
+            [("caption", "&copy a ©"), ("text", "alt")],
+            id="image-title",
+        ),
+        pytest.param(
+            "| h |\n|---|\n| &copy a &copy; |",
+            [("cell", "h"), ("cell", "&copy a ©")],
+            id="table-cell",
+        ),
+        pytest.param(
+            "| h |\n|---|\n| **b** &copy a &copy; |",
+            [
+                ("text", "b"),
+                ("text", " &copy a ©"),
+                ("cell", "h"),
+                ("cell", "b &copy a ©"),
+            ],
+            id="rich-table-cell",
+        ),
+        pytest.param(
+            '| h |\n|---|\n| ![alt](http://x.y/a.png "&copy a &copy;") |',
+            [("caption", "&copy a ©"), ("cell", "h"), ("cell", "alt")],
+            id="table-cell-image-title",
+        ),
+    ],
+)
+def test_character_reference_is_decoded_only_when_terminated(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A character reference is decoded as in CommonMark, only if it ends with `;`."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    items = [(str(item.label), item.text) for item in doc.texts]
+    items += [
+        ("cell", cell.text) for table in doc.tables for cell in table.data.table_cells
+    ]
+    assert items == expected_items
+
+
+def test_image_caption_is_parented_under_its_picture():
+    """An image caption must be a child of its picture, not at the body top level."""
+    markdown = (
+        '- Item with image ![alt](http://x.y/a.png "List caption")\n'
+        "\n"
+        "| Cell |\n"
+        "| --- |\n"
+        '| ![alt](http://x.y/b.png "Table caption") |\n'
+    )
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    captions = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    assert len(captions) == 2
+
+    list_caption = next(c for c in captions if c.text == "List caption")
+    table_caption = next(c for c in captions if c.text == "Table caption")
+
+    list_picture = list_caption.parent.resolve(doc)
+    table_picture = table_caption.parent.resolve(doc)
+
+    assert isinstance(list_picture, PictureItem)
+    assert list_caption.get_ref() in list_picture.captions
+
+    assert isinstance(table_picture, PictureItem)
+    assert table_caption.get_ref() in table_picture.captions
+
+    assert list_picture.parent.cref != "#/body"
+    assert table_picture.parent.cref != "#/body"

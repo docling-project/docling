@@ -17,8 +17,10 @@ from docling_core.types.doc import (
     ListItem,
 )
 from docx import Document
+from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Twips
 
 from docling.backend.msword_backend import (
     _CJK_ENUM_FORMATTERS,
@@ -712,3 +714,267 @@ def _make_empty_docx():
     Document().save(buf)
     buf.seek(0)
     return buf
+
+
+def _convert_docx(document, tmp_path) -> DoclingDocument:
+    """Save a python-docx document and convert it with the Word backend."""
+    docx_path = tmp_path / "list_styles.docx"
+    document.save(str(docx_path))
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    return MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+
+def _convert_styled_paragraphs(tmp_path, paragraphs) -> DoclingDocument:
+    """Convert a document built from ``(text, paragraph style name)`` pairs."""
+    document = Document()
+    for text, style in paragraphs:
+        document.add_paragraph(text, style=style)
+    return _convert_docx(document, tmp_path)
+
+
+def _list_items_by_text(doc: DoclingDocument) -> dict[str, ListItem]:
+    return {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+
+
+def test_list_styles_nest_by_indentation(tmp_path):
+    """Items styled "List Bullet 2" / "List Number 2" nest under the item above.
+
+    Each of these built-in styles links to its own numId at ``w:ilvl`` 0 and
+    differs from "List Bullet" / "List Number" only by a deeper indentation,
+    so every style used to start a separate top-level list.
+    """
+    doc = _convert_styled_paragraphs(
+        tmp_path,
+        [
+            ("apple", "List Bullet"),
+            ("banana", "List Bullet"),
+            ("banana split", "List Bullet 2"),
+            ("banana bread", "List Bullet 2"),
+            ("cherry", "List Bullet"),
+            ("first", "List Number"),
+            ("first-a", "List Number 2"),
+            ("second", "List Number"),
+        ],
+    )
+    items = _list_items_by_text(doc)
+
+    sub_bullets = items["banana split"].parent.resolve(doc)
+    assert sub_bullets.parent == items["banana"].get_ref()
+    assert items["banana bread"].parent == sub_bullets.get_ref()
+    assert items["first-a"].parent.resolve(doc).parent == items["first"].get_ref()
+
+    assert doc.export_to_markdown() == (
+        "- apple\n"
+        "- banana\n"
+        "    - banana split\n"
+        "    - banana bread\n"
+        "- cherry\n"
+        "\n"
+        "1. first\n"
+        "    1. first-a\n"
+        "2. second"
+    )
+
+
+def test_lists_at_the_same_indentation_stay_siblings(tmp_path):
+    """Lists of different numIds at one indentation are siblings, never nested.
+
+    This holds at the top level ("List Bullet", then "List Number") and for two
+    sub-lists under one item ("List Bullet 2", then "List Number 2").
+    """
+    doc = _convert_styled_paragraphs(
+        tmp_path,
+        [
+            ("bullet", "List Bullet"),
+            ("bullet-a", "List Bullet 2"),
+            ("bullet-1", "List Number 2"),
+            ("number", "List Number"),
+        ],
+    )
+    items = _list_items_by_text(doc)
+
+    bullets = items["bullet"].parent.resolve(doc)
+    sub_bullets = items["bullet-a"].parent.resolve(doc)
+    sub_numbers = items["bullet-1"].parent.resolve(doc)
+    assert sub_bullets.parent == items["bullet"].get_ref()
+    assert sub_numbers.parent == items["bullet"].get_ref()
+    assert sub_numbers.get_ref() != sub_bullets.get_ref()
+
+    numbers = items["number"].parent.resolve(doc)
+    assert numbers.get_ref() != bullets.get_ref()
+    assert numbers.parent == bullets.parent == doc.body.get_ref()
+
+
+def test_list_styles_return_to_the_outer_list(tmp_path):
+    """An item back at the outer indentation continues the outer list.
+
+    This also holds when it returns from two levels deep, and a deeper item
+    after it opens a new sub-list under it.
+    """
+    doc = _convert_styled_paragraphs(
+        tmp_path,
+        [
+            ("one", "List Number"),
+            ("one-a", "List Number 2"),
+            ("one-a-i", "List Number 3"),
+            ("two", "List Number"),
+            ("two-a", "List Number 2"),
+            ("three", "List Number"),
+        ],
+    )
+    items = _list_items_by_text(doc)
+
+    outer = items["one"].parent
+    assert items["two"].parent == outer
+    assert items["three"].parent == outer
+    assert [items[text].marker for text in ("one", "two", "three")] == [
+        "1.",
+        "2.",
+        "3.",
+    ]
+    assert items["one-a-i"].parent.resolve(doc).parent == items["one-a"].get_ref()
+    second_sub_list = items["two-a"].parent.resolve(doc)
+    assert second_sub_list.parent == items["two"].get_ref()
+    assert second_sub_list.get_ref() != items["one-a"].parent
+
+
+def test_blank_paragraph_closes_a_nested_list_style(tmp_path):
+    """A blank paragraph inside a nested list closes it like any other list.
+
+    The group kept for reuse across the blank is the outer list's: an outer
+    item after it resumes the outer list, a nested item is not attached to it.
+    """
+
+    def convert(last_paragraph: tuple[str, str]) -> dict[str, ListItem]:
+        document = Document()
+        # Lists below a heading keep their group for reuse across a blank.
+        document.add_heading("Section", level=1)
+        for text, style in [
+            ("first", "List Number"),
+            ("first-a", "List Number 2"),
+            ("", "Normal"),
+            last_paragraph,
+        ]:
+            document.add_paragraph(text, style=style)
+        return _list_items_by_text(_convert_docx(document, tmp_path))
+
+    items = convert(("second", "List Number"))
+    assert items["second"].parent == items["first"].parent
+    assert items["second"].marker == "2."
+
+    items = convert(("first-b", "List Number 2"))
+    assert items["first-b"].parent != items["first"].parent
+
+
+def test_list_nesting_follows_word_indentation_precedence(tmp_path):
+    """The indentation compared is the one Word applies to the paragraph.
+
+    A paragraph's own ``w:ind`` (here spelled ``w:start``) overrides its
+    numbering level's; when neither sets one, the style's ``basedOn`` chain
+    decides.
+    """
+    document = Document()
+    # "List Number 2" inherits its indentation from a base style once its
+    # numbering level no longer sets one.
+    base = document.styles.add_style("Indented Base", WD_STYLE_TYPE.PARAGRAPH)
+    base.paragraph_format.left_indent = Twips(720)
+    list_number_2 = document.styles["List Number 2"]
+    list_number_2.base_style = base
+    numbering = document.part.numbering_part.element
+    num_id = list_number_2.element.xpath("./w:pPr/w:numPr/w:numId/@w:val")[0]
+    abstract_id = numbering.xpath(
+        f'./w:num[@w:numId="{num_id}"]/w:abstractNumId/@w:val'
+    )[0]
+    for ind in numbering.xpath(
+        f'./w:abstractNum[@w:abstractNumId="{abstract_id}"]/w:lvl/w:pPr/w:ind'
+    ):
+        ind.getparent().remove(ind)
+
+    document.add_paragraph("outer", style="List Bullet")
+    document.add_paragraph("by style", style="List Number 2")
+    document.add_paragraph("back", style="List Bullet")
+    # "List Number" is numbered at the "List Bullet" indentation.
+    by_paragraph = document.add_paragraph("by paragraph", style="List Number")
+    by_paragraph._p.get_or_add_pPr().get_or_add_ind().set(qn("w:start"), "720")
+
+    doc = _convert_docx(document, tmp_path)
+    items = _list_items_by_text(doc)
+
+    outer = items["outer"].parent
+    assert items["back"].parent == outer
+    assert items["by style"].parent.resolve(doc).parent == items["outer"].get_ref()
+    assert items["by paragraph"].parent.resolve(doc).parent == items["back"].get_ref()
+
+
+def test_get_level_element_follows_num_style_link(tmp_path):
+    """Resolve levels through a numbering definition's w:numStyleLink."""
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    # The paragraph numbering points to an abstract definition that contains
+    # numStyleLink rather than a direct level.
+    linked_abstract = OxmlElement("w:abstractNum")
+    linked_abstract.set(qn("w:abstractNumId"), "300")
+    style_link = OxmlElement("w:numStyleLink")
+    style_link.set(qn("w:val"), "LinkedNumberingStyle")
+    linked_abstract.append(style_link)
+    numbering.append(linked_abstract)
+
+    # The linked paragraph style points to a second numbering definition.
+    linked_style = doc.styles.add_style("LinkedNumberingStyle", WD_STYLE_TYPE.LIST)
+    ppr = linked_style.element.get_or_add_pPr()
+    numpr = OxmlElement("w:numPr")
+    num_id_elem = OxmlElement("w:numId")
+    num_id_elem.set(qn("w:val"), "401")
+    numpr.append(num_id_elem)
+    ppr.append(numpr)
+
+    target_abstract = OxmlElement("w:abstractNum")
+    target_abstract.set(qn("w:abstractNumId"), "400")
+    level = OxmlElement("w:lvl")
+    level.set(qn("w:ilvl"), "0")
+
+    start = OxmlElement("w:start")
+    start.set(qn("w:val"), "1")
+    level.append(start)
+
+    num_fmt = OxmlElement("w:numFmt")
+    num_fmt.set(qn("w:val"), "decimal")
+    level.append(num_fmt)
+
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "%1")
+    level.append(lvl_text)
+
+    target_abstract.append(level)
+    numbering.append(target_abstract)
+
+    for num_id, abstract_id in (("301", "300"), ("401", "400")):
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        abstract_ref = OxmlElement("w:abstractNumId")
+        abstract_ref.set(qn("w:val"), abstract_id)
+        num.append(abstract_ref)
+        numbering.append(num)
+
+    docx_path = tmp_path / "num_style_link.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    backend = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path)
+
+    resolved = backend._get_level_element(301, 0)
+
+    assert resolved is not None
+    assert resolved.get(qn("w:ilvl")) == "0"
+    assert resolved.find(qn("w:lvlText")).get(qn("w:val")) == "%1"

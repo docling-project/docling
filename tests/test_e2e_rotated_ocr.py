@@ -48,6 +48,7 @@ remove the marker then.
 
 import importlib.util
 import shutil
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -154,6 +155,28 @@ def test_rotated_page_ocr_text_reaches_default_export(angle, ocr_options_cls):
         f"rotated-page ({angle}°) OCR text is silently dropped from the default "
         f"export (docling#3839) — it lands in a header/footer FURNITURE item"
     )
+
+
+@_SKIP_NO_RAPIDOCR
+@pytest.mark.parametrize(
+    ("angle", "edge"), [(90, "left"), (180, "bottom"), (270, "right")]
+)
+def test_rapidocr_detect_orientation_reads_rotated_text(angle, edge):
+    """With `detect_orientation`, RapidOCR reads every line of a turned page, and the
+    text stays where it is on the stored page: in the top margin, turned to `edge`."""
+    doc = _convert(_FIXTURES[angle], partial(RapidOcrOptions, detect_orientation=True))
+
+    items = [item for item in doc.texts if _MARKER in item.text]
+    assert sum(item.text.count(_MARKER) for item in items) == 3, (
+        f"RapidOCR should read all three lines at {angle}°"
+    )
+    page_size = doc.pages[1].size
+    for item in items:
+        box = item.prov[0].bbox.to_top_left_origin(page_size.height)
+        x = (box.l + box.r) / 2 / page_size.width
+        y = (box.t + box.b) / 2 / page_size.height
+        on_edge = {"left": x < 0.1, "bottom": y > 0.9, "right": x > 0.9}[edge]
+        assert on_edge, f"text at {angle}° should be on the {edge} edge of the page"
 
 
 if __name__ == "__main__":

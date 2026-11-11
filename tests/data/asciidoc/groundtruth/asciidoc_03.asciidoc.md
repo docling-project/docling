@@ -1,8 +1,4 @@
-:\_mod-docs-content-type: PROCEDURE :experimental:
-
 # Renaming a bookmark
-
-[id="renaming-a-bookmark\_{context}"]
 
 You can rename a bookmark to distinguish it from other bookmarks. If you have bookmarks to several folders that all share the same name, you can tell the bookmarks apart if you rename them.
 

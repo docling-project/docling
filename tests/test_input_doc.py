@@ -2,13 +2,20 @@
 # SPDX-License-Identifier: MIT
 
 import importlib.util
+import zipfile
 from io import BytesIO
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError
 
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.opendocument_backend import (
     OdpDocumentBackend,
     OdsDocumentBackend,
@@ -20,17 +27,31 @@ from docling.datamodel.backend_options import (
     DeclarativeBackendOptions,
     HTMLBackendOptions,
 )
-from docling.datamodel.base_models import DocumentStream, InputFormat
-from docling.datamodel.document import InputDocument, _DocumentConversionInput
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DocumentStream,
+    InputFormat,
+    Page,
+)
+from docling.datamodel.document import (
+    _CONTENT_SNIFF_BYTES,
+    _ODF_MIMETYPE_MAX_BYTES,
+    ConversionResult,
+    InputDocument,
+    _DocumentConversionInput,
+)
 from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import (
+    DocumentConverter,
     HTMLFormatOption,
     ImageFormatOption,
     OdpFormatOption,
     OdsFormatOption,
     OdtFormatOption,
     PdfFormatOption,
+    XBRLFormatOption,
 )
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 def test_in_doc_from_valid_path():
@@ -38,6 +59,185 @@ def test_in_doc_from_valid_path():
     doc = _make_input_doc(test_doc_path)
     assert doc.valid is True
     assert doc.backend_options is None
+
+
+@pytest.mark.parametrize(
+    "backend_type",
+    [
+        PyPdfiumDocumentBackend,
+        DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
+    ],
+)
+@pytest.mark.parametrize("from_stream", [False, True])
+@pytest.mark.parametrize("already_unloaded", [False, True])
+def test_in_doc_release_pdf(backend_type, from_stream, already_unloaded):
+    test_doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
+    source = BytesIO(test_doc_path.read_bytes()) if from_stream else test_doc_path
+    doc = InputDocument(
+        path_or_stream=source,
+        format=InputFormat.PDF,
+        filename=test_doc_path.name,
+        backend=backend_type,
+    )
+    backend = doc._backend
+    metadata = doc.model_dump()
+    assert backend.is_valid()
+    if already_unloaded:
+        backend.unload()
+
+    doc.release()
+    doc.release()
+
+    assert doc._backend is None
+    assert backend.path_or_stream is None
+    assert backend._closed
+    assert doc.model_dump() == metadata
+    if from_stream:
+        assert source.closed
+    else:
+        assert test_doc_path.is_file()
+
+
+def test_in_doc_release_after_pipeline_cleanup():
+    stream = BytesIO(Path("./tests/data/pdf/sources/2206.01062.pdf").read_bytes())
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.pdf",
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+    )
+    backend = doc._backend
+    page = Page(page_no=1)
+    page_backend = backend.load_page(0)
+    page._backend = page_backend
+    result = ConversionResult(input=doc, pages=[page])
+    # Exercise the real cleanup paths without initializing ML models.
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+    pipeline._unload(result)
+
+    result.input.release()
+    result.input.release()
+
+    assert stream.closed
+    assert backend._closed
+    assert page_backend._closed
+    assert page._backend is None
+    assert result.input._backend is None
+
+
+def test_in_doc_release_after_html_conversion():
+    stream = BytesIO(b"<html><body><p>Release keeps this text.</p></body></html>")
+    result = DocumentConverter(allowed_formats=[InputFormat.HTML]).convert(
+        DocumentStream(name="test.html", stream=stream)
+    )
+    assert result.status == ConversionStatus.SUCCESS
+    markdown = result.document.export_to_markdown()
+    document = result.document.model_dump()
+    metadata = result.input.model_dump()
+    assert "Release keeps this text." in markdown
+
+    result.input.release()
+    result.input.release()
+
+    assert stream.closed
+    assert result.document.export_to_markdown() == markdown
+    assert result.document.model_dump() == document
+    assert result.input.model_dump() == metadata
+    assert result.status == ConversionStatus.SUCCESS
+
+
+def test_in_doc_release_image():
+    stream = BytesIO(Path("./tests/data/tiff/sources/2206.01062.tif").read_bytes())
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.tif",
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+    )
+    backend = doc._backend
+    assert isinstance(backend, ImageDocumentBackend)
+    assert backend.page_count() == 2
+
+    doc.release()
+    doc.release()
+
+    assert doc._backend is None
+    assert stream.closed
+    assert backend._source is None
+    assert backend.page_count() == 0
+
+
+@pytest.mark.parametrize("reason", ["missing", "empty", "too_large", "download_limit"])
+def test_in_doc_release_without_backend(reason):
+    if reason == "missing":
+        doc = _make_input_doc(Path("./tests/does/not/exist.pdf"))
+    elif reason == "empty":
+        doc = _make_input_doc_from_stream(
+            DocumentStream(name="test.pdf", stream=BytesIO())
+        )
+    elif reason == "too_large":
+        doc = InputDocument(
+            path_or_stream=Path("./tests/data/pdf/sources/2206.01062.pdf"),
+            format=InputFormat.PDF,
+            backend=PyPdfiumDocumentBackend,
+            limits=DocumentLimits(max_file_size=1),
+        )
+    else:
+        doc = InputDocument.create_invalid(
+            filename="test.pdf", format=InputFormat.PDF, filesize=100
+        )
+    assert not doc.valid
+
+    doc.release()
+    doc.release()
+
+    assert doc._backend is None
+
+
+def test_in_doc_release_rejected_page_count():
+    stream = BytesIO(Path("./tests/data/pdf/sources/2206.01062.pdf").read_bytes())
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.pdf",
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+        limits=DocumentLimits(max_num_pages=1),
+    )
+    assert not doc.valid
+    assert not stream.closed
+
+    doc.release()
+
+    assert stream.closed
+    assert doc._backend is None
+
+
+def test_in_doc_release_can_retry_failed_cleanup(monkeypatch):
+    stream = BytesIO(b"<html><body>Test</body></html>")
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.html",
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+    )
+    backend = doc._backend
+    unload = backend.unload
+    failing_unload = Mock(side_effect=RuntimeError("cleanup failed"))
+    monkeypatch.setattr(backend, "unload", failing_unload)
+    with pytest.raises(RuntimeError, match="cleanup failed"):
+        doc.release()
+    assert doc._backend is backend
+    assert not stream.closed
+
+    successful_unload = Mock(wraps=unload)
+    monkeypatch.setattr(backend, "unload", successful_unload)
+    doc.release()
+    doc.release()
+
+    successful_unload.assert_called_once_with()
+    assert stream.closed
+    assert doc._backend is None
 
 
 def test_in_doc_from_invalid_path():
@@ -213,6 +413,124 @@ def test_guess_format_markdown_extension(tmp_path):
     assert dci._guess_format(markdown_path) is InputFormat.MD
 
 
+_HTML_PAST_SNIFF_WINDOW = (
+    b"<!--\n"
+    b"  A licence header comment, longer than the sniff window, that\n"
+    b"  pushes the markup past it.\n" + b"  " + b"x" * 1100 + b"\n"
+    b"-->\n"
+    b"<html><head><title>Report</title></head>"
+    b"<body><h1>Hello</h1></body></html>\n"
+)
+
+_JATS_PAST_SNIFF_WINDOW = (
+    b"<!--\n"
+    b"  A long header comment that pushes the declaration past the\n"
+    b"  sniff window.\n" + b"  " + b"z" * 1100 + b"\n"
+    b"-->\n"
+    b'<?xml version="1.0" encoding="UTF-8"?>\n'
+    b'<!DOCTYPE article PUBLIC "-//NLM//DTD JATS-journalpublishing1.dtd" "x.dtd">\n'
+    b"<article><body><p>Hello</p></body></article>\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "marker", "content", "expected"),
+    [
+        pytest.param(
+            "report.bin",
+            b"<html>",
+            _HTML_PAST_SNIFF_WINDOW,
+            InputFormat.HTML,
+            id="html",
+        ),
+        pytest.param(
+            "article.xml",
+            b"<?xml",
+            _JATS_PAST_SNIFF_WINDOW,
+            InputFormat.XML_JATS,
+            id="jats",
+        ),
+    ],
+)
+def test_guess_format_marker_past_sniff_window(
+    tmp_path, name, marker, content, expected
+):
+    """A format marker beyond the sniff window is still found, from a path too.
+
+    Format sniffing reads a bounded prefix of the document, and a path must
+    read the same prefix as the equivalent `DocumentStream`. A file whose first
+    format marker -- an `<html>` root, an XML declaration -- used to sit past
+    the 1 KiB prefix read for a path was dropped with "does not match any
+    allowed format", while the same bytes converted when they arrived as a
+    stream. Neither name gives the format away, so the content is the only
+    evidence.
+    """
+    assert content.find(marker) > 1024
+    assert content.find(marker) < _CONTENT_SNIFF_BYTES
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        ("paper", b"\\documentclass{article}\n\\begin{document}\n", InputFormat.LATEX),
+        (
+            "paper.ltx",
+            b"% preamble\n\\documentclass[a4paper]{article}\n",
+            InputFormat.LATEX,
+        ),
+        ("paper", b"\xef\xbb\xbf\\documentclass{article}\n", InputFormat.LATEX),
+        ("paper", b"\\documentstyle[times]{ACMconf}\n", InputFormat.LATEX),
+        ("paper", b"% \\documentclass{article}\n", None),
+        ("chapter", b"\\section{Intro}\nText.\n", None),
+        ("notes.txt", b"\\documentclass{article}\n", InputFormat.MD),
+    ],
+)
+def test_guess_format_latex_without_tex_extension(tmp_path, name, content, expected):
+    """A LaTeX document without a .tex name is recognized by its preamble."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
+_ICS = (
+    b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:a;b,c\r\nEND:VEVENT\r\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        ("invite", _ICS, InputFormat.CALENDAR),
+        ("invite", b"\xef\xbb\xbf" + _ICS, InputFormat.CALENDAR),
+        ("invite", b"\r\n\r\n" + _ICS.lower(), InputFormat.CALENDAR),
+        ("invite", _ICS.decode().encode("utf-16"), InputFormat.CALENDAR),
+        ("busy.ifb", _ICS, InputFormat.CALENDAR),
+        ("invite.txt", _ICS, InputFormat.MD),
+        ("notes", b"Agenda\r\nBEGIN:VCALENDAR\r\n", None),
+    ],
+)
+def test_guess_format_calendar(tmp_path, name, content, expected):
+    """An iCalendar file is recognized by its first line when the name does not say."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
 @pytest.mark.parametrize(
     ("suffix", "content", "expected"),
     [
@@ -220,6 +538,7 @@ def test_guess_format_markdown_extension(tmp_path):
         ("ADOC", b"= Title\n\nSome text\n", InputFormat.ASCIIDOC),
         ("HTML", b"<p>no doctype and no html tag</p>\n", InputFormat.HTML),
         ("EML", b"From: a@b.c\nTo: d@e.f\nSubject: hi\n\nbody\n", InputFormat.EMAIL),
+        ("ICS", b"BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n", InputFormat.CALENDAR),
     ],
 )
 def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expected):
@@ -232,6 +551,148 @@ def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expec
     assert dci._guess_format(doc_path) is expected
     stream = DocumentStream(name=doc_path.name, stream=BytesIO(content))
     assert dci._guess_format(stream) is expected
+
+
+@pytest.mark.parametrize(
+    ("suffix", "expected"),
+    [
+        ("doc", InputFormat.DOC),
+        ("DOC", InputFormat.DOC),
+        ("ppt", InputFormat.PPT),
+        ("xls", InputFormat.XLS),
+        ("msg", InputFormat.EMAIL),
+        ("MSG", InputFormat.EMAIL),
+    ],
+)
+def test_guess_format_ole2_with_fat_first_sector(tmp_path, suffix, expected):
+    # An OLE2 container whose first sector after the header is a FAT sector
+    # (FD FF FF FF) is reported as Excel by filetype whatever it really holds,
+    # e.g. a Word 6.0 .doc or an Outlook .msg (#704 in docling-serve). The
+    # extension must then decide between the OLE2 based formats.
+    content = bytearray(1024)
+    content[:8] = bytes.fromhex("D0CF11E0A1B11AE1")
+    content[512:516] = bytes.fromhex("FDFFFFFF")
+    doc_path = tmp_path / f"document.{suffix}"
+    doc_path.write_bytes(bytes(content))
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) == expected
+    stream = DocumentStream(name=doc_path.name, stream=BytesIO(bytes(content)))
+    assert dci._guess_format(stream) == expected
+
+
+def _odf_like_zip(mimetype: bytes) -> bytes:
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mimetype", mimetype)
+        zf.writestr("content.xml", "<office:document-content/>")
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("mimetype", "expected"),
+    [
+        (b"application/vnd.oasis.opendocument.text", InputFormat.ODT),
+        (b"application/vnd.oasis.opendocument.spreadsheet\n", InputFormat.ODS),
+        # A media type padded past the limit is not taken as OpenDocument, even
+        # though it starts with a valid one.
+        (
+            b"application/vnd.oasis.opendocument.text".ljust(
+                _ODF_MIMETYPE_MAX_BYTES + 1, b" "
+            ),
+            None,
+        ),
+        (b"application/vnd.oasis.opendocument.text" + b"\0" * 4_000_000, None),
+    ],
+    ids=["odt", "ods-newline", "over-limit", "large-member"],
+)
+def test_guess_format_odf_mimetype_member(tmp_path, mimetype, expected):
+    data = _odf_like_zip(mimetype)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    no_ext_path = tmp_path / "upload"
+    no_ext_path.write_bytes(data)
+    assert dci._guess_format(no_ext_path) == expected
+
+    stream = DocumentStream(name="upload", stream=BytesIO(data))
+    assert dci._guess_format(stream) == expected
+    assert stream.stream.tell() == 0
+
+
+_IXBRL_NS = b"http://www.xbrl.org/2013/inlineXBRL"
+_LATE_NAMESPACES = b"".join(
+    b' xmlns:p%d="http://example.org/ns/%d"' % (i, i) for i in range(30)
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        (
+            "late_namespace.htm",
+            b'<?xml version="1.0"?><!-- header -->\n<html xmlns="http://www.w3.org/1999/xhtml"'
+            + _LATE_NAMESPACES
+            + b' xmlns:ix="'
+            + _IXBRL_NS
+            + b'"><body/></html>',
+            InputFormat.XML_XBRL,
+        ),
+        (
+            "single_quotes.html",
+            b"<html xmlns:ixbrl='http://www.xbrl.org/2008/inlineXBRL'><body/></html>",
+            InputFormat.XML_XBRL,
+        ),
+        (
+            "tutorial.html",
+            b'<html><body><p>Declare xmlns:ix="' + _IXBRL_NS + b'" on the root.</p>'
+            b"</body></html>",
+            InputFormat.HTML,
+        ),
+        (
+            "commented.html",
+            b'<!-- <html xmlns:ix="' + _IXBRL_NS + b'"> --><html><body/></html>',
+            InputFormat.HTML,
+        ),
+        (
+            "nested_namespace.html",
+            b'<html><body><div xmlns:ix="' + _IXBRL_NS + b'"/></body></html>',
+            InputFormat.HTML,
+        ),
+        (
+            "plain.html",
+            b"<!DOCTYPE html><html><body>text</body></html>",
+            InputFormat.HTML,
+        ),
+    ],
+)
+def test_guess_format_ixbrl_markers(tmp_path, name, content, expected):
+    """Only a root element that declares the inline XBRL namespace is iXBRL."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) == expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) == expected
+
+
+_IXBRL_REPORT = (
+    b'<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="'
+    + _IXBRL_NS
+    + b'"><head><title>Report</title></head><body><p>Hello</p></body></html>'
+)
+
+
+def test_html_only_converter_skips_ixbrl_report(tmp_path):
+    """An iXBRL report is not silently converted as HTML when XBRL is not allowed."""
+    doc_path = tmp_path / "report.htm"
+    doc_path.write_bytes(_IXBRL_REPORT)
+    converter = DocumentConverter(allowed_formats=[InputFormat.HTML])
+
+    result = converter.convert(doc_path, raises_on_error=False)
+
+    assert result.input.format == InputFormat.XML_XBRL
+    assert result.status == ConversionStatus.SKIPPED
 
 
 def test_guess_format(tmp_path):
@@ -371,10 +832,8 @@ def test_guess_format(tmp_path):
             assert isinstance(docs[0]._backend, backend_cls)
 
     # Plain ZIP (not Office) should not be detected as an Office format
-    import zipfile as _zipfile
-
     plain_zip_path = temp_dir / "archive_no_ext"
-    with _zipfile.ZipFile(plain_zip_path, "w") as zf:
+    with zipfile.ZipFile(plain_zip_path, "w") as zf:
         zf.writestr("data.txt", "hello world")
     assert dci._guess_format(plain_zip_path) is None
 
@@ -460,11 +919,25 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/jats/sources/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
+    # XBRL instance file
     buf = BytesIO(Path("./tests/data/xbrl/sources/mlac-20251231.xml").open("rb").read())
     stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_XBRL
     doc_path = Path("./tests/data/xbrl/sources/mlac-20251231.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_XBRL
+
+    # iXBRL (.htm with inline XBRL namespace markers)
+    ixbrl_head = (
+        b"<?xml version='1.0' encoding='UTF-8'?>"
+        b'<html xmlns="http://www.w3.org/1999/xhtml"'
+        b' xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        b"<head><title>Test iXBRL</title></head><body></body></html>"
+    )
+    ixbrl_path = temp_dir / "report.htm"
+    ixbrl_path.write_bytes(ixbrl_head)
+    assert dci._guess_format(ixbrl_path) == InputFormat.XML_XBRL
+    stream = DocumentStream(name="report.htm", stream=BytesIO(ixbrl_head))
+    assert dci._guess_format(stream) == InputFormat.XML_XBRL
 
     # Valid XML, non-supported flavor
     xml_content = (

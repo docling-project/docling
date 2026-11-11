@@ -3,15 +3,17 @@
 
 from base64 import b64encode
 from email.headerregistry import HeaderRegistry
+from email.message import EmailMessage
 from email.utils import getaddresses
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import DocItemLabel, TextItem
+import pytest
+from docling_core.types.doc import ContentLayer, DocItemLabel, TextItem
 
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.document_converter import DocumentConverter, EmailFormatOption
 
@@ -438,9 +440,253 @@ Content-Type: text/html; charset="utf-8"
 
     markdown = backend.convert().export_to_markdown()
 
-    assert "Hello **Bob** ," in markdown
+    # No invented separator between the bold run and the comma.
+    assert "Hello **Bob**," in markdown
     assert "This is HTML." in markdown
     assert "<strong>" not in markdown
+
+
+def test_email_backend_escapes_html_body_text_once():
+    raw_email = b"""From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.com>
+Subject: HTML Email
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<html><body><p>Fish &amp; chips for a&lt;b, see my_file_name.txt</p></body></html>
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="html.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    doc = backend.convert()
+
+    assert "Fish & chips for a<b, see my_file_name.txt" in [
+        item.text for item in doc.texts
+    ]
+    assert "Fish &amp; chips for a&lt;b, see my\\_file\\_name.txt" in (
+        doc.export_to_markdown()
+    )
+    assert "Fish & chips for a<b, see my_file_name.txt" in doc.export_to_text()
+
+
+@pytest.mark.parametrize("plain_body", [None, " \n"], ids=["html-only", "blank-plain"])
+def test_email_html_body_keeps_furniture_outside_the_body(plain_body: str | None):
+    """Email furniture stays available, as it does for a standalone HTML file."""
+    html = (
+        "<html><body><p>Body: 1 &lt; 2 &amp; 3 &gt; 2, a_b.</p>"
+        "<footer>Footer: terms &amp; conditions, c_d.</footer></body></html>"
+    )
+    message = EmailMessage()
+    message["Subject"] = "HTML furniture"
+    if plain_body is None:
+        message.set_content(html, subtype="html")
+    else:
+        message.set_content(plain_body)
+        message.add_alternative(html, subtype="html")
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.EMAIL, InputFormat.HTML])
+    doc = converter.convert(
+        DocumentStream(name="furniture.eml", stream=BytesIO(message.as_bytes()))
+    ).document
+    html_doc = converter.convert(
+        DocumentStream(name="furniture.html", stream=BytesIO(html.encode("utf-8")))
+    ).document
+
+    footer = "Footer: terms & conditions, c_d."
+    for converted in (doc, html_doc):
+        footer_items = [item for item in converted.texts if item.text == footer]
+        assert len(footer_items) == 1
+        assert footer_items[0].content_layer == ContentLayer.FURNITURE
+        assert "Footer:" not in converted.export_to_markdown()
+        all_layers = converted.export_to_markdown(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        )
+        assert all_layers.count("Footer: terms &amp; conditions, c\\_d.") == 1
+        assert "Body: 1 &lt; 2 &amp; 3 &gt; 2, a\\_b." in all_layers
+        serialized_footers = [
+            item
+            for item in converted.export_to_dict()["texts"]
+            if item["text"] == footer
+        ]
+        assert len(serialized_footers) == 1
+        assert serialized_footers[0]["content_layer"] == "furniture"
+
+
+@pytest.mark.parametrize("plain_body", [None, " \n"], ids=["html-only", "blank-plain"])
+def test_email_with_only_html_furniture_does_not_fall_back_to_raw_html(
+    plain_body: str | None,
+):
+    """A footer is content even when there are no BODY paragraphs."""
+    html = "<html><body><footer>Footer only.</footer></body></html>"
+    message = EmailMessage()
+    message["Subject"] = "Footer only email"
+    if plain_body is None:
+        message.set_content(html, subtype="html")
+    else:
+        message.set_content(plain_body)
+        message.add_alternative(html, subtype="html")
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="footer-only.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Footer only email", ContentLayer.BODY),
+        ("Footer only.", ContentLayer.FURNITURE),
+    ]
+    assert doc.export_to_markdown() == "# Footer only email"
+    assert (
+        doc.export_to_markdown(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        )
+        == "# Footer only email\n\nFooter only."
+    )
+
+
+def test_email_keeps_nonempty_plain_body_instead_of_html_furniture():
+    """The HTML alternative must not add a second copy of the plain body."""
+    message = EmailMessage()
+    message["Subject"] = "Plain preferred"
+    message.set_content("Plain body.\n\nShared footer.")
+    message.add_alternative(
+        "<html><body><p>HTML body.</p><footer>Shared footer.</footer></body></html>",
+        subtype="html",
+    )
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(
+                name="plain-preferred.eml", stream=BytesIO(message.as_bytes())
+            )
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Plain preferred", ContentLayer.BODY),
+        ("Plain body.", ContentLayer.BODY),
+        ("Shared footer.", ContentLayer.BODY),
+    ]
+    assert (
+        doc.export_to_markdown(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        )
+        == "# Plain preferred\n\nPlain body.\n\nShared footer."
+    )
+
+
+def test_email_keeps_furniture_from_each_html_part_once():
+    """Each selected HTML part contributes its body and its furniture once."""
+    message = EmailMessage()
+    message["Subject"] = "Multipart HTML"
+    message.make_mixed()
+    for html in (
+        "<html><body> </body></html>",
+        "<html><body><p>First body.</p><footer>First footer.</footer></body></html>",
+        "<html><body><p>Second body.</p><footer>Second footer.</footer></body></html>",
+    ):
+        part = EmailMessage()
+        part.set_content(html, subtype="html")
+        message.attach(part)
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="multipart.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Multipart HTML", ContentLayer.BODY),
+        ("First body.", ContentLayer.BODY),
+        ("First footer.", ContentLayer.FURNITURE),
+        ("Second body.", ContentLayer.BODY),
+        ("Second footer.", ContentLayer.FURNITURE),
+    ]
+    assert doc.export_to_markdown() == "# Multipart HTML\n\nFirst body.\n\nSecond body."
+
+
+def test_email_backend_preserves_calendar_body_as_text():
+    """Keep another text MIME subtype as text, without parsing calendar fields."""
+    calendar_body = (
+        "BEGIN:VCALENDAR\n"
+        "VERSION:2.0\n"
+        "PRODID:-//Docling//Email fallback test//EN\n"
+        "BEGIN:VEVENT\n"
+        "UID:synthetic@example.org\n"
+        "DTSTAMP:20261107T000000Z\n"
+        "DTSTART:20261108T090000Z\n"
+        "DESCRIPTION:Review <terms> & conditions for a_b.\n"
+        "END:VEVENT\n"
+        "END:VCALENDAR"
+    )
+    message = EmailMessage()
+    message["Subject"] = "Calendar body"
+    message.set_content(calendar_body, subtype="calendar")
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="calendar.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Calendar body", ContentLayer.BODY),
+        (calendar_body, ContentLayer.BODY),
+    ]
+    escaped_body = calendar_body.replace(
+        "<terms> & conditions for a_b.", "&lt;terms&gt; &amp; conditions for a\\_b."
+    ).replace("\n", "  \n")
+    assert doc.export_to_markdown() == f"# Calendar body\n\n{escaped_body}"
+
+
+@pytest.mark.parametrize(
+    ("mime_charset", "meta", "text"),
+    [
+        (
+            "iso-8859-1",
+            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">',
+            "Café crème",
+        ),
+        ("utf-8", '<meta charset="iso-8859-1">', "日本語 café"),
+    ],
+    ids=["latin1", "utf8-with-latin1-meta"],
+)
+def test_email_backend_decodes_html_body_with_meta_charset_once(
+    mime_charset: str, meta: str, text: str
+):
+    # Mail clients keep the <meta> charset of the original HTML in the part
+    html = f"<html><head>{meta}</head><body><p>{text}</p></body></html>"
+    raw_email = (
+        b"From: Alice Example <alice@example.com>\r\n"
+        b"Subject: Menu\r\n"
+        b"MIME-Version: 1.0\r\n"
+        + f'Content-Type: text/html; charset="{mime_charset}"\r\n'.encode()
+        + b"Content-Transfer-Encoding: 8bit\r\n\r\n"
+        + html.encode(mime_charset)
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="html.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    assert text in backend.convert().export_to_markdown()
 
 
 def test_email_backend_normalises_body_line_endings():
@@ -645,3 +891,30 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
     ).document
 
     assert "Real content that should appear." in doc.export_to_markdown()
+
+
+def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_with_attachment.msg").read_bytes()
+    payloads = [a.file_bytes for a in OxMsgMessage.load(data).attachments]
+    assert len(payloads) == 2
+
+    rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+    lowered = rfc822.lower()
+
+    for name, mime in (
+        (b"test.txt", b"text/plain"),
+        (b"report.pdf", b"application/pdf"),
+    ):
+        assert name in rfc822
+        assert mime in lowered
+
+    meaningful = [p for p in payloads if p and len(p) >= 16]
+    assert meaningful, (
+        "fixture must contain at least one non-trivial attachment payload"
+    )
+    flat = rfc822.replace(b"\r\n", b"").replace(b"\n", b"")
+    for payload in meaningful:
+        assert payload not in rfc822
+        assert b64encode(payload) not in flat

@@ -4,3 +4,7 @@ item-0 at level 0: unspecified: group _root_
     item-3 at level 2: paragraph: Image test
     item-4 at level 2: picture
     item-5 at level 2: paragraph: Image linked to file
+  item-6 at level 1: chapter: group slide-1
+    item-7 at level 2: title: Picture placeholder
+    item-8 at level 2: picture
+    item-9 at level 2: paragraph: This is a picture inserted through a layout’s picture placeholder

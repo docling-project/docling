@@ -27,16 +27,24 @@ from docling.datamodel.spatial import (
     has_positive_area,
     ordered_bounding_box,
 )
-from docling.models.base_table_model import BaseTableStructureModel
+from docling.models.base_table_model import (
+    BaseTableStructureModel,
+    degenerate_structure_reason,
+    keep_table_text_as_child,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import normalize_extracted_text
 
 _log = logging.getLogger(__name__)
 
 
 class TableStructureModelV2(BaseTableStructureModel):
     """TableFormerV2 model for table structure recognition."""
+
+    # Step budget of the autoregressive structure decoder.
+    MAX_LENGTH = 512
 
     _model_repo_id = "docling-project/TableFormerV2"
     _model_repo_folder = "docling-project--TableFormerV2"
@@ -131,7 +139,9 @@ class TableStructureModelV2(BaseTableStructureModel):
 
         # Run inference
         with torch.no_grad():
-            output = self.model.generate(image_tensor, self.tokenizer, max_length=512)
+            output = self.model.generate(
+                image_tensor, self.tokenizer, max_length=self.MAX_LENGTH
+            )
 
         # Decode tokens to OTSL sequence
         generated_ids = output["generated_ids"][0]
@@ -156,6 +166,18 @@ class TableStructureModelV2(BaseTableStructureModel):
         cell_data, num_rows, num_cols = self._build_table_cells(
             otsl_seq, pred_bboxes, tbl_box
         )
+        reason = degenerate_structure_reason(otsl_seq, self.MAX_LENGTH)
+        if reason is not None:
+            _log.warning(
+                "Discarding the %dx%d structure predicted for table %d on page %d "
+                "because %s; its text is kept as a single cell.",
+                num_rows,
+                num_cols,
+                table_cluster.id,
+                page_no,
+                reason,
+            )
+            cell_data, num_rows, num_cols = [], 0, 0
 
         cell_matches = [
             (element, BoundingBox.model_validate(element["bbox"]))
@@ -459,7 +481,7 @@ class TableStructureModelV2(BaseTableStructureModel):
                     # Run inference
                     with torch.no_grad():
                         output = self.model.generate(
-                            image_tensor, self.tokenizer, max_length=512
+                            image_tensor, self.tokenizer, max_length=self.MAX_LENGTH
                         )
 
                     # Decode tokens to OTSL sequence
@@ -480,6 +502,20 @@ class TableStructureModelV2(BaseTableStructureModel):
                     cell_data, num_rows, num_cols = self._build_table_cells(
                         otsl_seq, pred_bboxes, table_bbox
                     )
+                    reason = degenerate_structure_reason(otsl_seq, self.MAX_LENGTH)
+                    if reason is not None:
+                        _log.warning(
+                            "Discarding the %dx%d structure predicted for table "
+                            "%d on page %d because %s; its text is kept as a "
+                            "single cell.",
+                            num_rows,
+                            num_cols,
+                            table_cluster.id,
+                            page.page_no,
+                            reason,
+                        )
+                        cell_data, num_rows, num_cols = [], 0, 0
+                        keep_table_text_as_child(table_cluster, page)
 
                     cell_matches = [
                         (element, BoundingBox.model_validate(element["bbox"]))
@@ -513,6 +549,7 @@ class TableStructureModelV2(BaseTableStructureModel):
                             element["bbox"]["token"] = text_piece
                             cell_match_idx += 1
                         tc = TableCell.model_validate(element)
+                        tc.text = normalize_extracted_text(tc.text)
                         table_cells.append(tc)
 
                     tbl = Table(

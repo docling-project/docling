@@ -20,3 +20,22 @@
 - Step instruction text
     - Nested detail 1
     - Nested detail 2
+
+## Paragraph between list items
+
+- First item
+
+A paragraph placed directly inside the list.
+
+- Second item
+
+After.
+
+## List items without text
+
+1. 
+| A | B |
+| - | - |
+2. 
+<!-- image -->
+3. Third item

@@ -5,13 +5,20 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from datetime import datetime
+from email.header import decode_header, make_header
 from email.message import EmailMessage
 from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItemLabel,
+    DoclingDocument,
+    DocumentOrigin,
+)
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -75,6 +82,12 @@ _MSG_INSTALL_HINT = (
 )
 
 
+@dataclass(frozen=True)
+class _BodyParagraph:
+    text: str
+    content_layer: ContentLayer
+
+
 class EmailDocumentBackend(DeclarativeDocumentBackend):
     def __init__(
         self,
@@ -119,13 +132,34 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         raise TypeError(f"Unsupported input type: {type(self.path_or_stream)}")
 
     @staticmethod
+    def _decode_rfc2047(value: str) -> str:
+        """Decode any RFC 2047 encoded-words in a header string.
+
+        Args:
+            value: Raw header string, possibly containing RFC 2047 encoded-words.
+
+        Returns:
+            Decoded string, or *value* unchanged if decoding raises.
+        """
+        try:
+            return str(make_header(decode_header(value)))
+        except Exception:
+            return value
+
+    @staticmethod
     def _header_safe(value: str) -> str:
         """Collapse a header value to a single line of single-spaced text.
 
-        ``.msg`` header assembly needs single-line values, and a decoded RFC 2047
+        `.msg` header assembly needs single-line values, and a decoded RFC 2047
         encoded-word must not stand up a forged header in the rendered document.
-        ``str.split()`` covers every character ``str.splitlines()`` breaks on, and
+        `str.split()` covers every character `str.splitlines()` breaks on, and
         collapsing runs also unfolds a folded header to one space.
+
+        Args:
+            value: Header string to sanitize.
+
+        Returns:
+            Single-line, single-spaced string.
         """
         return " ".join(value.split())
 
@@ -191,8 +225,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
+            # Only filename and MIME type are needed; pass an empty payload to avoid
+            # copying attachment content into the RFC 822 byte stream.
             email_message.add_attachment(
-                attachment.file_bytes or b"",
+                b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
                 filename=attachment.file_name,
@@ -231,7 +267,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         formatted = []
         for name, email in addresses:
-            name = self._header_safe(name)
+            name = self._header_safe(self._decode_rfc2047(name))
             if name:
                 formatted.append(f"{self._quote_display_name(name)} <{email}>")
             else:
@@ -249,7 +285,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         ]
 
     def _convert_html_part(self, html: str) -> DoclingDocument:
-        html_stream = BytesIO(html.encode("utf-8"))
+        # The part is already decoded, but its markup can still declare the
+        # original charset in a <meta> tag. The UTF-8 byte order mark makes the
+        # HTML parser use UTF-8 and ignore that declaration.
+        html_stream = BytesIO(html.encode("utf-8-sig"))
         in_doc = InputDocument(
             path_or_stream=html_stream,
             format=InputFormat.HTML,
@@ -264,7 +303,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         )
         return backend.convert()
 
-    def _get_body_paragraphs(self) -> list[str]:
+    def _get_body_paragraphs(self) -> list[_BodyParagraph]:
         assert self.mail is not None
 
         # A part being present does not mean it holds a paragraph. A
@@ -274,9 +313,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
-            paragraphs: list[str] = []
+            paragraphs: list[_BodyParagraph] = []
             for part in self.mail.text_plain:
-                paragraphs.extend(self._split_paragraphs(part))
+                paragraphs.extend(
+                    _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
+                    for paragraph in self._split_paragraphs(part)
+                )
             if paragraphs:
                 return paragraphs
 
@@ -284,11 +326,26 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             paragraphs = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
-                paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
+                # Export each layer separately so furniture remains available
+                # without becoming part of the email's default body export.
+                for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):
+                    # The outer email export escapes these text items.
+                    markdown = html_doc.export_to_markdown(
+                        included_content_layers={content_layer},
+                        escape_html=False,
+                        escape_underscores=False,
+                    )
+                    paragraphs.extend(
+                        _BodyParagraph(text=paragraph, content_layer=content_layer)
+                        for paragraph in self._split_paragraphs(markdown)
+                    )
             if paragraphs:
                 return paragraphs
 
-        return self._split_paragraphs(self.mail.body)
+        return [
+            _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
+            for paragraph in self._split_paragraphs(self.mail.body)
+        ]
 
     def _get_date_text(self) -> str:
         assert self.mail is not None
@@ -355,7 +412,11 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if date_text:
             doc.add_text(label=DocItemLabel.TEXT, text=f"Date: {date_text}")
         for body_paragraph in body_paragraphs:
-            doc.add_text(label=DocItemLabel.TEXT, text=body_paragraph)
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                text=body_paragraph.text,
+                content_layer=body_paragraph.content_layer,
+            )
 
         if self.options.list_attachments:
             attachment_labels = self._get_attachment_labels()

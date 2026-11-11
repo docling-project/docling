@@ -18,13 +18,17 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 """
 
 import logging
+import warnings
 import zipfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import TextItem
+from PIL import Image
 
 from docling.backend.epub_backend import EpubDocumentBackend
+from docling.datamodel.backend_options import EpubBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -32,7 +36,7 @@ from docling.datamodel.document import (
     DoclingDocument,
     InputDocument,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, EpubFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -266,6 +270,60 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 2 body." in text
 
 
+def test_epub_percent_encoded_package_path_is_read(tmp_path: Path):
+    """The full-path of a rootfile is a URL, so its percent-escapes are decoded.
+
+    A reference inside the container is a relative IRI reference, while the
+    archive stores the literal file name. A package document whose name holds
+    a space is therefore escaped in container.xml, and looking it up with the
+    escape still in place fails the whole conversion.
+    """
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container version="1.0"'
+        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+        "<rootfiles>"
+        '<rootfile full-path="OEBPS/my%20book.opf"'
+        ' media-type="application/oebps-package+xml"/>'
+        "</rootfiles></container>"
+    )
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
+        ' unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>Escaped Package Path</dc:title></metadata>"
+        "<manifest>"
+        '<item id="c0" href="chapter-0.xhtml"'
+        ' media-type="application/xhtml+xml"/>'
+        "</manifest>"
+        '<spine><itemref idref="c0"/></spine>'
+        "</package>"
+    )
+    epub_path = tmp_path / "package-path.epub"
+    with zipfile.ZipFile(epub_path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/epub+zip")
+        z.writestr("META-INF/container.xml", container)
+        z.writestr("OEBPS/my book.opf", opf)
+        z.writestr(
+            "OEBPS/chapter-0.xhtml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+            "<p>Chapter 0 body.</p>"
+            "</body></html>",
+        )
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    doc = result.document
+    assert "Chapter 0 body." in "\n".join(item.text for item in doc.texts)
+
+
 def _build_epub_with_parent_relative_href(path: Path) -> Path:
     """Build a minimal EPUB whose spine steps out of the package directory.
 
@@ -463,3 +521,241 @@ def test_epub_internal_links_are_fixed_for_every_content_document_extension(
     ]
 
     assert hyperlinks == ["#note2", absolute, "#note3", "#note4", "#note1"]
+
+
+def test_epub_internal_links_in_either_quote_style(tmp_path: Path):
+    """A cross-document link is reduced to its anchor in either quote style.
+
+    An attribute value is as legal in single quotes as in double quotes, and
+    image sources already allow both. A link that keeps its file part points
+    at a content document that no longer exists once the spine is merged into
+    one HTML document, so it becomes a path to a missing file instead of an
+    anchor. The absolute URL is here for the opposite reason: a single quote
+    must not make its host disappear either.
+    """
+    absolute = "https://example.com/page.html#about"
+    names = ["chapter1.xhtml", "chapter2.xhtml"]
+    bodies = [
+        f"<p>See <a href='{names[1]}#note2'>single</a>.</p>"
+        f'<p>See <a href="{names[1]}#note2">double</a>.</p>'
+        f"<p>Read <a href='{absolute}'>about</a>.</p>",
+        '<p id="note2">Note 2.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "quotes.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert hyperlinks == ["#note2", "#note2", absolute]
+
+
+def test_epub_internal_link_rewrite_leaves_text_alone(tmp_path: Path):
+    """Only a link of the markup is reduced to its anchor, not a link in text.
+
+    A book about HTML shows tags in its code listings and in its prose. Their
+    "<" is escaped, since XML text cannot hold a literal one, but the quotes of
+    an attribute need no escape, so 'href="chapter2.xhtml#note2"' can be text
+    as well as markup. Rewritten in the text, the listing shows the reader a
+    link that the book does not contain.
+    """
+    names = ["chapter1.xhtml", "chapter2.xhtml"]
+    listing = '<a href="chapter2.xhtml#note2">note 2</a>'
+    bodies = [
+        '<pre><code>&lt;a href="chapter2.xhtml#note2"&gt;note 2&lt;/a&gt;</code></pre>'
+        '<p>Write <code>href="chapter2.xhtml#note2"</code> to link it.</p>'
+        f'<p>See <a href="{names[1]}#note2">note 2</a>.</p>',
+        '<p id="note2">Note 2.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "listing.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    texts = [item.text for item in doc.texts]
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert listing in texts
+    assert 'href="chapter2.xhtml#note2"' in texts
+    assert hyperlinks == ["#note2"]
+
+
+def test_epub_image_source_rewrite_leaves_text_alone(tmp_path: Path):
+    """Only an image src of the markup is resolved inside the archive.
+
+    With images fetched, a src becomes the path of its image in the archive.
+    The same rewrite in a code listing replaces the "../Images/logo.png" that
+    the book shows with an archive path, which the book does not contain.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+
+    bodies = [
+        '<pre><code>&lt;img src="../Images/logo.png"/&gt;</code></pre>'
+        '<img src="../Images/logo.png" alt="logo"/>'
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "listing.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/logo.png", buf.getvalue())
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert '<img src="../Images/logo.png"/>' in [item.text for item in doc.texts]
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+
+
+def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
+    tmp_path: Path,
+):
+    """Every image src of a content document is resolved inside the archive.
+
+    The src is a URL relative to its content document. Single quotes are as
+    legal as double quotes, and a src escapes a space as "%20" while the
+    archive stores the literal file name. A src that is not rewritten stays
+    relative to the merged document at the archive root, so "../Images/..."
+    leaves the extraction directory and its image is lost.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+    png = buf.getvalue()
+
+    bodies = [
+        "<p>Cover.</p>"
+        '<img src="../Images/cover%20art.png" alt="cover"/>'
+        "<img src='../Images/map.png' alt='map'/>"
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "images.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/cover art.png", png)
+        z.writestr("OEBPS/Images/map.png", png)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert len(doc.pictures) == 2
+    assert all(pic.image is not None for pic in doc.pictures)
+
+
+def _convert_epub_with_one_image(
+    tmp_path: Path, src: str, archive_images: list[str]
+) -> DoclingDocument:
+    """Convert a one-chapter EPUB with a single image between two paragraphs.
+
+    ``archive_images`` are PNG files stored in the archive, relative to
+    ``OEBPS/``.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+    png = buf.getvalue()
+
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "images.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=[f'<p>Start.</p><img src="{src}" alt="img"/><p>End.</p>'],
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        for name in archive_images:
+            z.writestr(f"OEBPS/{name}", png)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return converter.convert(epub_path, raises_on_error=True).document
+
+
+@pytest.mark.parametrize(
+    ("src", "archive_image"),
+    [
+        ("../Images/map.png?v=1", "Images/map.png"),
+        ("../Images/map.png#top", "Images/map.png"),
+        ("../Images/map%231.png", "Images/map#1.png"),
+    ],
+)
+def test_epub_image_source_ignores_query_and_fragment(
+    tmp_path: Path, src: str, archive_image: str
+):
+    """A query or fragment is not part of the file name; an escaped "#" is."""
+    doc = _convert_epub_with_one_image(tmp_path, src, [archive_image])
+
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+    texts = [t.text for t in doc.texts]
+    assert texts[0] == "Start."
+    assert texts[-1] == "End."
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "cid:foo.png",
+        "foo://[bad/x.png",
+        "#top",
+    ],
+)
+def test_epub_image_source_that_is_not_a_relative_path_is_not_loaded(
+    tmp_path: Path, src: str
+):
+    """A src with a scheme, a malformed src or one with no path is left as is.
+
+    It must not resolve to an archive file of the same name, and it must not
+    drop the text of its chapter.
+    """
+    doc = _convert_epub_with_one_image(
+        tmp_path, src, ["Text/foo.png", "Text/x.png", "Text/top"]
+    )
+
+    assert all(pic.image is None for pic in doc.pictures)
+    texts = [t.text for t in doc.texts]
+    assert texts[0] == "Start."
+    assert texts[-1] == "End."

@@ -3,12 +3,12 @@
 
 """Draw a picture of a chart, which an iWork document does not hold.
 
-Keynote keeps a chart as the model it is drawn from and never as a picture, and
-LibreOffice's Keynote import skips charts altogether, so there is no picture to
-extract and none LibreOffice can make out of the ``.key`` itself. What
-LibreOffice can draw is an Office chart, which is how the Office backends render
-theirs, so the chart is rebuilt from the data read out of the document as a
-DrawingML chart on a page of its own, and rendered along the route those
+Keynote and Numbers keep a chart as the model it is drawn from and never as a
+picture, and LibreOffice's Keynote import skips charts altogether, so there is
+no picture to extract and none LibreOffice can make out of the ``.key`` itself.
+What LibreOffice can draw is an Office chart, which is how the Office backends
+render theirs, so the chart is rebuilt from the data read out of the document as
+a DrawingML chart on a page of its own, and rendered along the route those
 backends take: to PDF with LibreOffice, to pixels with pypdfium2, and cropped to
 what was drawn.
 
@@ -344,9 +344,9 @@ def _category_series(chart: Chart, *, lines: bool = False, tail: str = "") -> st
 
 
 def _wedges(chart: Chart) -> str | None:
-    """Write a pie or donut the way Keynote draws one.
+    """Write a pie or donut the way Keynote and Numbers draw one.
 
-    Keynote draws a wedge per series, sized by the series' first value, where an
+    They draw a wedge per series, sized by the series' first value, where an
     Office chart draws a wedge per category of a single series; so the series
     become the categories of the one series written here.
     """

@@ -4,6 +4,8 @@
 import logging
 import os
 import re
+import threading
+import time
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,25 +15,29 @@ from docling_core.types.doc import (
     CodeItem,
     ContentLayer,
     DocItemLabel,
+    Formatting,
     GroupItem,
     ListGroup,
     ListItem,
     PictureClassificationLabel,
     PictureItem,
+    TableData,
     TableItem,
 )
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
 from PIL import Image
+from pydantic import AnyUrl
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.utils.archive_limits import ArchiveLimitError, ArchiveLimits
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
@@ -184,10 +190,12 @@ def test_text_after_image_anchors(documents):
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
+    # paragraph stay on the left run.
     for expected in (
-        "This is test 1",
+        "This is test 1   ",
         "0:08\nCorrect, he is not.",
-        "This is test 2",
+        "This is test 2 ",
         "0:16\nYeah, exactly.",
     ):
         assert expected in texts
@@ -549,6 +557,45 @@ def test_add_header_footer_first_page_and_regular(documents):
     )
 
 
+def test_add_header_footer_even_pages(tmp_path):
+    """Even-page headers/footers are extracted when evenAndOddHeaders is enabled.
+
+    Regression test: only the default (odd page) header/footer was visited, so the
+    text of the even-page header/footer was silently dropped. When the setting is
+    off, the even parts are unused by Word and must not be emitted.
+    """
+    from docx import Document
+
+    def _build(path, even_and_odd: bool):
+        d = Document()
+        d.settings.odd_and_even_pages_header_footer = even_and_odd
+        s = d.sections[0]
+        s.header.paragraphs[0].text = "HEADER_DEFAULT_ODD"
+        s.footer.paragraphs[0].text = "FOOTER_DEFAULT_ODD"
+        s.even_page_header.paragraphs[0].text = "HEADER_EVEN"
+        s.even_page_footer.paragraphs[0].text = "FOOTER_EVEN"
+        d.add_paragraph("Body paragraph")
+        d.save(path)
+
+    enabled = tmp_path / "even_headers_enabled.docx"
+    _build(enabled, True)
+    header_texts, footer_texts = _header_footer_texts(
+        get_converter().convert(enabled).document
+    )
+    assert "HEADER_DEFAULT_ODD" in header_texts
+    assert "HEADER_EVEN" in header_texts, "even-page header was dropped"
+    assert "FOOTER_DEFAULT_ODD" in footer_texts
+    assert "FOOTER_EVEN" in footer_texts, "even-page footer was dropped"
+
+    disabled = tmp_path / "even_headers_disabled.docx"
+    _build(disabled, False)
+    header_texts, footer_texts = _header_footer_texts(
+        get_converter().convert(disabled).document
+    )
+    assert header_texts == ["HEADER_DEFAULT_ODD"]
+    assert footer_texts == ["FOOTER_DEFAULT_ODD"]
+
+
 def test_handle_pictures(documents):
     """Test the function _handle_pictures."""
 
@@ -797,27 +844,26 @@ def test_strict_ooxml_rejects_zip_slip(evil_name):
     with zipfile.ZipFile(buffer) as archive:
         assert msword_backend_module._is_strict_ooxml(archive) is True
         with pytest.raises(SecurityError, match="ZIP slip"):
-            msword_backend_module._normalize_strict_ooxml(archive)
+            msword_backend_module._normalize_strict_ooxml(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
 
 
 @pytest.mark.parametrize(
-    ("cap_attr", "message"),
+    ("limits", "message"),
     [
-        ("_MAX_TOTAL_UNCOMPRESSED_SIZE", "uncompressed size"),
-        ("_MAX_MEMBER_UNCOMPRESSED_SIZE", "oversized OOXML part"),
+        (ArchiveLimits(4096, 1024, 10), "max_total_bytes"),
+        (ArchiveLimits(1024, 1 << 20, 10), "max_file_bytes"),
     ],
 )
-def test_strict_ooxml_rejects_zip_bomb(monkeypatch, cap_attr, message):
+def test_strict_ooxml_rejects_oversized_package(limits, message):
     """A Strict package exceeding the per-member or total budget is rejected."""
     import zipfile
 
-    from docling.exceptions import SecurityError
-
-    monkeypatch.setattr(msword_backend_module, cap_attr, 128)
     buffer = _make_strict_zip({"word/document.xml": b"A" * 4096})
     with zipfile.ZipFile(buffer) as archive:
-        with pytest.raises(SecurityError, match=message):
-            msword_backend_module._normalize_strict_ooxml(archive)
+        with pytest.raises(ArchiveLimitError, match=message):
+            msword_backend_module._normalize_strict_ooxml(archive, limits)
 
 
 def test_load_msword_file_propagates_security_error():
@@ -906,6 +952,67 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
+    """A table cell keeps the text of runs nested in inline wrappers.
+
+    The wrappers are content controls, simple fields, smart tags and tracked
+    insertions. Deleted text stays out, and each paragraph is one line.
+    """
+    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    wrapped_runs = {
+        "Name": (
+            f"<w:sdt {w}><w:sdtPr/><w:sdtContent>"
+            "<w:r><w:t>Jane Doe</w:t></w:r></w:sdtContent></w:sdt>"
+        ),
+        "Customer": (
+            f'<w:fldSimple {w} w:instr=" MERGEFIELD Customer ">'
+            "<w:r><w:t>ACME Corp</w:t></w:r></w:fldSimple>"
+        ),
+        "City": (
+            f'<w:smartTag {w} w:uri="urn:schemas-microsoft-com:office:smarttags" '
+            'w:element="City"><w:r><w:t>Paris</w:t></w:r></w:smartTag>'
+        ),
+        "Amount": (
+            f'<w:ins {w} w:id="1" w:author="Reviewer">'
+            "<w:r><w:t>1200</w:t></w:r></w:ins>"
+        ),
+        "Removed": (
+            f'<w:del {w} w:id="2" w:author="Reviewer">'
+            "<w:r><w:delText>Old value</w:delText></w:r></w:del>"
+        ),
+    }
+
+    document = Document()
+    table = document.add_table(rows=len(wrapped_runs) + 1, cols=2)
+    for row_idx, (label, wrapped_run) in enumerate(wrapped_runs.items()):
+        table.cell(row_idx, 0).text = label
+        table.cell(row_idx, 1).paragraphs[0]._p.append(etree.fromstring(wrapped_run))
+
+    last_row = len(wrapped_runs)
+    table.cell(last_row, 0).text = "Two paragraphs"
+    table.cell(last_row, 1).paragraphs[0].add_run("First")
+    table.cell(last_row, 1).add_paragraph()._p.append(
+        etree.fromstring(wrapped_runs["Name"])
+    )
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Jane Doe",
+        "Customer",
+        "ACME Corp",
+        "City",
+        "Paris",
+        "Amount",
+        "1200",
+        "Removed",
+        "",
+        "Two paragraphs",
+        "First\nJane Doe",
+    ]
+
+
 def _table_with_grid_before(
     tmp_path,
     *,
@@ -981,6 +1088,61 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
     assert (b1.start_row_offset_idx, b1.start_col_offset_idx) == (0, 1)
     assert (b2.start_row_offset_idx, b2.start_col_offset_idx) == (1, 1)
     assert b1.column_header and not b2.column_header
+
+
+@pytest.mark.parametrize("declared_cols", [0, 1, 2], ids=["missing", "one", "two"])
+def test_table_with_incomplete_grid(tmp_path: Path, declared_cols: int) -> None:
+    source = Document()
+    table = source.add_table(rows=1, cols=3)
+    table.cell(0, 0).merge(table.cell(0, 1)).text = "Merged"
+    table.cell(0, 2).text = "Last"
+
+    grid = table._tbl.tblGrid
+    if declared_cols == 0:
+        table._tbl.remove(grid)
+    else:
+        for column in list(grid)[declared_cols:]:
+            grid.remove(column)
+
+    path = tmp_path / "incomplete-grid.docx"
+    source.save(path)
+    doc = _convert(path)
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (1, 3)
+    assert [
+        (cell.text, cell.start_col_offset_idx, cell.end_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("Merged", 0, 2), ("Last", 2, 3)]
+
+
+def test_table_with_short_grid_and_omitted_trailing_cells(tmp_path: Path) -> None:
+    source = Document()
+    table = source.add_table(rows=2, cols=3)
+    table.cell(0, 0).text = "A1"
+    table.cell(1, 0).text = "A2"
+    for row in table.rows:
+        tr = row._tr
+        grid_after = OxmlElement("w:gridAfter")
+        grid_after.set(qn("w:val"), "2")
+        tr.get_or_add_trPr().append(grid_after)
+        for cell in tr.tc_lst[1:]:
+            tr.remove(cell)
+
+    grid = table._tbl.tblGrid
+    grid.remove(grid[-1])
+    path = tmp_path / "short-grid-with-grid-after.docx"
+    source.save(path)
+
+    doc = _convert(path)
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 3)
+    assert [
+        (cell.text, cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("A1", 0, 0), ("A2", 1, 0)]
 
 
 def test_vertical_merge_survives_grid_before_row(tmp_path):
@@ -1078,6 +1240,111 @@ def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
     assert build((0, 2)) == row
 
 
+def _tc(text: str, vmerge: str | None = None) -> str:
+    """Return the XML of a ``w:tc`` holding one paragraph with ``text``."""
+    merge = f'<w:vMerge w:val="{vmerge}"/>' if vmerge else ""
+    return (
+        f'<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/>{merge}</w:tcPr>'
+        f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
+    )
+
+
+def _convert_table_xml(tmp_path: Path, rows_xml: str, grid_cols: int = 2) -> TableData:
+    """Convert a ``w:tbl`` built from ``rows_xml`` and return its table data.
+
+    Args:
+        tmp_path: Directory for the generated DOCX file.
+        rows_xml: The children of ``w:tbl`` that follow ``w:tblGrid``.
+        grid_cols: Number of ``w:gridCol`` entries to declare.
+
+    Returns:
+        The data of the first table in the converted document.
+    """
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    grid = '<w:gridCol w:w="2000"/>' * grid_cols
+    tbl = parse_xml(
+        f'<w:tbl xmlns:w="{w_ns}">'
+        '<w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>'
+        f"<w:tblGrid>{grid}</w:tblGrid>{rows_xml}</w:tbl>"
+    )
+    doc = Document()
+    body = doc.element.body
+    body.insert(len(body) - 1, tbl)
+    path = tmp_path / "table.docx"
+    doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    return converter.convert(path).document.tables[0].data
+
+
+def test_table_rows_and_cells_wrapped_in_custom_xml_or_content_control(tmp_path):
+    """Wrapped rows and cells are read at their grid position.
+
+    Both ``w:customXml`` and ``w:sdt`` may wrap a row, and ``w:customXml`` may
+    wrap a cell (``EG_ContentRowContent`` and ``EG_ContentCellContent``). Row
+    order: a plain row, a ``w:customXml`` row, a ``w:sdt`` row, and a plain row
+    whose second cell is inside ``w:customXml``.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}{_tc('A2')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>'
+        f"<w:sdt><w:sdtPr/><w:sdtContent><w:tr>{_tc('C1')}{_tc('C2')}</w:tr></w:sdtContent></w:sdt>"
+        f'<w:tr>{_tc("D1")}<w:customXml w:element="Tagged">{_tc("D2")}</w:customXml></w:tr>',
+    )
+
+    assert data.num_rows == 4
+    assert data.num_cols == 2
+    grid = [[""] * data.num_cols for _ in range(data.num_rows)]
+    for cell in data.table_cells or []:
+        grid[cell.start_row_offset_idx][cell.start_col_offset_idx] = cell.text or ""
+    assert grid == [["A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["D1", "D2"]]
+
+
+def test_vertical_merge_continues_into_a_wrapped_row(tmp_path):
+    """A ``vMerge="continue"`` cell inside a ``w:customXml`` row extends the merge.
+
+    Row order: restart row, wrapped continuation row, plain row.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('merged', 'restart')}{_tc('A2')}</w:tr>"
+        '<w:customXml w:element="Tagged">'
+        f"<w:tr>{_tc('', 'continue')}{_tc('B2')}</w:tr>"
+        "</w:customXml>"
+        f"<w:tr>{_tc('C1')}{_tc('C2')}</w:tr>",
+    )
+
+    assert data.num_rows == 3
+    merged = next(c for c in data.table_cells if c.text == "merged")
+    assert merged.row_span == 2
+    assert merged.start_row_offset_idx == 0
+    assert merged.end_row_offset_idx == 2
+    texts = {c.text for c in data.table_cells}
+    assert {"A2", "B2", "C1", "C2"} <= texts
+
+
+def test_wrapped_row_wider_than_the_declared_grid_widens_the_table(tmp_path):
+    """The column count includes a ``w:customXml`` row wider than ``w:tblGrid``.
+
+    The grid declares one column and the plain row uses one, but the wrapped
+    row has two cells.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>',
+        grid_cols=1,
+    )
+
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    positions = {
+        c.text: (c.start_row_offset_idx, c.start_col_offset_idx)
+        for c in data.table_cells
+    }
+    assert positions == {"A1": (0, 0), "B1": (1, 0), "B2": (1, 1)}
+
+
 def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):
     """A one-cell layout table whose only cell is content-control wrapped.
 
@@ -1147,6 +1414,118 @@ def test_list_counter_and_enum_marker(docx_paths):
     assert backend.list_counters[(1, 0)] == 0
     assert backend.list_counters[(1, 1)] == 0
     assert backend.list_counters[(2, 0)] == 1  # unaffected
+
+
+def test_numbered_heading_syncs_list_counter(docx_paths, monkeypatch):
+    """Heading numbering should be available to custom numbering templates."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    doc = DoclingDocument(name="heading-counter-test")
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+
+    assert backend.numbered_headers[1] == 1
+    assert backend.list_counters[(200, 0)] == 1
+
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Next chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+
+    assert backend.numbered_headers[1] == 2
+    assert backend.list_counters[(200, 0)] == 2
+
+    # A table-title numbering template can refer to the chapter counter
+    # through %1 while using level 6 for its own counter through %7.
+    level = OxmlElement("w:lvl")
+    level.set(qn("w:ilvl"), "6")
+
+    num_fmt = OxmlElement("w:numFmt")
+    num_fmt.set(qn("w:val"), "decimal")
+    level.append(num_fmt)
+
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "Tabell %1.%7")
+    level.append(lvl_text)
+
+    unrelated_level = OxmlElement("w:lvl")
+    unrelated_lvl_text = OxmlElement("w:lvlText")
+    unrelated_lvl_text.set(qn("w:val"), "%8")
+    unrelated_level.append(unrelated_lvl_text)
+
+    monkeypatch.setattr(
+        backend,
+        "_get_level_element",
+        lambda numid, ilvl: unrelated_level if ilvl == 7 else level,
+    )
+
+    backend._get_list_counter(200, 6)
+    assert backend._build_enum_marker(200, 6) == "Tabell 2.1"
+
+    # A new chapter should restart dependent caption counters while preserving
+    # unrelated deeper counters sharing the same numId.
+    backend.list_counters[(200, 7)] = 4
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Third chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+    assert backend.list_counters[(200, 7)] == 4
+
+    backend._get_list_counter(200, 6)
+    assert backend._build_enum_marker(200, 6) == "Tabell 3.1"
+
+
+def test_custom_caption_numbering_is_added_to_paragraph_text(docx_paths, monkeypatch):
+    """Custom caption numbers should be paragraph text, not list markers."""
+    in_doc = InputDocument(
+        path_or_stream=docx_paths[0],
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    level = OxmlElement("w:lvl")
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "Tabell %1.%7")
+    level.append(lvl_text)
+
+    monkeypatch.setattr(backend, "_get_level_element", lambda numid, ilevel: level)
+    monkeypatch.setattr(backend, "_get_list_counter", lambda numid, ilevel: 1)
+    monkeypatch.setattr(
+        backend, "_build_enum_marker", lambda numid, ilevel: "Tabell 14.1"
+    )
+
+    paragraph_elements = [("Saker som kan rettsmekles i tingrettene", None, None)]
+
+    assert backend._apply_caption_numbering(
+        paragraph_elements, numid=200, ilevel=6, p_style_id="Caption"
+    )
+    assert paragraph_elements[0][0] == (
+        "Tabell 14.1 Saker som kan rettsmekles i tingrettene"
+    )
+
+    # The caller clears numid/ilevel after applying the caption marker.
+    assert not backend._should_handle_as_list(None, None, "Caption")
 
 
 def test_custom_numbering_format_markers(tmp_path):
@@ -1234,14 +1613,18 @@ def test_handle_equations_in_text_returns_original_text_on_mismatch(
 def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
     equation = backend.equation_bookends.format(EQ="x")
 
-    element = etree.Element("p")
-    empty_run = etree.SubElement(element, "r")
-    empty_text = etree.SubElement(empty_run, "t")
+    element = OxmlElement("w:p")
+    empty_run = OxmlElement("w:r")
+    empty_text = OxmlElement("w:t")
     empty_text.text = ""
-    etree.SubElement(element, "oMath")
-    tail_run = etree.SubElement(element, "r")
-    tail_text = etree.SubElement(tail_run, "t")
+    empty_run.append(empty_text)
+    element.append(empty_run)
+    etree.SubElement(element, qn("m:oMath"))
+    tail_run = OxmlElement("w:r")
+    tail_text = OxmlElement("w:t")
     tail_text.text = "tail"
+    tail_run.append(tail_text)
+    element.append(tail_run)
 
     monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
 
@@ -1290,7 +1673,7 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
     )
     monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
 
-    def fake_add_heading(doc, level, text, is_numbered_style):
+    def fake_add_heading(doc, level, text, is_numbered_style, numid=None, ilevel=None):
         captured["heading"] = (level, text, is_numbered_style)
         return []
 
@@ -1391,6 +1774,60 @@ def test_checkbox_labels_in_tables(documents):
     ), "No checkboxes found in table cells"
 
 
+def test_checkbox_paragraph_keeps_interior_run_whitespace(tmp_path):
+    """Only the leading checkbox symbol and the block edges are stripped."""
+    document = Document()
+    para = document.add_paragraph()
+    sdt = etree.SubElement(para._p, qn("w:sdt"))
+    sdt_pr = etree.SubElement(sdt, qn("w:sdtPr"))
+    etree.SubElement(
+        sdt_pr, "{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+    )
+    para.add_run("☐ Buy ")
+    para.add_run("milk").bold = True
+    para.add_run(" now ")
+
+    doc = _convert_built(document, tmp_path)
+
+    runs = [
+        item for item in doc.texts if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+    assert [run.text for run in runs] == ["Buy ", "milk", " now"]
+
+
+def test_skip_empty_text_keeps_interior_whitespace_runs(tmp_path):
+    """A whitespace-only run between two runs is text; only an all-empty block is skipped."""
+    document = Document()
+    document.add_paragraph("x")
+    path = tmp_path / "case.docx"
+    document.save(str(path))
+    backend = InputDocument(
+        path_or_stream=path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
+    )._backend
+
+    doc = DoclingDocument(name="test")
+    elements = [
+        ("See ", None, None),
+        ("docs", None, AnyUrl("https://example.com/")),
+        (" ", None, None),
+        ("now", Formatting(bold=True), None),
+    ]
+    backend._add_body_text_items(
+        doc=doc, paragraph_elements=elements, checkbox_label=None, skip_empty_text=True
+    )
+    assert [item.text for item in doc.texts] == ["See ", "docs", " ", "now"]
+
+    empty = DoclingDocument(name="empty")
+    refs = backend._add_body_text_items(
+        doc=empty,
+        paragraph_elements=[("", None, None)],
+        checkbox_label=None,
+        skip_empty_text=True,
+    )
+    assert refs == []
+    assert empty.texts == []
+
+
 def test_text_after_drawingml_images(documents):
     """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
     name = "drawingml.docx"
@@ -1472,6 +1909,35 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     assert hyperlinks == []
 
 
+@pytest.mark.parametrize("wrapper", ["ins", "smartTag", "customXml", "fldSimple"])
+def test_hyperlink_keeps_runs_nested_in_a_wrapper(tmp_path, wrapper):
+    """Runs inside a hyperlink can sit in the same wrappers as in a paragraph,
+    e.g. a tracked insertion made inside the link text. python-docx's
+    ``Hyperlink.text`` only joins the direct ``w:r`` children, so the nested
+    text used to be dropped.
+    """
+
+    doc = Document()
+    para = doc.add_paragraph("See ")
+    r_id = doc.part.relate_to("https://example.com/", RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(para._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), r_id)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "the "
+    wrapped = etree.SubElement(hyperlink, qn(f"w:{wrapper}"))
+    run = etree.SubElement(wrapped, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "docs"
+
+    result = _convert_built(doc, tmp_path)
+
+    links = [
+        (item.text, str(item.hyperlink))
+        for item, _ in result.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+    assert links == [("the docs", "https://example.com/")]
+
+
 def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     """A whitespace-only trailing run must not overwrite the paragraph's formatting.
 
@@ -1509,6 +1975,35 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     assert formatting["All bold text"].bold is True
     assert formatting["All italic text"].italic is True
     assert formatting["Plain text"].bold is False
+
+
+def test_cyclic_based_on_chain_does_not_hang(tmp_path):
+    """A ``basedOn`` cycle between paragraph styles must not stall the conversion.
+
+    Regression test: the bold lookup in ``_get_format_from_run`` followed
+    ``base_style`` links without a depth cap, so a malformed styles.xml in
+    which style A is based on B and B on A looped forever.
+    """
+    doc = Document()
+    style_a = doc.styles.add_style("Cycle A", WD_STYLE_TYPE.PARAGRAPH)
+    style_b = doc.styles.add_style("Cycle B", WD_STYLE_TYPE.PARAGRAPH)
+    style_a.base_style = style_b
+    style_b.base_style = style_a
+    doc.add_paragraph("Text in a cyclic style", style=style_a)
+    docx_path = tmp_path / "cyclic_styles.docx"
+    doc.save(docx_path)
+
+    # A bounded join turns a hang into a failure instead of a stuck test run.
+    results: list[DoclingDocument] = []
+    worker = threading.Thread(
+        target=lambda: results.append(_convert(docx_path)), daemon=True
+    )
+    worker.start()
+    worker.join(timeout=30)
+
+    assert not worker.is_alive(), "conversion did not finish: style chain loops"
+    assert results, "conversion raised; see the captured thread exception"
+    assert [item.text for item in results[0].texts] == ["Text in a cyclic style"]
 
 
 # ------ Code-block detection tests ------
@@ -1767,6 +2262,22 @@ def test_docx_code_detection(tmp_path):
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
 
 
+def test_docx_code_call_pattern_is_bounded():
+    pattern = MsWordDocumentBackend._CODE_CALL_PATTERN
+    assert pattern.search("x = foo(1, 2)") is not None
+    assert pattern.search("party(ies)") is None
+
+    # Many unclosed calls in one paragraph must not take quadratic time.
+    for unit in ("a(", "a(,"):
+        text = unit * (64_000 // len(unit))
+        start = time.perf_counter()
+        assert pattern.search(text) is None
+        assert time.perf_counter() - start < 2.0
+
+    # Argument lists past the bound no longer count as a call.
+    assert pattern.search("foo(" + "a" * 300 + ", 1)") is None
+
+
 # ------ Content control (w:sdt) holding a picture ------
 
 
@@ -1871,12 +2382,12 @@ def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
     assert isinstance(group_of_a, ListGroup)
     assert group_of_c.get_ref() == group_of_a.get_ref()
 
-    # The deeper item must nest inside the same list (as a sub-group of the
-    # outer ListGroup), not become a sibling top-level list -- which is what
-    # the bug produced for Item A/Item B.
+    # The deeper item must nest inside the same list (as a sub-group of
+    # Item A), not become a sibling top-level list -- which is what the bug
+    # produced for Item A/Item B.
     group_of_b = list_items[1].parent.resolve(doc)
     assert isinstance(group_of_b, ListGroup)
-    assert group_of_b.parent == group_of_a.get_ref()
+    assert group_of_b.parent == list_items[0].get_ref()
 
     # The markdown must reflect a single nested list, not two separate lists.
     markdown = doc.export_to_markdown()
@@ -1960,6 +2471,98 @@ def test_numbering_inside_a_textbox_does_not_number_its_anchor(tmp_path):
     assert labels["Anchor paragraph, plain body text."] == DocItemLabel.TEXT
 
 
+def _anchor_vml_textbox(paragraph, text: str) -> None:
+    """Anchor a plain VML textbox holding ``text`` in ``paragraph``."""
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    pict_xml = (
+        f'<w:r xmlns:w="{w_ns}" xmlns:v="{_VML_NS}">'
+        '<w:pict><v:shape id="s1" style="width:100pt;height:40pt">'
+        f"<v:textbox><w:txbxContent><w:p><w:r><w:t>{text}</w:t></w:r></w:p>"
+        "</w:txbxContent></v:textbox></v:shape></w:pict></w:r>"
+    )
+    paragraph._p.append(etree.fromstring(pict_xml))
+
+
+def _anchor_word_mc_textbox(paragraph, text: str) -> None:
+    """Anchor a Word mc:AlternateContent (DrawingML + VML fallback) textbox."""
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    mc_ns = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    wp_ns = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    a_ns = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    wps_ns = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    mc_xml = (
+        f'<w:r xmlns:w="{w_ns}" xmlns:v="{_VML_NS}" xmlns:mc="{mc_ns}" '
+        f'xmlns:wp="{wp_ns}" xmlns:a="{a_ns}" xmlns:wps="{wps_ns}">'
+        '<mc:AlternateContent><mc:Choice Requires="wps">'
+        "<w:drawing><wp:anchor><a:graphic>"
+        f'<a:graphicData uri="{wps_ns}">'
+        f"<wps:wsp><wps:txbx><w:txbxContent><w:p><w:r><w:t>{text}</w:t></w:r></w:p>"
+        "</w:txbxContent></wps:txbx></wps:wsp></a:graphicData></a:graphic>"
+        "</wp:anchor></w:drawing></mc:Choice><mc:Fallback>"
+        '<w:pict><v:shape id="s1"><v:textbox><w:txbxContent>'
+        f"<w:p><w:r><w:t>{text}</w:t></w:r></w:p>"
+        "</w:txbxContent></v:textbox></v:shape></w:pict>"
+        "</mc:Fallback></mc:AlternateContent></w:r>"
+    )
+    paragraph._p.append(etree.fromstring(mc_xml))
+
+
+@pytest.mark.parametrize(
+    ("kind", "marker"),
+    [
+        ("vml_single_para", "MARKA"),
+        ("vml_multi_para", "MARKA"),
+        ("word_mc_alternate", "MARKW"),
+    ],
+)
+def test_textbox_in_table_cell_is_emitted_once_inside_cell(
+    tmp_path, kind: str, marker: str
+):
+    """A textbox anchored in a table cell must stay inside its cell and not be
+    emitted a second time before the table (regression for #4569).
+    """
+    document = Document()
+    document.add_paragraph("debut")
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 1).text = "b"
+    table.cell(1, 0).text = "c"
+    table.cell(1, 1).text = "d"
+
+    cell0 = table.cell(0, 0)
+    if kind == "word_mc_alternate":
+        _anchor_word_mc_textbox(cell0.paragraphs[0], marker)
+    else:
+        _anchor_vml_textbox(cell0.paragraphs[0], marker)
+        if kind == "vml_multi_para":
+            cell0.add_paragraph("")
+
+    document.add_paragraph("fin")
+
+    doc = _convert_built(document, tmp_path)
+    md = doc.export_to_markdown()
+
+    assert md.count(marker) == 1
+    assert [t.text for t in doc.texts if t.text.strip()] == ["debut", marker, "fin"]
+    table_lines = [line for line in md.splitlines() if line.startswith("|")]
+    assert any(marker in line and "b" in line for line in table_lines)
+
+
+def test_textbox_in_single_cell_table_preserves_order_and_is_not_duplicated(tmp_path):
+    """A 1x1 layout table unwraps its cell into the body; a textbox anchored in
+    a later paragraph of that cell must appear once, after earlier paragraphs.
+    """
+    document = Document()
+    table = document.add_table(rows=1, cols=1)
+    cell = table.cell(0, 0)
+    cell.paragraphs[0].text = "First paragraph in cell"
+    second_para = cell.add_paragraph()
+    _anchor_vml_textbox(second_para, "Textbox in second paragraph")
+
+    doc = _convert_built(document, tmp_path)
+    texts = [t.text for t in doc.texts if t.text.strip()]
+    assert texts == ["First paragraph in cell", "Textbox in second paragraph"]
+
+
 def test_list_returning_to_starting_level_zero_still_works(documents):
     """Control case: levels 0, 1, 2, 1 must keep working unchanged."""
 
@@ -1991,7 +2594,16 @@ def _docx_with_fragment_only_rel():
     from io import BytesIO
 
     doc = Document()
-    doc.add_paragraph("Hello, world!")
+    paragraph = doc.add_paragraph("Before ")
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), "rId999")
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = "internal link"
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+    paragraph.add_run(" after")
 
     buf = BytesIO()
     doc.save(buf)
@@ -2032,15 +2644,46 @@ def test_fragment_only_rel_does_not_crash_backend():
     )
     converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
     result = converter.convert(stream, raises_on_error=True)
-    texts = [
-        item.text
+    text_items = [
+        item
         for item, _ in result.document.iterate_items()
         if isinstance(item, TextItem)
     ]
-    assert any("Hello, world!" in t for t in texts)
+    assert len(text_items) == 1
+    assert text_items[0].text == "Before internal link after"
+    assert text_items[0].hyperlink is None
 
 
-def _docx_with_notes():
+@pytest.mark.parametrize("body_style", ["Body Text", None])
+def test_list_style_type_does_not_fail_conversion(tmp_path, body_style):
+    """A style with the invalid type ``list`` must not fail the conversion.
+
+    python-docx raises ``ValueError`` when it reads that type. Both the default
+    style lookup on load and the style of a paragraph without ``w:pStyle``
+    read the type of every style.
+    """
+    document = Document()
+    document.add_paragraph("Quarterly results", style="Heading 1")
+    document.add_paragraph("Revenue grew 3%.", style=body_style)
+    list_style = OxmlElement("w:style")
+    list_style.set(qn("w:type"), "list")
+    list_style.set(qn("w:styleId"), "OutlineList")
+    document.styles.element.append(list_style)
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Quarterly results",
+        "Revenue grew 3%.",
+    ]
+
+
+_PLAIN_FOOTNOTE_BODY = (
+    "<w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p>"
+)
+
+
+def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
     """Build a minimal DOCX with a real footnote and endnote, each preceded by
     Word's own separator/continuationSeparator placeholders (present in every
     Word-authored document, holding no user content).
@@ -2049,6 +2692,11 @@ def _docx_with_notes():
     ``footnotes.xml``/``endnotes.xml`` parts, their content-type overrides, and
     the document relationships pointing at them are injected directly, the same
     way a real Word-authored DOCX is structured.
+
+    Args:
+        footnote_body: The XML of the footnote body. Override it to place the
+            footnote text inside markup that ``python-docx`` does not descend
+            into.
     """
     import zipfile
     from io import BytesIO
@@ -2076,7 +2724,7 @@ def _docx_with_notes():
 <w:footnotes xmlns:w="{w_ns}">
   <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
   <w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>
-  <w:footnote w:id="2"><w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p></w:footnote>
+  <w:footnote w:id="2">{footnote_body}</w:footnote>
 </w:footnotes>"""
     endnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:endnotes xmlns:w="{w_ns}">
@@ -2147,3 +2795,319 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+@pytest.mark.parametrize(
+    ("note_body", "expected"),
+    [
+        pytest.param(
+            "<w:p><w:ins w:id='10' w:author='A' w:date='2024-01-02T03:04:05Z'>"
+            "<w:r><w:t>inserted footnote text</w:t></w:r></w:ins></w:p>",
+            "inserted footnote text",
+            id="tracked-insertion",
+        ),
+        pytest.param(
+            "<w:p><w:sdt><w:sdtPr/><w:sdtContent>"
+            "<w:r><w:t>sdt footnote text</w:t></w:r>"
+            "</w:sdtContent></w:sdt></w:p>",
+            "sdt footnote text",
+            id="content-control",
+        ),
+        pytest.param(
+            "<w:tbl><w:tblPr/><w:tblGrid><w:gridCol w:w='2000'/></w:tblGrid>"
+            "<w:tr><w:tc><w:tcPr/><w:p><w:r><w:t>note table cell</w:t></w:r></w:p>"
+            "</w:tc></w:tr></w:tbl>",
+            "note table cell",
+            id="table-body",
+        ),
+    ],
+)
+def test_footnote_body_text_is_not_dropped_outside_plain_paragraphs(
+    note_body: str, expected: str
+):
+    """Footnote text must survive when the note body is not a plain paragraph.
+
+    Regression test: the footnote reader only looked at direct ``<w:p>``
+    children of the note and read them with ``python-docx``'s
+    ``Paragraph.text``, which stops at inline wrappers. A tracked insertion, a
+    content control, or a table body therefore dropped the whole note.
+    """
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert expected in footnote_items
+
+
+def test_hidden_footnote_paragraph_is_left_out():
+    """A hidden paragraph in a footnote is left out of the footnote text.
+
+    python-docx loads the footnotes part as a plain part, so this also checks
+    that ``w:vanish`` there is found when the body has none.
+    """
+    note_body = (
+        "<w:p><w:r><w:t>Shown note.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>Hidden note.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_items == ["Shown note.", "An endnote body."]
+
+
+_MC_BODY_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex">
+  <mc:Choice Requires="{requires}">
+    <w:p><w:r><w:t>CHOICE_BRANCH_ACTIVE</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:t>FALLBACK_LEGACY_BRANCH</w:t></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def _body_texts_around_alternate_content(tmp_path, requires: str) -> list[str]:
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires=requires))
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+    doc = _convert_built(document, tmp_path)
+    return [item.text for item in doc.texts]
+
+
+def test_body_level_alternate_content_reads_the_supported_choice(tmp_path):
+    """A body-level ``mc:AlternateContent`` must not drop its paragraphs.
+
+    Only the supported ``mc:Choice`` is read, so the legacy ``mc:Fallback``
+    text does not appear and identical paragraphs in the Choice both stay.
+    """
+    texts = _body_texts_around_alternate_content(tmp_path, requires="wps")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "CHOICE_BRANCH_ACTIVE",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+def test_body_level_alternate_content_falls_back_when_choice_is_unsupported(
+    tmp_path,
+):
+    """A Choice that requires an unknown namespace yields to ``mc:Fallback``."""
+    texts = _body_texts_around_alternate_content(tmp_path, requires="w16se")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "FALLBACK_LEGACY_BRANCH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+_MC_BODY_TEXTBOX_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:v="urn:schemas-microsoft-com:vml">
+  <mc:Choice Requires="wps">
+    <w:p><w:r><wps:wsp><wps:txbx><w:txbxContent>
+      <w:p><w:r><w:t>TEXTBOX_TEXT</w:t></w:r></w:p>
+    </w:txbxContent></wps:txbx></wps:wsp></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:pict><v:shape><v:textbox><w:txbxContent>
+      <w:p><w:r><w:t>TEXTBOX_TEXT</w:t></w:r></w:p>
+    </w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def test_body_level_alternate_content_reads_a_text_box_once(tmp_path):
+    """A text box inside the chosen branch is read once, not once per detection pass.
+
+    The text-box detection runs over a body child with descendant paths. If it runs on the
+    ``mc:AlternateContent`` element and again on the Choice's own paragraph, the same text box is
+    emitted twice.
+    """
+    document = Document()
+    document.add_paragraph("before")
+    block = etree.fromstring(_MC_BODY_TEXTBOX_BLOCK)
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("after")
+
+    doc = _convert_built(document, tmp_path)
+
+    texts = [item.text for item in doc.texts]
+    # The paragraph that anchors a text box also gives an empty item, as it does outside
+    # ``mc:AlternateContent``, so the check is that the text box itself is read once.
+    assert texts.count("TEXTBOX_TEXT") == 1, texts
+    assert texts[0] == "before"
+    assert texts[-1] == "after"
+
+
+def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_path):
+    """No supported Choice and no Fallback leaves the block out, rather than failing."""
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires="w16se"))
+    mc_ns = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    for fallback in block.findall(f"{{{mc_ns}}}Fallback"):
+        block.remove(fallback)
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Paragraph before AlternateContent",
+        "Paragraph after AlternateContent",
+    ]
+
+
+def test_symbol_font_glyphs(docx_paths):
+    """w:sym characters are kept and Symbol font text is mapped to Unicode."""
+    name = "docx_symbol_font_glyphs.docx"
+    path = next(item for item in docx_paths if item.name == name)
+    doc = get_converter().convert(path).document
+
+    # each paragraph is "<label>: <payload> end"
+    payloads = {
+        label: payload.removesuffix(" end")
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+        for label, payload in [item.text.split(": ", 1)]
+    }
+
+    # Symbol font text, stored as the PUA code point or as the plain byte
+    assert payloads["T1 Symbol F0B7"] == "\N{BULLET}"
+    assert payloads["T5 Symbol PUA greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA}\N{GREEK SMALL LETTER BETA}\N{GREEK SMALL LETTER PI}"
+    )
+    assert payloads["T6 Symbol ASCII greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA} \N{GREEK SMALL LETTER BETA} \N{GREEK SMALL LETTER PI}"
+    )
+    # w:sym is no longer dropped: mapped for Symbol, kept unchanged otherwise
+    assert payloads["S2 sym Symbol F061"] == "\N{GREEK SMALL LETTER ALPHA}"
+    assert payloads["S1 sym Wingdings F06C"] == "\uf06c"
+    assert payloads["S3 sym Wingdings F0E8"] == "\uf0e8"
+    # text in other fonts is unchanged
+    assert payloads["T2 Wingdings F0A7"] == "\uf0a7"
+    assert payloads["C1 Arial"] == "\N{LATIN SMALL LETTER E WITH ACUTE} a b p"
+
+
+def _append_sym(paragraph, font: str, char: str) -> None:
+    """Append a run with a ``w:sym`` element (Insert > Symbol in Word)."""
+    run = paragraph.add_run()
+    sym = OxmlElement("w:sym")
+    sym.set(qn("w:font"), font)
+    sym.set(qn("w:char"), char)
+    run._r.append(sym)
+
+
+def test_symbol_only_header_footer_is_kept(tmp_path):
+    """A header or footer that holds only w:sym characters is not dropped."""
+    docx_path = tmp_path / "symbol_only_header_footer.docx"
+    document = Document()
+    _append_sym(document.sections[0].header.paragraphs[0], "Symbol", "F0D3")
+    _append_sym(document.sections[0].footer.paragraphs[0], "Wingdings", "F0FC")
+    document.add_paragraph("body text")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    header_texts, footer_texts = _header_footer_texts(doc)
+
+    assert header_texts == ["\N{COPYRIGHT SIGN}"]
+    assert footer_texts == ["\uf0fc"]
+
+
+def test_sym_with_invalid_char_is_skipped(tmp_path):
+    """A w:sym with a missing or invalid w:char is skipped, not an error."""
+    docx_path = tmp_path / "invalid_sym.docx"
+    document = Document()
+    paragraph = document.add_paragraph("a")
+    _append_sym(paragraph, "Symbol", "zz")
+    paragraph.add_run("b")
+    paragraph.add_run()._r.append(OxmlElement("w:sym"))
+    paragraph.add_run("c")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+
+    assert texts == ["abc"]
+
+
+def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
+    """An inline equation is kept when its paragraph or cell has Symbol text."""
+    omath = (
+        '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+    )
+    docx_path = tmp_path / "equation_next_to_symbol.docx"
+    document = Document()
+    paragraph = document.add_paragraph("sym ")
+    _append_sym(paragraph, "Symbol", "F061")
+    paragraph._p.append(parse_xml(omath))
+    sym_only_paragraph = document.add_paragraph()
+    _append_sym(sym_only_paragraph, "Symbol", "F062")
+    sym_only_paragraph._p.append(parse_xml(omath))
+    table = document.add_table(rows=1, cols=2)
+    cell_paragraph = table.cell(0, 0).paragraphs[0]
+    cell_paragraph.add_run("a").font.name = "Symbol"
+    cell_paragraph._p.append(parse_xml(omath))
+    table.cell(0, 1).text = "b"
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    texts = [(item.text, item.label) for item in doc.texts]
+    assert ("sym \N{GREEK SMALL LETTER ALPHA}", DocItemLabel.TEXT) in texts
+    assert ("\N{GREEK SMALL LETTER BETA}", DocItemLabel.TEXT) in texts
+    formulas = [text for text, label in texts if label == DocItemLabel.FORMULA]
+    assert formulas == ["x=1", "x=1"]
+    cell_texts = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
+
+
+def test_symbol_font_case_and_whitespace_resilience(tmp_path):
+    """Symbol font detection handles case and whitespace variations defensively."""
+    docx_path = tmp_path / "symbol_font_casing.docx"
+    document = Document()
+    p1 = document.add_paragraph()
+    r1 = p1.add_run("a")
+    r1.font.name = " symbol "
+    p2 = document.add_paragraph()
+    _append_sym(p2, " SYMBOL ", "F061")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert texts == ["\N{GREEK SMALL LETTER ALPHA}", "\N{GREEK SMALL LETTER ALPHA}"]

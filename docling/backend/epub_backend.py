@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
@@ -19,12 +19,24 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.archive_limits import (
+    ArchiveLimitError,
+    ArchiveLimits,
+    check_archive_limits,
+    read_member,
+)
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# A start tag such as <a href="ch2.xhtml#n">. Only its attributes are markup: the
+# same characters in text, like a code listing that shows an HTML tag, have their
+# "<" escaped, since XML text cannot hold a literal "<", and must stay as written.
+# An attribute value cannot hold a literal "<" either, but it can hold a ">".
+_START_TAG = re.compile(r"""<[A-Za-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>""")
 
 
 class EpubDocumentBackend(DeclarativeDocumentBackend):
@@ -35,10 +47,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
     for processing the XHTML structure.
 
     Note:
-        This module enforces limits when extracting EPUB archives for image processing.
-            These limits prevent malicious EPUBs from exhausting disk space or memory
-            through decompression bombs. Limits can be configured via
-            EpubBackendOptions.
+        This module limits the decompressed size of the archive members it reads
+            (container, package document and content documents) and of the
+            members it extracts for image processing. These limits keep the
+            memory and disk use proportional to the configured values. Limits
+            can be configured via EpubBackendOptions.
 
     Known Limitations:
         Internal anchor links (e.g., footnote references) are converted but
@@ -81,6 +94,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self.valid = True
 
             _log.debug(f"Found {len(self.content_files)} content files in EPUB")
+        except ArchiveLimitError as e:
+            _log.error(f"EPUB archive exceeds the configured limits: {e}")
+            raise
         except Exception as e:
             _log.error(f"Failed to initialize EPUB backend: {e}")
             raise DocumentLoadError(
@@ -94,7 +110,10 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         # Read container.xml to find the content.opf file
         try:
-            container_data = self.epub_zip.read("META-INF/container.xml")
+            max_file_bytes = self.options.max_file_bytes
+            container_data = read_member(
+                self.epub_zip, "META-INF/container.xml", max_file_bytes
+            )
             container_root = ET.fromstring(container_data)
 
             # Find the content.opf path
@@ -107,9 +126,12 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             opf_path = rootfile.get("full-path")
             if not opf_path:
                 raise ValueError("Could not find full-path in rootfile")
+            # full-path is a reference inside the container, so it is a URL,
+            # while the archive stores the literal file name.
+            opf_path = unquote(opf_path)
 
             # Parse content.opf to get the reading order
-            opf_data = self.epub_zip.read(opf_path)
+            opf_data = read_member(self.epub_zip, opf_path, max_file_bytes)
             opf_root = ET.fromstring(opf_data)
 
             # Extract metadata
@@ -146,6 +168,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                     self.content_files.append(full_path)
 
             _log.debug(f"Content files in reading order: {self.content_files}")
+            self._check_content_sizes()
 
         except DefusedXmlException as e:
             _log.error(f"Security issue detected while parsing EPUB XML: {e}")
@@ -155,6 +178,26 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         except Exception as e:
             _log.error(f"Error parsing EPUB structure: {e}")
             raise
+
+    def _check_content_sizes(self) -> None:
+        """Check the declared sizes of the content documents before they are read.
+
+        Raises:
+            ArchiveLimitError: If a content document is larger than
+                ``max_file_bytes``, or all of them together are larger than
+                ``max_total_bytes``, or there are more than ``max_member_count``.
+        """
+        if not self.epub_zip:
+            return
+        names = set(self.epub_zip.namelist())
+        members = [
+            self.epub_zip.getinfo(name)
+            for name in dict.fromkeys(self.content_files)
+            if name in names
+        ]
+        check_archive_limits(
+            self.epub_zip, ArchiveLimits.from_options(self.options), members
+        )
 
     def _safe_extract_epub(self, target_dir: Path) -> bool:
         """Safely extract EPUB contents with zip-bomb protection.
@@ -251,32 +294,37 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             return html_content
 
         # Get the directory of the current content file
-        content_dir = Path(content_file_path).parent
+        content_dir = posixpath.dirname(content_file_path)
 
-        def replace_image_src(match):
-            src = match.group(1)
+        def replace_image_src(match: re.Match[str]) -> str:
+            src = match.group(2)
 
             # Skip data URIs and absolute URLs
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # Resolve relative path and make it relative to temp_dir
-            if content_dir:
-                image_path = content_dir / src
-            else:
-                image_path = Path(src)
-
-            # Normalize the path
+            # Only a plain relative reference names an archive entry. Leave a
+            # malformed src, or one with a scheme or host, unchanged.
             try:
-                # Return the modified src attribute with path relative to temp_dir
-                return f'src="{image_path}"'
-            except Exception as e:
-                _log.warning(f"Failed to resolve image path {src}: {e}")
+                parts = urlsplit(src)
+            except ValueError:
+                return match.group(0)
+            if parts.scheme or parts.netloc or not parts.path:
                 return match.group(0)
 
-        # Pattern to match src attributes in img tags
-        pattern = r'src="([^"]+)"'
-        return re.sub(pattern, replace_image_src, html_content)
+            # Decode after the split: an escaped "#" or "?" belongs to the file name.
+            image_path = posixpath.normpath(
+                posixpath.join(content_dir, unquote(parts.path))
+            )
+            return 'src="{}"'.format(image_path.replace('"', "&quot;"))
+
+        # Group 1: the opening quote (" or '). Group 2: the value, up to the
+        # matching closing quote. The lookbehind skips attributes that only end
+        # in "src", such as data-src.
+        pattern = r"""(?<![\w-])src=(["'])((?:(?!\1).)+)\1"""
+        return _START_TAG.sub(
+            lambda tag: re.sub(pattern, replace_image_src, tag.group(0)), html_content
+        )
 
     def _fix_internal_links(self, html_content: str) -> str:
         """Reduce a link into another content document to its anchor.
@@ -297,10 +345,19 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             HTML content with fixed internal links
         """
-        pattern = r'href="(?!\w+:|//)([^"]*\.(?:xhtml|xht|html?))(#[^"]*)"'
+        # Group 1: the opening quote (" or '), which single-quoted markup makes
+        # as legal as a double quote. Group 3: the fragment, up to the matching
+        # closing quote.
+        pattern = (
+            r"""href=(["'])(?!\w+:|//)"""
+            r"""((?:(?!\1)[\s\S])*\.(?:xhtml|xht|html?))"""
+            r"""(#(?:(?!\1)[\s\S])*)\1"""
+        )
 
         # Replace with just the anchor part
-        fixed_content = re.sub(pattern, r'href="\2"', html_content)
+        fixed_content = _START_TAG.sub(
+            lambda tag: re.sub(pattern, r"href=\1\3\1", tag.group(0)), html_content
+        )
 
         return fixed_content
 
@@ -412,7 +469,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Reading content file: {content_file}")
 
                 # Read the XHTML content
-                xhtml_data = self.epub_zip.read(content_file)
+                xhtml_data = read_member(
+                    self.epub_zip, content_file, self.options.max_file_bytes
+                )
                 xhtml_text = self._decode_content_file(xhtml_data)
 
                 # Extract the body content from the XHTML
@@ -437,6 +496,8 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
                 combined_html_parts.append(body_content)
 
+            except ArchiveLimitError:
+                raise
             except Exception as e:
                 _log.warning(f"Failed to read content file {content_file}: {e}")
                 continue
