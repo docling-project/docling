@@ -567,6 +567,30 @@ def test_jats_footnote_styling_is_preserved(sep: str):
     assert doc.export_to_markdown().endswith("- 1 See *ibid* for **details**.")
 
 
+def test_jats_footnote_group_keeps_external_link_target():
+    xml = JATS_WRAPPER.format(
+        content=(
+            "<front><article-meta><title-group><article-title>Back Matter Test"
+            "</article-title></title-group></article-meta></front>"
+            "<body><p>Body text.</p></body>"
+            "<back><fn-group><fn><p>See "
+            '<ext-link ext-link-type="uri" xlink:href="https://example.org/data">'
+            "the data</ext-link> now.</p></fn></fn-group></back>"
+        )
+    )
+    stream = DocumentStream(name="back-fn-test.nxml", stream=BytesIO(xml.encode()))
+    doc = get_converter().convert(stream).document
+
+    links = [t for t in doc.texts if t.text == "the data"]
+    assert len(links) == 1
+    assert links[0].label == DocItemLabel.FOOTNOTE
+    assert str(links[0].hyperlink) == "https://example.org/data"
+    for text in ("See ", " now."):
+        run = next(t for t in doc.texts if t.text == text)
+        assert run.hyperlink is None
+    assert "https://example.org/data" in doc.export_to_markdown()
+
+
 def test_jats_nested_lists_are_preserved():
     doc = convert_jats_body(
         """

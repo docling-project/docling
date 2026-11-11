@@ -1531,7 +1531,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
             segments = JatsDocumentBackend._trim_segment_edges(
-                JatsDocumentBackend._walk_inline_formula(fn)
+                JatsDocumentBackend._walk_inline_formula(fn, resolve_ext_links=True)
             )
             if segments:
                 footnote_segments.append(
