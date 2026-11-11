@@ -483,27 +483,40 @@ def test_multi_character_sep_line_is_not_a_hint():
     ]
 
 
+_NIX_EXPORT_SAMPLE = (
+    "sep=;\n"
+    "Index;Original Library Name;Saved Collection Name;Original Color Name;"
+    "User Color Name;Scan Type;DE00 to Scan;Match Degree\n"
+    '1;"-";"Manmade";"-";"Brick";Scan;"-";"-"\n'
+)
+
+
 def test_sep_line_from_a_real_export():
     """A public CC0 export starts with `sep=;` and quotes several values.
 
-    The two data lines are the `Index` header and the first data row of
-    data/materials/brick/nix_export.csv in
-    https://github.com/AntonPalmqvist/physically-based-api (CC0-1.0).
+    The sample is the first eight columns of the `Index` header and the first
+    data row of data/materials/brick/nix_export.csv in
+    https://github.com/AntonPalmqvist/physically-based-api (CC0-1.0). The full
+    file has 64 columns; the two metadata lines above the header are omitted.
     """
     conv_result = get_converter().convert(
-        Path("./tests/data/csv/sep/nix_export.csv"), raises_on_error=True
+        DocumentStream(
+            name="nix_export.csv", stream=BytesIO(_NIX_EXPORT_SAMPLE.encode())
+        ),
+        raises_on_error=True,
     )
     cells = conv_result.document.tables[0].data.table_cells
 
-    assert len(cells) == 128
+    assert len(cells) == 16
     assert cells[0].text == "Index"
-    assert cells[9].text == "Nix Device"
-    assert cells[64].text == "1"
-    assert cells[65].text == "-"
-    assert cells[66].text == "Manmade"
-    assert cells[68].text == "Brick"
-    assert cells[73].text == "Nix Spectro 2"
-    assert cells[-1].text == "2.93368677e-1"
+    assert cells[1].text == "Original Library Name"
+    assert cells[7].text == "Match Degree"
+    assert cells[8].text == "1"
+    assert cells[9].text == "-"
+    assert cells[10].text == "Manmade"
+    assert cells[12].text == "Brick"
+    assert cells[13].text == "Scan"
+    assert cells[15].text == "-"
 
 
 def test_malformed_quoted_csv_is_a_load_error():
