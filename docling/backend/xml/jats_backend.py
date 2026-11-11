@@ -92,6 +92,10 @@ _GRAPHIC_XPATH: Final[str] = "graphic | alternatives/graphic"
 _ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
     {"order", "alpha-lower", "alpha-upper", "roman-lower", "roman-upper"}
 )
+# Elements whose inline content is emitted as a text item of its own, like a <p>.
+_PARAGRAPH_TAGS: Final[frozenset[str]] = frozenset({"p", "attrib", "speaker"})
+# Children of a <statement> (e.g. "Theorem 1") that are emitted like a <p>.
+_STATEMENT_HEADER_TAGS: Final[frozenset[str]] = frozenset({"label", "title"})
 # Elements that hold a whole article inside another one, such as a decision
 # letter or an author reply, from the JATS 1.3 tag library.
 _SUB_ARTICLE_TAGS: Final[tuple[str, ...]] = ("sub-article", "response")
@@ -1744,7 +1748,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         # emit the paragraph, or backpropagate inline content to the parent
-        if node.tag == "p":
+        if node.tag in _PARAGRAPH_TAGS or (
+            node.tag in _STATEMENT_HEADER_TAGS and node.getparent().tag == "statement"
+        ):
             JatsDocumentBackend._emit_inline(doc, parent, inline_segments)
             return []
         return inline_segments
