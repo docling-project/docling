@@ -286,6 +286,30 @@ pipeline_options = VlmPipelineOptions(
 )
 ```
 
+For Surya 2.5, use the `surya_ocr2_5` preset. Auto-inline picks MLX on Apple
+Silicon, and Transformers or vLLM elsewhere. To use a server instead, for example
+`vllm serve datalab-to/surya-ocr-2.5`, pass `ApiVlmEngineOptions`:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "surya_ocr2_5",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:8000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+The `surya-ocr` package is not needed. With `llama-server`, add `--special`, or the
+reply loses its block labels and boxes.
+
 Model presets (`docling.datamodel.vlm_model_specs`):
 
 | Preset | Backend | Device | Notes |
@@ -450,7 +474,12 @@ done. The callback must be thread-safe when
 ## Audio / video (ASR)
 
 Docling transcribes audio (and video) into a `DoclingDocument` via an ASR
-pipeline. Needs the `format-audio` (or `format-video`) extra.
+pipeline. Whisper needs the `format-audio` (or `format-video`) extra. For Granite
+Speech, Parakeet, and Nemotron, use `models-asr-inline`, `feat-asr-transformers`, or
+`feat-asr-mlx-audio`. These presets select mlx-audio on Apple Silicon when it is
+installed and the model has an export, and Transformers in other cases. They also use
+Transformers when `AcceleratorOptions.device` is not `auto` or `mps`, or when the process
+cannot use a Metal device. An explicit `*_MLX_AUDIO` preset gives an error in these cases.
 
 ```python
 from docling.datamodel import asr_model_specs

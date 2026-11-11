@@ -651,7 +651,7 @@ jobs:
           uv venv /tmp/venv
           uv pip install --python /tmp/venv .
           # Run outside the checkout so the installed package is imported.
-          cd /tmp && /tmp/venv/bin/python -c "from docling.document_converter import DocumentConverter"
+          cd /tmp && /tmp/venv/bin/python -c "from docling.document_converter import DocumentConverter; import docling.datamodel.asr_model_specs; import docling.pipeline.asr_pipeline"
 
   check:
     if: ${{ always() }}

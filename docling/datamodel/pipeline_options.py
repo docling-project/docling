@@ -1277,11 +1277,13 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_MINICPM_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_08B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_4B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_FALCON_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_CHANDRA_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_SURYA_OCR2_5)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2_MLX)
@@ -2301,6 +2303,15 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             description=(
                 "Extract and save embedded images from the PDF. Exports individual images (figures, photos, diagrams, "
                 "charts) found in the document as separate image files for downstream use."
+            )
+        ),
+    ] = False
+    use_embedded_picture_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use a directly extracted embedded PDF image for a picture when its region contains exactly one safe "
+                "image. Falls back to the rendered page crop for all other cases."
             )
         ),
     ] = False

@@ -284,3 +284,30 @@ def test_pdfium_object_index_built_once_per_type(tmp_path, monkeypatch):
         assert len(walks) == 3, f"page-object walks: {walks}"
     finally:
         doc_backend.unload()
+
+
+def test_extract_single_embedded_image():
+    doc_backend = _get_backend(
+        Path("tests/data/pdf/sources/picture_classification.pdf")
+    )
+    try:
+        page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+        bitmap_bbox = next(iter(page_backend.get_bitmap_rects()))
+
+        image = page_backend.get_embedded_image(bitmap_bbox)
+
+        assert image is not None
+        assert image.size == (768, 474)
+    finally:
+        doc_backend.unload()
+
+
+def test_reject_embedded_image_with_overlapping_page_content():
+    doc_backend = _get_backend(Path("tests/data/pdf/sources/amt_handbook_sample.pdf"))
+    try:
+        page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+        bitmap_bbox = next(iter(page_backend.get_bitmap_rects()))
+
+        assert page_backend.get_embedded_image(bitmap_bbox) is None
+    finally:
+        doc_backend.unload()

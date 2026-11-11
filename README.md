@@ -50,7 +50,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 
 - 🎬 Parsing of video files (MP4, AVI, MOV, MKV, and WebM) with an ASR transcript and representative keyframes
 - 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
-- 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
+- 💼 Parsing of XBRL (eXtensible Business Reporting Language) and iXBRL (Inline eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
 - 📅 Parsing of calendar files (`.ics`, `.ical`, `.icalendar`, `.ifb`) with events, tasks, journal entries and free/busy times, with attendees, reminders and attachment names
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
@@ -88,7 +88,7 @@ This generates a .md file in the current directory containing structured documen
 You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
 
 ```bash
-docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
+docling --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
 ```
 
 ## 3. Python usage (recommended)

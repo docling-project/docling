@@ -70,7 +70,7 @@ def _download_whisper_models(
         from whisper import _MODELS  # type: ignore[attr-defined]
     except ImportError as exc:
         raise ImportError(
-            "Native Whisper prefetch requires openai-whisper. Install docling[asr]."
+            "Native Whisper prefetch requires openai-whisper. Install docling[audio]."
         ) from exc
 
     unknown = set(model_names) - _MODELS.keys()

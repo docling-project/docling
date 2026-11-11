@@ -28,7 +28,36 @@ def test_title_type_scope_and_paths_give_labels() -> None:
             "tests/test_backend_markdown.py",
         ],
     )
-    assert labels == ["bug", "markdown", "table structure", "xml"]
+    assert labels == ["bug", "markdown", "table structure", "xml", "jats"]
+
+
+@pytest.mark.parametrize(
+    ("title", "path", "expected"),
+    [
+        ("fix(epub): keep the spine order", "", {"epub"}),
+        ("fix(ics): parse all-day events", "", {"calendar"}),
+        ("fix(eml): decode the subject", "", {"email"}),
+        ("fix(txt): keep blank lines", "", {"plain text"}),
+        ("fix(jats): keep the abstract", "", {"jats"}),
+        ("chore: x", "docling/backend/latex/handlers/foo.py", {"latex"}),
+        ("chore: x", "docling/backend/calendar/parser.py", {"calendar"}),
+        ("chore: x", "docling/backend/boxnote_backend.py", {"boxnote"}),
+        ("chore: x", "docling/backend/image_backend.py", {"image"}),
+        ("chore: x", "docling/backend/xml/uspto_backend.py", {"xml", "uspto"}),
+        ("chore: x", "docling/backend/xml/xbrl_web_cache.py", {"xml", "xbrl"}),
+        (
+            "chore: x",
+            "docling/backend/xml/doclang_archive_backend.py",
+            {"xml", "doclang"},
+        ),
+        ("chore: x", "docling/pipeline/asr_pipeline.py", {"asr", "audio"}),
+    ],
+)
+def test_format_rules_give_the_format_label(
+    title: str, path: str, expected: set[str]
+) -> None:
+    labels = set(topics.deterministic_topics(title, [path] if path else []))
+    assert labels - {"bug"} == expected
 
 
 def test_documentation_label_only_when_all_source_changes_are_docs() -> None:

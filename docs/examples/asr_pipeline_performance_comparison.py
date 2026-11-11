@@ -181,7 +181,7 @@ def main():
     if not has_mlx_whisper:
         print("⚠️  MLX Whisper not installed - running CPU-only comparison")
         print("   Install with: pip install mlx-whisper")
-        print("   Or: uv sync --extra asr")
+        print("   Or: uv sync --extra format-audio")
         print("   For MLX Whisper performance benefits, install the dependency")
 
     # Determine audio file path

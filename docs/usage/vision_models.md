@@ -20,8 +20,14 @@ For running Docling using local models with the `VlmPipeline`:
 === "CLI"
 
     ```bash
+    # Use the default VLM preset.
     docling --pipeline vlm FILE
+
+    # Use a specific preset. --vlm-model selects the VLM pipeline.
+    docling --vlm-model granite_docling FILE
     ```
+
+    Docling gives an error if you combine `--vlm-model` with a different `--pipeline` value.
 
 === "Python"
 
@@ -48,7 +54,7 @@ classifies pictures before chart extraction and skips fields already present in
 the VLM output.
 
 ```bash
-docling --from image --to dclx IMAGE.png --pipeline vlm \
+docling --from image --to dclx IMAGE.png \
     --vlm-model mineru2_pro --enrich-chart-extraction
 ```
 
@@ -136,7 +142,7 @@ pip install 'docling-slim[format-markdown]'
 ```
 
 ```bash
-docling contract.pdf --pipeline vlm --vlm-model lightonocr3_08b
+docling contract.pdf --vlm-model lightonocr3_08b
 ```
 
 ```python
@@ -176,6 +182,32 @@ the empty prompt or `grounding`, as specified in the model cards.
 Local inference uses Transformers or vLLM. No MLX export is configured for these
 presets. An OpenAI-compatible server can also serve the official model
 repositories; configure its URL and engine options as described below.
+
+### MiniCPM-OCR
+
+The `minicpm_ocr` preset uses [MiniCPM-OCR 1.0](https://huggingface.co/openbmb/MiniCPM-OCR-1.0)
+at a pinned revision. It reads English and Chinese pages and returns text and Markdown.
+Local inference requires the `models-vlm-inline` extra and `transformers>=5.21.0`.
+
+```bash
+docling contract.pdf --vlm-model minicpm_ocr
+```
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("minicpm_ocr"),
+)
+```
+
+The preset sends one page image per request and asks the model for Markdown. Pages render at
+`scale=2.0`. The model returns plain text for many pages, so Docling cannot recover word-level
+boxes or table structure that the model does not emit. Use the standard pipeline when you need
+Docling's layout and table models.
+
+An OpenAI-compatible server can serve the model through the API engines. vLLM support for
+MiniCPM-OCR merged upstream after v0.32.0, so use a newer vLLM build.
 
 ### Other models
 
@@ -280,9 +312,25 @@ content is retained. Nonempty prose or JSON responses without HTML transcription
 produce a page-specific inference error and `PARTIAL_SUCCESS`, rather than an
 unreported empty result. An explicitly labeled `Blank-Page` may be empty.
 
+## Surya 2.5 output
+
+Use `ResponseFormat.SURYA_HTML` with `SURYA_OCR_PROMPT`, or the `surya_ocr2_5` preset.
+Surya 2.5 writes a block header as tokens, for example
+`<|Text|><|120|><|87|><|881|><|255|>`, and leaves out the closing `</div>`. A merged
+table cell is a `data-kind="parent"` cell with `data-cs` and `data-rs`, followed by
+`data-kind="ghost"` cells. Docling turns the headers into Chandra layout blocks, uses
+the `data-cs` and `data-rs` values as `colspan` and `rowspan`, removes the ghost cells,
+and then maps the page as described for Chandra. The `Picture` label is read as
+`Image`. Block output of older Surya checkpoints, with `<div data-bbox data-label>`,
+also works.
+
+The parser needs the header tokens in the reply. They are not special tokens, so
+Transformers, MLX, and vLLM keep them by default. A reply that the token limit cuts
+keeps its finished blocks, and a cut header at the end is dropped.
+
 ## Heading depths in native layout output
 
-For Chandra, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, Unlimited-OCR 2,
+For Chandra, Surya, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, Unlimited-OCR 2,
 PaddleOCR-VL, and LightOnOCR-3 output, the layout label alone decides title versus
 section header.
 LightOnOCR-3 has one exception: its `title` label covers all headings, so a `title`

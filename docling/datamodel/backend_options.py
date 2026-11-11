@@ -7,6 +7,7 @@ from typing import Annotated, Literal, Optional, Union
 from urllib.parse import urlparse
 
 from pydantic import (
+    AnyHttpUrl,
     AnyUrl,
     BaseModel,
     Field,
@@ -721,9 +722,41 @@ class EmailBackendOptions(BaseBackendOptions):
 
 
 class XBRLBackendOptions(BaseBackendOptions):
-    """Options specific to the XBRL backend."""
+    """Options specific to the XBRL backend.
+
+    Both `enable_local_fetch` and `enable_remote_fetch` default to `False` and
+    must be set explicitly if the XBRL instance document needs to fetch
+    taxonomy elements from a local folder (`taxonomy` field) or remotely.
+    """
 
     kind: Annotated[Literal["xbrl"], Field("xbrl", exclude=True, repr=False)] = "xbrl"
+    source_uri: Annotated[
+        AnyHttpUrl | None,
+        Field(
+            description=(
+                "The http(s) URL that originates the XBRL or iXBRL document. If"
+                " provided and `enable_remote_fetch` is True, the backend uses it to"
+                " resolve the relative references to schemas and linkbases (for"
+                " instance, the company-specific extension taxonomy of SEC filings)"
+                " that are not found in the `taxonomy` folder. It is set"
+                " automatically when the document is converted from a URL. It must"
+                " not include credentials. Like any remote reference, it only"
+                " allows connections to public addresses. Set it only to a location"
+                " you trust, since the taxonomy files that it provides determine the"
+                " meaning of the facts."
+            )
+        ),
+    ] = None
+
+    @field_validator("source_uri")
+    @classmethod
+    def _source_uri_without_credentials(
+        cls, value: AnyHttpUrl | None
+    ) -> AnyHttpUrl | None:
+        if value is not None and (value.username or value.password):
+            raise ValueError("source_uri must not include credentials")
+        return value
+
     taxonomy: Annotated[
         Path | None,
         Field(
@@ -734,6 +767,12 @@ class XBRLBackendOptions(BaseBackendOptions):
                 " Optionally, it can also include taxonomy packages (`.zip`)"
                 " referenced by the reports with absolute URLs and mapped to files"
                 " with a taxonomy catalog (`catalog.xml`) for offline parsing."
+                " Files in this folder take precedence over remote ones. A taxonomy"
+                " package whose catalog maps every `https://` URL to its own files"
+                " must also contain the company-specific extension taxonomy of the"
+                " report, or the extension files must be in this folder. Otherwise,"
+                " the extension taxonomy is not fetched remotely and the facts of the"
+                " report cannot be converted."
             )
         ),
     ] = None

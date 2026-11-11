@@ -993,10 +993,13 @@ def _odf_cell_text(cell: Any) -> str:
     if _odf_cell_has_rich_content(cell):
         return _strip_odf_image_reference_text(child_text, cell.get_images())
 
-    if cell.value is not None:
-        return str(cell.value)
+    # The text:p content is the text the application displays (a rounded
+    # number, a percentage, a currency or date format). The typed value is
+    # only a fallback for a cell that stores no text.
     if child_text:
         return child_text
+    if cell.value is not None:
+        return str(cell.value)
     if cell.children:
         return ""
 
@@ -1011,8 +1014,17 @@ def _odf_cell_has_content(cell: Any) -> bool:
     return _odf_cell_text(cell) != "" or _odf_cell_has_images(cell)
 
 
-def _odf_cell_is_rich(cell: Any) -> bool:
-    return _odf_cell_has_rich_content(cell)
+def _odf_cell_has_styled_run(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return any(
+        run.formatting is not None or run.hyperlink is not None
+        for child in cell.children
+        if isinstance(child, Paragraph)
+        for run in _odf_text_runs(child, odf_obj)
+    )
+
+
+def _odf_cell_is_rich(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return _odf_cell_has_rich_content(cell) or _odf_cell_has_styled_run(cell, odf_obj)
 
 
 def _image_ref_from_odf_image(
@@ -1622,7 +1634,7 @@ def _add_table_from_odf(
                 "row_header": False,
             }
 
-            if _odf_cell_is_rich(cell):
+            if _odf_cell_is_rich(cell, odf_obj):
                 group = doc.add_group(
                     label=GroupLabel.UNSPECIFIED,
                     name=f"rich_cell_group_{len(doc.tables) - 1}_{adjusted_col}_{adjusted_row}",
@@ -1657,6 +1669,7 @@ def _table_region_has_rich_cell(
     max_row: int,
     min_col: int,
     max_col: int,
+    odf_obj: OdfDocument | None,
 ) -> bool:
     for row_idx, row in enumerate(table.traverse()):
         if row_idx < min_row or row_idx > max_row:
@@ -1664,7 +1677,9 @@ def _table_region_has_rich_cell(
         for col_idx, cell in enumerate(row.traverse()):
             if col_idx < min_col or col_idx > max_col:
                 continue
-            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(cell):
+            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(
+                cell, odf_obj
+            ):
                 return True
     return False
 
@@ -2409,7 +2424,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             min_row, max_row, min_col, max_col = data_table["bounds"]
             table_data = data_table["data"]
             has_rich_content = _table_region_has_rich_cell(
-                table, min_row, max_row, min_col, max_col
+                table, min_row, max_row, min_col, max_col, self.odf_obj
             )
 
             # Check if this is a singleton (1x1 table)

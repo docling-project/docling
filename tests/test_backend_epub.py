@@ -18,6 +18,7 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 """
 
 import logging
+import warnings
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -555,6 +556,81 @@ def test_epub_internal_links_in_either_quote_style(tmp_path: Path):
     assert hyperlinks == ["#note2", "#note2", absolute]
 
 
+def test_epub_internal_link_rewrite_leaves_text_alone(tmp_path: Path):
+    """Only a link of the markup is reduced to its anchor, not a link in text.
+
+    A book about HTML shows tags in its code listings and in its prose. Their
+    "<" is escaped, since XML text cannot hold a literal one, but the quotes of
+    an attribute need no escape, so 'href="chapter2.xhtml#note2"' can be text
+    as well as markup. Rewritten in the text, the listing shows the reader a
+    link that the book does not contain.
+    """
+    names = ["chapter1.xhtml", "chapter2.xhtml"]
+    listing = '<a href="chapter2.xhtml#note2">note 2</a>'
+    bodies = [
+        '<pre><code>&lt;a href="chapter2.xhtml#note2"&gt;note 2&lt;/a&gt;</code></pre>'
+        '<p>Write <code>href="chapter2.xhtml#note2"</code> to link it.</p>'
+        f'<p>See <a href="{names[1]}#note2">note 2</a>.</p>',
+        '<p id="note2">Note 2.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "listing.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    texts = [item.text for item in doc.texts]
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert listing in texts
+    assert 'href="chapter2.xhtml#note2"' in texts
+    assert hyperlinks == ["#note2"]
+
+
+def test_epub_image_source_rewrite_leaves_text_alone(tmp_path: Path):
+    """Only an image src of the markup is resolved inside the archive.
+
+    With images fetched, a src becomes the path of its image in the archive.
+    The same rewrite in a code listing replaces the "../Images/logo.png" that
+    the book shows with an archive path, which the book does not contain.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+
+    bodies = [
+        '<pre><code>&lt;img src="../Images/logo.png"/&gt;</code></pre>'
+        '<img src="../Images/logo.png" alt="logo"/>'
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "listing.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/logo.png", buf.getvalue())
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert '<img src="../Images/logo.png"/>' in [item.text for item in doc.texts]
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+
+
 def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
     tmp_path: Path,
 ):
@@ -599,3 +675,87 @@ def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
 
     assert len(doc.pictures) == 2
     assert all(pic.image is not None for pic in doc.pictures)
+
+
+def _convert_epub_with_one_image(
+    tmp_path: Path, src: str, archive_images: list[str]
+) -> DoclingDocument:
+    """Convert a one-chapter EPUB with a single image between two paragraphs.
+
+    ``archive_images`` are PNG files stored in the archive, relative to
+    ``OEBPS/``.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+    png = buf.getvalue()
+
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "images.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=[f'<p>Start.</p><img src="{src}" alt="img"/><p>End.</p>'],
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        for name in archive_images:
+            z.writestr(f"OEBPS/{name}", png)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return converter.convert(epub_path, raises_on_error=True).document
+
+
+@pytest.mark.parametrize(
+    ("src", "archive_image"),
+    [
+        ("../Images/map.png?v=1", "Images/map.png"),
+        ("../Images/map.png#top", "Images/map.png"),
+        ("../Images/map%231.png", "Images/map#1.png"),
+    ],
+)
+def test_epub_image_source_ignores_query_and_fragment(
+    tmp_path: Path, src: str, archive_image: str
+):
+    """A query or fragment is not part of the file name; an escaped "#" is."""
+    doc = _convert_epub_with_one_image(tmp_path, src, [archive_image])
+
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+    texts = [t.text for t in doc.texts]
+    assert texts[0] == "Start."
+    assert texts[-1] == "End."
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "cid:foo.png",
+        "foo://[bad/x.png",
+        "#top",
+    ],
+)
+def test_epub_image_source_that_is_not_a_relative_path_is_not_loaded(
+    tmp_path: Path, src: str
+):
+    """A src with a scheme, a malformed src or one with no path is left as is.
+
+    It must not resolve to an archive file of the same name, and it must not
+    drop the text of its chapter.
+    """
+    doc = _convert_epub_with_one_image(
+        tmp_path, src, ["Text/foo.png", "Text/x.png", "Text/top"]
+    )
+
+    assert all(pic.image is None for pic in doc.pictures)
+    texts = [t.text for t in doc.texts]
+    assert texts[0] == "Start."
+    assert texts[-1] == "End."
