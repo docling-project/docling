@@ -511,6 +511,20 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "data clusters into a single table. Default is 0 (strict)."
         ),
     )
+    cell_text_mode: Literal["formatted", "normalized"] = Field(
+        "formatted",
+        description=(
+            "Which value of a numeric or date cell becomes the cell text. "
+            "'formatted' (default) applies the cell number format, as Excel "
+            "displays the value: '1,234,568', '$12.50', '13%', 'Feb-25'. "
+            "'normalized' uses the stored value without the number format, the "
+            "same as with the General format: '1234567.891', '12.5', '0.125', "
+            "'2025-02-01 00:00:00'. Number formats that are not supported "
+            "always give the stored value. Text cells do not change. A cell "
+            "that becomes a TextItem keeps the formatted value in its 'orig' "
+            "field."
+        ),
+    )
     sheet_names: Optional[list[str]] = Field(
         None,
         description=(

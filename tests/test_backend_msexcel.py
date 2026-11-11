@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from datetime import datetime, time, timedelta
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 
 import pytest
 from docling_core.transforms.serializer.markdown import MarkdownParams
@@ -1397,19 +1398,21 @@ def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
 
 
 def test_format_excel_value_matches_excel_display() -> None:
-    """Currency, percent, and mmm-yy formats keep the text Excel shows."""
-    assert _format_excel_value(12.5, '"$"#,##0.00') == "$12.50"
-    assert _format_excel_value(0.1, "0%") == "10%"
-    assert _format_excel_value(datetime(2025, 2, 1), "mmm-yy") == "Feb-25"
-    assert (
-        _format_excel_value(
-            datetime(2024, 1, 2, 0, 0),
-            "yyyy\\-mm\\-dd\\ hh:mm:ss",
-        )
-        == "2024-01-02 00:00:00"
+    """``orig`` is the text Excel shows; ``text`` is the stored value."""
+    assert _format_excel_value(12.5, '"$"#,##0.00') == ("12.5", "$12.50")
+    assert _format_excel_value(0.1, "0%") == ("0.1", "10%")
+    assert _format_excel_value(datetime(2025, 2, 1), "mmm-yy") == (
+        "2025-02-01 00:00:00",
+        "Feb-25",
     )
-    assert _format_excel_value(12.5, "General") == "12.5"
-    assert _format_excel_value(1, "\\1\\.0#") == "1"
+    assert _format_excel_value(
+        datetime(2024, 1, 2, 0, 0),
+        "yyyy\\-mm\\-dd\\ hh:mm:ss",
+    ) == ("2024-01-02 00:00:00", "2024-01-02 00:00:00")
+    assert _format_excel_value(12.5, "General") == ("12.5", "12.5")
+    assert _format_excel_value(1, "\\1\\.0#") == ("1", "1")
+    assert _format_excel_value("1,000", "#,##0") == ("1,000", "1,000")
+    assert _format_excel_value(True, "0.00") == ("True", "True")
 
 
 @pytest.mark.parametrize(
@@ -1462,10 +1465,13 @@ def test_format_excel_value_matches_excel_display() -> None:
 def test_excel_number_format_tokens_and_sections(
     value, number_format, expected
 ) -> None:
-    assert _format_excel_value(value, number_format) == expected
+    assert _format_excel_value(value, number_format) == (str(value), expected)
 
 
-def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None:
+@pytest.mark.parametrize("cell_text_mode", ["formatted", "normalized"])
+def test_xlsx_number_formats_survive_document_conversion(
+    tmp_path: Path, cell_text_mode: Literal["formatted", "normalized"]
+) -> None:
     workbook = Workbook()
     sheet = workbook.active
     rows = [
@@ -1489,7 +1495,12 @@ def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None
     path = tmp_path / "number_format_tokens.xlsx"
     workbook.save(path)
 
-    document = get_converter().convert(path).document
+    options = MsExcelBackendOptions(cell_text_mode=cell_text_mode)
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX],
+        format_options={InputFormat.XLSX: ExcelFormatOption(backend_options=options)},
+    )
+    document = converter.convert(path).document
     table = document.tables[0].data
     assert [
         (cell.start_row_offset_idx, cell.text)
@@ -1497,7 +1508,41 @@ def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None
         if cell.start_col_offset_idx == 1
     ] == [
         (0, "Value"),
-        *[(index, expected) for index, (_, _, _, expected) in enumerate(rows, start=1)],
+        *[
+            (index, expected if cell_text_mode == "formatted" else str(value))
+            for index, (_, value, _, expected) in enumerate(rows, start=1)
+        ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "cell_text_mode,expected_text",
+    [("formatted", "1,234,568"), ("normalized", "1234567.891")],
+)
+def test_xlsx_singleton_number_keeps_displayed_value_in_orig(
+    tmp_path: Path,
+    cell_text_mode: Literal["formatted", "normalized"],
+    expected_text: str,
+) -> None:
+    """A singleton number cell as TextItem has the displayed value in ``orig``."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["B2"] = 1234567.891
+    sheet["B2"].number_format = "#,##0"
+    path = tmp_path / "singleton_number.xlsx"
+    workbook.save(path)
+
+    options = MsExcelBackendOptions(
+        treat_singleton_as_text=True, cell_text_mode=cell_text_mode
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX],
+        format_options={InputFormat.XLSX: ExcelFormatOption(backend_options=options)},
+    )
+    document = converter.convert(path).document
+
+    assert [(item.text, item.orig) for item in document.texts] == [
+        (expected_text, "1,234,568")
     ]
 
 
