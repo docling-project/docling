@@ -154,6 +154,38 @@ def test_table_row_written_over_several_lines() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    "attributes",
+    [
+        b'[cols="1,2"]',
+        b'[cols="2*"]',
+        b"[cols=2]",
+        b'[%header, cols="<.^1a;>3"]',
+        b"[cols='1,2',options=\"header\"]",
+    ],
+)
+def test_table_cols_attribute_sets_the_column_count(attributes: bytes) -> None:
+    src = (
+        attributes + b"\n|===\n"
+        b"|Cell in column 1, row 1\n|Cell in column 2, row 1\n\n"
+        b"|Cell in column 1, row 2\n|Cell in column 2, row 2\n"
+        b"|===\n"
+    )
+    assert _table_rows(src) == [
+        ["Cell in column 1, row 1", "Cell in column 2, row 1"],
+        ["Cell in column 1, row 2", "Cell in column 2, row 2"],
+    ]
+
+
+def test_table_cols_attribute_applies_only_to_its_table() -> None:
+    doc = _convert_adoc(
+        b'[cols="3*"]\n|===\n|a\n|b\n|c\n|d\n|e\n|f\n|===\n\n|===\n|x\n|y\n|===\n'
+    )
+    first, second = (table.data for table in doc.tables)
+    assert (first.num_rows, first.num_cols) == (2, 3)
+    assert (second.num_rows, second.num_cols) == (2, 1)
+
+
 def test_table_spans_take_their_grid_positions() -> None:
     # Each cell carries its spans and starts at the first column that no
     # column span to its left and no row span from above covers.
