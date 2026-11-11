@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    CodeLanguageLabel,
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
@@ -1038,6 +1039,49 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert "After the equation." in md
     # The empty display formula produced no FORMULA item.
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(
+            "<p>Run it:</p><preformat>{code}</preformat><p>Done.</p>", id="in-section"
+        ),
+        pytest.param(
+            "<p>Run it:<preformat>{code}</preformat>Done.</p>", id="in-paragraph"
+        ),
+        pytest.param(
+            "<p>Run it:</p><code>{code}</code><p>Done.</p>", id="code-in-section"
+        ),
+    ],
+)
+def test_jats_preformat_is_code_block(body):
+    # <preformat> and <code> hold verbatim text such as code or console output. A
+    # block in a section was dropped, and one in a paragraph was merged into the
+    # paragraph text without its line breaks.
+    code = "for i in range(3):\n    print(i)"
+    doc = convert_jats_body(f"<sec><title>T</title>{body.format(code=code)}</sec>")
+
+    items = [
+        (t.label, t.text)
+        for t in doc.texts
+        if t.label in (DocItemLabel.TEXT, DocItemLabel.CODE)
+    ]
+    assert items == [
+        (DocItemLabel.TEXT, "Run it:"),
+        (DocItemLabel.CODE, code),
+        (DocItemLabel.TEXT, "Done."),
+    ]
+
+
+def test_jats_code_block_keeps_its_language():
+    doc = convert_jats_body(
+        '<sec><title>T</title><code language="python">print(1)</code></sec>'
+    )
+
+    [code] = [t for t in doc.texts if t.label == DocItemLabel.CODE]
+    assert code.text == "print(1)"
+    assert code.code_language == CodeLanguageLabel.PYTHON
 
 
 def test_jats_table_header_rowspan_without_body_keeps_the_table():
