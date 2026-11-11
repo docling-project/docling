@@ -226,7 +226,6 @@ def _strip_frontmatter(text: str) -> str:
     return text[match.end() :] if isinstance(meta, dict) else text
 
 
-# Built once: building a TypeAdapter is far slower than validating one link.
 _LINK_DEST: Final = TypeAdapter(AnyUrl | Path | None)
 
 
