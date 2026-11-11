@@ -51,6 +51,10 @@ children. The `metadata`, `authors`, and `affiliations` groups record source rol
 `\thanks` and `\altaffiliation` use footnote items in these groups. Retained
 source commands use the furniture layer and do not appear in default Markdown.
 
+Hidden ODS sheets use the invisible content layer. Default Markdown, HTML, and text
+exports and `HierarchicalChunker` omit them; JSON, Doctags, and DocLang XML keep
+them.
+
 Schema-specific support:
 
 | Format | Description |

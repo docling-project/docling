@@ -2682,12 +2682,29 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
         return (width, height)
 
-    @staticmethod
-    def _get_sheet_content_layer(table: OdfTable) -> ContentLayer | None:
-        """Determine if a sheet is hidden and should be marked as invisible."""
-        # Check if the table has a display attribute indicating it's hidden
-        # ODF uses table:display="false" for hidden sheets
-        display = table.get_attribute("table:display")
-        if display == "false":
+    def _get_sheet_content_layer(self, table: OdfTable) -> ContentLayer | None:
+        """Return the content layer of a sheet.
+
+        A sheet is hidden when the ``style:table-properties`` element of its table
+        style has ``table:display="false"``.
+
+        Args:
+            table: The sheet to check.
+
+        Returns:
+            ``ContentLayer.INVISIBLE`` for a hidden sheet, otherwise ``None`` for
+            the default layer.
+        """
+        style_name = table.attributes.get("table:style-name")
+        if style_name is None:
+            return None
+        style = self.odf_obj.get_style("table", style_name)
+        if style is None:
+            return None
+        properties = style.get_element("style:table-properties")
+        if (
+            properties is not None
+            and properties.attributes.get("table:display") == "false"
+        ):
             return ContentLayer.INVISIBLE
         return None

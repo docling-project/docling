@@ -2072,6 +2072,51 @@ def test_ods_sheet_names_filter(tmp_path: Path):
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
 
 
+def _add_hidden_table_style(doc: OdfDocument) -> str:
+    """Add the table style of a hidden sheet, as Calc saves it, and return its name."""
+    style = Style("table", name="ta_hidden")
+    properties = Element.from_tag("style:table-properties")
+    properties.set_attribute("table:display", "false")
+    style.append(properties)
+    doc.insert_style(style, automatic=True)
+    return "ta_hidden"
+
+
+def test_ods_hidden_sheet_goes_to_invisible_layer(tmp_path: Path):
+    """A sheet hidden by its table style, as Calc saves it, is invisible."""
+    doc = OdfDocument("spreadsheet")
+    doc.body.clear()
+    hidden_style = _add_hidden_table_style(doc)
+    for name, text, style_name in [
+        ("Shown", "Visible text", None),
+        ("Hidden", "Hidden text", hidden_style),
+    ]:
+        sheet = Table(name, style=style_name)
+        sheet.set_value("A1", text)
+        doc.body.append(sheet)
+    path = tmp_path / "hidden.ods"
+    doc.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path).document
+    )
+
+    assert [(group.name, group.content_layer) for group in document.groups] == [
+        ("sheet: Shown", ContentLayer.BODY),
+        ("sheet: Hidden", ContentLayer.INVISIBLE),
+    ]
+    assert [
+        (table.content_layer, table.data.table_cells[0].text)
+        for table in document.tables
+    ] == [
+        (ContentLayer.BODY, "Visible text"),
+        (ContentLayer.INVISIBLE, "Hidden text"),
+    ]
+    markdown = document.export_to_markdown()
+    assert "Visible text" in markdown
+    assert "Hidden text" not in markdown
+
+
 def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
     """Test a sheet that LibreOffice padded towards its full grid.
 
@@ -2116,9 +2161,7 @@ def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
     ods = OdfDocument("spreadsheet")
     ods.body.clear()
 
-    sheet = Table("Sheet")
-    if hidden:
-        sheet.set_attribute("table:display", "false")
+    sheet = Table("Sheet", style=_add_hidden_table_style(ods) if hidden else None)
     sheet.set_value("B2", "a")
     sheet.set_value("C2", "b")
     sheet.set_value("B3", "1")
@@ -2142,6 +2185,9 @@ def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
         if isinstance(item, TableItem)
     ]
     assert len(tables) == 1
+    assert tables[0].content_layer == (
+        ContentLayer.INVISIBLE if hidden else ContentLayer.BODY
+    )
     bbox = tables[0].prov[0].bbox
     assert (bbox.l, bbox.t, bbox.r, bbox.b) == (1.0, 1.0, 3.0, 3.0)
 
