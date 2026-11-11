@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+from typing import cast
+
 from PIL import Image
 
 
@@ -20,8 +22,8 @@ def check_image_pixels(size: tuple[int, int], max_pixels: int) -> None:
 
 def _max_value(image: Image.Image) -> float:
     """Return the largest sample of a single-band image."""
-    maximum = image.getextrema()[1]
-    return maximum if isinstance(maximum, (int, float)) else 0
+    _, maximum = cast("tuple[float, float]", image.getextrema())
+    return maximum
 
 
 def to_rgb(image: Image.Image) -> Image.Image:
