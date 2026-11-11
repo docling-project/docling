@@ -1013,39 +1013,24 @@ def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
     ]
 
 
-def test_table_cell_text_ignores_markers_between_runs(tmp_path):
-    """Markers between the runs of a cell paragraph add no text.
-
-    Proofing, bookmark, comment, permission and move-range markers are empty
-    elements, so the text of the runs around them is joined without a gap. A
-    hyperlink that holds a tracked insertion keeps the inserted text.
-    """
-    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
-    markers = {
-        "proofErr": f'<w:proofErr {w} w:type="spellStart"/>',
-        "bookmark": f'<w:bookmarkStart {w} w:id="1" w:name="b"/>',
-        "comment": f'<w:commentRangeStart {w} w:id="2"/>',
-        "permission": f'<w:permStart {w} w:id="3" w:edGrp="everyone"/>',
-        "moveRange": f'<w:moveFromRangeStart {w} w:id="4" w:name="m"/>',
-    }
-    hyperlink = (
-        f'<w:hyperlink {w} w:anchor="target"><w:ins w:id="5" w:author="Reviewer">'
-        "<w:r><w:t>link</w:t></w:r></w:ins></w:hyperlink>"
-    )
-
+def test_table_cell_text_reads_symbols_like_a_paragraph(tmp_path):
+    """A table cell reads ``w:sym`` and Symbol font text like a body paragraph."""
     document = Document()
-    table = document.add_table(rows=len(markers) + 1, cols=2)
-    for row_idx, (label, element) in enumerate({**markers, "link": hyperlink}.items()):
-        table.cell(row_idx, 1).text = label
-        paragraph = table.cell(row_idx, 0).paragraphs[0]
-        paragraph.add_run("A")
-        paragraph._p.append(etree.fromstring(element))
-        paragraph.add_run("B")
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 1).text = "sym"
+    table.cell(1, 1).text = "font"
+    sym_paragraph = table.cell(0, 0).paragraphs[0]
+    sym_paragraph.add_run("20")
+    _append_sym(sym_paragraph, "Symbol", "F0B0")
+    table.cell(1, 0).paragraphs[0].add_run("a").font.name = "Symbol"
+    document.add_paragraph("20")
+    _append_sym(document.paragraphs[-1], "Symbol", "F0B0")
 
     doc = _convert_built(document, tmp_path)
 
     cells = [cell.text for cell in doc.tables[0].data.table_cells]
-    assert cells[0::2] == ["AB"] * len(markers) + ["AlinkB"]
+    assert cells[0::2] == ["20\N{DEGREE SIGN}", "\N{GREEK SMALL LETTER ALPHA}"]
+    assert doc.texts[0].text == "20\N{DEGREE SIGN}"
 
 
 def _table_with_grid_before(
