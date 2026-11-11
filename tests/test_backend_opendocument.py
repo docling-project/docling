@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import sys
 import zipfile
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -438,6 +439,39 @@ def test_ods_merged_cells(tmp_path: Path):
     assert anchor.row_span == 2
     assert anchor.col_span == 1
     assert anchor.text == "merged"
+
+
+def test_ods_typed_cells_keep_their_displayed_text(tmp_path: Path):
+    # A typed cell stores its value in office:*-value attributes and the text
+    # the spreadsheet displays in text:p. The table shows the displayed text.
+    path = tmp_path / "typed_cells.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    t = Table("S", width=5, height=1)
+    t.set_cell("A1", Cell(1 / 3, text="0.33", cell_type="float"))
+    percentage = Cell(0.125, cell_type="percentage")
+    # odfdo writes its own text for a percentage cell and ignores ``text``.
+    percentage.get_element("text:p").text = "12.50%"
+    t.set_cell("B1", percentage)
+    t.set_cell(
+        "C1", Cell(1234.5, text="$1,234.50", cell_type="currency", currency="USD")
+    )
+    t.set_cell("D1", Cell(True, text="TRUE", cell_type="boolean"))
+    t.set_cell("E1", Cell(datetime(2024, 3, 5), text="03/05/24", cell_type="date"))
+    body.append(t)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    cells = res.document.tables[0].data.table_cells
+    assert [c.text for c in cells] == [
+        "0.33",
+        "12.50%",
+        "$1,234.50",
+        "TRUE",
+        "03/05/24",
+    ]
 
 
 def test_ods_oversized_spans_clamped_to_table_size(tmp_path: Path):

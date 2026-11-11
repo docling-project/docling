@@ -29,8 +29,10 @@ from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from typing import Final, cast
+from urllib.parse import urlsplit
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -58,6 +60,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils._inline_runs import trim_run_edges
+from docling.utils.code_language import detect_code_language
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -176,6 +179,8 @@ class XMLComponents(TypedDict):
     title: str
     authors: list[Author]
     abstract: list[Abstract]
+    # Author footnotes, copyright, license and funding nodes, walked at emit time.
+    statements: list[etree._Element]
 
 
 class JatsDocumentBackend(DeclarativeDocumentBackend):
@@ -316,6 +321,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if self.root:
                 for sub_article in sub_articles:
                     self._add_sub_article(doc, self.root, sub_article)
+            # add author footnotes and article statements as furniture
+            self._add_statements(doc, xml_components)
         except Exception:
             _log.error(traceback.format_exc())
 
@@ -543,12 +550,26 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return text
 
+    def _parse_statements(self) -> list[etree._Element]:
+        """Return author footnotes and article statements in source order."""
+        meta: etree._Element | None = self._find_metadata()
+        if meta is None:
+            return []
+
+        return meta.xpath(
+            "permissions/copyright-statement"
+            "|permissions/license/license-p"
+            "|funding-group/funding-statement"
+            "|author-notes/fn"
+        )
+
     def _parse_metadata(self) -> XMLComponents:
         """Parsing JATS document metadata."""
         xml_components: XMLComponents = {
             "title": self._parse_title(),
             "authors": self._parse_authors(),
             "abstract": self._parse_abstract(),
+            "statements": self._parse_statements(),
         }
         return xml_components
 
@@ -588,6 +609,39 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     self._walk_linear(doc, section_parent, paragraph)
 
         return
+
+    def _add_statements(
+        self, doc: DoclingDocument, xml_components: XMLComponents
+    ) -> None:
+        """Add author footnotes and article statements as furniture.
+
+        Like page headers and footers in other backends, the statements go into
+        the furniture layer: available on request, but out of the reading order.
+        """
+        if self.root is None:
+            return
+        for statement in xml_components["statements"]:
+            segments = (
+                JatsDocumentBackend._walk_author_footnote(statement)
+                if statement.tag == "fn"
+                else self._walk_linear(doc, self.root, statement)
+            )
+            JatsDocumentBackend._emit_inline(
+                doc,
+                self.root,
+                segments,
+                content_layer=ContentLayer.FURNITURE,
+            )
+
+    @staticmethod
+    def _walk_author_footnote(fn: etree._Element) -> list[InlineSegment]:
+        """Walk an author ``fn`` into coalesced FOOTNOTE and formula segments."""
+        merged: list[InlineSegment] = []
+        JatsDocumentBackend._extend_segments(
+            merged,
+            JatsDocumentBackend._walk_inline_formula(fn, resolve_ext_links=True),
+        )
+        return JatsDocumentBackend._as_footnote_segments(merged)
 
     def _add_authors(self, doc: DoclingDocument, xml_components: XMLComponents) -> None:
         # TODO: once docling supports text formatting, add affiliation reference to
@@ -787,6 +841,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _add_code_block(
+        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
+    ) -> None:
+        # <preformat> and <code> hold verbatim text such as code or console
+        # output: keep its line breaks and indentation. Only <code> names its
+        # language.
+        code = "".join(node.itertext()).strip("\n")
+        if code.strip():
+            doc.add_code(
+                text=code,
+                code_language=detect_code_language(code, hint=node.get("language")),
+                parent=parent,
+            )
+
     @staticmethod
     def _extract_tex_math(node: etree._Element) -> str | None:
         if not node.text:
@@ -830,6 +898,18 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             get_text=lambda segment: segment.text,
             with_text=lambda segment, text: replace(segment, text=text),
         )
+
+    @staticmethod
+    def _as_footnote_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
+        """Label the text runs as FOOTNOTE; formulas keep their own label."""
+        return [
+            (
+                replace(segment, label=DocItemLabel.FOOTNOTE)
+                if segment.label == DocItemLabel.TEXT
+                else segment
+            )
+            for segment in segments
+        ]
 
     @staticmethod
     def _walk_inline_formula(
@@ -968,13 +1048,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _emit_inline(
-        doc: DoclingDocument, parent: NodeItem, segments: list[InlineSegment]
+        doc: DoclingDocument,
+        parent: NodeItem,
+        segments: list[InlineSegment],
+        content_layer: ContentLayer | None = None,
     ) -> None:
         """Emit inline segments under ``parent``, wrapping many in an inline group."""
         segments = JatsDocumentBackend._trim_segment_edges(segments)
         if not segments:
             return
-        container = doc.add_inline_group(parent=parent) if len(segments) > 1 else parent
+        container = (
+            doc.add_inline_group(parent=parent, content_layer=content_layer)
+            if len(segments) > 1
+            else parent
+        )
         for segment in segments:
             doc.add_text(
                 label=segment.label,
@@ -982,6 +1069,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 formatting=segment.formatting,
                 hyperlink=segment.hyperlink,
                 parent=container,
+                content_layer=content_layer,
             )
 
     def _add_figure_captions(
@@ -1019,11 +1107,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     def _load_figure_image(self, node: etree._Element) -> ImageRef | None:
         """Load an explicitly enabled local JATS figure image."""
-        if (
-            not self.options.fetch_images
-            or self.base_path is None
-            or not ImageResourceLoader.is_local_path(self.base_path)
-        ):
+        if not self.options.fetch_images or self.base_path is None:
+            return None
+
+        is_file_uri = urlsplit(self.base_path).scheme.lower() == "file"
+        if not is_file_uri and not ImageResourceLoader.is_local_path(self.base_path):
+            return None
+        try:
+            local_base = Path(
+                self._image_loader.normalize_local_base_path(self.base_path)
+            )
+            # AnyUrl normalizes empty file URIs to a root directory URI.
+            if is_file_uri and local_base.parent == local_base:
+                raise ValueError("JATS file URI must identify a source document")
+        except ValueError as e:
+            warnings.warn(f"Could not process JATS figure images: {e}")
             return None
 
         graphic_nodes = node.xpath(_GRAPHIC_XPATH)
@@ -1351,14 +1449,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 continue
             # Keep table-note text distinguishable from body text for export
             # filtering and chunk metadata; formulas retain their own label.
-            segments = [
-                (
-                    replace(segment, label=DocItemLabel.FOOTNOTE)
-                    if segment.label == DocItemLabel.TEXT
-                    else segment
-                )
-                for segment in segments
-            ]
+            segments = JatsDocumentBackend._as_footnote_segments(segments)
             # The note's rich content lives in inline child runs of an empty
             # FOOTNOTE item, like the items of the article-level footnote list.
             footnote = doc.add_text(
@@ -1440,20 +1531,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
             segments = JatsDocumentBackend._trim_segment_edges(
-                JatsDocumentBackend._walk_inline_formula(fn)
+                JatsDocumentBackend._walk_inline_formula(fn, resolve_ext_links=True)
             )
             if segments:
-                # Keep the FOOTNOTE label on plain text runs; formulas stay
-                # labeled as formulas.
                 footnote_segments.append(
-                    [
-                        (
-                            replace(segment, label=DocItemLabel.FOOTNOTE)
-                            if segment.label == DocItemLabel.TEXT
-                            else segment
-                        )
-                        for segment in segments
-                    ]
+                    JatsDocumentBackend._as_footnote_segments(segments)
                 )
         if not footnote_segments:
             return
@@ -1508,7 +1590,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if text:
             self.hlevel -= 1
 
-    def _walk_linear(
+    def _walk_linear(  # noqa: C901
         self,
         doc: DoclingDocument,
         parent: NodeItem,
@@ -1516,7 +1598,16 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         formatting: Formatting | None = None,
         hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
-        flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
+        flush_tags = [
+            "ack",
+            "sec",
+            "list",
+            "boxed-text",
+            "disp-formula",
+            "fig",
+            "preformat",
+            "code",
+        ]
         new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         current_hyperlink = hyperlink
@@ -1620,6 +1711,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 stop_walk = True
             elif child.tag == "tex-math":
                 self._add_equation(doc, parent, child)
+                stop_walk = True
+            elif child.tag in ("preformat", "code"):
+                self._add_code_block(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
                 # Inline formula: tex-math stays inline, unlike block <disp-formula>.

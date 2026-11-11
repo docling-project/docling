@@ -162,3 +162,32 @@ def test_docx_hidden_runs_in_links_and_content_controls(tmp_path: Path):
     doc = _convert(document, tmp_path)
 
     assert doc.export_to_markdown() == "Shown start. Shown field."
+
+
+def test_docx_hidden_text_in_wrapped_runs_and_paragraphs_of_a_table_cell(
+    tmp_path: Path,
+):
+    """A table cell leaves out a hidden run inside a tracked insertion and a
+    fully hidden paragraph, and keeps the shown text around them."""
+    document = Document()
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 1).text = "Other"
+    cell = table.cell(0, 0)
+    cell.paragraphs[0].add_run("Shown start.")
+    cell.paragraphs[0]._p.append(
+        parse_xml(
+            f"<w:ins {nsdecls('w')} w:id='1' w:author='Reviewer'>"
+            "<w:r><w:rPr><w:vanish/></w:rPr><w:t> Hidden insertion.</w:t></w:r>"
+            "<w:r><w:t> Shown insertion.</w:t></w:r>"
+            "</w:ins>"
+        )
+    )
+    cell.add_paragraph().add_run("Hidden paragraph.").font.hidden = True
+    cell.add_paragraph("Shown paragraph.")
+
+    doc = _convert(document, tmp_path)
+
+    assert [c.text for c in doc.tables[0].data.table_cells] == [
+        "Shown start. Shown insertion.\nShown paragraph.",
+        "Other",
+    ]

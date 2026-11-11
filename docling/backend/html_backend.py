@@ -56,7 +56,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override
 
@@ -209,6 +209,9 @@ _PARA_BREAKERS = {
     "tr",
     "td",
 }
+
+# Same names as a list, the form bs4 documents for matching several tag names.
+_PARA_BREAKER_NAMES: Final = sorted(_PARA_BREAKERS)
 
 # Elements whose end tag may be omitted, mapped to (ancestors that a new
 # element implicitly closes, ancestors that stop the search).
@@ -1921,7 +1924,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     new_nodes.remove(current_p)
             current_p = None
 
-        paragraphs = soup.select(f"p:has({','.join(tag for tag in _PARA_BREAKERS)})")
+        paragraphs = [
+            p
+            for p in soup.find_all("p")
+            if isinstance(p, Tag) and p.find(_PARA_BREAKER_NAMES) is not None
+        ]
 
         for p in paragraphs:
             parent = p.parent
@@ -5506,6 +5513,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     image = Image.open(BytesIO(image_data))
                     check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
+                    # A camera stores an orientation tag rather than rotated
+                    # pixels, and a browser shows the image turned by it.
+                    image = ImageOps.exif_transpose(image)
                     # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
                     dpi = int(image.info.get("dpi", (72,))[0]) or 72
                     return ImageRef.from_pil(

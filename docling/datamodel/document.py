@@ -81,6 +81,7 @@ from docling.exceptions import DocumentLoadError
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
+from docling.utils.xbrl_utils import is_ixbrl, is_xbrl
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
@@ -958,12 +959,17 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
-            mime = filetype.guess_mime(str(obj))
             # Lower-cased so that an upper-case extension (NOTES.VTT, page.HTML)
             # maps to its format the same way it does for a DocumentStream.
             obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
-            if mime is None:
-                mime = _DocumentConversionInput._mime_from_extension(obj_ext)
+            ext_mime = _DocumentConversionInput._mime_from_extension(obj_ext)
+            # Read the head of HTML files to tell iXBRL apart from HTML.
+            if ext_mime is not None and ext_mime.lower() == "text/html":
+                with obj.open("rb") as f:
+                    content = f.read(_CONTENT_SNIFF_BYTES)
+                mime = filetype.guess_mime(content) or ext_mime
+            else:
+                mime = filetype.guess_mime(str(obj)) or ext_mime
             needs_content_sniff = mime is None or (
                 mime is not None
                 and mime.lower()
@@ -1034,6 +1040,8 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or _DocumentConversionInput._detect_calendar(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
+        if mime.lower() == "text/html" and is_ixbrl(content):
+            mime = "application/xhtml+xml"
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")
 
@@ -1082,10 +1090,20 @@ class _DocumentConversionInput(BaseModel):
     def _detect_office_mime_from_zip(
         source: Union[Path, BytesIO],
     ) -> Optional[str]:
-        """Detect Office Open XML format by inspecting ZIP archive contents.
+        """Detect Office Open XML or ODF format by inspecting ZIP archive contents.
 
-        Useful when the filename has no extension (e.g. pre-signed URLs)
-        and filetype only reports ``application/zip``.
+        Useful when the filename has no extension (e.g. pre-signed URLs) and
+        filetype only reports ``application/zip``. For Office Open XML formats,
+        only the member list is inspected. For ODF archives, the ``mimetype``
+        member is also read, unless it exceeds ``_ODF_MIMETYPE_MAX_BYTES``.
+
+        Args:
+            source: The ZIP file to inspect, as a path or an in-memory stream.
+                A stream is rewound to position 0 after the call.
+
+        Returns:
+            The MIME type of the Office Open XML or ODF document, or None if
+            the source is not a ZIP archive or has no known Office/ODF structure.
         """
         try:
             with zipfile.ZipFile(source) as zf:
@@ -1143,10 +1161,8 @@ class _DocumentConversionInput(BaseModel):
             # the outcome -- while a strict decode would abort the whole batch.
             content_str = content.decode("utf-8", errors="replace")
 
-            if (
-                InputFormat.XML_XBRL in formats
-                and "http://www.xbrl.org/2003/instance" in content_str
-                and "<xbrl" in content_str.lower()
+            if InputFormat.XML_XBRL in formats and (
+                is_xbrl(content_str) or is_ixbrl(content)
             ):
                 return InputFormat.XML_XBRL
 
@@ -1196,7 +1212,7 @@ class _DocumentConversionInput(BaseModel):
         return input_format
 
     @staticmethod
-    def _mime_from_extension(ext):
+    def _mime_from_extension(ext: Optional[str]) -> Optional[str]:
         mime = None
         if ext in FormatToExtensions[InputFormat.ASCIIDOC]:
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]

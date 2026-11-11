@@ -60,6 +60,7 @@ from docling.backend.utils.archive_limits import (
     read_member,
 )
 from docling.backend.utils.image import normalize_image_for_png
+from docling.backend.utils.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
@@ -83,7 +84,7 @@ try:  # pragma: no cover - import-time guard
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
     from docx.styles.style import BaseStyle, CharacterStyle, ParagraphStyle
-    from docx.table import Table, _Cell
+    from docx.table import Table, _Cell, _Row
     from docx.text.hyperlink import Hyperlink
     from docx.text.paragraph import Paragraph
     from docx.text.run import Run
@@ -251,6 +252,78 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (4, "IV"),
     (1, "I"),
 )
+
+_RUN_TEXT_XPATH: Final[str] = (
+    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+)
+"""Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+
+_SYMBOL_FONT: Final[str] = "symbol"
+
+
+def _is_symbol_font(font_name: str | None) -> bool:
+    """Return True if ``font_name`` resolves to the Symbol font."""
+    return (font_name or "").strip().lower() == _SYMBOL_FONT
+
+
+def _map_symbol_font_char(char: str) -> str:
+    """Map a Symbol font code point to Unicode.
+
+    Word stores the font byte either as is or shifted to ``U+F000``-``U+F0FF``.
+    Characters without a mapping are kept unchanged.
+
+    Args:
+        char: The character or single code point to map.
+
+    Returns:
+        The mapped Unicode character string, or the input character if unmapped.
+    """
+    code = ord(char)
+    if 0xF000 <= code <= 0xF0FF:
+        code -= 0xF000
+    return SYMBOL_FONT_TO_UNICODE.get(code, char)
+
+
+def _get_sym_text(sym: BaseOxmlElement) -> str:
+    """Return the character of a ``w:sym`` element (Insert > Symbol in Word).
+
+    Args:
+        sym: The ``w:sym`` oxml element.
+
+    Returns:
+        The extracted (and possibly mapped) character string.
+    """
+    try:
+        char = chr(int(sym.get(f"{_W_NS_CLARK}char", ""), 16))
+    except ValueError:
+        return ""
+    if _is_symbol_font(sym.get(f"{_W_NS_CLARK}font")):
+        return _map_symbol_font_char(char)
+    return char
+
+
+def _get_run_text(run: Run) -> str:
+    """Return the text of a run, including its ``w:sym`` characters.
+
+    python-docx ``Run.text`` skips ``w:sym``, so these characters are lost.
+    Text set in the Symbol font is mapped to Unicode.
+
+    Args:
+        run: The docx Run object.
+
+    Returns:
+        The full extracted text of the run including symbols.
+    """
+    symbol_font = _is_symbol_font(run.font.name)
+    parts: list[str] = []
+    for child in run._r.xpath(_RUN_TEXT_XPATH):
+        if child.tag == f"{_W_NS_CLARK}sym":
+            parts.append(_get_sym_text(child))
+        elif symbol_font and child.tag == f"{_W_NS_CLARK}t":
+            parts.append("".join(map(_map_symbol_font_char, str(child))))
+        else:
+            parts.append(str(child))
+    return "".join(parts)
 
 
 def _int_to_letter_marker(value: int) -> str:
@@ -2537,7 +2610,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue  # a fully hidden link
                 content.append(
                     (
-                        "".join(run.text for run in runs),
+                        "".join(_get_run_text(run) for run in runs),
                         (
                             self._get_format_from_run(
                                 runs[0],
@@ -2553,7 +2626,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elif _is_shown(item):
                 content.append(
                     (
-                        item.text,
+                        _get_run_text(item),
                         self._get_format_from_run(
                             item, paragraph, self._get_style_chain(paragraph.style)
                         ),
@@ -2584,6 +2657,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_paragraph_text(self, paragraph: Paragraph) -> str:
         return "".join(
             text for text, _format, _hyperlink in self._get_paragraph_content(paragraph)
+        )
+
+    def _get_cell_text(self, cell: _Cell) -> str:
+        """Return a table cell's visible text, one line per paragraph.
+
+        ``_Cell.text`` only reads runs and hyperlinks that are direct children
+        of a paragraph, so it misses the text nested in content controls, simple
+        fields, smart tags and tracked insertions. A cell has no content layer of
+        its own, so fully hidden paragraphs are left out.
+        """
+        return "\n".join(
+            self._get_paragraph_text(paragraph)
+            for paragraph in cell.paragraphs
+            if not self._is_hidden_paragraph(paragraph)
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
@@ -2963,10 +3050,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.parents[level] = original_parent
         return elem_ref
 
-    def _get_hidden_text_elements(
-        self, element: BaseOxmlElement
-    ) -> set[etree._Element]:
-        """Return the ``w:t`` elements of the hidden runs in ``element``.
+    def _get_hidden_run_elements(self, element: BaseOxmlElement) -> set[etree._Element]:
+        """Return the ``w:r`` elements of the hidden runs in ``element``.
 
         Only an element with an equation needs them, so for any other element
         the result is empty.
@@ -2979,7 +3064,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             style_chain = self._get_style_chain(paragraph.style)
             for r_el in p_el.iter(f"{_W_NS_CLARK}r"):
                 if self._is_hidden_run(Run(r_el, paragraph), style_chain):
-                    hidden.update(r_el.iter(f"{_W_NS_CLARK}t"))
+                    hidden.add(r_el)
         return hidden
 
     def _handle_equations_in_text(self, element, text):
@@ -2987,7 +3072,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         only_equations = []
         texts_and_equations = []
         # ``text`` has no hidden text, so leave it out here too.
-        hidden_texts = self._get_hidden_text_elements(element)
+        hidden_runs = self._get_hidden_run_elements(element)
 
         # Collect oMath elements and text runs from the paragraph.
         # Use direct children iteration first; fall back to deep iteration
@@ -3013,29 +3098,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Collect text from non-math children (e.g. <w:r> runs)
-                    for t_elem in child.iter():
-                        t_tag = etree.QName(t_elem).localname
-                        if (
-                            t_tag == "t"
-                            and "math" not in t_elem.tag
-                            and t_elem not in hidden_texts
-                        ):
-                            if isinstance(t_elem.text, str):
-                                only_texts.append(t_elem.text)
-                                texts_and_equations.append(t_elem.text)
+                    for run in child.iter(f"{_W_NS_CLARK}r"):
+                        if run not in hidden_runs:
+                            run_text = _get_run_text(Run(run, None))
+                            only_texts.append(run_text)
+                            texts_and_equations.append(run_text)
         else:
             # Original deep-iteration fallback for nested oMath (e.g.
             # inside oMathPara or other wrapper elements).
             for subt in element.iter():
-                tag_name = etree.QName(subt).localname
-                if (
-                    tag_name == "t"
-                    and "math" not in subt.tag
-                    and subt not in hidden_texts
-                ):
-                    if isinstance(subt.text, str):
-                        only_texts.append(subt.text)
-                        texts_and_equations.append(subt.text)
+                if subt.tag == f"{_W_NS_CLARK}r" and subt not in hidden_runs:
+                    run_text = _get_run_text(Run(subt, None))
+                    only_texts.append(run_text)
+                    texts_and_equations.append(run_text)
                 elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                     latex_equation = str(oMath2Latex(subt)).strip()
                     if len(latex_equation) > 0:
@@ -3239,7 +3314,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         elif len(equations) > 0:
             # The paragraph's text without equations or hidden runs.
-            if len(self._get_paragraph_text(paragraph).strip()) == 0 and len(text) > 0:
+            if not self._get_paragraph_text(paragraph).strip() and len(text) > 0:
                 # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
                 parent = self.parents[level - 1]
@@ -3967,34 +4042,57 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return ref_for_rich_cell
 
     @staticmethod
-    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
-        """Return a row's ``w:tc`` cells in document order.
+    def _unwrapped_children(
+        parent: BaseOxmlElement, target: str
+    ) -> list[BaseOxmlElement]:
+        """Return the ``target`` elements under ``parent``, looking through wrappers.
 
-        Word wraps a cell in a content control (``w:sdt``) for date pickers and
-        for fields bound to document properties, so the cell then sits at
-        ``w:tr/w:sdt/w:sdtContent/w:tc``. ``CT_Row.tc_lst`` only yields direct
-        ``w:tc`` children, so such a cell would be skipped entirely and every
-        later cell in the row would take its grid column.
+        ``w:customXml`` and content controls (``w:sdt/w:sdtContent``) may wrap
+        rows and cells. Elements inside them are returned in document order, as
+        if they were direct children. Use this instead of python-docx accessors
+        such as ``CT_Tbl.tr_lst`` and ``CT_Row.tc_lst``, which only see direct
+        children.
 
         Args:
-            row_element: The ``w:tr`` element, or a ``w:sdtContent`` inside one.
+            parent: The element to search, or a wrapper inside it.
+            target: The local name of the elements to return, e.g. ``"tc"``.
 
         Returns:
-            The row's cells, with content-control wrappers unwrapped.
+            The matching elements, with the wrappers unwrapped.
         """
-        cells: list[BaseOxmlElement] = []
-        for child in row_element:
+        found: list[BaseOxmlElement] = []
+        for child in parent:
             tag_name = etree.QName(child).localname
-            if tag_name == "tc":
-                cells.append(child)
+            if tag_name == target:
+                found.append(child)
+            elif tag_name == "customXml":
+                found.extend(MsWordDocumentBackend._unwrapped_children(child, target))
             elif tag_name == "sdt":
                 sdt_content = child.find(
                     "./w:sdtContent",
                     namespaces=_OOXML_NAMESPACES,
                 )
                 if sdt_content is not None:
-                    cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
-        return cells
+                    found.extend(
+                        MsWordDocumentBackend._unwrapped_children(sdt_content, target)
+                    )
+        return found
+
+    @staticmethod
+    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
+        """Return a row's ``w:tc`` cells in document order.
+
+        Cells inside ``w:customXml`` or a content control, such as a date
+        picker or a field bound to a document property, are included at their
+        position in the row.
+
+        Args:
+            row_element: The ``w:tr`` element.
+
+        Returns:
+            The row's cells, with the wrappers unwrapped.
+        """
+        return MsWordDocumentBackend._unwrapped_children(row_element, "tc")
 
     def _handle_tables(
         self,
@@ -4019,7 +4117,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
-        num_rows = len(table.rows)
+        rows = [
+            _Row(tr, table)
+            for tr in MsWordDocumentBackend._unwrapped_children(element, "tr")
+        ]
+        num_rows = len(rows)
         # Some producers omit the grid or declare fewer columns than the rows use.
         grid = element.find(qn("w:tblGrid"))
         declared_cols = len(grid.findall(qn("w:gridCol"))) if grid is not None else 0
@@ -4028,7 +4130,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 row.grid_cols_before
                 + sum(tc.grid_span for tc in self._row_cells(row._tr))
                 + row.grid_cols_after
-                for row in table.rows
+                for row in rows
             ),
             default=0,
         )
@@ -4036,7 +4138,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:
-            single_row_cells = MsWordDocumentBackend._row_cells(table.rows[0]._tr)
+            single_row_cells = MsWordDocumentBackend._row_cells(rows[0]._tr)
             if not single_row_cells:
                 return elem_ref
             cell_element = _Cell(single_row_cells[0], table)
@@ -4058,7 +4160,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref.append(docling_table.get_ref())
 
         open_cells: dict[int, TableCell] = {}
-        for row_idx, row in enumerate(table.rows):
+        for row_idx, row in enumerate(rows):
             grid_col = row.grid_cols_before
             for tc in MsWordDocumentBackend._row_cells(row._tr):
                 if grid_col >= num_cols:
@@ -4075,29 +4177,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue
 
                 cell = _Cell(tc, table)
-
-                # cell.text includes hidden runs, so rebuild it from the
-                # paragraphs' visible content when the cell has any. A cell has
-                # no layer of its own, so fully hidden paragraphs are left out.
-                cell_text = cell.text
-                if self._uses_hidden_text and any(
-                    self._is_hidden_run(Run(r_el, p), self._get_style_chain(p.style))
-                    for p in cell.paragraphs
-                    for r_el in p._p.xpath(".//w:r")
-                ):
-                    cell_text = "\n".join(
-                        self._get_paragraph_text(p)
-                        for p in cell.paragraphs
-                        if not self._is_hidden_paragraph(p)
-                    )
+                cell_text = self._get_cell_text(cell)
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
                     element=cell._element, text=cell_text
                 )
-                if len(equations) == 0:
-                    text = cell_text
-                else:
+                if len(equations) > 0:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
@@ -4889,7 +4975,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return
             emitted_partnames.add(partname)
 
-            par = [txt for txt in (p.text.strip() for p in part.paragraphs) if txt]
+            # python-docx ``Paragraph.text`` skips ``w:sym``, so check for it too
+            par = [
+                p for p in part.paragraphs if p.text.strip() or p._p.xpath(".//w:sym")
+            ]
             tables = part.tables
             has_blip = self._has_blip(part._element)
             has_txbx = len(txbx_xpath(part._element)) > 0

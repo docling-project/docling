@@ -9,6 +9,7 @@ import logging
 import quopri
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage
@@ -17,7 +18,12 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItemLabel,
+    DoclingDocument,
+    DocumentOrigin,
+)
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -98,6 +104,12 @@ _MSG_INSTALL_HINT = (
     "The 'python-oxmsg' package is required to process Outlook .msg files. "
     "Install it with `pip install 'docling-slim[format-email]'`."
 )
+
+
+@dataclass(frozen=True)
+class _BodyParagraph:
+    text: str
+    content_layer: ContentLayer
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
@@ -319,7 +331,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         )
         return backend.convert()
 
-    def _get_body_paragraphs(self) -> list[str]:
+    def _get_body_paragraphs(self) -> list[_BodyParagraph]:
         assert self.mail is not None
 
         # A part being present does not mean it holds a paragraph. A
@@ -329,9 +341,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
-            paragraphs: list[str] = []
+            paragraphs: list[_BodyParagraph] = []
             for part in self.mail.text_plain:
-                paragraphs.extend(self._split_paragraphs(part))
+                paragraphs.extend(
+                    _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
+                    for paragraph in self._split_paragraphs(part)
+                )
             if paragraphs:
                 return paragraphs
 
@@ -339,16 +354,26 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             paragraphs = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
-                # The paragraphs become plain text items, and every export of
-                # the email escapes them, so do not escape them here as well.
-                markdown = html_doc.export_to_markdown(
-                    escape_html=False, escape_underscores=False
-                )
-                paragraphs.extend(self._split_paragraphs(markdown))
+                # Export each layer separately so furniture remains available
+                # without becoming part of the email's default body export.
+                for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):
+                    # The outer email export escapes these text items.
+                    markdown = html_doc.export_to_markdown(
+                        included_content_layers={content_layer},
+                        escape_html=False,
+                        escape_underscores=False,
+                    )
+                    paragraphs.extend(
+                        _BodyParagraph(text=paragraph, content_layer=content_layer)
+                        for paragraph in self._split_paragraphs(markdown)
+                    )
             if paragraphs:
                 return paragraphs
 
-        return self._split_paragraphs(self.mail.body)
+        return [
+            _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
+            for paragraph in self._split_paragraphs(self.mail.body)
+        ]
 
     def _get_date_text(self) -> str:
         assert self.mail is not None
@@ -561,7 +586,11 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if date_text:
             doc.add_text(label=DocItemLabel.TEXT, text=f"Date: {date_text}")
         for body_paragraph in body_paragraphs:
-            doc.add_text(label=DocItemLabel.TEXT, text=body_paragraph)
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                text=body_paragraph.text,
+                content_layer=body_paragraph.content_layer,
+            )
 
         self._add_attachments(doc)
 
