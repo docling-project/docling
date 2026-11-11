@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     GroupLabel,
@@ -130,9 +131,10 @@ def get_pictures(doc: DoclingDocument) -> list[PictureItem]:
     return [item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)]
 
 
-def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
+def convert_jats_article_meta(article_meta: str, body: str = "") -> DoclingDocument:
     xml = JATS_WRAPPER.format(
         content=f"<front><article-meta>{article_meta}</article-meta></front>"
+        + (f"<body>{body}</body>" if body else "")
     )
     stream = DocumentStream(name="article-meta-test.nxml", stream=BytesIO(xml.encode()))
     return get_converter().convert(stream).document
@@ -433,6 +435,99 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     assert _inline_group_items(doc) == []
     footnotes = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
     assert footnotes == ["Plain footnote."]
+
+
+@pytest.mark.parametrize(
+    "notes",
+    [
+        (),
+        ("Author contribution marker.",),
+        ("Author contribution marker.", "Conflict statement marker."),
+    ],
+    ids=["none", "single", "multiple"],
+)
+def test_jats_author_footnotes_are_furniture(notes: tuple[str, ...]):
+    footnote_xml = "".join(f"<fn><p>{note}</p></fn>" for note in notes)
+    author_notes = f"<author-notes>{footnote_xml}</author-notes>" if notes else ""
+    doc = convert_jats_article_meta(
+        f"""
+        <title-group><article-title>Author Footnote Test</article-title></title-group>
+        {author_notes}
+        """,
+        "<p>Body text.</p>",
+    )
+
+    footnotes = [t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    assert [t.text for t in footnotes] == list(notes)
+    assert all(t.content_layer == ContentLayer.FURNITURE for t in footnotes)
+    assert _furniture_statements(doc) == [[(note, None)] for note in notes]
+    body = ["# Author Footnote Test", "Body text."]
+    assert doc.export_to_markdown() == "\n\n".join(body)
+    assert doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    ) == "\n\n".join([*body, *notes])
+
+
+def test_jats_author_footnote_preserves_formatting_link_formula_and_paragraphs():
+    doc = convert_jats_article_meta(
+        """
+        <title-group><article-title>Author Footnote Test</article-title></title-group>
+        <author-notes>
+          <fn><label>1</label><p>See <italic><ext-link
+            xlink:href="https://example.org/statement">disclosure</ext-link></italic>
+            and <inline-formula><tex-math>x+1</tex-math></inline-formula>.</p>
+            <p>Further details.</p></fn>
+        </author-notes>
+        """
+    )
+
+    footnotes = [t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    disclosures = [t for t in footnotes if t.text == "disclosure"]
+    assert len(disclosures) == 1
+    disclosure = disclosures[0]
+    assert disclosure.formatting is not None and disclosure.formatting.italic
+    assert str(disclosure.hyperlink) == "https://example.org/statement"
+    assert all(t.content_layer == ContentLayer.FURNITURE for t in footnotes)
+    formula = next(t for t in doc.texts if t.label == DocItemLabel.FORMULA)
+    assert formula.text == "x+1"
+    assert formula.content_layer == ContentLayer.FURNITURE
+    assert disclosure.parent is not None and disclosure.parent == formula.parent
+    group = disclosure.parent.resolve(doc)
+    assert group.label == GroupLabel.INLINE
+    assert group.content_layer == ContentLayer.FURNITURE
+    assert doc.export_to_markdown() == "# Author Footnote Test"
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert "Author Notes" not in markdown
+    assert "1 See" in markdown
+    assert "https://example.org/statement" in markdown
+    assert "$x+1$. Further details." in markdown
+
+
+def test_jats_author_footnotes_share_furniture_with_article_statements():
+    doc = convert_jats_article_meta(
+        """
+        <title-group><article-title>Article metadata</article-title></title-group>
+        <author-notes>
+          <fn><p>First author note.</p></fn>
+          <fn><p>Second author note.</p></fn>
+        </author-notes>
+        <permissions><license><license-p>License statement.</license-p></license></permissions>
+        <funding-group><funding-statement>Funding statement.</funding-statement></funding-group>
+        """,
+        "<p>Body text.</p><fn-group><fn><p>Body footnote.</p></fn></fn-group>",
+    )
+
+    assert _furniture_statements(doc) == [
+        [("First author note.", None)],
+        [("Second author note.", None)],
+        [("License statement.", None)],
+        [("Funding statement.", None)],
+    ]
+    body_footnote = next(t for t in doc.texts if t.text == "Body footnote.")
+    assert body_footnote.label == DocItemLabel.FOOTNOTE
+    assert body_footnote.content_layer == ContentLayer.BODY
 
 
 _FOOTNOTE = (
@@ -1567,6 +1662,98 @@ def test_jats_author_affiliations_still_map_from_xref():
     md = doc.export_to_markdown()
     assert "Jane Doe" in md
     assert "Example University" in md
+
+
+def _furniture_statements(doc: DoclingDocument) -> list[list[tuple[str, str | None]]]:
+    """Return the (text, hyperlink) runs of each furniture text, in document order.
+
+    The runs of a text with styling or links share an inline group.
+    """
+    statements: dict[str, list[tuple[str, str | None]]] = {}
+    for item in doc.texts:
+        if item.content_layer != ContentLayer.FURNITURE:
+            continue
+        key = item.self_ref
+        if item.parent is not None:
+            parent = item.parent.resolve(doc)
+            if parent.label == GroupLabel.INLINE:
+                assert parent.content_layer == ContentLayer.FURNITURE
+                key = parent.self_ref
+        statements.setdefault(key, []).append(
+            (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        )
+    return list(statements.values())
+
+
+def test_jats_license_and_funding_statements_are_furniture():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Control</article-title></title-group>
+      <permissions><license xlink:href="https://example.org/c3-licence"><license-p>CHARLIE-LICENCE terms of the
+      <ext-link ext-link-type="uri" xlink:href="https://example.org/c3-licence">licence</ext-link>.</license-p></license></permissions>
+      <abstract><p>CHARLIE-ABSTRACT paragraph.</p></abstract>
+      <funding-group><funding-statement>CHARLIE-FUNDING statement.</funding-statement></funding-group>
+""",
+        "<sec><title>S</title><p>Body.</p></sec>",
+    )
+
+    assert _furniture_statements(doc) == [
+        [
+            ("CHARLIE-LICENCE terms of the ", None),
+            ("licence", "https://example.org/c3-licence"),
+            (".", None),
+        ],
+        [("CHARLIE-FUNDING statement.", None)],
+    ]
+    # The default export keeps to the body.
+    body_markdown = doc.export_to_markdown()
+    assert "CHARLIE-ABSTRACT paragraph." in body_markdown
+    assert "CHARLIE-LICENCE" not in body_markdown
+    assert "CHARLIE-FUNDING" not in body_markdown
+    # On request, the statements follow the article content.
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert (
+        markdown.index("Body.")
+        < markdown.index("CHARLIE-LICENCE")
+        < markdown.index("CHARLIE-FUNDING")
+    )
+
+
+def test_jats_copyright_and_each_license_paragraph_are_kept_in_order():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Permissions</article-title></title-group>
+      <permissions>
+        <copyright-statement>© The Authors 2026.</copyright-statement>
+        <copyright-year>2026</copyright-year>
+        <license license-type="cc-by" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+          <license-p>Distributed under the CC BY licence.</license-p>
+          <license-p>Funded by SCOAP<sup>3</sup></license-p>
+        </license>
+      </permissions>
+      <funding-group>
+        <award-group><funding-source>Agency</funding-source></award-group>
+        <funding-statement>First grant.</funding-statement>
+        <funding-statement>Second grant.</funding-statement>
+      </funding-group>
+"""
+    )
+
+    assert _furniture_statements(doc) == [
+        [("© The Authors 2026.", None)],
+        [("Distributed under the CC BY licence.", None)],
+        [("Funded by SCOAP", None), ("3", None)],
+        [("First grant.", None)],
+        [("Second grant.", None)],
+    ]
+    superscripts = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.script == Script.SUPER
+    ]
+    assert superscripts == ["3"]
 
 
 @pytest.mark.parametrize("use_stream", [False, True])

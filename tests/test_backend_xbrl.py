@@ -9,6 +9,7 @@ and Retrieval (EDGAR) system.
 """
 
 import os
+import shutil
 import threading
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -16,11 +17,11 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DoclingDocument, GraphCellLabel, GraphLinkLabel
 
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import XBRLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.document_converter import DocumentConverter, XBRLFormatOption
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
@@ -98,6 +99,105 @@ def test_e2e_xbrl_conversions(documents):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
 
 
+def _convert_with_taxonomy(report: Path, taxonomy: Path) -> DoclingDocument:
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XML_XBRL],
+        format_options={
+            InputFormat.XML_XBRL: XBRLFormatOption(
+                backend_options=XBRLBackendOptions(
+                    enable_local_fetch=True, taxonomy=taxonomy
+                )
+            )
+        },
+    )
+    return converter.convert(report).document
+
+
+def _fact_rows(doc: DoclingDocument) -> list[tuple[str, str, list[str]]]:
+    """Return the key, its concept and the texts of its value cells, for each fact."""
+    assert doc.key_value_items, "document has no key_value_items"
+    graph = doc.key_value_items[0].graph
+    cells = {cell.cell_id: cell for cell in graph.cells}
+    targets: dict[int, list[str]] = {}
+    for link in graph.links:
+        if link.label == GraphLinkLabel.TO_VALUE:
+            targets.setdefault(link.source_cell_id, []).append(
+                cells[link.target_cell_id].text
+            )
+    return [
+        (cell.text, cell.orig, targets[cell.cell_id])
+        for cell in graph.cells
+        if cell.cell_id in targets
+        and cells[cell.cell_id].label == GraphCellLabel.KEY
+        and targets[cell.cell_id][0].startswith("value: ")
+    ]
+
+
+def test_ixbrl_report_matches_xbrl_instance_of_same_filing():
+    """The iXBRL report and the XBRL instance of one filing convert alike.
+
+    `mlac-20251231.htm` is the inline XBRL report of the filing whose XBRL
+    instance is `sources/mlac-20251231.xml`. The text is the same, and the facts
+    are the same. Only the values that need an inline transformation that Arelle
+    does not implement (`ixt-sec:numwordsen`, "one") differ.
+    """
+    data_dir = Path(__file__).parent / "data" / "xbrl"
+    taxonomy = data_dir / "sources" / "mlac-taxonomy"
+
+    xbrl_doc = _convert_with_taxonomy(
+        data_dir / "sources" / "mlac-20251231.xml", taxonomy
+    )
+    ixbrl_doc = _convert_with_taxonomy(
+        data_dir / "ixbrl" / "mlac-20251231.htm", taxonomy
+    )
+
+    assert ixbrl_doc.export_to_markdown(
+        compact_tables=True
+    ) == xbrl_doc.export_to_markdown(compact_tables=True)
+    assert len(ixbrl_doc.tables) == len(xbrl_doc.tables) == 23
+
+    xbrl_rows = _fact_rows(xbrl_doc)
+    ixbrl_rows = _fact_rows(ixbrl_doc)
+    assert len(ixbrl_rows) == len(xbrl_rows) == 319
+    assert [row[:2] for row in ixbrl_rows] == [row[:2] for row in xbrl_rows]
+    differences = [
+        (xbrl_row[1], xbrl_row[2][0], ixbrl_row[2][0])
+        for xbrl_row, ixbrl_row in zip(xbrl_rows, ixbrl_rows)
+        if xbrl_row != ixbrl_row
+    ]
+    assert [(concept, xbrl) for concept, xbrl, _ in differences] == [
+        ("us-gaap:StockIssuedDuringPeriodSharesConversionOfUnits", "value: 1"),
+        ("mlac:NumberOfOrdinaryShares", "value: 1"),
+        ("us-gaap:NumberOfReportableSegments", "value: 1"),
+    ]
+    assert {ixbrl for _, _, ixbrl in differences} == {"value: (ixTransformValueError)"}
+
+    entity_float = next(row for row in ixbrl_rows if row[1] == "dei:EntityPublicFloat")
+    assert entity_float == (
+        "EntityPublicFloat",
+        "dei:EntityPublicFloat",
+        ["value: 239160600", "period: 2025-06-30", "currency: USD", "decimals: 0"],
+    )
+
+
+def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_packages):
+    """A package without the extension taxonomy leaves the facts unresolved.
+
+    The package maps every ``https://`` URL to its own files. The extension
+    taxonomy of the report is not among them, and it is not fetched remotely.
+    """
+    data_dir = Path(__file__).parent / "data" / "xbrl"
+    shutil.copy(
+        data_dir / "sources" / "mlac-taxonomy" / "taxonomy_package.zip", tmp_path
+    )
+
+    with caplog.at_level("WARNING", logger="docling.backend.xml.xbrl_backend"):
+        doc = _convert_with_taxonomy(data_dir / "ixbrl" / "mlac-20251231.htm", tmp_path)
+
+    assert len(doc.tables) == 0
+    assert "480 of 480 facts could not be linked to a concept" in caplog.text
+
+
 def test_xbrl_divide_unit_keeps_denominator(documents):
     """A fact measured in a divide unit must report both of its measures.
 
@@ -127,14 +227,184 @@ def test_xbrl_divide_unit_keeps_denominator(documents):
     assert unit_texts.get("us-gaap:Assets") == {"currency: USD"}
 
 
-def _instance_with_schema_ref(href: str) -> BytesIO:
+def test_xbrl_source_uri_rejects_credentials():
+    with pytest.raises(ValueError):
+        XBRLBackendOptions(source_uri="https://user:pass@www.sec.gov/report.htm")
+
+
+def test_xbrl_format_option_does_not_keep_url_with_credentials():
+    option = XBRLFormatOption(
+        backend_options=XBRLBackendOptions(enable_remote_fetch=True)
+    )
+
+    options = option.backend_options_for_input(
+        "https://user:pass@www.sec.gov/Archives/report.htm"
+    )
+
+    assert options is not None
+    assert options.source_uri is None
+
+
+def test_xbrl_source_uri_does_not_bypass_fetch_policy(
+    no_taxonomy_packages, local_server
+):
+    """A `source_uri` on a non-public host must not be fetched from."""
+    base_url, requests = local_server
+    stream = _instance_with_schema_ref("relative.xsd")
+
+    message = _load_refused(
+        stream,
+        XBRLBackendOptions(
+            enable_remote_fetch=True, source_uri=f"{base_url}/dir/report.xbrl"
+        ),
+    )
+
+    assert f"{base_url}/dir/relative.xsd" in message
+    assert "restricted IP address" in message
+    assert requests == []
+
+
+def test_xbrl_source_uri_resolves_relative_references(
+    no_taxonomy_packages, local_server
+):
+    """Missing relative references stay on the origin of `source_uri`."""
+    base_url, requests = local_server
+
+    message = _load_refused(
+        _instance_with_schema_ref(
+            "relative.xsd",
+            "/absolute.xsd",
+            "../parent.xsd",
+            "a&amp;b.xsd",
+            "a&quot; onload=&quot;x.xsd",
+        ),
+        XBRLBackendOptions(
+            enable_remote_fetch=True, source_uri=f"{base_url}/dir/report.xbrl"
+        ),
+    )
+
+    for url in (
+        f"{base_url}/dir/relative.xsd",
+        f"{base_url}/absolute.xsd",
+        f"{base_url}/parent.xsd",
+        f"{base_url}/dir/a&b.xsd",
+        f"{base_url}/dir/a%22%20onload=%22x.xsd",
+    ):
+        assert f"{url} (Access to restricted IP address" in message
+    assert requests == []
+
+
+def test_xbrl_source_uri_does_not_rewrite_other_origins(
+    no_taxonomy_packages, local_server
+):
+    base_url, _ = local_server
+
+    message = _load_refused(
+        _instance_with_schema_ref("//other.example/x.xsd"),
+        XBRLBackendOptions(
+            enable_remote_fetch=True, source_uri=f"{base_url}/dir/report.xbrl"
+        ),
+    )
+
+    assert "fetch options: //other.example/x.xsd (" in message
+
+
+def test_xbrl_source_uri_keeps_local_taxonomy_files(
+    no_taxonomy_packages, local_server, tmp_path
+):
+    """A reference found in the `taxonomy` folder is loaded from there."""
+    base_url, requests = local_server
+    (tmp_path / "local.xsd").write_text(
+        '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>'
+    )
+    stream = _instance_with_schema_ref("local.xsd")
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.XML_XBRL,
+        backend=XBRLDocumentBackend,
+        filename="instance.xbrl",
+    )
+    options = XBRLBackendOptions(
+        enable_local_fetch=True,
+        enable_remote_fetch=True,
+        source_uri=f"{base_url}/dir/report.xbrl",
+        taxonomy=tmp_path,
+    )
+
+    backend = XBRLDocumentBackend(in_doc, stream, options)
+    backend.unload()
+
+    assert requests == []
+
+
+def test_xbrl_conversion_does_not_keep_taxonomy_packages(
+    no_taxonomy_packages, tmp_path
+):
+    """The taxonomy package of one conversion does not affect the next one."""
+    sources = Path(__file__).parent / "data" / "xbrl" / "sources"
+    extension_only = tmp_path / "mlac-taxonomy"
+    shutil.copytree(
+        sources / "mlac-taxonomy",
+        extension_only,
+        ignore=shutil.ignore_patterns("*.zip"),
+    )
+
+    def count_cells(report: str, taxonomy: Path) -> int:
+        converter = DocumentConverter(
+            allowed_formats=[InputFormat.XML_XBRL],
+            format_options={
+                InputFormat.XML_XBRL: XBRLFormatOption(
+                    backend_options=XBRLBackendOptions(
+                        enable_local_fetch=True, taxonomy=taxonomy
+                    )
+                )
+            },
+        )
+        doc = converter.convert(sources / report).document
+        return len(doc.key_value_items[0].graph.cells)
+
+    expected = count_cells("mlac-20251231.xml", extension_only)
+    count_cells("grve_10q_htm.xml", sources / "grve-taxonomy")
+
+    assert expected > 0
+    assert count_cells("mlac-20251231.xml", extension_only) == expected
+
+
+_SOURCE_URL = "https://www.sec.gov/Archives/edgar/data/1/2/report-20260930.htm"
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (_SOURCE_URL, _SOURCE_URL),
+        (Path("report.htm"), None),
+        ("local/report.htm", None),
+        (DocumentStream(name="report.htm", stream=BytesIO(b"")), None),
+    ],
+)
+def test_xbrl_format_option_keeps_remote_source_uri(source, expected):
+    option = XBRLFormatOption(
+        backend_options=XBRLBackendOptions(enable_remote_fetch=True)
+    )
+
+    options = option.backend_options_for_input(source)
+
+    assert options is not None
+    assert (str(options.source_uri) if options.source_uri else None) == expected
+    assert options.enable_remote_fetch
+
+
+def _instance_with_schema_ref(*hrefs: str) -> BytesIO:
+    refs = "".join(
+        f'<link:schemaRef xlink:type="simple" xlink:href="{href}"/>' for href in hrefs
+    )
     return BytesIO(
-        b'<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance"'
-        b' xmlns:link="http://www.xbrl.org/2003/linkbase"'
-        b' xmlns:xlink="http://www.w3.org/1999/xlink">'
-        b'<link:schemaRef xlink:type="simple" xlink:href="'
-        + href.encode()
-        + b'"/></xbrli:xbrl>'
+        (
+            '<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance"'
+            ' xmlns:link="http://www.xbrl.org/2003/linkbase"'
+            ' xmlns:xlink="http://www.w3.org/1999/xlink">'
+            f"{refs}</xbrli:xbrl>"
+        ).encode()
     )
 
 

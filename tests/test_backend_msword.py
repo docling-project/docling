@@ -21,12 +21,13 @@ from docling_core.types.doc import (
     ListItem,
     PictureClassificationLabel,
     PictureItem,
+    TableData,
     TableItem,
 )
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
@@ -951,6 +952,67 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
+    """A table cell keeps the text of runs nested in inline wrappers.
+
+    The wrappers are content controls, simple fields, smart tags and tracked
+    insertions. Deleted text stays out, and each paragraph is one line.
+    """
+    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    wrapped_runs = {
+        "Name": (
+            f"<w:sdt {w}><w:sdtPr/><w:sdtContent>"
+            "<w:r><w:t>Jane Doe</w:t></w:r></w:sdtContent></w:sdt>"
+        ),
+        "Customer": (
+            f'<w:fldSimple {w} w:instr=" MERGEFIELD Customer ">'
+            "<w:r><w:t>ACME Corp</w:t></w:r></w:fldSimple>"
+        ),
+        "City": (
+            f'<w:smartTag {w} w:uri="urn:schemas-microsoft-com:office:smarttags" '
+            'w:element="City"><w:r><w:t>Paris</w:t></w:r></w:smartTag>'
+        ),
+        "Amount": (
+            f'<w:ins {w} w:id="1" w:author="Reviewer">'
+            "<w:r><w:t>1200</w:t></w:r></w:ins>"
+        ),
+        "Removed": (
+            f'<w:del {w} w:id="2" w:author="Reviewer">'
+            "<w:r><w:delText>Old value</w:delText></w:r></w:del>"
+        ),
+    }
+
+    document = Document()
+    table = document.add_table(rows=len(wrapped_runs) + 1, cols=2)
+    for row_idx, (label, wrapped_run) in enumerate(wrapped_runs.items()):
+        table.cell(row_idx, 0).text = label
+        table.cell(row_idx, 1).paragraphs[0]._p.append(etree.fromstring(wrapped_run))
+
+    last_row = len(wrapped_runs)
+    table.cell(last_row, 0).text = "Two paragraphs"
+    table.cell(last_row, 1).paragraphs[0].add_run("First")
+    table.cell(last_row, 1).add_paragraph()._p.append(
+        etree.fromstring(wrapped_runs["Name"])
+    )
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Jane Doe",
+        "Customer",
+        "ACME Corp",
+        "City",
+        "Paris",
+        "Amount",
+        "1200",
+        "Removed",
+        "",
+        "Two paragraphs",
+        "First\nJane Doe",
+    ]
+
+
 def _table_with_grid_before(
     tmp_path,
     *,
@@ -1176,6 +1238,111 @@ def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
     assert build((2,)) == row
     # Two wrapped cells in the same row, one of them not the first.
     assert build((0, 2)) == row
+
+
+def _tc(text: str, vmerge: str | None = None) -> str:
+    """Return the XML of a ``w:tc`` holding one paragraph with ``text``."""
+    merge = f'<w:vMerge w:val="{vmerge}"/>' if vmerge else ""
+    return (
+        f'<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/>{merge}</w:tcPr>'
+        f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
+    )
+
+
+def _convert_table_xml(tmp_path: Path, rows_xml: str, grid_cols: int = 2) -> TableData:
+    """Convert a ``w:tbl`` built from ``rows_xml`` and return its table data.
+
+    Args:
+        tmp_path: Directory for the generated DOCX file.
+        rows_xml: The children of ``w:tbl`` that follow ``w:tblGrid``.
+        grid_cols: Number of ``w:gridCol`` entries to declare.
+
+    Returns:
+        The data of the first table in the converted document.
+    """
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    grid = '<w:gridCol w:w="2000"/>' * grid_cols
+    tbl = parse_xml(
+        f'<w:tbl xmlns:w="{w_ns}">'
+        '<w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>'
+        f"<w:tblGrid>{grid}</w:tblGrid>{rows_xml}</w:tbl>"
+    )
+    doc = Document()
+    body = doc.element.body
+    body.insert(len(body) - 1, tbl)
+    path = tmp_path / "table.docx"
+    doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    return converter.convert(path).document.tables[0].data
+
+
+def test_table_rows_and_cells_wrapped_in_custom_xml_or_content_control(tmp_path):
+    """Wrapped rows and cells are read at their grid position.
+
+    Both ``w:customXml`` and ``w:sdt`` may wrap a row, and ``w:customXml`` may
+    wrap a cell (``EG_ContentRowContent`` and ``EG_ContentCellContent``). Row
+    order: a plain row, a ``w:customXml`` row, a ``w:sdt`` row, and a plain row
+    whose second cell is inside ``w:customXml``.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}{_tc('A2')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>'
+        f"<w:sdt><w:sdtPr/><w:sdtContent><w:tr>{_tc('C1')}{_tc('C2')}</w:tr></w:sdtContent></w:sdt>"
+        f'<w:tr>{_tc("D1")}<w:customXml w:element="Tagged">{_tc("D2")}</w:customXml></w:tr>',
+    )
+
+    assert data.num_rows == 4
+    assert data.num_cols == 2
+    grid = [[""] * data.num_cols for _ in range(data.num_rows)]
+    for cell in data.table_cells or []:
+        grid[cell.start_row_offset_idx][cell.start_col_offset_idx] = cell.text or ""
+    assert grid == [["A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["D1", "D2"]]
+
+
+def test_vertical_merge_continues_into_a_wrapped_row(tmp_path):
+    """A ``vMerge="continue"`` cell inside a ``w:customXml`` row extends the merge.
+
+    Row order: restart row, wrapped continuation row, plain row.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('merged', 'restart')}{_tc('A2')}</w:tr>"
+        '<w:customXml w:element="Tagged">'
+        f"<w:tr>{_tc('', 'continue')}{_tc('B2')}</w:tr>"
+        "</w:customXml>"
+        f"<w:tr>{_tc('C1')}{_tc('C2')}</w:tr>",
+    )
+
+    assert data.num_rows == 3
+    merged = next(c for c in data.table_cells if c.text == "merged")
+    assert merged.row_span == 2
+    assert merged.start_row_offset_idx == 0
+    assert merged.end_row_offset_idx == 2
+    texts = {c.text for c in data.table_cells}
+    assert {"A2", "B2", "C1", "C2"} <= texts
+
+
+def test_wrapped_row_wider_than_the_declared_grid_widens_the_table(tmp_path):
+    """The column count includes a ``w:customXml`` row wider than ``w:tblGrid``.
+
+    The grid declares one column and the plain row uses one, but the wrapped
+    row has two cells.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>',
+        grid_cols=1,
+    )
+
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    positions = {
+        c.text: (c.start_row_offset_idx, c.start_col_offset_idx)
+        for c in data.table_cells
+    }
+    assert positions == {"A1": (0, 0), "B1": (1, 0), "B2": (1, 1)}
 
 
 def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):
@@ -1446,14 +1613,18 @@ def test_handle_equations_in_text_returns_original_text_on_mismatch(
 def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
     equation = backend.equation_bookends.format(EQ="x")
 
-    element = etree.Element("p")
-    empty_run = etree.SubElement(element, "r")
-    empty_text = etree.SubElement(empty_run, "t")
+    element = OxmlElement("w:p")
+    empty_run = OxmlElement("w:r")
+    empty_text = OxmlElement("w:t")
     empty_text.text = ""
-    etree.SubElement(element, "oMath")
-    tail_run = etree.SubElement(element, "r")
-    tail_text = etree.SubElement(tail_run, "t")
+    empty_run.append(empty_text)
+    element.append(empty_run)
+    etree.SubElement(element, qn("m:oMath"))
+    tail_run = OxmlElement("w:r")
+    tail_text = OxmlElement("w:t")
     tail_text.text = "tail"
+    tail_run.append(tail_text)
+    element.append(tail_run)
 
     monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
 
@@ -2819,3 +2990,124 @@ def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_pat
         "Paragraph before AlternateContent",
         "Paragraph after AlternateContent",
     ]
+
+
+def test_symbol_font_glyphs(docx_paths):
+    """w:sym characters are kept and Symbol font text is mapped to Unicode."""
+    name = "docx_symbol_font_glyphs.docx"
+    path = next(item for item in docx_paths if item.name == name)
+    doc = get_converter().convert(path).document
+
+    # each paragraph is "<label>: <payload> end"
+    payloads = {
+        label: payload.removesuffix(" end")
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+        for label, payload in [item.text.split(": ", 1)]
+    }
+
+    # Symbol font text, stored as the PUA code point or as the plain byte
+    assert payloads["T1 Symbol F0B7"] == "\N{BULLET}"
+    assert payloads["T5 Symbol PUA greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA}\N{GREEK SMALL LETTER BETA}\N{GREEK SMALL LETTER PI}"
+    )
+    assert payloads["T6 Symbol ASCII greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA} \N{GREEK SMALL LETTER BETA} \N{GREEK SMALL LETTER PI}"
+    )
+    # w:sym is no longer dropped: mapped for Symbol, kept unchanged otherwise
+    assert payloads["S2 sym Symbol F061"] == "\N{GREEK SMALL LETTER ALPHA}"
+    assert payloads["S1 sym Wingdings F06C"] == "\uf06c"
+    assert payloads["S3 sym Wingdings F0E8"] == "\uf0e8"
+    # text in other fonts is unchanged
+    assert payloads["T2 Wingdings F0A7"] == "\uf0a7"
+    assert payloads["C1 Arial"] == "\N{LATIN SMALL LETTER E WITH ACUTE} a b p"
+
+
+def _append_sym(paragraph, font: str, char: str) -> None:
+    """Append a run with a ``w:sym`` element (Insert > Symbol in Word)."""
+    run = paragraph.add_run()
+    sym = OxmlElement("w:sym")
+    sym.set(qn("w:font"), font)
+    sym.set(qn("w:char"), char)
+    run._r.append(sym)
+
+
+def test_symbol_only_header_footer_is_kept(tmp_path):
+    """A header or footer that holds only w:sym characters is not dropped."""
+    docx_path = tmp_path / "symbol_only_header_footer.docx"
+    document = Document()
+    _append_sym(document.sections[0].header.paragraphs[0], "Symbol", "F0D3")
+    _append_sym(document.sections[0].footer.paragraphs[0], "Wingdings", "F0FC")
+    document.add_paragraph("body text")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    header_texts, footer_texts = _header_footer_texts(doc)
+
+    assert header_texts == ["\N{COPYRIGHT SIGN}"]
+    assert footer_texts == ["\uf0fc"]
+
+
+def test_sym_with_invalid_char_is_skipped(tmp_path):
+    """A w:sym with a missing or invalid w:char is skipped, not an error."""
+    docx_path = tmp_path / "invalid_sym.docx"
+    document = Document()
+    paragraph = document.add_paragraph("a")
+    _append_sym(paragraph, "Symbol", "zz")
+    paragraph.add_run("b")
+    paragraph.add_run()._r.append(OxmlElement("w:sym"))
+    paragraph.add_run("c")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+
+    assert texts == ["abc"]
+
+
+def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
+    """An inline equation is kept when its paragraph or cell has Symbol text."""
+    omath = (
+        '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+    )
+    docx_path = tmp_path / "equation_next_to_symbol.docx"
+    document = Document()
+    paragraph = document.add_paragraph("sym ")
+    _append_sym(paragraph, "Symbol", "F061")
+    paragraph._p.append(parse_xml(omath))
+    sym_only_paragraph = document.add_paragraph()
+    _append_sym(sym_only_paragraph, "Symbol", "F062")
+    sym_only_paragraph._p.append(parse_xml(omath))
+    table = document.add_table(rows=1, cols=2)
+    cell_paragraph = table.cell(0, 0).paragraphs[0]
+    cell_paragraph.add_run("a").font.name = "Symbol"
+    cell_paragraph._p.append(parse_xml(omath))
+    table.cell(0, 1).text = "b"
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    texts = [(item.text, item.label) for item in doc.texts]
+    assert ("sym \N{GREEK SMALL LETTER ALPHA}", DocItemLabel.TEXT) in texts
+    assert ("\N{GREEK SMALL LETTER BETA}", DocItemLabel.TEXT) in texts
+    formulas = [text for text, label in texts if label == DocItemLabel.FORMULA]
+    assert formulas == ["x=1", "x=1"]
+    cell_texts = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
+
+
+def test_symbol_font_case_and_whitespace_resilience(tmp_path):
+    """Symbol font detection handles case and whitespace variations defensively."""
+    docx_path = tmp_path / "symbol_font_casing.docx"
+    document = Document()
+    p1 = document.add_paragraph()
+    r1 = p1.add_run("a")
+    r1.font.name = " symbol "
+    p2 = document.add_paragraph()
+    _append_sym(p2, " SYMBOL ", "F061")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert texts == ["\N{GREEK SMALL LETTER ALPHA}", "\N{GREEK SMALL LETTER ALPHA}"]

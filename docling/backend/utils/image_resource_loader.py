@@ -29,7 +29,7 @@ import certifi
 import requests
 import urllib3
 from docling_core.types.doc.document import ImageRef
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import ValidationError
 from requests.utils import get_environ_proxies, select_proxy
 
@@ -313,17 +313,25 @@ class ImageResourceLoader:
         )
 
     @staticmethod
-    def _local_base_path(value: str) -> str:
-        """Return a filesystem path for a local path or ``file://`` URI."""
+    def normalize_local_base_path(value: str) -> str:
+        """Convert a file URI to a native path; leave other bases unchanged.
+
+        Raise ValueError for an empty path or an unsupported authority.
+        This operation does not grant permission to read local files.
+        """
         parsed = urlparse(value)
         if parsed.scheme.lower() != "file":
             return value
 
         path = parsed.path
-        if parsed.netloc and parsed.netloc.lower() != "localhost":
-            path = f"//{parsed.netloc}{path}"
         if not path:
             raise ValueError("Invalid file URI: empty path")
+        if parsed.netloc and parsed.netloc.lower() != "localhost":
+            if os.name != "nt":
+                raise ValueError(
+                    "Non-localhost file URI authorities require Windows UNC paths"
+                )
+            path = f"//{parsed.netloc}{path}"
         return url2pathname(path)
 
     def resolve_relative_path(
@@ -342,7 +350,7 @@ class ImageResourceLoader:
         abs_loc = loc
 
         if base_path:
-            base_path = self._local_base_path(base_path)
+            base_path = self.normalize_local_base_path(base_path)
             if loc.startswith("//"):
                 abs_loc = "https:" + loc
             elif not loc.startswith(("http://", "https://", "data:", "#")):
@@ -387,6 +395,9 @@ class ImageResourceLoader:
                 # the pixels are decoded.
                 check_image_pixels(img.size, self.max_image_pixels)
                 img.load()
+                # A camera stores an orientation tag rather than rotated pixels,
+                # and a browser shows the image turned by it.
+                img = ImageOps.exif_transpose(img)
                 # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
                 dpi = int(img.info.get("dpi", (72,))[0]) or 72
                 return ImageRef.from_pil(normalize_image_for_png(img), dpi=dpi)
