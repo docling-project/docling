@@ -216,6 +216,20 @@ def _trim_fragment_edges(runs: list[_ParagraphRun]) -> list[_ParagraphRun]:
     )
 
 
+def _block_runs(runs: list[_ParagraphRun]) -> list[_ParagraphRun]:
+    """Return the runs to emit for one paragraph.
+
+    Runs keep their source whitespace, including a whitespace-only run between two
+    others, because the serializers join the runs of an inline group verbatim. Only
+    the outer edges of a block that holds several runs or an equation are trimmed.
+    A lone text run is kept as it is.
+    """
+    non_empty = [run for run in runs if run[1]]
+    if len(non_empty) > 1 or any(run[0] == DocItemLabel.FORMULA for run in non_empty):
+        return _trim_fragment_edges(non_empty)
+    return non_empty
+
+
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
     load_dtd=False,
@@ -1161,7 +1175,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         content_layer: Optional[ContentLayer] = None,
     ) -> ListItem:
         """Add a list item; several runs or an equation go in an inline group."""
-        non_empty = _trim_fragment_edges(elements)
+        non_empty = _block_runs(elements)
         has_equations = any(label == DocItemLabel.FORMULA for label, *_ in non_empty)
         if len(non_empty) <= 1 and not has_equations:
             _, text, format, hyperlink = (
@@ -1356,9 +1370,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     )
                 else:
                     # One item per run, in an inline group when there are several.
-                    non_empty = [
-                        element for element in paragraph_elements if element[1]
-                    ]
+                    non_empty = _block_runs(paragraph_elements)
                     text_parent = (
                         doc.add_inline_group(
                             parent=parent_slide, content_layer=content_layer

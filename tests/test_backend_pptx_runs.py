@@ -58,6 +58,52 @@ def test_pptx_preserves_run_level_formatting_and_hyperlinks(tmp_path: Path):
     assert str(texts[2].hyperlink) == "https://example.com/docs"
 
 
+@pytest.mark.parametrize("listed", [False, True])
+def test_pptx_runs_keep_whitespace_and_trim_only_the_block_edges(
+    tmp_path: Path, listed: bool
+):
+    """Serializers join the runs of a block verbatim, so each run keeps its own spaces.
+
+    A whitespace-only run between two runs is kept. Only the outer edges of the
+    block are trimmed, so the exported text has one space on each side of a link.
+    """
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    box = slide.shapes.add_textbox(Inches(0), Inches(0), Inches(4), Inches(1))
+    p = box.text_frame.paragraphs[0]
+    if listed:
+        p._p.get_or_add_pPr().append(p._p.makeelement(qn("a:buChar"), {"char": "-"}))
+
+    # (text, bold, link); the first and last runs are whitespace-only
+    for text, bold, link in [
+        (" ", True, None),
+        ("  Intro ", False, None),
+        ("docs", False, "https://example.com/docs"),
+        (" ", False, None),
+        ("bold", True, None),
+        (" tail  ", False, None),
+        (" ", True, None),
+    ]:
+        run = p.add_run()
+        run.text = text
+        run.font.bold = bold
+        if link:
+            run.hyperlink.address = link
+
+    pptx_path = tmp_path / "run_whitespace.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    texts = [t for t in doc.texts if t.text]
+    assert [t.text for t in texts] == ["Intro ", "docs", " ", "bold", " tail"]
+    assert doc.export_to_markdown().strip() == (
+        ("- " if listed else "")
+        + "Intro [docs](https://example.com/docs) **bold** tail"
+    )
+
+
 @pytest.mark.parametrize("malformation", ["dangling", "empty_rid", "no_rid"])
 def test_pptx_malformed_run_hyperlink_is_dropped(tmp_path: Path, malformation: str):
     """A run whose hyperlink relationship cannot be resolved keeps its text."""
