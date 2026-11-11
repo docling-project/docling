@@ -286,8 +286,9 @@ def convert_to_modern_format(
         A ``BytesIO`` buffer with the converted file contents.
 
     Raises:
-        RuntimeError: When LibreOffice is not installed, the subprocess fails,
-            or the expected output file is not produced.
+        RuntimeError: When LibreOffice is not installed, exits with a non-zero
+            status, does not finish within ``timeout_s`` seconds, or does not
+            produce the expected output file.
     """
     libreoffice_cmd = get_libreoffice_cmd()
     if libreoffice_cmd is None:
@@ -306,16 +307,22 @@ def convert_to_modern_format(
             input_path = source
 
         with _isolated_libreoffice_profile() as profile_arg:
-            _run_hardened_soffice(
-                _build_soffice_command(
-                    libreoffice_cmd,
-                    profile_arg,
-                    target_format=target_suffix,
-                    outdir=str(tmp_dir),
-                    input_path=str(input_path),
-                ),
-                timeout_s=timeout_s,
-            )
+            try:
+                _run_hardened_soffice(
+                    _build_soffice_command(
+                        libreoffice_cmd,
+                        profile_arg,
+                        target_format=target_suffix,
+                        outdir=str(tmp_dir),
+                        input_path=str(input_path),
+                    ),
+                    timeout_s=timeout_s,
+                )
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+                raise RuntimeError(
+                    f"LibreOffice could not convert the .{source_suffix} file to "
+                    f".{target_suffix}."
+                ) from exc
 
         converted_path = tmp_dir / (input_path.stem + "." + target_suffix)
         if not converted_path.exists():
