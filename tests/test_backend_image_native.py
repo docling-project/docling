@@ -21,6 +21,7 @@ from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.document_extractor import DocumentExtractor
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import to_rgb
 
 _EXIF_ORIENTATION_TAG = 0x0112
 
@@ -238,6 +239,34 @@ def test_16_bit_grayscale_is_scaled_to_8_bits(image_format):
 
     assert image.getpixel((63, 47)) == (234, 234, 234)
     assert image.getpixel((2, 2)) == (15, 15, 15)
+
+
+def test_to_rgb_keeps_8_bit_range_integer_images():
+    """A mode ``I`` image already in the 0..255 range is not scaled down."""
+    img = Image.new("I", (4, 1))
+    img.putdata([0, 100, 200, 255])
+
+    assert list(to_rgb(img).convert("L").getdata()) == [0, 100, 200, 255]
+    assert to_rgb(Image.new("I", (8, 8), 100)).getpixel((0, 0)) == (100, 100, 100)
+
+
+@pytest.mark.parametrize("mode", ["I", "I;16"])
+def test_to_rgb_scales_16_bit_integer_images(mode):
+    """Samples above 255 are scaled from the 16-bit range to 8 bits."""
+    img = Image.new("I", (4, 1))
+    img.putdata([0, 255, 256, 65535])
+
+    scaled = to_rgb(img.convert(mode) if mode != "I" else img)
+
+    assert list(scaled.convert("L").getdata()) == [0, 0, 1, 255]
+
+
+def test_to_rgb_scales_the_transparency_key_of_16_bit_images():
+    """The ``tRNS`` key is scaled with the samples, so it still matches them."""
+    img = Image.new("I", (4, 4), 60000).convert("I;16")
+    img.info["transparency"] = 60000
+
+    assert to_rgb(img).getpixel((0, 0)) == (255, 255, 255)
 
 
 def test_get_page_image_full():
