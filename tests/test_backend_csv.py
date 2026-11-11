@@ -421,6 +421,8 @@ def test_utf8_bom_is_not_part_of_the_first_cell(tmp_path):
         ("sep=,\r\nName,Price\r\nApple,1.50\r\n", ["Name", "Price", "Apple", "1.50"]),
         ("sep=\t\nName\tPrice\nApple\t1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("sep=^\nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=^ \nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=^\t\nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("sep= \nName Price\nApple 1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("\ufeffsep=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("\ufeffSEP=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
@@ -434,7 +436,7 @@ def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
     The keyword matches in any letter case, so `SEP=;` is the same instruction
     as `sep=;` and is not kept as a header row. The hint is not limited to the
     candidates the sniffer uses, so a custom delimiter such as `^` or a space
-    is accepted too.
+    is accepted too. Spaces or tabs after the character are ignored.
     """
     conv_result = get_converter().convert(
         DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
@@ -442,6 +444,66 @@ def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
     )
     cells = conv_result.document.tables[0].data.table_cells
     assert [cell.text for cell in cells] == expected
+
+
+@pytest.mark.parametrize("hint", ["sep=a", "sep=1"])
+def test_sep_line_with_a_letter_or_digit_is_not_a_hint(hint):
+    """A letter or digit is not a separator, so the line stays a data row.
+
+    `sep=a` would split every field on `a`. That is far more likely a malformed
+    hint than a real file, and dropping the line would lose data.
+    """
+    csv_text = f"{hint}\nName,Price\nApple,1.50\n"
+
+    with pytest.warns(UserWarning, match="Inconsistent column lengths"):
+        conv_result = get_converter().convert(
+            DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
+            raises_on_error=True,
+        )
+    cells = conv_result.document.tables[0].data.table_cells
+
+    assert cells[0].text == hint
+    assert [cell.text for cell in cells[1:3]] == ["Name", "Price"]
+
+
+def test_multi_character_sep_line_is_not_a_hint():
+    """The hint names one character; a longer line stays data."""
+    csv_text = "sep=##\nName##Price\nApple##1.50\n"
+
+    conv_result = get_converter().convert(
+        DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+
+    assert [cell.text for cell in cells] == [
+        "sep=##",
+        "Name##Price",
+        "Apple##1.50",
+    ]
+
+
+def test_sep_line_from_a_real_export():
+    """A public CC0 export starts with `sep=;` and quotes several values.
+
+    The two data lines are the `Index` header and the first data row of
+    data/materials/brick/nix_export.csv in
+    https://github.com/AntonPalmqvist/physically-based-api (CC0-1.0).
+    """
+    conv_result = get_converter().convert(
+        Path("./tests/data/csv/sep/nix_export.csv"), raises_on_error=True
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+
+    assert len(cells) == 128
+    assert cells[0].text == "Index"
+    assert cells[9].text == "Nix Device"
+    assert cells[64].text == "1"
+    assert cells[65].text == "-"
+    assert cells[66].text == "Manmade"
+    assert cells[68].text == "Brick"
+    assert cells[73].text == "Nix Spectro 2"
+    assert cells[-1].text == "2.93368677e-1"
 
 
 def test_malformed_quoted_csv_is_a_load_error():
