@@ -130,31 +130,32 @@ doc_converter = DocumentConverter(
     [Tesseract](https://github.com/tesseract-ocr/tesseract) is a popular OCR engine which is available
     on most operating systems. For using this engine with Docling, Tesseract must be installed on your
     system, using the packaging tool of your choice. Below we provide example commands.
-    After installing Tesseract you are expected to provide the path to its language files using the
-    `TESSDATA_PREFIX` environment variable (note that it must terminate with a slash `/`).
+    After installing Tesseract, export `TESSDATA_PREFIX` with the path to its language files
+    in the same shell where you start Docling or Python. Run `tesseract --list-langs` to check
+    that Tesseract can find the languages you intend to use.
 
     === "macOS (via [Homebrew](https://brew.sh/))"
 
         ```console
         brew install tesseract leptonica pkg-config
-        TESSDATA_PREFIX=/opt/homebrew/share/tessdata/
-        echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
+        export TESSDATA_PREFIX="$(brew --prefix)/share/tessdata/"
+        tesseract --list-langs
         ```
 
     === "Debian-based"
 
         ```console
         apt-get install tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev pkg-config
-        TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)
-        echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
+        export TESSDATA_PREFIX="$(dpkg -L tesseract-ocr-eng | grep '/tessdata$')"
+        tesseract --list-langs
         ```
 
     === "RHEL"
 
         ```console
         dnf install tesseract tesseract-devel tesseract-langpack-eng tesseract-osd leptonica-devel
-        TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
-        echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
+        export TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
+        tesseract --list-langs
         ```
 
     <h4>Linking to Tesseract</h4>
