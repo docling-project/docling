@@ -29,7 +29,7 @@ from PIL import Image
 
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.datamodel.backend_options import EpubBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FailureCategory, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     ConversionStatus,
@@ -759,3 +759,43 @@ def test_epub_image_source_that_is_not_a_relative_path_is_not_loaded(
     texts = [t.text for t in doc.texts]
     assert texts[0] == "Start."
     assert texts[-1] == "End."
+
+
+def test_epub_unreadable_item_is_reported(tmp_path: Path):
+    """A spine item that cannot be read is skipped and reported."""
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "book.epub",
+        hrefs=["ch1.xhtml", "missing.xhtml", "ch3.xhtml"],
+        names=["ch1.xhtml", "ch3.xhtml"],
+        bodies=["<p>First chapter.</p>", "<p>Third chapter.</p>"],
+    )
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    assert [e.module_name for e in result.errors] == ["EpubDocumentBackend"]
+    assert "missing.xhtml" in result.errors[0].error_message
+    texts = [t.text for t in result.document.texts]
+    assert texts == ["First chapter.", "Third chapter."]
+
+
+def test_epub_no_readable_item_fails(tmp_path: Path):
+    """A book with no readable spine item fails and reports each one."""
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "book.epub",
+        hrefs=["missing-1.xhtml", "missing-2.xhtml"],
+        names=[],
+        bodies=[],
+    )
+
+    result = get_converter().convert(epub_path, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    skipped = [
+        e.error_message
+        for e in result.errors
+        if e.category == FailureCategory.BACKEND_FAILURE
+    ]
+    assert len(skipped) == 2
+    assert "missing-1.xhtml" in skipped[0]
+    assert "missing-2.xhtml" in skipped[1]

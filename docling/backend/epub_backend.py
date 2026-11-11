@@ -26,7 +26,12 @@ from docling.backend.utils.archive_limits import (
     read_member,
 )
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import (
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    InputFormat,
+)
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
@@ -464,6 +469,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         # TODO: leverage `self.metadata` once DoclingDocument supports file metadata
 
         # Process each content file in reading order
+        read = 0
         for content_file in self.content_files:
             try:
                 _log.debug(f"Reading content file: {content_file}")
@@ -495,12 +501,28 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                     body_content = self._fix_image_paths(body_content, content_file)
 
                 combined_html_parts.append(body_content)
+                read += 1
 
             except ArchiveLimitError:
                 raise
             except Exception as e:
                 _log.warning(f"Failed to read content file {content_file}: {e}")
+                self.conversion_errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.DOCUMENT_BACKEND,
+                        module_name=type(self).__name__,
+                        error_message=(
+                            f"Content document {content_file} was skipped: {e}"
+                        ),
+                        category=FailureCategory.BACKEND_FAILURE,
+                    )
+                )
                 continue
+
+        if self.content_files and read == 0:
+            raise DocumentLoadError(
+                f"None of the {len(self.content_files)} content documents could be read."
+            )
 
         combined_html_parts.append("</body></html>")
         combined_html = "\n".join(combined_html_parts)
