@@ -37,6 +37,43 @@ def _set_paragraph_outline_level(paragraph, outline_lvl: int):
     return paragraph
 
 
+def _add_decimal_numbering(doc, num_id: int):
+    """Add a one-level decimal numbering definition and return its numId."""
+    numbering = doc.part.numbering_part.element
+
+    abstract = OxmlElement("w:abstractNum")
+    abstract.set(qn("w:abstractNumId"), str(num_id))
+    lvl = OxmlElement("w:lvl")
+    lvl.set(qn("w:ilvl"), "0")
+    for tag, val in (("w:start", "1"), ("w:numFmt", "decimal"), ("w:lvlText", "%1")):
+        el = OxmlElement(tag)
+        el.set(qn("w:val"), val)
+        lvl.append(el)
+    abstract.append(lvl)
+    numbering.insert(0, abstract)
+
+    num = OxmlElement("w:num")
+    num.set(qn("w:numId"), str(num_id))
+    ref = OxmlElement("w:abstractNumId")
+    ref.set(qn("w:val"), str(num_id))
+    num.append(ref)
+    numbering.append(num)
+    return num_id
+
+
+def _set_paragraph_numbering(paragraph, num_id: int, ilvl: int = 0):
+    """Pin ``w:numPr`` directly onto a paragraph."""
+    pPr = paragraph._p.get_or_add_pPr()
+    numPr = OxmlElement("w:numPr")
+    ilvl_el = OxmlElement("w:ilvl")
+    ilvl_el.set(qn("w:val"), str(ilvl))
+    numPr.append(ilvl_el)
+    num_el = OxmlElement("w:numId")
+    num_el.set(qn("w:val"), str(num_id))
+    numPr.append(num_el)
+    pPr.append(numPr)
+
+
 def _add_style_with_outline_level(doc, style_id: str, name: str, outline_lvl: int):
     """Register a paragraph style carrying an explicit ``w:outlineLvl``."""
     style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
@@ -258,7 +295,7 @@ def test_use_outline_level_for_headings_disabled_keeps_body_prose_as_text(
     assert '"Work" means' in md
     assert "Plain body paragraph." in md
 
-    
+
 def test_outline_level_on_the_paragraph_is_detected_without_a_heading_style(tmp_path):
     doc = Document()
     para = doc.add_paragraph("Larger channel bandwidth")
@@ -269,3 +306,28 @@ def test_outline_level_on_the_paragraph_is_detected_without_a_heading_style(tmp_
 
     lines = [line for line in markdown.splitlines() if line.strip()]
     assert lines == ["### Larger channel bandwidth", "Body text."]
+
+
+def test_numbered_paragraph_with_outline_level_is_a_heading_not_a_list_item(tmp_path):
+    """The #3312 shape: ``w:numPr`` and ``w:outlineLvl`` on a paragraph with no style.
+
+    Without the paragraph-level outline level the label is not ``Heading``, so
+    the numbering sends the paragraph to the list branch.
+    """
+    doc = Document()
+    num_id = _add_decimal_numbering(doc, 90)
+    for text in ("Introduction", "Discussion"):
+        para = doc.add_paragraph(text)
+        _set_paragraph_numbering(para, num_id)
+        _set_paragraph_outline_level(para, 0)
+        doc.add_paragraph("Body text.")
+
+    markdown = _markdown(doc, tmp_path, "numbered_paragraph_level")
+
+    lines = [line for line in markdown.splitlines() if line.strip()]
+    assert lines == [
+        "## 1 Introduction",
+        "Body text.",
+        "## 2 Discussion",
+        "Body text.",
+    ]
