@@ -357,6 +357,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(text.split()) if text else ""
 
     @staticmethod
+    def _get_heading_text(nodes: list[etree._Element]) -> str:
+        """Join the text of a heading's label and title, skipping empty parts."""
+        texts = (JatsDocumentBackend._get_text(node).strip() for node in nodes)
+        return " ".join(filter(None, texts))
+
+    @staticmethod
     def _get_node_text(node: etree._Element) -> str:
         return JatsDocumentBackend._normalize_whitespace(" ".join(node.itertext()))
 
@@ -364,8 +370,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
         """Parse an abstract section while retaining its paragraph nodes."""
         title_nodes = section_node.xpath("title|label")
-        title = (
-            JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
+        title = " ".join(
+            filter(None, map(JatsDocumentBackend._get_node_text, title_nodes))
         )
 
         paragraphs: list[etree._Element] = [
@@ -468,8 +474,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         sections.append(section)
 
             label_node = abs_node.xpath("title|label")
-            label = (
-                JatsDocumentBackend._get_node_text(label_node[0]) if label_node else ""
+            label = " ".join(
+                filter(None, map(JatsDocumentBackend._get_node_text, label_node))
             )
 
             abstract: Abstract = Abstract(
@@ -1634,7 +1640,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 header = child.xpath("title|label")
                 text: str | None = None
                 if len(header) > 0:
-                    text = JatsDocumentBackend._get_text(header[0])
+                    text = JatsDocumentBackend._get_heading_text(header)
                 elif child.tag == "ack":
                     text = DEFAULT_HEADER_ACKNOWLEDGMENTS
                 if text:
@@ -1694,7 +1700,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "ref-list" and node.tag != "ref-list":
                 header = child.xpath("title|label")
                 text = (
-                    JatsDocumentBackend._get_text(header[0])
+                    JatsDocumentBackend._get_heading_text(header)
                     if len(header) > 0
                     else DEFAULT_HEADER_REFERENCES
                 )

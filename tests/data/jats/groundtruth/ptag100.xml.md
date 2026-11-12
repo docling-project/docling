@@ -6,7 +6,7 @@ Jeong Ryeol Choi, Salim Medjber, Salah Menouar, Ramazan Sever
 
 In this work, the dynamics of quark–antiquark pair systems is investigated by modeling them as general time-dependent 3D oscillators perturbed by a Coulomb potential. Solving this model enables the prediction of key mesonic properties such as the probability density, energy spectra, and quadrature uncertainties, offering theoretical insights into the confinement of quarks via gluon-mediated strong interactions. To tackle the mathematical difficulty raised by the time dependence of parameters in the system, special mathematical techniques, such as the invariant operator method, unitary transformation method, and the Nikiforov–Uvarov functional analysis are used. The wave functions of the system, derived using these mathematical techniques, are expressed analytically in terms of the Gauss hypergeometric function whose mathematical properties are well characterized. Our results provide the quantum-mechanical framework of quark–antiquark systems that are essential for exploring the nonperturbative aspects of quantum chromodynamics. In addition, the underlying mathematical structure may serve as a foundation for addressing broader challenges in particle physics, including the origin of mass and its connection to the Higgs mechanism.
 
-## 1.
+## 1. Introduction
 
 Quark–antiquark pairs are a key concept in particle physics, essential for understanding the strong interaction and the structure of hadrons such as mesons and baryons. Typical examples of quark–antiquark pairs are bound states of a heavy quark and its antiquark, such as charmonium and bottomonium, collectively referred to as quarkonia [1]. Quarkonia can be readily produced in experiments such as the LHC, and their properties can be measured with high precision. Quarkonia’s distinct mass spectra, unique decay patterns, and relatively long lifetimes are of significant interest in the search for physics that extends past the Standard Model. As such, they may offer a promising avenue for probing potential new phenomena not accounted for by the Higgs sector [2,3]. This makes quarkonia an important topic requiring collaborative research between experimental and theoretical physicists. Indeed, they are actively studied in connection with new particle searches and dark matter theories [4–7].
 
@@ -18,11 +18,11 @@ Regarding coupling of potentials, as well as the system’s time dependence, the
 
 The main contributions of the present work can be summarized as follows. First, we develop an analytical treatment for a time-dependent quark–antiquark model based on a 3D oscillator perturbed by a Coulomb interaction within the framework of invariant operator theory. Second, by combining the invariant operator method, unitary transformation techniques, and the NUFA formalism, we derive analytical expressions for the eigenspectrum, quantum phases, and wave functions of the system in closed form. In contrast to several previous approaches in which the solutions are represented in terms of biconfluent Heun functions, the present treatment expresses the wave functions in terms of the Gauss hypergeometric function, whose mathematical properties are more thoroughly established. This provides a more tractable analytical framework for investigating the dynamical properties of quark–antiquark systems governed by time-dependent Hamiltonians.
 
-## 2.
+## 2. Analysis of the system
 
-### 2.1.
+### 2.1. Basic formulations: Hamiltonian and invariant
 
-#### 2.1.1.
+#### 2.1.1. Setup of the Hamiltonian
 
 We consider a quark–antiquark pair with a time-dependent effective reduced mass $\mu (t)$ in spherical coordinates, governed by a central potential $g(t)r^{2}-\frac{Z(t)}{r}$ where $g(t)$ and $Z(t)$ are coefficients that depend on time. While $g(t)r^{2}$ represents a confining trap potential with adjustable strength, $-\frac{Z(t)}{r}$ is a Coulomb perturbation with the constraint $Z(t)\gt 0$. As the distance between quarks increases, the harmonic potential rises sharply, effectively prohibiting their free separation within a bound state. This potential acts as a simplified representation of the QCD confinement mechanism and dominates at large separations. Meanwhile, the Coulomb term represents the electromagnetic or color interaction mediated by the color charge of one quark acting on the other, effectively serving as a short-range attractive force between the quark and antiquark.
 
@@ -48,7 +48,7 @@ i\hbar \frac{\partial }{\partial t}|\Psi (t)\rangle =H(t)|\Psi (t)\rangle .
 
 The time dependence of the Hamiltonian requires a specialized approach to solve this equation, as will be presented subsequently.
 
-#### 2.1.2.
+#### 2.1.2. Formulation of the invariant operator
 
 Because $H(t)$ in Eq. (1) is represented in terms of time functions, directly solving Eq. (3) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [24]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator $I(t)$ rather than $H(t)$ in Eq. (1), where $I(t)$ does not involve time-derivative operators. Moreover, $I(t)$ is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum–classical correspondence.
 
@@ -108,7 +108,7 @@ $$\begin{eqnarray}
 
 Equation (7) with Eqs. (8)–(11) constitutes the complete quadratic invariant operator of the system. This operator provides a robust analytical framework for the system, in which direct solutions are difficult to obtain due to the complicated time evolution of the Hamiltonian. It also enables a deeper understanding of dynamical properties of the system, including phase transitions and topological changes, beyond merely providing a powerful methodology for obtaining solutions.
 
-#### 2.1.3.
+#### 2.1.3. Solving the eigenvalue equation
 
 Because the quantum wave functions of the system are represented in terms of the eigenfunctions of $I(t)$, it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant $I(t)$ as
 
@@ -190,7 +190,7 @@ $$\begin{eqnarray}
 
 In the representation of Eq. (24), we neglected higher-order terms corresponding to $y^{3}$ and $y^{4}$. To solve this equation, we use the NUFA method [29] outlined in the next subsection.
 
-### 2.2.
+### 2.2. The NUFA method
 
 A second-order differential equation of hypergeometric type can be solved in a simple and elegant way by using the so-called NUFA method. This is an improvement over the parametric NU method, which is relatively cumbersome due to the need to find the square of the polynomials and other conditions required. With the NUFA method, many diffierential equations, including our wave equation, can be properly tackled, allowing for the identification of singularities and the determination of the eigenvalue spectrum. As a general type of second-order differential equation, which encompasses Eq. (24), we consider the following equation [31]:
 
@@ -248,9 +248,9 @@ where $a=\kappa _-$, $b=\kappa _+$, and $c=\alpha _{1}+2\lambda$. The mathematic
 
 The Gauss hypergeometric function $_{2}F_{1}(a,b;c;s)$ serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function $_{2}F_{1}(a,b;c;s)$ terminates and reduces to a polynomial when *a* is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, $_{2}F_{1}(a,b;c;s)$ is a generalization of Kummer’s confluent hypergeometric function $_{1}F_{1}(a;c;s)$. Hence, in the limiting case where $b \rightarrow \infty$, $_{2}F_{1}(a,b;c;s)$ converges to $_{1}F_{1}(a;c;s)$. This convergence is rooted in the fact that, while ${}_2F_1$ has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to ${}_1F_1$ [44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The ${}_2F_1$ function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the ${}_2F_1$ function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24).
 
-### 2.3.
+### 2.3. Wave functions
 
-#### 2.3.1.
+#### 2.3.1. Eigenfunctions of the invariant operator
 
 We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of $I(t)$ (instead of $H(t)$), we need to determine the eigenfunctions $\Phi _n$ of Eq. (14). However, directly solving for $\Phi _n$ is likely to be a formidable task. To circumvent this difficulty, we first derive $\Phi _n^{\prime }$ from Eq. (17), and then reconstruct the desired eigenfunctions $\Phi _n$ by inversely transforming the obtained $\Phi _n^{\prime }$, utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once $\Phi _n$ are obtained, the wave functions $\Psi _n$ can be expressed in terms of them accordingly.
 
@@ -346,7 +346,7 @@ $$\begin{eqnarray}
 
 whereas ${\mathrm{B}}(a_1,a_2)$ denotes the Beta function [48]. The eigenfunctions in Eq. (47) are essentially related to the Schrödinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection.
 
-#### 2.3.2.
+#### 2.3.2. Quantum phases and the Schrödinger solutions
 
 According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions $\Phi _{nlm}(\vec{r},t)$ of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase $\alpha (t)$ associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate $\vert \Phi ^\prime \rangle$ instead of $\vert \Phi \rangle$, such that
 
@@ -370,7 +370,7 @@ $$\begin{eqnarray}
 
 where the explicit forms of $\alpha _{nl}(t)$ and $\Phi _{nlm}(r,\theta ,\varphi ,t)$ are given in Eqs. (51) and (47), respectively. The resulting wave functions (52), together with $\Lambda _{nl}$ in Eq. (40), serve as fundamental solutions for the quark–antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [51,52]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark–antiquark pair.
 
-## 3.
+## 3. Conclusion
 
 In this study, we investigated the interaction between a quark and an antiquark by modeling its mechanical behavior using a nonstationary 3D harmonic oscillator coupled with a Coulomb potential. To solve the associated Schrödinger equation, we employed the recently refined NUFA method, together with the invariant operator method and the unitary transformation approach. The NUFA method, based on a novel conceptual framework, allowed us to bypass the complex mathematical manipulations commonly encountered in other techniques. As a result, we obtained the wave functions of the system in closed form, expressed in terms of the Gauss hypergeometric function. These solutions offer advantages over previous ones that employed biconfluent Heun functions, as Gauss hypergeometric functions are among the most thoroughly characterized and best understood special functions in mathematics.
 
