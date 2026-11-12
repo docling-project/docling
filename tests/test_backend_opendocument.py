@@ -336,6 +336,139 @@ def test_odp_conversion(odp_path: Path):
     } <= body_texts
 
 
+def test_odp_items_have_slide_provenance(odp_path: Path):
+    """Each slide is a page and each item has its slide and frame box, as for PPTX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(
+        odp_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    assert set(doc.pages) == {2}
+    heading = next(t for t in doc.texts if t.text == "Second Slide Heading")
+    assert [p.page_no for p in heading.prov] == [2]
+    # The frame is at 1cm, 1cm and 10cm x 2cm, in points.
+    assert heading.prov[0].bbox.as_tuple() == pytest.approx(
+        (28.3465, 28.3465, 311.811, 85.0394), abs=1e-3
+    )
+    assert all(item.prov for item in doc.texts)
+
+
+@pytest.mark.parametrize(
+    ("position", "size", "in_notes", "box"),
+    [
+        pytest.param(
+            ("1cm", "2cm"),
+            ("2cm", "3cm"),
+            False,
+            (28.35, 56.69, 85.04, 141.73),
+            id="cm",
+        ),
+        pytest.param(
+            ("1in", "2in"), ("3in", "1in"), False, (72, 144, 288, 216), id="in"
+        ),
+        pytest.param(
+            ("25.4mm", "50.8mm"),
+            ("76.2mm", "25.4mm"),
+            False,
+            (72, 144, 288, 216),
+            id="mm",
+        ),
+        pytest.param(
+            ("72pt", "144pt"), ("216pt", "72pt"), False, (72, 144, 288, 216), id="pt"
+        ),
+        pytest.param(
+            ("6pc", "12pc"), ("18pc", "6pc"), False, (72, 144, 288, 216), id="pc"
+        ),
+        pytest.param(
+            ("96px", "192px"), ("288px", "96px"), False, (72, 144, 288, 216), id="px"
+        ),
+        pytest.param(
+            ("-1cm", "2cm"),
+            ("2cm", "3cm"),
+            False,
+            (-28.35, 56.69, 28.35, 141.73),
+            id="negative-x",
+        ),
+        pytest.param(
+            None, ("2cm", "3cm"), False, (0, 0, 793.70, 595.28), id="no-position"
+        ),
+        pytest.param(("1cm", "2cm"), ("2cm", "3cm"), True, (0, 0, 0, 0), id="notes"),
+    ],
+)
+def test_odp_shape_box(
+    tmp_path: Path,
+    position: tuple[str, str] | None,
+    size: tuple[str, str],
+    in_notes: bool,
+    box: tuple[float, float, float, float],
+):
+    """An item gets its shape's box in points; the slide if unplaced, empty in notes."""
+    frame = Frame.text_frame("Shape text", size=size, position=position)
+    page = DrawPage("page1", name="Slide", master_page="presentation")
+    if in_notes:
+        notes = Element.from_tag("<presentation:notes/>")
+        notes.append(frame)
+        page.append(notes)
+    else:
+        page.append(frame)
+    deck = OdfDocument("presentation")
+    deck.body.clear()
+    deck.body.append(page)
+    path = tmp_path / "shape.odp"
+    deck.save(str(path))
+
+    doc = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+
+    text = next(t for t in doc.texts if t.text == "Shape text")
+    assert [p.page_no for p in text.prov] == [1]
+    assert text.prov[0].bbox.as_tuple() == pytest.approx(box, abs=0.01)
+
+
+@pytest.mark.parametrize(
+    ("master_page", "size_readable", "pages"),
+    [
+        pytest.param("portrait", True, {1: (612.0, 792.0)}, id="named-master"),
+        pytest.param(None, True, {1: (793.7, 595.28)}, id="no-master-name"),
+        pytest.param("missing", True, {1: (793.7, 595.28)}, id="missing-master"),
+        pytest.param("portrait", False, {}, id="no-size"),
+    ],
+)
+def test_odp_slide_size(
+    tmp_path: Path,
+    master_page: str | None,
+    size_readable: bool,
+    pages: dict[int, tuple[float, float]],
+):
+    """A slide has its master page's size, else the first master's, else no page."""
+    deck = OdfDocument("presentation")
+    masters = deck.styles.get_element("office:master-styles")
+    assert masters is not None
+    masters.append(
+        Element.from_tag(
+            '<style:master-page style:name="portrait" style:page-layout-name="PM2"/>'
+        )
+    )
+    if not size_readable:
+        for layout in deck.get_styles("page-layout"):
+            properties = layout.get_element("style:page-layout-properties")
+            assert properties is not None
+            properties.del_attribute("fo:page-width")
+    deck.body.clear()
+    page = DrawPage("page1", name="Slide", master_page=master_page)
+    page.append(Frame.text_frame("Body", size=("2cm", "3cm"), position=("1cm", "2cm")))
+    deck.body.append(page)
+    path = tmp_path / "size.odp"
+    deck.save(str(path))
+
+    doc = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+
+    assert {
+        no: (round(p.size.width, 2), round(p.size.height, 2))
+        for no, p in doc.pages.items()
+    } == pages
+    assert all(len(text.prov) == len(pages) for text in doc.texts)
+
+
 def test_ods_page_range(ods_path: Path):
     """page_range selects sheets, keeping their page numbers, as for XLSX."""
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(
