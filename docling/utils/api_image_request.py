@@ -411,7 +411,14 @@ def api_image_request_streaming(
                             stop_reason=stop_reason,
                         )
 
-                    for raw_line in r.iter_lines(decode_unicode=True):
+                    # SSE is always UTF-8 and its lines end only at CR, LF or
+                    # CRLF, so split the raw bytes and decode each line here.
+                    # iter_lines(decode_unicode=True) would decode with the
+                    # response charset, ISO-8859-1 for the bare
+                    # text/event-stream that Ollama and llama.cpp send, and
+                    # str.splitlines() also breaks at U+0085 and U+2028.
+                    for line_bytes in r.iter_lines():
+                        raw_line = line_bytes.decode("utf-8", errors="replace")
                         if not raw_line:  # keep-alives / blank lines
                             continue
                         if not raw_line.startswith("data:"):
