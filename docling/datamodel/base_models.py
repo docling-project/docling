@@ -121,6 +121,7 @@ class InputFormat(str, Enum):
     DCLX = "dclx"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
+    OXR = "oxr"
     AUDIO = "audio"
     VIDEO = "video"
     VTT = "vtt"
@@ -176,6 +177,9 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
+    # OXR responses are JSON too, so they need a name suffix that cannot be
+    # confused with a Docling JSON document.
+    InputFormat.OXR: ["oxr.json"],
     InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac"],
     InputFormat.VIDEO: ["mp4", "avi", "mov", "mkv", "webm"],
     InputFormat.VTT: ["vtt"],
@@ -252,6 +256,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.METS_GBS: ["application/mets+xml"],
     InputFormat.JSON_DOCLING: ["application/json"],
+    InputFormat.OXR: ["application/json"],
     InputFormat.AUDIO: [
         "audio/x-wav",
         "audio/mpeg",

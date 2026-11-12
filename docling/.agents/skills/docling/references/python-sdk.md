@@ -600,6 +600,33 @@ converter = DocumentConverter(
 
 Or save with `ImageRefMode.EMBEDDED` so the JSON carries its images.
 
+## OXR JSON
+
+A saved [SoMark OXR](https://github.com/SoMarkAI/OXR) parse result converts
+directly: name it `*.oxr.json`. Plain `.json` also works when the content
+carries the OXR markers; a Docling JSON document stays the default. OXR
+keeps its page canvas in pixels with a top-left origin, and section levels are
+normalized because OXR reports no heading depth. Pictures name a file on the
+OXR host; opt in to read them like Docling JSON does:
+
+```python
+from docling.datamodel.backend_options import DeclarativeBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, OxrFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.OXR: OxrFormatOption(
+            backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+        ),
+    }
+)
+doc = converter.convert("result.oxr.json")
+```
+
+To run OXR first, call `docling.utils.oxr_utils.run_oxr_parse` and pass its
+result to `parse_oxr_result`.
+
 ## HTML: images on remote hosts
 
 HTML image downloads are off by default. Enable them on the HTML backend

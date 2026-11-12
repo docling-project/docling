@@ -959,6 +959,8 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
+            if _DocumentConversionInput._has_oxr_extension(obj.name):
+                return InputFormat.OXR
             # Lower-cased so that an upper-case extension (NOTES.VTT, page.HTML)
             # maps to its format the same way it does for a DocumentStream.
             obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
@@ -975,6 +977,7 @@ class _DocumentConversionInput(BaseModel):
                 and mime.lower()
                 in {
                     "application/octet-stream",
+                    "application/json",
                     "application/xml",
                     "application/xhtml+xml",
                 }
@@ -998,6 +1001,8 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
+            if _DocumentConversionInput._has_oxr_extension(obj.name):
+                return InputFormat.OXR
             content = obj.stream.read(_CONTENT_SNIFF_BYTES)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
@@ -1087,6 +1092,17 @@ class _DocumentConversionInput(BaseModel):
         return name.lower().endswith(".dclx")
 
     @staticmethod
+    def _has_oxr_extension(name: str) -> bool:
+        return name.lower().endswith(".oxr.json")
+
+    @staticmethod
+    def _is_oxr_json(content: bytes) -> bool:
+        """Return whether the head of a JSON payload matches an OXR response."""
+        if b'"schema_name"' in content:
+            return False
+        return b'"outputs"' in content and b'"file_name"' in content
+
+    @staticmethod
     def _detect_office_mime_from_zip(
         source: Union[Path, BytesIO],
     ) -> Optional[str]:
@@ -1152,6 +1168,15 @@ class _DocumentConversionInput(BaseModel):
     ) -> Optional[InputFormat]:
         """Guess the input format of a document by checking part of its content."""
         input_format: Optional[InputFormat] = None
+
+        if mime == "application/json":
+            # Docling JSON and OXR JSON share one MIME type. Keep Docling JSON
+            # as the default and select OXR only for one of its markers.
+            if InputFormat.OXR in formats and _DocumentConversionInput._is_oxr_json(
+                content
+            ):
+                return InputFormat.OXR
+            return InputFormat.JSON_DOCLING
 
         if mime in {"application/xml", "application/xhtml+xml"}:
             # ``content`` is a truncated head of the document (see _guess_format),
