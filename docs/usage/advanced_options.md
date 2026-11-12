@@ -650,6 +650,35 @@ converter = DocumentConverter(
 )
 ```
 
+### Preserve code block whitespace
+
+Set `preserve_code_whitespace=True` on `MarkdownBackendOptions` or
+`HTMLBackendOptions` to retain leading blank lines, trailing spaces, and trailing
+newlines in code blocks. The default is `False`, which keeps the existing code
+block edge trimming.
+
+```python
+from docling.datamodel.backend_options import MarkdownBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, MarkdownFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.MD: MarkdownFormatOption(
+            backend_options=MarkdownBackendOptions(preserve_code_whitespace=True)
+        )
+    }
+)
+document = converter.convert("conversation.md").document
+```
+
+The Markdown option also applies to embedded HTML `<pre>` blocks. For direct
+HTML input, use `HTMLFormatOption` with
+`HTMLBackendOptions(preserve_code_whitespace=True)`. Markdown code retains the
+parser's whitespace after fence removal and container indentation processing.
+Inline code still follows Markdown whitespace rules. This option controls input
+conversion; each export format has its own whitespace rules.
+
 ### Docling JSON input
 
 A `DoclingDocument` JSON file can be converted again, e.g. to re-export it to

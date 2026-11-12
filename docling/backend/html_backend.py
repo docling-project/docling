@@ -3641,9 +3641,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             annotated_texts = AnnotatedTextList(
                 part.model_copy(update={"code": False}) for part in text_list
             ).simplify_text_elements()
-            # Preformatted content: every interior space is significant, so only the block
-            # edges are trimmed (HTML drops the newline right after `<pre>`).
-            if annotated_texts:
+            # Keep the existing edge trimming unless the caller requests all code whitespace.
+            if annotated_texts and not self.options.preserve_code_whitespace:
                 head = annotated_texts[0]
                 annotated_texts[0] = head.model_copy(
                     update={"text": head.text.lstrip("\n")}

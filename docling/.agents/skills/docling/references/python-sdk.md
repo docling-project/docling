@@ -21,6 +21,19 @@ data = doc.export_to_dict()  # structured / lossless
 `result.status` reports success/failure; `result.document` is always a
 `DoclingDocument`.
 
+## Preserve code block whitespace
+
+For code snippets that require leading blank lines, trailing spaces, or trailing
+newlines, set `preserve_code_whitespace=True` on `MarkdownBackendOptions` or
+`HTMLBackendOptions`. Pass the backend options through `MarkdownFormatOption` or
+`HTMLFormatOption` in `DocumentConverter(format_options=...)`.
+
+The default is `False`, which keeps code block edge trimming. The Markdown
+option also applies to embedded HTML `<pre>` blocks. Markdown retains the
+parser's code text after fence removal and container indentation processing.
+Inline code still follows Markdown whitespace rules. Export formats can apply
+their own whitespace rules.
+
 ## Configuring the pipeline with PipelineOptions
 
 `DocumentConverter(format_options=...)` maps an **`InputFormat`** to a
