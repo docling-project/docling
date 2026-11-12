@@ -425,21 +425,27 @@ def test_odp_shape_box(
 
 
 @pytest.mark.parametrize(
-    ("master_page", "size_readable", "pages"),
+    ("master_page", "removed", "pages"),
     [
-        pytest.param("portrait", True, {1: (612.0, 792.0)}, id="named-master"),
-        pytest.param(None, True, {1: (793.7, 595.28)}, id="no-master-name"),
-        pytest.param("missing", True, {1: (793.7, 595.28)}, id="missing-master"),
-        pytest.param("portrait", False, {}, id="no-size"),
+        pytest.param("portrait", None, {1: (612.0, 792.0)}, id="named-master"),
+        pytest.param(None, None, {1: (793.7, 595.28)}, id="no-master-name"),
+        pytest.param("missing", None, {1: (793.7, 595.28)}, id="missing-master"),
+        pytest.param("portrait", "fo:page-width", {}, id="no-width"),
+        pytest.param(
+            "portrait", "style:page-layout-properties", {}, id="no-layout-properties"
+        ),
     ],
 )
 def test_odp_slide_size(
     tmp_path: Path,
     master_page: str | None,
-    size_readable: bool,
+    removed: str | None,
     pages: dict[int, tuple[float, float]],
 ):
-    """A slide has its master page's size, else the first master's, else no page."""
+    """A slide has its master page's size, else the first master's, else no page.
+
+    Without a page, the slide's items, speaker notes included, get no provenance.
+    """
     deck = OdfDocument("presentation")
     masters = deck.styles.get_element("office:master-styles")
     assert masters is not None
@@ -448,14 +454,19 @@ def test_odp_slide_size(
             '<style:master-page style:name="portrait" style:page-layout-name="PM2"/>'
         )
     )
-    if not size_readable:
-        for layout in deck.get_styles("page-layout"):
-            properties = layout.get_element("style:page-layout-properties")
-            assert properties is not None
-            properties.del_attribute("fo:page-width")
+    for layout in deck.get_styles("page-layout"):
+        properties = layout.get_element("style:page-layout-properties")
+        assert properties is not None
+        if removed == "fo:page-width":
+            properties.del_attribute(removed)
+        elif removed == "style:page-layout-properties":
+            properties.delete()
     deck.body.clear()
     page = DrawPage("page1", name="Slide", master_page=master_page)
     page.append(Frame.text_frame("Body", size=("2cm", "3cm"), position=("1cm", "2cm")))
+    notes = Element.from_tag("<presentation:notes/>")
+    notes.append(Frame.text_frame("Notes"))
+    page.append(notes)
     deck.body.append(page)
     path = tmp_path / "size.odp"
     deck.save(str(path))
@@ -466,6 +477,7 @@ def test_odp_slide_size(
         no: (round(p.size.width, 2), round(p.size.height, 2))
         for no, p in doc.pages.items()
     } == pages
+    assert "Notes" in {text.text for text in doc.texts}
     assert all(len(text.prov) == len(pages) for text in doc.texts)
 
 
