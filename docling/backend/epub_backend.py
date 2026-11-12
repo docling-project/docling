@@ -39,6 +39,20 @@ _log = logging.getLogger(__name__)
 _START_TAG = re.compile(r"""<[A-Za-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>""")
 
 
+class _EpubHTMLDocumentBackend(HTMLDocumentBackend):
+    """HTML backend for the content documents of an EPUB, combined into one.
+
+    To load images, the combined document is given a location in the
+    temporary directory where the archive is extracted. A link does not point
+    into that directory, so it is resolved without a location, as when no
+    image is fetched.
+    """
+
+    @override
+    def _resolve_hyperlink(self, href: str) -> str:
+        return self._image_loader.resolve_relative_path(href, None)
+
+
 class EpubDocumentBackend(DeclarativeDocumentBackend):
     """Backend for converting EPUB files to DoclingDocument format.
 
@@ -525,12 +539,12 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         in_doc = InputDocument(
             path_or_stream=html_stream,
             format=InputFormat.HTML,
-            backend=HTMLDocumentBackend,
+            backend=_EpubHTMLDocumentBackend,
             filename="combined.html",
             backend_options=html_options,
         )
 
-        html_backend = HTMLDocumentBackend(
+        html_backend = _EpubHTMLDocumentBackend(
             in_doc=in_doc,
             path_or_stream=html_stream,
             options=html_options,

@@ -556,6 +556,58 @@ def test_epub_internal_links_in_either_quote_style(tmp_path: Path):
     assert hyperlinks == ["#note2", "#note2", absolute]
 
 
+@pytest.mark.parametrize(
+    "href",
+    [
+        pytest.param("ch2.xhtml", id="relative"),
+        pytest.param("ch2.xhtml#n1", id="fragment"),
+        pytest.param("ch2.xhtml?x=1#n1", id="query-and-fragment"),
+        pytest.param("https://example.org/x", id="https"),
+        pytest.param("//example.org/x", id="protocol-relative"),
+        pytest.param("mailto:someone@example.org", id="mailto"),
+        pytest.param("tel:+3612345678", id="tel"),
+        pytest.param("ftp://example.org/f", id="ftp"),
+        pytest.param("javascript:void(0)", id="javascript"),
+        pytest.param("file:///notes.xhtml", id="file"),
+    ],
+)
+def test_epub_link_keeps_its_target_with_image_fetching(tmp_path: Path, href: str):
+    """A link gets the same hyperlink with and without image fetching.
+
+    To load images, the archive is extracted to a temporary directory. A link
+    must not be resolved against that directory, which is not part of the book.
+    """
+    names = ["Text/ch1.xhtml", "Text/ch2.xhtml"]
+    bodies = [f'<p><a href="{href}">the link</a></p>', '<p id="n1">Chapter 2.</p>']
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "links.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    hyperlinks = []
+    for options in (
+        EpubBackendOptions(),
+        EpubBackendOptions(fetch_images=True, enable_local_fetch=True),
+    ):
+        converter = DocumentConverter(
+            allowed_formats=[InputFormat.EPUB],
+            format_options={
+                InputFormat.EPUB: EpubFormatOption(backend_options=options)
+            },
+        )
+        doc = converter.convert(epub_path, raises_on_error=True).document
+        hyperlinks.append(
+            [
+                item.hyperlink
+                for item, _ in doc.iterate_items()
+                if isinstance(item, TextItem) and item.hyperlink is not None
+            ]
+        )
+    without_fetching, with_fetching = hyperlinks
+
+    assert len(without_fetching) == 1
+    assert with_fetching == without_fetching
+
+
 def test_epub_internal_link_rewrite_leaves_text_alone(tmp_path: Path):
     """Only a link of the markup is reduced to its anchor, not a link in text.
 
