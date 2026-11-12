@@ -764,7 +764,19 @@ class _DocumentConversionInput(BaseModel):
             else:
                 obj = item
                 backend_input = item
-            format = self._guess_format(obj)
+            try:
+                format = self._guess_format(obj)
+            except OSError as exc:
+                # Format detection reads the head of a local file. A path that
+                # cannot be read -- missing file, directory, no permission --
+                # must not abort the whole batch, the same as a str source above.
+                _log.error("Failed to read input source %r: %s", item, exc)
+                yield self._build_invalid_input_document(
+                    name=obj.name,
+                    format_options=format_options,
+                    rejection=self._classify_source_error(exc),
+                )
+                continue
             if format is None:
                 path_or_stream = obj if isinstance(obj, Path) else obj.stream
                 try:
