@@ -2544,8 +2544,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return bool(runs) and all(self._is_hidden_run(run, style_chain) for run in runs)
 
     def _iter_paragraph_content(
-        self, paragraph: Paragraph
+        self, paragraph: Paragraph, *, with_format: bool = True
     ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+        """Return the shown text of a paragraph with its formatting and links.
+
+        Args:
+            paragraph: The paragraph to read.
+            with_format: Whether to resolve the run formatting and the hyperlink
+                targets. When False, they are None, which is cheaper for callers
+                that only need the text.
+
+        Returns:
+            One ``(text, formatting, hyperlink)`` tuple per run or hyperlink.
+        """
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
         # A fully hidden paragraph keeps its text; it goes to the invisible layer.
         show_all = not self._uses_hidden_text or self._is_hidden_paragraph(paragraph)
@@ -2553,6 +2564,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         def _is_shown(run: Run) -> bool:
             return show_all or not self._is_hidden_run(
                 run, self._get_style_chain(paragraph.style)
+            )
+
+        def _get_format(run: Run) -> Formatting | None:
+            if not with_format:
+                return None
+            return self._get_format_from_run(
+                run, paragraph, self._get_style_chain(paragraph.style)
             )
 
         def _get_children_recursive(node):
@@ -2582,14 +2600,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if len(text) == 0:
                     continue
 
-                fmt = (
-                    self._get_format_from_run(
-                        runs[0], paragraph, self._get_style_chain(paragraph.style)
-                    )
-                    if runs
-                    else None
-                )
-                content.append((text, fmt, None))
+                content.append((text, _get_format(runs[0]) if runs else None, None))
                 continue
 
             if tag_name not in {"r", "hyperlink"}:
@@ -2616,25 +2627,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 content.append(
                     (
                         "".join(_get_run_text(run) for run in runs),
-                        (
-                            self._get_format_from_run(
-                                runs[0],
-                                paragraph,
-                                self._get_style_chain(paragraph.style),
-                            )
-                            if runs
-                            else None
-                        ),
-                        self._get_hyperlink_target(item),
+                        _get_format(runs[0]) if runs else None,
+                        self._get_hyperlink_target(item) if with_format else None,
                     )
                 )
             elif _is_shown(item):
                 content.append(
                     (
                         _get_run_text(item),
-                        self._get_format_from_run(
-                            item, paragraph, self._get_style_chain(paragraph.style)
-                        ),
+                        _get_format(item),
                         None,
                     )
                 )
@@ -2673,7 +2674,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         its own, so fully hidden paragraphs are left out.
         """
         return "\n".join(
-            self._get_paragraph_text(paragraph)
+            "".join(
+                text
+                for text, _format, _hyperlink in self._iter_paragraph_content(
+                    paragraph, with_format=False
+                )
+            )
             for paragraph in cell.paragraphs
             if not self._is_hidden_paragraph(paragraph)
         )
