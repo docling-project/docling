@@ -1270,6 +1270,35 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # document tree; keep the paragraphs rather than fail the conversion
             _log.warning(f"Kept the empty paragraphs before resumed list items: {err}")
 
+    def _close_list_before_table(self) -> None:
+        """Close a list that is still open when a table starts.
+
+        Without this, a table that directly follows a list item is added as a
+        child of the ``ListGroup`` (next to its list items), and the Markdown
+        export glues the table onto the last list item.
+        """
+        if self._prev_numid() is None:
+            return
+        self.last_numid = (
+            self.nested_lists[0].outer_numid
+            if self.nested_lists and self.level_at_new_list is not None
+            else self._prev_numid()
+        )
+        self.nested_lists = []
+        # A table breaks list continuity, like substantive body text.
+        self._clear_list_group_cache()
+        if self.level_at_new_list:
+            for key in range(len(self.parents)):
+                if key >= self.level_at_new_list:
+                    self.parents[key] = None
+            self.level = self.level_at_new_list - 1
+            self.level_at_new_list = None
+        else:
+            for key in range(len(self.parents)):
+                self.parents[key] = None
+            self.level = 0
+        self._update_history("Table", None, None, None)
+
     def _clear_list_group_cache(self) -> None:
         """Clear the cached list group to prevent reuse across contexts."""
         self.last_list_group = None
@@ -4164,6 +4193,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
+        self._close_list_before_table()
         level = self._get_level()
         docling_table = doc.add_table(
             data=data, parent=self.parents[level - 1], content_layer=self.content_layer
