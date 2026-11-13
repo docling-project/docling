@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -109,15 +108,6 @@ class _OxrBlock(BaseModel):
         value = value.strip()
         if not value:
             raise ValueError("type must not be empty")
-        return value
-
-    @field_validator("bbox")
-    @classmethod
-    def _validate_bbox(
-        cls, value: tuple[float, float, float, float]
-    ) -> tuple[float, float, float, float]:
-        if not all(math.isfinite(coord) for coord in value):
-            raise ValueError("bbox coordinates must be finite")
         return value
 
 
