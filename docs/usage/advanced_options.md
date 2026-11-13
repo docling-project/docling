@@ -147,6 +147,12 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Preserve LaTeX math in Markdown
+
+Use `MarkdownBackendOptions(enable_latex_math=True)` to retain inline and display
+formulas. See [Markdown math](supported_formats.md#markdown-math) for the supported
+delimiters and a conversion example.
+
 ### Page backend lifetime and page images
 
 Page backends are temporary conversion resources. The internal pipeline attribute

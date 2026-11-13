@@ -63,6 +63,45 @@ Schema-specific support:
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
 
+### Markdown math
+
+Set `MarkdownBackendOptions(enable_latex_math=True)` to retain delimited LaTeX
+as `FormulaItem` objects. The backend supports `$...$` and `\(...\)` for inline
+math, and `$$...$$` and `\[...\]` for display math. Code spans and fenced code
+blocks keep their literal content.
+
+```python
+from docling.datamodel.backend_options import MarkdownBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, MarkdownFormatOption
+
+converter = DocumentConverter(
+    allowed_formats=[InputFormat.MD],
+    format_options={
+        InputFormat.MD: MarkdownFormatOption(
+            backend_options=MarkdownBackendOptions(enable_latex_math=True)
+        )
+    },
+)
+result = converter.convert_string(r"Value $x_i^2$.", format=InputFormat.MD)
+print(result.document.export_to_markdown())
+```
+
+The option defaults to `False` for Markdown input. `VlmPipeline` enables it
+automatically for responses with `ResponseFormat.MARKDOWN`.
+
+GFM tables remove one pipe-escape backslash before inline parsing. To retain a
+LaTeX `\|` inside a table cell, write `\\|` in the Markdown source:
+
+```text
+| Norm |
+| --- |
+| $\\|x_i\\|$ |
+```
+
+Outside tables, write the usual `$\|x_i\|$`. This option keeps the GFM table
+escaping rules for prose and code as well as math.
+
 ## Supported output formats
 
 | Format | Description |

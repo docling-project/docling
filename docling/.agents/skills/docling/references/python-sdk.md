@@ -21,6 +21,14 @@ data = doc.export_to_dict()  # structured / lossless
 `result.status` reports success/failure; `result.document` is always a
 `DoclingDocument`.
 
+For Markdown input with LaTeX math, use
+`MarkdownFormatOption(backend_options=MarkdownBackendOptions(enable_latex_math=True))`
+under `InputFormat.MD`. Import `MarkdownBackendOptions` from
+`docling.datamodel.backend_options` and `MarkdownFormatOption` from
+`docling.document_converter`. The option defaults to `False` for Markdown input.
+`VlmPipeline` enables it for Markdown responses. Inline and display formulas
+retain their LaTeX bodies; code spans and fenced code stay literal.
+
 ## Configuring the pipeline with PipelineOptions
 
 `DocumentConverter(format_options=...)` maps an **`InputFormat`** to a
