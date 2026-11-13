@@ -2478,6 +2478,7 @@ dev = [
     { name = "ipywidgets" },
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "matplotlib", version = "3.11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "memray" },
     { name = "nbqa" },
     { name = "pandas-stubs", version = "2.3.3.260113", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas-stubs", version = "3.0.5.260914", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -2667,6 +2668,7 @@ dev = [
     { name = "ipykernel", specifier = ">=6.29,<8" },
     { name = "ipywidgets", specifier = "~=8.1" },
     { name = "matplotlib", specifier = ">=3.10.9" },
+    { name = "memray", specifier = ">=1.19.3" },
     { name = "nbqa", specifier = "~=1.9" },
     { name = "pandas-stubs", specifier = ">=2.1,<4" },
     { name = "prek", specifier = ">=0.3.10" },
@@ -4815,6 +4817,15 @@ wheels = [
 ]
 
 [[package]]
+name = "linkify-it-py"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/98/7a1a5f31fd5c7ba93e963b168e244b8e3dd705b3d2a718e3c3307583bf57/linkify_it_py-2.2.0.tar.gz", hash = "sha256:907acd2d17ac1fbb9ddb62c8957ccbd6158cac602231a15c3b0cd1e215f03cee", size = 32939, upload-time = "2026-08-29T07:07:08.305Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/d4/1152d1c7ab42d8b908be64fd200ddc870dc9d4925e951198702084aa1a7d/linkify_it_py-2.2.0-py3-none-any.whl", hash = "sha256:3adc40eb5af300b2605fcfdb968c24e1d780a90f1f2221af7c15e5111e94d443", size = 21971, upload-time = "2026-08-29T07:07:07.164Z" },
+]
+
+[[package]]
 name = "llguidance"
 version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
@@ -5091,6 +5102,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/06/ff/7841249c247aa650a76b9ee4bbaeae59370dc8bfd2f6c01f3630c35eb134/markdown_it_py-4.2.0.tar.gz", hash = "sha256:04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49", size = 82454, upload-time = "2026-05-07T12:08:28.36Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/81/4da04ced5a082363ecfa159c010d200ecbd959ae410c10c0264a38cac0f5/markdown_it_py-4.2.0-py3-none-any.whl", hash = "sha256:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a", size = 91687, upload-time = "2026-05-07T12:08:27.182Z" },
+]
+
+[package.optional-dependencies]
+linkify = [
+    { name = "linkify-it-py" },
 ]
 
 [[package]]
@@ -5455,6 +5471,75 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
+]
+
+[[package]]
+name = "memray"
+version = "1.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "rich" },
+    { name = "textual" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/99/3b/8f9736cbf698e62cb7efb0e1715a30d6d06b3cffd980b435209eb522d5f8/memray-1.20.0.tar.gz", hash = "sha256:ce1f1d900948d57d7db5b5d8d81f4ebfcb798eff674493503ce5bfaafcea84dc", size = 2416480, upload-time = "2026-08-07T20:16:20.295Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/65/2d782edb420aa21ab1a27de559a82f67a9ebb0eb09c49b9f254debb27b6b/memray-1.20.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:e073ef4685c7f7c2e9c5dabcff8ff46cae66daf6aeaea4d017239b2940b4ca82", size = 2225253, upload-time = "2026-08-07T20:14:19.232Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/99/56a08b6f4534d54888f5455b7f31ba752c6ba264c927941554e2cc431e98/memray-1.20.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:83eeeadb3a14ecd8180fe53fe7f0287a84d4146f7fdca986291a5fc1f4eeee97", size = 2195549, upload-time = "2026-08-07T20:14:21.043Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/36/df611ca2dc051830e2bcc71aec3295e1aabc6b6733335029b4a435401b62/memray-1.20.0-cp310-cp310-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:9b21b9cb85699f9b8df664f6c1633e2a9ce9072e8a7ca15700075e4111b001ed", size = 9682176, upload-time = "2026-08-07T20:14:22.702Z" },
+    { url = "https://files.pythonhosted.org/packages/26/ad/3871c5b92312f16c00bf1c445f2b9d65386ea44c0ff3a581a315c6849fa4/memray-1.20.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:e430f8f8533d17bbf45ad0e0c2f16c0e0b767729234771b06745670b61ea5f26", size = 9921428, upload-time = "2026-08-07T20:14:24.499Z" },
+    { url = "https://files.pythonhosted.org/packages/31/2f/37f33be92bad8197f15915f4b49b6484981f1018b591fe52ccde720e9f5e/memray-1.20.0-cp310-cp310-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9c80ecc9259acd888647a385a2f429f453f7ba5c0b1af363babd1ad8a1210da6", size = 9376862, upload-time = "2026-08-07T20:14:26.646Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/77/a169cfdaf4bab551150f1e70ae7c3aa7fc85f3107b0a9a4ce7a6adbd8a4b/memray-1.20.0-cp310-cp310-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5dd0d4220b607d85aaf6a7275d032915ad43a170b6ae9c73943952d39c224b9b", size = 9571223, upload-time = "2026-08-07T20:14:28.683Z" },
+    { url = "https://files.pythonhosted.org/packages/00/f3/d924067be6716782b3a2978b00cce03383b033396e788d5453546f687198/memray-1.20.0-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:b41289728ec76b48e83a1af9e1e45e997c4e4b692bfbdeb07cfd814bccb24c40", size = 12227745, upload-time = "2026-08-07T20:14:30.911Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/1e/88237bdf1a6cdff01a07ec6cf46a5816eadd1ac5a72924a87485ebf471e0/memray-1.20.0-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:996db26e0451301ed935d357854bf84ff1e41bc43580901bf37528a09a8dac3c", size = 2224212, upload-time = "2026-08-07T20:14:33.056Z" },
+    { url = "https://files.pythonhosted.org/packages/24/d5/a742f55f70d36c2a88ba644a8fea0933dbe77a5ca65f679ba531a36daba0/memray-1.20.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:5edcfdd7071628dbcfe5334875cb1d615e26f39a613a2cc2767c193a544b91de", size = 2194748, upload-time = "2026-08-07T20:14:34.622Z" },
+    { url = "https://files.pythonhosted.org/packages/21/5b/2c9bfc4a3cbf88fb8c1763fa8f2866232737814dde55172a55e2b0f0398e/memray-1.20.0-cp311-cp311-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:3d40d606d0f1d248bb5a00701de84d8faab8ec5b6b383305a36f14c1849a7125", size = 9738014, upload-time = "2026-08-07T20:14:36.466Z" },
+    { url = "https://files.pythonhosted.org/packages/99/20/3ed35c62736666602c8f025f9c8fc5651effb710f1e03bb142071e06ec57/memray-1.20.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:53231e49d55b10ac10ac8739a2592230f0794320892756f957e0026f99f38618", size = 9952402, upload-time = "2026-08-07T20:14:38.543Z" },
+    { url = "https://files.pythonhosted.org/packages/50/72/5179062328a85a00e8733b00b894828a47ba1635003edb7ec81e36bf28bd/memray-1.20.0-cp311-cp311-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:0601310f1be3fd5012d888fa73354c204d7eb85cd42a89bd91160d3b8a1ada9e", size = 9439556, upload-time = "2026-08-07T20:14:40.489Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/ac/8a969428762b0264efdfe81d101d4d2b5e07452258908e570b22e3221d89/memray-1.20.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e64121d1b3ca248e0af39df09593bd2b04779ff8ee5261ea9b46ae5e47bc1c7e", size = 9642447, upload-time = "2026-08-07T20:14:42.584Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/d9/6481df3b019e3b10661be7216bc457c79c819542a58cad4682cf065b6fc6/memray-1.20.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:4d55e9627b6d6a868aa45995a965f3396c56ac7df5bc567b5293068412049557", size = 12287959, upload-time = "2026-08-07T20:14:44.654Z" },
+    { url = "https://files.pythonhosted.org/packages/83/39/3038dd5a10a1512ab7a0ad30c09e13ea1ad26e09ee70d319d037dafbe63c/memray-1.20.0-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:f5d6980770a2d5d1a4f3e8d04d6f92309119671c1f830959a8bea868fab0b01f", size = 2226078, upload-time = "2026-08-07T20:14:46.831Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/c9/b5b7e0ed44298d521ac0d6d334fae7d934f7a7b63be5c52933ebfcf7403d/memray-1.20.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:7bcd5094cbb9bd1d11a5dfcc523daaa99f743e645a8b0b0805beaa2bbddbf356", size = 2194301, upload-time = "2026-08-07T20:14:48.123Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/6d/a1afee889818ba9633638707bea93ef0db644dd4ad6be13bcd4bcaa3b739/memray-1.20.0-cp312-cp312-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:f6653ac2fbd49e66e2883575fa8c5dde127f4699205415d1170a8cf7d1db1c86", size = 9873569, upload-time = "2026-08-07T20:14:49.563Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/b6/807399cc9e4e733b15206be18244a34b5c7606c47a803cca2c55062ce487/memray-1.20.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:57981abd8c526d4375c7f640a9d27d5e319b888e79b51688a8fae2f947fe8294", size = 10141659, upload-time = "2026-08-07T20:14:51.588Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/3e/ae31597901b5e3bffeca5c5db916f3ad6d1a45ec1547f72821025bd98501/memray-1.20.0-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:2a6d63a3df7eb96809b82cbd9445033ec1d51574be0f9b3eddf4d64632af7162", size = 9555506, upload-time = "2026-08-07T20:14:53.683Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/f3/54f218a7c7d604f6b11cf23ae74988bc7749e861e7e91dab5ee615d3293a/memray-1.20.0-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:68dca0caa0b1d1b8474ee54efb98eeb33f548d28bb246113caac45125da7b9c3", size = 9794360, upload-time = "2026-08-07T20:14:55.627Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/8e/b35e61137dac319394809cabfb5405c98bade1f129368aef2d81990706e1/memray-1.20.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:b40bf09977f84afe815cca1f34f8a29040a9e757b55467d513ecb9262e6bd809", size = 12438571, upload-time = "2026-08-07T20:14:57.725Z" },
+    { url = "https://files.pythonhosted.org/packages/25/51/f9f775da2a08e6bf877b38c9ad83ae140852e2f98a23685f6a04ff4bda2a/memray-1.20.0-cp313-cp313-macosx_10_14_x86_64.whl", hash = "sha256:359824cc26c9a208e83ab058850e9bf16592d7928307e8c2dc6c7b55e6b6cfa6", size = 2225759, upload-time = "2026-08-07T20:14:59.731Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/f2/351f0d534b8df45ac3cea2c90a14050351304f47a019db5ceab3363aa090/memray-1.20.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:60f3bf8762adc15a2214f44ad631cddb9e4fa4f4a0dda6aa0ccac6ea71239283", size = 2193524, upload-time = "2026-08-07T20:15:01.186Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/45/b6fe8e3120a28013709b34de654ce90b0fec1c89dec4392cd1f3d8d8a1c5/memray-1.20.0-cp313-cp313-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:546a60027fc9c8a5fbeea62dce45e830d78769a45192098469ee39b2d75c97fc", size = 9871149, upload-time = "2026-08-07T20:15:02.675Z" },
+    { url = "https://files.pythonhosted.org/packages/24/8b/e59d5144428046bd43f6f7fbfd04cbbebdba94ca42798fc370abd9b833da/memray-1.20.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:d2f3f681ce8acd713a7216d6c362387e70122527e741685e82f85cfdf6aedf0b", size = 10129435, upload-time = "2026-08-07T20:15:04.566Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/91/1aa88c9f9dda541265aac80bcdddffcc641374b8fe05a8caa6b3f02245bf/memray-1.20.0-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:97539fd71c565c55e208df9ea28ac158cd156b8c33564853685688595c5a991b", size = 9554666, upload-time = "2026-08-07T20:15:06.516Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/a6/d31b07fa7aa757c3d2cf9bc4850eb4cbfbbd3bff1f6dd710620248b57739/memray-1.20.0-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3c3aec7a4d0b0d0eb55d72e815a492ff060a3a46b014f6ae216ae68a006ea304", size = 9791047, upload-time = "2026-08-07T20:15:08.63Z" },
+    { url = "https://files.pythonhosted.org/packages/14/0e/65901e28faeb25a27655a43dfdf0e4a36dae5b12f3ee66d7ad849ae8754c/memray-1.20.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:0c18705b70d20161616d3fc9d0b0c7796211b3ab16499dfb29c8f3ab7ece46c2", size = 12431537, upload-time = "2026-08-07T20:15:10.817Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/63/7976092700eecf4e36ae5793020d18f3feab96aabc2f50d8c7669f751326/memray-1.20.0-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:90fc0ebfc6a264fe3b77d5c263678eaf4a47a0f4288e1b6a04ae3439743cd4be", size = 2227009, upload-time = "2026-08-07T20:15:12.733Z" },
+    { url = "https://files.pythonhosted.org/packages/af/1a/0f44b1b626169d40defaa2ae9286a70d40653ac26865f0604a882a10ffb2/memray-1.20.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:d1503ac18928d2493662af95935b9ccaadbf9f2579d86f6757304c23291a077b", size = 2195287, upload-time = "2026-08-07T20:15:14.107Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/09/45b74d8750ddccb9ad76a8ed639b46b2c3990f99dbe77f800f6f524257fe/memray-1.20.0-cp314-cp314-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:d92692fb5266aca4322e2001e18810207b170dfc7ce2e8f0570c7ee181574063", size = 9871353, upload-time = "2026-08-07T20:15:15.595Z" },
+    { url = "https://files.pythonhosted.org/packages/54/b6/d0b4eb7324bf47b52165aea947bb8942807a40684a64f9decdf4b2a34387/memray-1.20.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:37bc107afee942f162d30160dfd7f28c2b989251c574570f2f920f5bbbb323e4", size = 10112228, upload-time = "2026-08-07T20:15:18.15Z" },
+    { url = "https://files.pythonhosted.org/packages/96/18/b70db3a617ba0be54730a0ddf72822df62551d503bba5c131afea1b47da1/memray-1.20.0-cp314-cp314-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:83cfa504ed4e1061b85af4b3c40228616a852851ebf5968ff1c3d85e363f8d24", size = 9550151, upload-time = "2026-08-07T20:15:20.623Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/35/3a972ce61e83648f970dbff8d54dcb0a6a54ab298e283cce139c40c8615b/memray-1.20.0-cp314-cp314-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5588174a24ac150100faa7ee60b535b0f09eae82bf672133443425a00704b769", size = 9776012, upload-time = "2026-08-07T20:15:22.822Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/d3/7d59a88509a301aa02c033b95460266553a689fc99f5b1b0d0f138675fc9/memray-1.20.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:2f51218744259983ad0ca66366ca2ff80158513132ca9bd835b1874a453199dd", size = 12425490, upload-time = "2026-08-07T20:15:24.977Z" },
+    { url = "https://files.pythonhosted.org/packages/27/71/3560aa204af1771cb25ab91489c48643dfe1ca0ce93783fb70ad677ca058/memray-1.20.0-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:610643cfa186f7958a476e5589f6e8a1b0b7b3008ab10250a0f02575a692ef1d", size = 2239309, upload-time = "2026-08-07T20:15:27.025Z" },
+    { url = "https://files.pythonhosted.org/packages/02/e4/f3981abfecc1572fd24274386f3cbbc36b861704a3e3a10aebe2775aa1a0/memray-1.20.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:420bc47528fedf1a92832290c7a7b8a940c2e30bd9337a85811da18a27e07220", size = 2213281, upload-time = "2026-08-07T20:15:28.629Z" },
+    { url = "https://files.pythonhosted.org/packages/72/ee/a04a21557e50d76eef59f0fd4d5f293a2334142540a7180bb627d8ef5b73/memray-1.20.0-cp314-cp314t-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:59e44042f2495698f6a17fe0a831051ea515242e567f08457ee8546283372993", size = 9836577, upload-time = "2026-08-07T20:15:30.102Z" },
+    { url = "https://files.pythonhosted.org/packages/31/66/13ec31746d61855bbe05a090b26a0a9aa6fd741bb3a9a2c0122061d3b985/memray-1.20.0-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ffd3c7c53419465922be92654c17ebff577708fa1f74168dbef9eb5efa6bcb02", size = 10087796, upload-time = "2026-08-07T20:15:32.042Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/37/27da92dcca4c19ca19fdd5c43de474755eac9d16255a0d8f2104d5976998/memray-1.20.0-cp314-cp314t-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ac9a5dd9bef7f44331d98174625167bf0a8f61785ed05440d99f581c93790acf", size = 9602483, upload-time = "2026-08-07T20:15:34.148Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/cc/6b682e4287dfb4bba6d0e0fd8e685fc3b1f0b769707f09c6305217cf8e1e/memray-1.20.0-cp314-cp314t-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:70010acd3d07dbf41aaca0787de3c81c5d8e22e07a6c0fdf04d66c4a376c0193", size = 9758476, upload-time = "2026-08-07T20:15:36.179Z" },
+    { url = "https://files.pythonhosted.org/packages/13/c3/ffbba95b0c468d831c63aa6e7dc9e7bb21074d1899c310604567d10ca204/memray-1.20.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:3270aad45dfa0bc7d32bb86b352aefabee765a8658aace8fb9dc8112a07f2e3c", size = 12388833, upload-time = "2026-08-07T20:15:38.049Z" },
+    { url = "https://files.pythonhosted.org/packages/42/d7/e76c9efcc466273294a5ec41a518de77c8a2e9ee6ac05049f69fff087bc5/memray-1.20.0-cp315-cp315-macosx_10_15_x86_64.whl", hash = "sha256:a6b79c356f7caeed51cbd25dee85485b6210803199f769da8bc3d061bd0e0ada", size = 2227064, upload-time = "2026-08-07T20:15:40.018Z" },
+    { url = "https://files.pythonhosted.org/packages/14/78/5c481eecbbe2b954631dfa9fea383971aa34d186743f74279df644287649/memray-1.20.0-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:a5fc5251b02d99a98eb5874cabfcb74b492ab28e1d5c8b55d481ba0d5e273bf0", size = 2195169, upload-time = "2026-08-07T20:15:41.498Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/2e/6713da0bec71d2074c6c6a2269b9c69a209090591f277a6db1982cc580a9/memray-1.20.0-cp315-cp315-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:08b4d1e17219caabc2a01aa17e8e602b9db67a6aad3ba88b134dfc22bace420d", size = 9874606, upload-time = "2026-08-07T20:15:43.27Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/40/451ac23a92d9cd0e11901c00377589ba64b0b8c5cfd595ae403dd14f1a88/memray-1.20.0-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:b71fe846cbabce7f33017ac94ba2f157b39e22dbc4f723aad0407dd38520f855", size = 10114282, upload-time = "2026-08-07T20:15:45.26Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/88/a426f7229b8e72b5d45a51781018d6c696330633bee149a5b2effbc7d426/memray-1.20.0-cp315-cp315-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ab77856a592b04586ffb4a87e26d4de440ee3aba6facbaeabdb20855950fdebc", size = 9553111, upload-time = "2026-08-07T20:15:47.15Z" },
+    { url = "https://files.pythonhosted.org/packages/82/24/cae0361d483c6816ad4e2607aaa8864902c6d7cd808dafc6c0ad9c5f99c2/memray-1.20.0-cp315-cp315-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:27dc015d1bfb9e43dc0030b412ba435ccff89cd5b7b28d7da9c8e630e7cfe3ec", size = 9778397, upload-time = "2026-08-07T20:15:49.684Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/a1/9be6ff8023790e2e89f6882add459e6aceb45ea7d8170f460e3431c95fd2/memray-1.20.0-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:25e4a802488d54030c30a6bdb969fd79f701228db35e6a834eac75259c69018b", size = 12429015, upload-time = "2026-08-07T20:15:51.769Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/fa/af4f576cce0516e8eec2d25ed83106bbf1da866a6d275b9ea6a6d64efa81/memray-1.20.0-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:9d0c12433fde039a594b6bc254758c236db5532a4ee2ed758b9ec73f8fc78f62", size = 2239298, upload-time = "2026-08-07T20:15:53.916Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/6c/71d39e6ebd1ee3ebb3c0037c1b0c32460bd413623fc67ac50ebfb4ee936a/memray-1.20.0-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:cdf08e64a9bcb598ae76ca467273b580b4658de49b73bd78dd8345a736d78816", size = 2213507, upload-time = "2026-08-07T20:15:55.473Z" },
+    { url = "https://files.pythonhosted.org/packages/28/7d/607c4dda5f3752d0696bc2c1f5f24970542bb82ccc337244b2b6a7831885/memray-1.20.0-cp315-cp315t-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:7e106a6dfd3823194a5ecd0b147ea7cffae900e422402cfac9ff4b2c774b4695", size = 9836320, upload-time = "2026-08-07T20:15:57.098Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/bf/b7bff1759a95230bf4191b7ee4a66867fd4e78e02849fa7032464edf853d/memray-1.20.0-cp315-cp315t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:b9ec82a31783a6e468135a6f8a7a996fbc31530a5b725faffb5a8be7e2431a2b", size = 10082346, upload-time = "2026-08-07T20:15:59.545Z" },
+    { url = "https://files.pythonhosted.org/packages/85/26/0873448e1445a67679a7168a32890dd75b0d63dfe7f07bca3a58d11fe72b/memray-1.20.0-cp315-cp315t-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c8c6ee6c3df06abf2d4230d0f2c0440e91e0c8fd51c1fe9b32599485254d1f56", size = 9593794, upload-time = "2026-08-07T20:16:01.611Z" },
+    { url = "https://files.pythonhosted.org/packages/89/c6/2eb1717d80308240aa41d97915fa5fb372c1f71ef68c844f162350295a4f/memray-1.20.0-cp315-cp315t-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:734a082db18947f8afa609b2b4daca20a8b45100a3e6b6c0e4321d59ed781288", size = 9749626, upload-time = "2026-08-07T20:16:03.523Z" },
+    { url = "https://files.pythonhosted.org/packages/43/50/76598b0e0bf727f4bcdd1a65ac50d609d4952c7d736c27da6a4196468b61/memray-1.20.0-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:c19934e6b713dbbf35f15d3c84f289e048be613e85039913a500393f10272b9f", size = 12377327, upload-time = "2026-08-07T20:16:05.636Z" },
 ]
 
 [[package]]
@@ -11623,6 +11708,24 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/28/07/001d856201359dc92bc23d67be430f2f95ec93ffb1ec1a6b999a24c1954b/tesserocr-2.12.0-cp315-cp315t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:eb8b3549d65272261cae92b30efed89ac5a73eebcee4bbdaf76d3f39bb631e38", size = 5616580, upload-time = "2026-10-22T19:17:02.992Z" },
     { url = "https://files.pythonhosted.org/packages/71/f7/dca24806cb1963e297b275917dae2bf470543f1b3288554c2494c03e9fb1/tesserocr-2.12.0-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:a9b7e61bfac73e853fa409fb34ac0c89bfa78148f9dfdb63a07cb239618b92ac", size = 6965792, upload-time = "2026-10-22T19:17:05.268Z" },
     { url = "https://files.pythonhosted.org/packages/1b/7e/1b23ed037af26a1e5803cf16e0b896364e045ba76e38d0a4341574726214/tesserocr-2.12.0-cp315-cp315t-win_amd64.whl", hash = "sha256:b0d085615a79af0c49ea20722dbce23dd97b391019aab7e201fa88d19a3a468e", size = 24082536, upload-time = "2026-10-22T19:17:08.522Z" },
+]
+
+[[package]]
+name = "textual"
+version = "8.2.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py", extra = ["linkify"] },
+    { name = "mdit-py-plugins" },
+    { name = "platformdirs", version = "4.12.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "platformdirs", version = "4.13.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pygments" },
+    { name = "rich" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/21/39a76b01bd5eea82a04baaca7580e105d8c59450df03998345bb2cfb307b/textual-8.2.8.tar.gz", hash = "sha256:3f106a9fbc73e39dd266c9712432087de78a6d644084c7c241d6a25c3169115b", size = 1860502, upload-time = "2026-06-30T06:51:24.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl", hash = "sha256:267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a", size = 731418, upload-time = "2026-06-30T06:51:26.364Z" },
 ]
 
 [[package]]
