@@ -711,6 +711,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
                 pic.captions.append(fig_caption.get_ref())
             collected_refs.append(pic.get_ref())
+            # The alt text is part of the cell text, and outside a table it is
+            # kept as text after the picture, so keep it in the cell content too.
+            for child in element.children:
+                self._iterate_cell_inline(
+                    element=child,
+                    doc=doc,
+                    inline_parent=inline_parent,
+                    collected_refs=collected_refs,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
 
         else:
             if isinstance(element.children, list):
