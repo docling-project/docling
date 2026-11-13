@@ -317,3 +317,27 @@ def test_runner_stops_decode_at_output_limit():
     )
     assert len(received) <= 10**6
     assert runner.timeouts == []
+
+
+def test_scene_change_boundary_lands_on_first_new_frame(monkeypatch):
+    """A diff peak at probe index p means the cut sits between probe frames
+    p and p + 1, so the new scene must start at timestamps[p + 1]. Using
+    timestamps[p] started every scene one probe interval early, putting the
+    previous scene's last frame into the new scene (issue #5340).
+
+    Ten synthetic probe frames at 1 fps: frames 0-4 black, 5-9 white -- the
+    cut is between 4 s and 5 s, so the second scene starts at 5.0."""
+    import docling.utils.video_frame_sampling as vfs
+
+    def fake_iter_grid_frames(video_path, fps, size, runner, on_frame):
+        for i in range(10):
+            on_frame(Image.new("RGB", (size, size), (0, 0, 0) if i < 5 else (255, 255, 255)))
+
+    monkeypatch.setattr(vfs, "_iter_grid_frames", fake_iter_grid_frames)
+
+    sampler = vfs.SimpleSceneChangeFrameSampler(
+        probe_fps=1.0, min_scene_duration_seconds=2.0
+    )
+    scenes = sampler.detect_scenes(Path("x.mp4"))
+
+    assert [(s.start_time, s.end_time) for s in scenes] == [(0.0, 5.0), (5.0, 9.0)]
