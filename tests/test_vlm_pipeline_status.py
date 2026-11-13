@@ -5,7 +5,7 @@
 
 Verifies that VlmPipeline correctly reports PARTIAL_SUCCESS when
 individual pages have problematic VLM stop reasons (INFERENCE_ERROR, LENGTH,
-CONTENT_FILTERED) or missing predictions.
+STOP_SEQUENCE, CONTENT_FILTERED) or missing predictions.
 
 Related: https://github.com/docling-project/docling/issues/2583
 """
@@ -128,15 +128,20 @@ def test_page_no_vlm_response(pipeline: VlmPipeline) -> None:
     assert conv_res.errors[0].page_no == 2
 
 
-def test_stop_sequence_is_success(pipeline: VlmPipeline) -> None:
-    """STOP_SEQUENCE is a normal completion and should yield SUCCESS."""
+def test_stop_sequence_is_partial_success(pipeline: VlmPipeline) -> None:
+    """STOP_SEQUENCE means a stopper cut the output, for example a repetition
+    loop, so the page is incomplete and should yield PARTIAL_SUCCESS."""
     pages = [
-        _make_page(1, VlmStopReason.STOP_SEQUENCE),
+        _make_page(1, VlmStopReason.END_OF_SEQUENCE),
+        _make_page(2, VlmStopReason.STOP_SEQUENCE),
     ]
     conv_res = _make_conv_res(pages)
     status = pipeline._determine_status(conv_res)
-    assert status == ConversionStatus.SUCCESS
-    assert len(conv_res.errors) == 0
+    assert status == ConversionStatus.PARTIAL_SUCCESS
+    assert len(conv_res.errors) == 1
+    assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
+    assert conv_res.errors[0].page_no == 2
+    assert "stop_reason=stop_sequence" in conv_res.errors[0].error_message
 
 
 def test_unspecified_is_success(pipeline: VlmPipeline) -> None:
