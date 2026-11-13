@@ -331,7 +331,9 @@ def test_scene_change_boundary_lands_on_first_new_frame(monkeypatch):
 
     def fake_iter_grid_frames(video_path, fps, size, runner, on_frame):
         for i in range(10):
-            on_frame(Image.new("RGB", (size, size), (0, 0, 0) if i < 5 else (255, 255, 255)))
+            on_frame(
+                Image.new("RGB", (size, size), (0, 0, 0) if i < 5 else (255, 255, 255))
+            )
 
     monkeypatch.setattr(vfs, "_iter_grid_frames", fake_iter_grid_frames)
 
