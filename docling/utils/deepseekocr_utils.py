@@ -24,9 +24,28 @@ from docling_core.types.doc import (
 from lxml import etree
 from PIL import Image as PILImage
 
+from docling.backend.utils.table_spans import (
+    MAX_COLSPAN,
+    MAX_ROWSPAN,
+    clamp_span,
+    table_width,
+)
 from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
+
+
+def _declared_span(cell: etree._Element, name: str, limit: int) -> int:
+    """Read one declared ``colspan``/``rowspan`` of a cell, clamped to ``limit``.
+
+    The table comes from model output, so the value can be missing, hold
+    something that is not a number, or be far larger than the table it belongs
+    to. ``limit`` is the bound the HTML table model puts on the attribute.
+    """
+    try:
+        return clamp_span(int(cell.get(name)), limit)
+    except (TypeError, ValueError):
+        return 1
 
 
 def _parse_table_html(html_content: str) -> TableData:
@@ -58,18 +77,22 @@ def _parse_table_html(html_content: str) -> TableData:
         if not rows:
             return TableData(num_rows=0, num_cols=0, table_cells=[])
 
-        # Calculate grid dimensions
+        # First pass: read the declared spans of every cell and size the grid.
+        # A cell whose rowspan reaches into a later row shifts the cells of that
+        # row to the right, so the width must allow for the shift; otherwise the
+        # shifted cells start at or past the last column and the grid drops them.
+        row_cell_spans: list[list[tuple[int, int]]] = [
+            [
+                (
+                    _declared_span(cell, "colspan", MAX_COLSPAN),
+                    _declared_span(cell, "rowspan", MAX_ROWSPAN),
+                )
+                for cell in row.xpath("./td | ./th")
+            ]
+            for row in rows
+        ]
         num_rows = len(rows)
-        num_cols = 0
-
-        # First pass: determine number of columns
-        for row in rows:
-            cells = row.xpath("./td | ./th")
-            col_count = 0
-            for cell in cells:
-                colspan = int(cell.get("colspan", "1"))
-                col_count += colspan
-            num_cols = max(num_cols, col_count)
+        num_cols = table_width(row_cell_spans)
 
         # Create grid to track cell positions
         grid: list[list[Union[str, None]]] = [
@@ -78,11 +101,10 @@ def _parse_table_html(html_content: str) -> TableData:
         table_data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
 
         # Second pass: populate cells
-        for row_idx, row in enumerate(rows):
-            cells = row.xpath("./td | ./th")
+        for row_idx, (row, row_spans) in enumerate(zip(rows, row_cell_spans)):
             col_idx = 0
 
-            for cell in cells:
+            for cell, (colspan, rowspan) in zip(row.xpath("./td | ./th"), row_spans):
                 # Find next available column
                 while col_idx < num_cols and grid[row_idx][col_idx] is not None:
                     col_idx += 1
@@ -92,13 +114,16 @@ def _parse_table_html(html_content: str) -> TableData:
 
                 # Get cell properties
                 text = "".join(cell.itertext()).strip()
-                colspan = int(cell.get("colspan", "1"))
-                rowspan = int(cell.get("rowspan", "1"))
                 is_header = cell.tag.lower() == "th"
+                # Keep the cell inside the table: a declared span that sticks out
+                # of the grid must not reach past the last row or column, the same
+                # way the HTML backend trims it.
+                colspan = min(colspan, num_cols - col_idx)
+                rowspan = min(rowspan, num_rows - row_idx)
 
                 # Mark grid cells as occupied
-                for r in range(row_idx, min(row_idx + rowspan, num_rows)):
-                    for c in range(col_idx, min(col_idx + colspan, num_cols)):
+                for r in range(row_idx, row_idx + rowspan):
+                    for c in range(col_idx, col_idx + colspan):
                         grid[r][c] = text
 
                 # Create table cell
