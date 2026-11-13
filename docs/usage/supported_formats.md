@@ -39,6 +39,8 @@ and retains the decoder error as its cause.
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
+PowerPoint shape groups are kept as `unspecified` groups in the document tree;
+groups without content, such as lines only, are left out.
 
 Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
 text in `<footer>` elements is retained in the furniture content layer. Default
