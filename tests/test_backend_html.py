@@ -19,6 +19,7 @@ from docling_core.types.doc import (
     GroupLabel,
     PictureItem,
     RichTableCell,
+    TextItem,
 )
 from docling_core.types.doc.document import ContentLayer
 from PIL import Image
@@ -2980,3 +2981,41 @@ def test_single_char_spans_do_not_compact_across_a_boundary():
     )
     doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
     assert doc.export_to_markdown() == "Hi to"
+
+
+_LINE_ENDING_BODIES = {
+    "pre": "<pre>first\nsecond\n\nfourth</pre>",
+    "pre_code": "<pre><code class='language-python'>def f():\n    return 1\n</code></pre>",
+    "table_cell": "<table><tr><td>first\nsecond</td><td>x</td></tr></table>",
+    "image_alt": (
+        "<img alt='first\nsecond' src='data:image/gif;base64,R0lGODlhAQABAAAAACw='>"
+    ),
+}
+
+
+@pytest.mark.parametrize("line_ending", ["\r\n", "\r"], ids=["crlf", "cr"])
+@pytest.mark.parametrize("body", _LINE_ENDING_BODIES.values(), ids=_LINE_ENDING_BODIES)
+def test_source_line_endings_convert_like_lf(body: str, line_ending: str):
+    """A CR LF or a lone CR in the source reads as LF, as the HTML standard says."""
+    html = f"<html><body>{body}</body></html>"
+    expected = _convert_html(html.encode())
+    actual = _convert_html(html.replace("\n", line_ending).encode())
+
+    assert "\r" not in actual.export_to_markdown()
+    assert actual.export_to_markdown() == expected.export_to_markdown()
+    assert [
+        item.text for item, _ in actual.iterate_items() if isinstance(item, TextItem)
+    ] == [
+        item.text for item, _ in expected.iterate_items() if isinstance(item, TextItem)
+    ]
+
+
+@pytest.mark.parametrize("encoding", ["utf-16", "utf-32"])
+def test_source_line_endings_in_wide_encodings_convert_like_lf(encoding: str):
+    """CR LF is translated in encodings where a line ending spans several bytes."""
+    html = "<html><body><pre>é\nb\nc</pre></body></html>"
+    expected = _convert_html(html.encode(encoding))
+    actual = _convert_html(html.replace("\n", "\r\n").encode(encoding))
+
+    assert actual.export_to_markdown() == expected.export_to_markdown()
+    assert "\r" not in actual.export_to_markdown()
