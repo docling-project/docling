@@ -3153,6 +3153,34 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
     assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
 
 
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        ("d", r"\left(x\right)"),
+        ("acc", r"\hat{x}"),
+        ("bar", r"\overline{x}"),
+        ("groupChr", r"\underbrace{x}"),
+    ],
+)
+def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expected):
+    """An OMML element without its optional properties child uses the defaults."""
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:{tag}><m:e><m:r><m:t>x</m:t></m:r></m:e></m:{tag}></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / f"equation_without_{tag}_properties.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
 def test_symbol_font_case_and_whitespace_resilience(tmp_path):
     """Symbol font detection handles case and whitespace variations defensively."""
     docx_path = tmp_path / "symbol_font_casing.docx"
