@@ -209,12 +209,6 @@ class TableStructureModelV2(BaseTableStructureModel):
             label=table_cluster.label,
         )
 
-    def _match_text(
-        self, bbox: BoundingBox, text_cells: list[TextCell], textcell_overlap: float
-    ) -> str:
-        """Return text from text_cells whose bboxes overlap sufficiently with bbox."""
-        return self._match_texts([bbox], text_cells, textcell_overlap)[0]
-
     def _match_texts(
         self,
         bboxes: list[BoundingBox],
