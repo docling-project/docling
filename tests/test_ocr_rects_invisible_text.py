@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.labels import DocItemLabel
+from docling_core.types.doc.page import BoundingRectangle, PdfTextCell, TextCell
 
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
@@ -24,7 +25,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
-from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.base_ocr_model import BaseOcrModel, _MergeCellsPriority
 
 FIXTURE = Path("./tests/data/pdf/invisible_text_layer.pdf")
 
@@ -106,3 +107,47 @@ def test_invisible_text_still_needs_ocr(backend_cls):
         assert visible_rects == []
     finally:
         doc_backend.unload()
+
+
+@pytest.mark.parametrize("priority", list(_MergeCellsPriority))
+@pytest.mark.parametrize("origin", [CoordOrigin.TOPLEFT, CoordOrigin.BOTTOMLEFT])
+def test_flat_invisible_cell_below_its_ocr_cell_is_merged_away(priority, origin):
+    """A zero-height text-layer box on the baseline must not survive beside its OCR text."""
+
+    def rect(left, top, right, bottom):
+        box = BoundingBox(
+            l=left, t=top, r=right, b=bottom, coord_origin=CoordOrigin.TOPLEFT
+        )
+        if origin == CoordOrigin.BOTTOMLEFT:
+            box = box.to_bottom_left_origin(page_height=842)
+        return BoundingRectangle.from_bounding_box(box)
+
+    def pdf_cell(text, box):
+        return PdfTextCell(
+            index=0,
+            text=text,
+            orig=text,
+            rect=box,
+            from_ocr=False,
+            rendering_mode=3,
+            font_key="F1",
+            font_name="Helvetica",
+            widget=False,
+            text_direction="left_to_right",
+        )
+
+    ocr_cells = [
+        TextCell(index=0, text=t, orig=t, rect=r, from_ocr=True, confidence=0.9)
+        for t, r in (
+            ("BACKGROUND:", rect(72, 133, 160, 142)),
+            ("The Company", rect(72, 152, 500, 163)),
+        )
+    ]
+    pdf_cells = [
+        pdf_cell("BACKGROUND:", rect(72, 144, 160, 144.2)),
+        pdf_cell("The Company", rect(72, 152.5, 500, 163)),
+    ]
+
+    merged = _make_model()._merge_ocr_and_pdf_cells(ocr_cells, pdf_cells, priority)
+
+    assert [c.text for c in merged] == ["BACKGROUND:", "The Company"]
