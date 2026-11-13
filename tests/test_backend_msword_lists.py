@@ -978,3 +978,36 @@ def test_get_level_element_follows_num_style_link(tmp_path):
     assert resolved is not None
     assert resolved.get(qn("w:ilvl")) == "0"
     assert resolved.find(qn("w:lvlText")).get(qn("w:val")) == "%1"
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_table_right_after_a_list_closes_the_list(tmp_path, nested):
+    """A table that directly follows a list item is not part of the list.
+
+    It used to be added to the ListGroup next to the list items, so the
+    Markdown export glued the table onto the last item.
+    """
+    document = Document()
+    document.add_paragraph("item", style="List Bullet")
+    if nested:
+        document.add_paragraph("sub item", style="List Bullet 2")
+    table = document.add_table(rows=2, cols=2)
+    for row in range(2):
+        for col in range(2):
+            table.cell(row, col).text = f"cell {row}{col}"
+    document.add_paragraph("next item", style="List Bullet")
+    doc = _convert_docx(document, tmp_path)
+
+    [docling_table] = doc.tables
+    assert docling_table.parent == doc.body.get_ref()
+    for group in doc.groups:
+        if isinstance(group, ListGroup):
+            assert all(
+                isinstance(child.resolve(doc), ListItem) for child in group.children
+            )
+
+    items = _list_items_by_text(doc)
+    assert items["next item"].parent != items["item"].parent
+
+    markdown = doc.export_to_markdown()
+    assert "\n\n| cell 00" in markdown

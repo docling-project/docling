@@ -1270,6 +1270,35 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # document tree; keep the paragraphs rather than fail the conversion
             _log.warning(f"Kept the empty paragraphs before resumed list items: {err}")
 
+    def _close_list_before_table(self) -> None:
+        """Close a list that is still open when a table starts.
+
+        Without this, a table that directly follows a list item is added as a
+        child of the ``ListGroup`` (next to its list items), and the Markdown
+        export glues the table onto the last list item.
+        """
+        if self._prev_numid() is None:
+            return
+        self.last_numid = (
+            self.nested_lists[0].outer_numid
+            if self.nested_lists and self.level_at_new_list is not None
+            else self._prev_numid()
+        )
+        self.nested_lists = []
+        # A table breaks list continuity, like substantive body text.
+        self._clear_list_group_cache()
+        if self.level_at_new_list:
+            for key in range(len(self.parents)):
+                if key >= self.level_at_new_list:
+                    self.parents[key] = None
+            self.level = self.level_at_new_list - 1
+            self.level_at_new_list = None
+        else:
+            for key in range(len(self.parents)):
+                self.parents[key] = None
+            self.level = 0
+        self._update_history("Table", None, None, None)
+
     def _clear_list_group_cache(self) -> None:
         """Clear the cached list group to prevent reuse across contexts."""
         self.last_list_group = None
@@ -2056,6 +2085,36 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             numid, ilvl or 0
         )
 
+    def _get_outline_level_from_paragraph(self, paragraph: Paragraph) -> int | None:
+        """Extract outlineLvl from a paragraph's direct formatting.
+
+        In OOXML, outlineLvl is 0-indexed: 0-8 are heading levels 1-9 and 9 is
+        the "body text" sentinel. This method returns the 1-indexed value
+        (outlineLvl + 1), so heading levels are 1-9 and body text is 10.
+        """
+
+        if paragraph is None:
+            return None
+
+        p_pr = paragraph._p.pPr
+        if p_pr is None:
+            return None
+
+        # Look for outlineLvl in the paragraph properties
+        outline_elem = p_pr.find(f"{_W_NS_CLARK}outlineLvl")
+        val = (
+            outline_elem.get(f"{_W_NS_CLARK}val") if outline_elem is not None else None
+        )
+
+        if val is not None:
+            try:
+                # Convert 0-indexed outlineLvl to 1-indexed heading level
+                return int(val) + 1
+            except ValueError:
+                pass
+
+        return None
+
     def _get_outline_level_from_style(self, style: ParagraphStyle | None) -> int | None:
         """Extract outlineLvl from a paragraph style definition.
 
@@ -2321,7 +2380,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # 1-9 are real heading levels; 10 is the "body text" sentinel.
-        outline_level = self._get_outline_level_from_style(style)
+        outline_level = self._get_outline_level_from_paragraph(paragraph)
+        if outline_level is None:
+            outline_level = self._get_outline_level_from_style(style)
         if outline_level is not None and not 1 <= outline_level <= 9:
             outline_level = None
 
@@ -2492,11 +2553,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             or ``None`` when there is no address, the URL is malformed, or the
             hyperlink's relationship has been removed from the part.
         """
+        # Resolve the relationship in the part being read: header, footer and
+        # note paragraphs are attached to the document part, but their
+        # hyperlink relationships live in their own part.
+        rid = hyperlink._hyperlink.rId
         try:
-            address = hyperlink.url
+            address = self.current_part.rels[rid].target_ref if rid is not None else ""
         except KeyError:
             # Relationship removed from the part (e.g. by _sanitize_docx); drop target.
             return None
+        if address and hyperlink.fragment:
+            address = f"{address}#{hyperlink.fragment}"
         if address:
             if not urlparse(address).scheme:
                 return Path(address)
@@ -4159,11 +4226,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Still a code-block boundary: outside code must not merge with
             # code inside the cell.
             self._force_new_code_block = True
-            self._walk_linear(cell_element._element, doc)
+            # Return the items made from the cell so that a container holding
+            # this table (a rich table cell, a text box, a content control)
+            # groups them inside itself instead of leaving them in the body.
+            _, elem_ref = self._walk_linear(cell_element._element, doc)
             self._force_new_code_block = True
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
+        self._close_list_before_table()
         level = self._get_level()
         docling_table = doc.add_table(
             data=data, parent=self.parents[level - 1], content_layer=self.content_layer
@@ -5088,24 +5159,54 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.warning(f"Failed to parse {tag_name}s part")
                 continue
 
-            for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
-                if note.get(f"{_W_NS_CLARK}type") in skip_types:
-                    continue
-                # A note has no layer per paragraph, so hidden ones are left out.
-                texts = [
-                    text
-                    for paragraph in (
-                        Paragraph(p_elm, docx_obj)
-                        for p_elm in note.findall(f".//{_W_NS_CLARK}p")
-                    )
-                    if not self._is_hidden_paragraph(paragraph)
-                    and (text := self._get_paragraph_text(paragraph).strip())
-                ]
-                if not texts:
-                    continue
+            # Hyperlink relationships of a note live in the note part.
+            self.current_part = matches[0].target_part
+            try:
+                for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
+                    if note.get(f"{_W_NS_CLARK}type") not in skip_types:
+                        self._add_note(note, docx_obj, doc)
+            finally:
+                self.current_part = docx_obj.part
+
+    def _add_note(
+        self, note: BaseOxmlElement, docx_obj: DocxDocument, doc: DoclingDocument
+    ) -> None:
+        """Add one footnote/endnote body as a ``FOOTNOTE`` item.
+
+        A note with a hyperlink becomes an inline group of ``FOOTNOTE`` items,
+        so that each linked span keeps its target.
+        """
+        # A note has no layer per paragraph, so hidden ones are left out.
+        paragraphs = [
+            paragraph
+            for paragraph in (
+                Paragraph(p_elm, docx_obj)
+                for p_elm in note.findall(f".//{_W_NS_CLARK}p")
+            )
+            if not self._is_hidden_paragraph(paragraph)
+            and self._get_paragraph_text(paragraph).strip()
+        ]
+        if not paragraphs:
+            return
+        elements = [self._get_paragraph_elements(p) for p in paragraphs]
+        if not any(link for para in elements for _text, _fmt, link in para):
+            doc.add_text(
+                label=DocItemLabel.FOOTNOTE,
+                text=" ".join(self._get_paragraph_text(p).strip() for p in paragraphs),
+                content_layer=ContentLayer.FURNITURE,
+            )
+            return
+
+        group = doc.add_inline_group(content_layer=ContentLayer.FURNITURE)
+        for p_idx, para in enumerate(elements):
+            for e_idx, (text, formatting, hyperlink) in enumerate(para):
                 doc.add_text(
                     label=DocItemLabel.FOOTNOTE,
-                    text=" ".join(texts),
+                    parent=group,
+                    # Paragraphs of a note are joined by a space, as above.
+                    text=f" {text}" if p_idx and not e_idx else text,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
                     content_layer=ContentLayer.FURNITURE,
                 )
 

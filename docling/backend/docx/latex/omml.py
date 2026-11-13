@@ -344,6 +344,23 @@ class oMath2Latex(Tag2Method):
         else:
             return None
 
+    @staticmethod
+    def _get_properties(c_dict: dict[str, Any], stag: str) -> Pr:
+        """Return the processed properties child, or empty properties if it is absent.
+
+        The OMML schema declares property elements such as `m:dPr` as optional.
+        Empty properties return None for every property, so the defaults apply.
+
+        Args:
+            c_dict: Processed children of the element.
+            stag: Simplified tag name of the properties element.
+
+        Returns:
+            The properties of the element.
+        """
+        pr = c_dict.get(stag)
+        return pr if pr is not None else Pr(ET.Element(stag))
+
     @property
     def latex(self) -> str:
         """Get the LaTeX representation.
@@ -364,7 +381,9 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm)
         latex_s = get_val(
-            c_dict["accPr"].chr, default=CHR_DEFAULT["ACC_VAL"], store=CHR
+            self._get_properties(c_dict, "accPr").chr,
+            default=CHR_DEFAULT["ACC_VAL"],
+            store=CHR,
         )
         # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
         if "%s" in latex_s:
@@ -382,7 +401,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with bar applied.
         """
         c_dict = self.process_children_dict(elm)
-        pr = c_dict["barPr"]
+        pr = self._get_properties(c_dict, "barPr")
         latex_s = get_val(pr.pos, default=POS_DEFAULT["BAR_VAL"], store=POS)
         # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
         if "%s" in latex_s:
@@ -400,7 +419,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with delimiters applied.
         """
         c_dict = self.process_children_dict(elm)
-        pr = c_dict["dPr"]
+        pr = self._get_properties(c_dict, "dPr")
         null = D_DEFAULT["null"]
 
         s_val = get_val(pr.begChr, default=D_DEFAULT["left"], store=T)
@@ -601,7 +620,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with group character applied.
         """
         c_dict = self.process_children_dict(elm)
-        pr = c_dict["groupChrPr"]
+        pr = self._get_properties(c_dict, "groupChrPr")
         latex_s = get_val(pr.chr, default=CHR_DEFAULT["GROUPCHR_VAL"], store=CHR)
         # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
         if "%s" in latex_s:
