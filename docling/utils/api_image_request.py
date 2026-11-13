@@ -78,6 +78,17 @@ def _failed_streaming_request(reason: str) -> ApiImageStreamingRequestResult:
     )
 
 
+def _request_params(params: dict[str, Any]) -> dict[str, Any]:
+    """Return the provider parameters to send, leaving out keys set to ``None``.
+
+    ``None`` means "do not send this parameter" (as ``NOT_GIVEN`` does in the
+    OpenAI SDK). It lets a caller drop a request-level default the inference
+    engines inject, such as ``temperature`` or ``max_tokens``, instead of
+    sending it as JSON ``null``.
+    """
+    return {key: value for key, value in params.items() if value is not None}
+
+
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
     if arguments is None:
         return ""
@@ -242,7 +253,7 @@ def api_image_request(
 
             payload = {
                 "messages": messages,
-                **params,
+                **_request_params(params),
             }
 
             headers = headers or {}
@@ -345,10 +356,11 @@ def api_image_request_streaming(
                 }
             ]
 
+            request_params = _request_params(params)
             payload = {
                 "messages": messages,
                 "stream": True,  # <-- critical for SSE streaming
-                **params,
+                **request_params,
             }
 
             # Debug: Log the payload to verify temperature is included
@@ -361,8 +373,8 @@ def api_image_request_streaming(
             hdrs = {"Accept": "text/event-stream", **(headers or {})}
 
             # Try to force temperature via header if server ignores payload parameter
-            if "temperature" in params:
-                hdrs["X-Temperature"] = str(params["temperature"])
+            if "temperature" in request_params:
+                hdrs["X-Temperature"] = str(request_params["temperature"])
 
             # Stream the HTTP response
             with _make_retry_session() as session:
