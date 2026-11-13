@@ -482,6 +482,7 @@ def test_process_video_runs_diarization_when_enabled(
         VideoPipelineOptions(
             accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
             enable_diarization=True,
+            diarization_num_speakers=1,
             generate_frame_images=False,
         )
     )
@@ -495,6 +496,7 @@ def test_process_video_runs_diarization_when_enabled(
     pipeline._process_video(conv_res)
 
     diarize_mock.assert_called_once()
+    assert diarize_mock.call_args.kwargs["num_speakers"] == 1
     assert conv_res.document is not None
     assert conv_res.document.texts[0].text == "hello"
     assert conv_res.document.texts[0].source[0].voice == "SPEAKER_00"
