@@ -666,6 +666,20 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
+def _strip_xml_comment_nodes(root: etree._Element) -> None:
+    """Remove the XML comment nodes and processing instructions under ``root``.
+
+    The backend walks element children and reads their tag, which a comment does
+    not have, so a single one fails the conversion or drops the content of the
+    table it sits in. Text following a removed node is kept: lxml moves it, since
+    python-docx makes ``text`` read-only on paragraphs and hyperlinks, and clears
+    the run when it is set on a run.
+    """
+    etree.strip_elements(
+        root, etree.Comment, etree.ProcessingInstruction, with_tail=False
+    )
+
+
 def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
     """Remove XML comment nodes and processing instructions from every XML part.
 
@@ -673,12 +687,9 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
     the XML comments found in the main document part, in document order.
 
     Some producers write them into the document body (docx4j adds
-    ``<!-- Created by docx4j ... -->``). The backend walks element children and
-    reads their tag, which a comment does not have, so a single one fails the
-    conversion or drops the content of the table it sits in. Text following a
-    removed node is kept: lxml moves it, since python-docx makes ``text``
-    read-only on paragraphs and hyperlinks, and clears the run when it is set
-    on a run.
+    ``<!-- Created by docx4j ... -->``). python-docx loads footnotes, endnotes
+    and charts as plain parts: the backend parses those itself and strips them
+    there.
     """
     texts: list[str] = []
     for part in docx_obj.part.package.iter_parts():
@@ -688,9 +699,7 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
             for node in part.element.iter(etree.Comment):
                 if text := (node.text or "").strip():
                     texts.append(text)
-        etree.strip_elements(
-            part.element, etree.Comment, etree.ProcessingInstruction, with_tail=False
-        )
+        _strip_xml_comment_nodes(part.element)
     return texts
 
 
@@ -4734,10 +4743,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug("chart relationship %r not found in document part", rid)
             return None
         try:
-            return etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
+            chart_root = etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
         except etree.XMLSyntaxError:
             _log.debug("could not parse chart part for relationship %r", rid)
             return None
+        _strip_xml_comment_nodes(chart_root)
+        return chart_root
 
     def _classify_chart(self, chart_root: Any) -> PictureClassificationLabel:
         """Classify a chart from the first plot element under ``c:plotArea``.
@@ -5156,6 +5167,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             except Exception:
                 _log.warning(f"Failed to parse {tag_name}s part")
                 continue
+            _strip_xml_comment_nodes(root)
 
             for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
                 if note.get(f"{_W_NS_CLARK}type") in skip_types:

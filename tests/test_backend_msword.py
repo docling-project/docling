@@ -3302,3 +3302,59 @@ def test_xml_comment_text_goes_to_notes():
     assert "indented" not in markdown
     assert "inline" not in markdown
     assert "producer" not in markdown
+
+
+def test_xml_comments_in_footnotes_are_removed():
+    """python-docx loads footnotes and endnotes as plain parts, which the backend
+    parses itself: their XML comments and processing instructions are removed
+    too, and dropped like those of the other parts."""
+    body = (
+        "<w:p><!-- note --><w:r><w:t>Smith, J. <!-- inline -->(2020).</w:t></w:r>"
+        "<?producer note?><w:r><w:t> Example Study.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(name="notes.docx", stream=_docx_with_notes(body))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    footnotes = [item.text for item in doc.texts if item.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Smith, J. (2020). Example Study.", "An endnote body."]
+    assert not [item for item in doc.texts if item.content_layer == ContentLayer.NOTES]
+
+
+def test_xml_comments_in_charts_are_removed(monkeypatch):
+    """python-docx loads a chart as a plain part, which the backend parses itself:
+    its XML comments and processing instructions do not stop the chart's
+    classification or drop its data."""
+    import zipfile
+    from io import BytesIO
+
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart_xml = entries["word/charts/chart1.xml"]
+    for old, new in [
+        (b"<c:plotArea>", b"<c:plotArea><!-- x --><?producer note?>"),
+        (b"<c:v>4.3</c:v>", b"<c:v>4<!-- x -->.3</c:v>"),
+    ]:
+        assert chart_xml.count(old) == 1
+        chart_xml = chart_xml.replace(old, new)
+    entries["word/charts/chart1.xml"] = chart_xml
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+
+    stream = DocumentStream(name="chart.docx", stream=buffer)
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+    chart = _single_chart_picture(doc)
+
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.LINE_CHART
+    )
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
+        EXPECTED_CHART_GRID
+    )
