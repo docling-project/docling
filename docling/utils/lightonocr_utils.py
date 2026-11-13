@@ -119,6 +119,33 @@ def _html_table(body: str) -> _Element | None:
     return next((node for node in root.elements() if node.tag == "table"), None)
 
 
+def _render_code(body: str) -> str:
+    """Parse a complete enclosing fence; keep other explicit code literal."""
+    from marko.block import BlankLine, FencedCode
+
+    # Whitespace-only padding is valid outside a fence. Keep the original body
+    # for parsing so indentation and blank lines inside the code stay literal.
+    lines = [line for line in body.splitlines() if line.strip()]
+    opening = re.match(r"^ {0,3}(`{3,}|~{3,})", lines[0]) if lines else None
+    closing = (
+        re.fullmatch(r" {0,3}(`{3,}|~{3,})[ \t]*", lines[-1])
+        if len(lines) > 1
+        else None
+    )
+    if (
+        opening is not None
+        and closing is not None
+        and opening[1][0] == closing[1][0]
+        and len(closing[1]) >= len(opening[1])
+    ):
+        markdown = create_markdown_parser()
+        parsed = markdown.parse(body)
+        blocks = [node for node in parsed.children if not isinstance(node, BlankLine)]
+        if len(blocks) == 1 and isinstance(blocks[0], FencedCode):
+            return markdown.render(parsed)
+    return f"<pre><code>{html.escape(body)}</code></pre>"
+
+
 def _has_area(bbox: str) -> bool:
     """Tell if a normalized ``x0 y0 x1 y1`` box lies on the 0-1000 grid and has area."""
     x0, y0, x1, y1 = (int(value) for value in bbox.split())
@@ -194,6 +221,8 @@ def parse_lightonocr_markdown(
         chart_data = None
         if label == "formula":
             rendered = f'<math display="block">{html.escape(strip_math_delimiters(body))}</math>'
+        elif label == "code":
+            rendered = _render_code(body)
         elif label in _PICTURE_LABELS:
             chart_data = _chart_data(body) if label == "chart" else None
             alt = "" if chart_data is not None else body.strip()
