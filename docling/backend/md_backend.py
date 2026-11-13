@@ -1297,6 +1297,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.MD}
 
+    def _make_markdown_parser(self) -> Markdown:
+        return Markdown(extensions=[_GFM_EXTENSION])
+
+    def _prepare_markdown_ast(self, element: marko.block.Document) -> None:
+        """Allow format-specific backends to resolve links before HTML conversion."""
+
     def convert(self) -> DoclingDocument:
         _log.debug("converting Markdown...")
 
@@ -1311,8 +1317,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if self.is_valid():
             # The GFM extension gives tables a structured AST with inline
             # children per cell, enabling RichTableCell for formatted content.
-            marko_parser = Markdown(extensions=[_GFM_EXTENSION])
+            marko_parser = self._make_markdown_parser()
             parsed_ast = marko_parser.parse(self.markdown)
+            self._prepare_markdown_ast(parsed_ast)
             _merge_adjacent_text_runs(parsed_ast)
             self._iterate_elements(
                 element=parsed_ast,

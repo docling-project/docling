@@ -421,6 +421,8 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+# Temporary source for the DocLang hyperlink fixes in docling-core PR #1019.
+docling-core = { git = "https://github.com/docling-project/docling-core.git", rev = "5f02de94d99d3fc07d8d2b2c93a681737d53b81c" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 
 [tool.uv]

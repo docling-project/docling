@@ -1,6 +1,28 @@
 # GitHub JSON backend
 
-Status: proposed for review
+Status: implemented; local validation complete
+
+## Implementation record
+
+- Added `InputFormat.JSON_GITHUB`, typed source models, the JSON backend, and
+  `GitHubJSONFormatOption`.
+- Added complete `gh api` retrieval and native GitHub URL handling in the CLI.
+- Added code, HTML, link, label, image, thread, and reply preservation tests.
+- Verified core PR #1019, core issue #1018, and cli/cli discussion #3993 through
+  the CLI. Reloaded each DCLX archive and checked its named groups and links.
+- Ran the affected conversion, input detection, and CLI tests: 510 passed,
+  1 skipped. The 26 GitHub tests also pass after the accepted-answer fixture
+  update. `make validate` passes with no hook changes.
+- Added CLI and SDK instructions in `docs/usage/github.md` and a runnable
+  example in `docs/examples/convert_github.py`.
+
+The models live in `docling/datamodel/github.py` so retrieval, detection, and
+conversion share one schema without a utility-to-backend dependency. The
+backend uses a GitHub-specific Markdown extension for balanced HTML blocks.
+Repository-relative links use the known default branch; unknown branch context
+keeps the original target. SDK DCLX exports must enable `add_named_groups=True`.
+The CLI does this automatically. Exact metadata types remain in source JSON;
+DocLang custom metadata can normalize scalar and collection types.
 
 ## Objective
 

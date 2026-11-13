@@ -21,6 +21,21 @@ data = doc.export_to_dict()  # structured / lossless
 `result.status` reports success/failure; `result.document` is always a
 `DoclingDocument`.
 
+## GitHub conversations
+
+Use `InputFormat.JSON_GITHUB` for native issue, pull request, and discussion JSON.
+For a URL, call `fetch_github_conversation(url)` and pass
+`github_document_stream(export)` to `DocumentConverter.convert()`. Both helpers
+are in `docling.utils.github`; URL retrieval requires authenticated `gh`.
+The returned `GitHubExport` can be saved with `model_dump_json()`.
+
+Use `GitHubJSONFormatOption` with `GitHubJSONBackendOptions` to enable local or
+remote image loading. The backend preserves code whitespace and literal fenced
+HTML. Source metadata is on the title in `meta.github__source`; entry metadata
+is on headings in `meta.github__entry`. Visible label names and descriptions
+appear after source information. Use `save_as_doclang_archive(...,
+add_named_groups=True)` to retain conversation and reply ownership.
+
 ## Preserve code block whitespace
 
 For code snippets that require leading blank lines, trailing spaces, or trailing

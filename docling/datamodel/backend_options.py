@@ -279,6 +279,17 @@ class MarkdownBackendOptions(TextBackendOptions):
     )
 
 
+class GitHubJSONBackendOptions(MarkdownBackendOptions):
+    """Markdown and asset options for GitHub conversation JSON."""
+
+    kind: Literal["json_github"] = Field("json_github", exclude=True, repr=False)
+    preserve_code_whitespace: bool = True
+    fetch_images: bool = True
+    strict_assets: bool = Field(
+        False, description="Fail conversion if any referenced picture cannot be loaded."
+    )
+
+
 class JatsBackendOptions(BaseBackendOptions):
     """Options specific to the JATS XML backend."""
 
@@ -990,6 +1001,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         JatsBackendOptions,
         MarkdownBackendOptions,
+        GitHubJSONBackendOptions,
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
