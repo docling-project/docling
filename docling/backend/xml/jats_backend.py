@@ -32,6 +32,7 @@ from typing import Final, cast
 from urllib.parse import urlsplit
 
 from docling_core.types.doc import (
+    BaseMeta,
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
@@ -39,6 +40,7 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     ImageRef,
+    KeywordsMetaField,
     NodeItem,
     RichTableCell,
     TableCell,
@@ -96,6 +98,12 @@ _ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
 # letter or an author reply, from the JATS 1.3 tag library.
 _SUB_ARTICLE_TAGS: Final[tuple[str, ...]] = ("sub-article", "response")
 _NOT_IN_SUB_ARTICLE: Final[str] = "not(ancestor::sub-article or ancestor::response)"
+# The `xml:lang` attribute, which gives the language of an article or a keyword group.
+_XML_LANG: Final[str] = "{http://www.w3.org/XML/1998/namespace}lang"
+# Keyword groups that list organisms or abbreviations rather than keywords.
+_NON_KEYWORD_GROUP_TYPES: Final[frozenset[str]] = frozenset(
+    {"research-organism", "abbreviations"}
+)
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -181,6 +189,8 @@ class XMLComponents(TypedDict):
     abstract: list[Abstract]
     # Author footnotes, copyright, license and funding nodes, walked at emit time.
     statements: list[etree._Element]
+    # Author keywords of the article metadata, merged and deduplicated.
+    keywords: list[str]
 
 
 class JatsDocumentBackend(DeclarativeDocumentBackend):
@@ -569,6 +579,54 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             "|author-notes/fn"
         )
 
+    def _parse_keywords(self) -> list[str]:
+        """Collect the keywords of the `<kwd-group>` elements of the article metadata.
+
+        Groups whose `xml:lang` differs from the one of the article are skipped.
+        Duplicates are dropped, keeping the first occurrence.
+        """
+        meta = self._find_metadata()
+        if meta is None:
+            return []
+        root = self.tree.getroot()
+        article_lang = JatsDocumentBackend._primary_language(
+            root.get(_XML_LANG) if root is not None else None
+        )
+
+        keywords: list[str] = []
+        for group in meta.xpath("kwd-group"):
+            if group.get("kwd-group-type") in _NON_KEYWORD_GROUP_TYPES:
+                continue
+            group_lang = JatsDocumentBackend._primary_language(group.get(_XML_LANG))
+            if article_lang and group_lang and group_lang != article_lang:
+                continue
+            for node in group.xpath(".//kwd|.//compound-kwd"):
+                keyword = JatsDocumentBackend._get_keyword_text(node)
+                if keyword:
+                    keywords.append(keyword)
+        return list(dict.fromkeys(keywords))
+
+    @staticmethod
+    def _primary_language(lang: str | None) -> str:
+        """Return the lower-cased primary subtag of a language code, e.g. `en-US` -> `en`."""
+        return lang.split("-")[0].lower() if lang else ""
+
+    @staticmethod
+    def _get_keyword_text(node: etree._Element) -> str:
+        """Return the text of a `<kwd>`, or of a `<compound-kwd>` joining its parts."""
+        if node.tag == "compound-kwd":
+            parts = (
+                JatsDocumentBackend._get_inline_text(part)
+                for part in node.xpath("compound-kwd-part")
+            )
+            return " ".join(part for part in parts if part)
+        return JatsDocumentBackend._get_inline_text(node)
+
+    @staticmethod
+    def _get_inline_text(node: etree._Element) -> str:
+        """Return the text of a node without breaking words at inline markup."""
+        return JatsDocumentBackend._normalize_whitespace("".join(node.itertext()))
+
     def _parse_metadata(self) -> XMLComponents:
         """Parsing JATS document metadata."""
         xml_components: XMLComponents = {
@@ -576,6 +634,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             "authors": self._parse_authors(),
             "abstract": self._parse_abstract(),
             "statements": self._parse_statements(),
+            "keywords": self._parse_keywords(),
         }
         return xml_components
 
@@ -1202,8 +1261,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self._add_title(doc, xml_components)
         self._add_authors(doc, xml_components)
         self._add_abstract(doc, xml_components)
+        self._add_keywords(doc, xml_components)
 
         return
+
+    @staticmethod
+    def _add_keywords(doc: DoclingDocument, xml_components: XMLComponents) -> None:
+        """Attach the keywords to the metadata of the document body."""
+        keywords = xml_components["keywords"]
+        if not keywords:
+            return
+        doc.body.meta = BaseMeta(keywords=KeywordsMetaField(values=keywords))
 
     @staticmethod
     def _walk_table_cell(
