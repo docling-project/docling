@@ -201,11 +201,13 @@ The following table shows all processing stages in Docling, their model families
 | Model | Inference Engine | Supported Devices |
 |-------|------------------|-------------------|
 | Heron, Heron 101, Egret medium/large/xlarge | Transformers | CPU, CUDA, MPS, XPU |
-| `docling-layout-heron` | ONNXRuntime | CPU, CUDA, MPS, XPU |
+| `docling-layout-heron` | ONNXRuntime | CPU, CUDA (or custom providers) |
 | `docling-layout-heron-101-mlx-bf16` | MLX | Apple Silicon (Metal) |
 
-**Note:** Layout models run through `AutoModelForObjectDetection`, reading their label map
-from the model repository's own `config.json`. Only `docling-layout-heron` also supports ONNXRuntime.
+**Note:** Transformers layout models run through `AutoModelForObjectDetection`, reading
+their label map from the model repository's own `config.json`. The MLX engine loads its
+checkpoint through `mlx_vlm.models.rt_detr_v2`. Only `docling-layout-heron` also supports
+ONNXRuntime.
 
 The MLX engine loads the pre-converted `mlx-community/docling-layout-heron-101-mlx-bf16`
 checkpoint. It requires `mlx-vlm`, which the `docling[layout-mlx]` and

@@ -1871,10 +1871,13 @@ def test_cli_invalid_layout_preset_is_rejected(tmp_path):
 def test_cli_layout_preset_is_ignored_for_vlm_pipeline(tmp_path, monkeypatch, caplog):
     """Test that --layout-preset warns and is ignored outside the PDF pipelines."""
     caplog.set_level("WARNING")
+    captured = {}
 
     class _FakeDocumentConverter:
         def __init__(self, *, allowed_formats, format_options):
-            pass
+            captured["pipeline_options"] = format_options[
+                InputFormat.PDF
+            ].pipeline_options
 
         def convert_all(self, input_doc_paths, **kwargs):
             return []
@@ -1897,6 +1900,8 @@ def test_cli_layout_preset_is_ignored_for_vlm_pipeline(tmp_path, monkeypatch, ca
 
     assert result.exit_code == 0
     assert "only supported" in caplog.text
+    assert isinstance(captured["pipeline_options"], VlmPipelineOptions)
+    assert not hasattr(captured["pipeline_options"], "layout_options")
 
 
 def test_cli_table_structure_engine_can_be_set(tmp_path, monkeypatch):

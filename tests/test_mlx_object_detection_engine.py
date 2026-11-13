@@ -12,6 +12,7 @@ import json
 import platform
 import struct
 import sys
+import types
 from types import SimpleNamespace
 
 import numpy as np
@@ -244,3 +245,96 @@ def test_bypass_mlx_sanitizer_requires_a_sanitize_method():
     with pytest.raises(RuntimeError, match="no sanitize method"):
         with _bypass_mlx_sanitizer(_NoSanitizeModel):
             pass
+
+
+def test_checkpoint_metadata_reads_alternative_single_file(tmp_path):
+    _write_safetensors(tmp_path / "weights.safetensors", {"format": "mlx"})
+
+    assert _checkpoint_metadata(tmp_path) == {"format": "mlx"}
+
+
+def test_safetensors_metadata_ignores_non_dict_header(tmp_path):
+    path = tmp_path / "model.safetensors"
+    header = b"[1, 2]"
+    path.write_bytes(struct.pack("<Q", len(header)) + header)
+
+    assert _safetensors_metadata(path) == {}
+
+
+def test_initialize_loads_mlx_checkpoint_through_bypass(monkeypatch, tmp_path):
+    calls = {}
+
+    class _FakeModel:
+        @staticmethod
+        def sanitize(weights):
+            calls["sanitize"] = True
+            return {"sanitized": True}
+
+    def _load_model(model_folder):
+        calls["loaded"] = model_folder
+        assert _FakeModel.sanitize({"w": 1}) == {"w": 1}
+        return "model-sentinel"
+
+    class _FakeProcessor:
+        @classmethod
+        def from_pretrained(cls, model_folder):
+            calls["processor_folder"] = model_folder
+            return "processor-sentinel"
+
+    class _FakePredictor:
+        def __init__(self, model, *, processor, threshold):
+            calls["predictor"] = (model, processor, threshold)
+
+    fake_generate = types.ModuleType("mlx_vlm.models.rt_detr_v2.generate")
+    fake_generate.RTDetrV2Predictor = _FakePredictor
+    fake_processing = types.ModuleType(
+        "mlx_vlm.models.rt_detr_v2.processing_rt_detr_v2"
+    )
+    fake_processing.RTDetrV2Processor = _FakeProcessor
+    fake_model_module = types.ModuleType("mlx_vlm.models.rt_detr_v2.rt_detr_v2")
+    fake_model_module.Model = _FakeModel
+    fake_pkg = types.ModuleType("mlx_vlm.models.rt_detr_v2")
+    fake_pkg.Model = _FakeModel
+    fake_pkg.generate = fake_generate
+    fake_pkg.processing_rt_detr_v2 = fake_processing
+    fake_pkg.rt_detr_v2 = fake_model_module
+    fake_models = types.ModuleType("mlx_vlm.models")
+    fake_models.rt_detr_v2 = fake_pkg
+    fake_utils = types.ModuleType("mlx_vlm.utils")
+    fake_utils.load_model = _load_model
+    fake_mlx = types.ModuleType("mlx_vlm")
+    fake_mlx.models = fake_models
+    fake_mlx.utils = fake_utils
+
+    for name, module in {
+        "mlx_vlm": fake_mlx,
+        "mlx_vlm.models": fake_models,
+        "mlx_vlm.models.rt_detr_v2": fake_pkg,
+        "mlx_vlm.models.rt_detr_v2.generate": fake_generate,
+        "mlx_vlm.models.rt_detr_v2.processing_rt_detr_v2": fake_processing,
+        "mlx_vlm.models.rt_detr_v2.rt_detr_v2": fake_model_module,
+        "mlx_vlm.utils": fake_utils,
+    }.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    engine = _engine()
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr(platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(
+        engine, "_resolve_model_folder", lambda repo_id, revision: tmp_path
+    )
+    monkeypatch.setattr(engine, "_load_label_mapping", lambda folder: {0: "text"})
+    _write_safetensors(tmp_path / "model.safetensors", {"format": "mlx"})
+
+    engine.initialize()
+
+    assert engine._initialized is True
+    assert calls["loaded"] == tmp_path
+    assert calls["processor_folder"] == tmp_path
+    assert calls["predictor"] == (
+        "model-sentinel",
+        "processor-sentinel",
+        engine.options.score_threshold,
+    )
+    assert "sanitize" not in calls
+    assert _FakeModel.sanitize({"w": 1}) == {"sanitized": True}

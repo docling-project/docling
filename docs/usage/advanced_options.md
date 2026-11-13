@@ -76,8 +76,8 @@ docling-tools models download layout_mlx --output-dir /models
 docling report.pdf --layout-preset layout_heron_mlx --artifacts-path /models
 ```
 
-This requires the `models-layout-mlx` extra (or `docling[layout-mlx]`).
-`--all` includes it.
+Running the engine requires the `models-layout-mlx` extra (or
+`docling[layout-mlx]`); the download command itself does not. `--all` includes it.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 

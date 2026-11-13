@@ -56,6 +56,8 @@ def _safetensors_metadata(path: Path) -> Dict[str, str]:
     except (OSError, ValueError, struct.error):
         return {}
 
+    if not isinstance(header, dict):
+        return {}
     metadata = header.get("__metadata__", {})
     return metadata if isinstance(metadata, dict) else {}
 
@@ -71,6 +73,8 @@ def _checkpoint_metadata(model_folder: Path) -> Dict[str, str]:
         try:
             index = json.loads(index_file.read_text(encoding="utf-8"))
         except (OSError, ValueError):
+            return {}
+        if not isinstance(index, dict):
             return {}
         weight_map = index.get("weight_map", {})
         if not isinstance(weight_map, dict):
@@ -92,6 +96,15 @@ def _checkpoint_metadata(model_folder: Path) -> Dict[str, str]:
             metadata = _safetensors_metadata(shard_path)
             if metadata:
                 return metadata
+        return {}
+
+    # `mlx-vlm` accepts any single `*.safetensors` file, not only
+    # ``model.safetensors``. Match that behavior for the metadata read.
+    for candidate in sorted(model_folder.glob("*.safetensors")):
+        metadata = _safetensors_metadata(candidate)
+        if metadata:
+            return metadata
+    if any(model_folder.glob("*.safetensors")):
         return {}
 
     raise FileNotFoundError(
@@ -193,7 +206,7 @@ class MlxObjectDetectionEngine(HfObjectDetectionEngineBase):
                 ) from exc
             raise
 
-        repo_id = self._model_config.repo_id
+        repo_id = self._repo_id
         revision = self._model_config.revision or "main"
 
         model_folder = self._resolve_model_folder(repo_id, revision)

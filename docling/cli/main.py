@@ -1112,7 +1112,8 @@ def convert(  # noqa: C901
             ...,
             help=(
                 "Choose the layout detection preset for PDF processing. "
-                "Applies only to --pipeline standard or legacy. "
+                "Applies only to --pipeline standard or legacy. A preset "
+                "replaces the layout options chosen by --layout-engine. "
                 f"Available presets: {', '.join(layout_preset_ids)}"
             ),
         ),
