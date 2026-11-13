@@ -306,6 +306,33 @@ uv run docling convert --from pdf --to dclx \
 ```
 
 
+### Read right-to-left pages in reading order
+
+For PDFs in right-to-left scripts (Hebrew, Arabic, ...), the rule-based
+reading-order stage can order side-by-side blocks from right to left. Set
+`reading_order_page_direction` on `PdfPipelineOptions`:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(reading_order_page_direction="auto")
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+The option accepts `"ltr"` (the default, historical behavior), `"rtl"`
+(every page reads right-to-left), and `"auto"`. With `"auto"`, the direction
+is detected once per page from its text: a page whose text is mostly strong
+right-to-left characters reads right-to-left. Elements without text, such as
+pictures and tables, contribute no signal. The option affects ordering only;
+element geometry is unchanged.
+
+
 ### Control PDF parser threads
 
 The PDF parser and the model pipeline use separate thread settings.

@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from itertools import takewhile
 from pathlib import Path
 from statistics import median
+from typing import Literal
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -55,6 +56,7 @@ from docling.models.postprocessing.reading_order_rb import (
     ReadingOrderPredictor,
     SeparatorElement,
     build_page_separators,
+    detect_text_direction,
 )
 from docling.utils.form_fields import text_slots, without_whitespace
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -71,6 +73,9 @@ class ReadingOrderOptions(BaseModel):
 
     model_names: str = ""  # e.g. "language;term;reference"
     use_page_separators: bool = False
+    # Reading direction for side-by-side blocks. "auto" detects Hebrew/Arabic
+    # pages from their text; "ltr"/"rtl" force one direction for every page.
+    page_direction: Literal["auto", "ltr", "rtl"] = "ltr"
 
 
 class ReadingOrderModel:
@@ -1172,6 +1177,20 @@ class ReadingOrderModel:
                     element
                 )
 
+            # Resolve "auto" once per page, over every element on that page,
+            # so all sibling groups of a page share one direction and pages
+            # with different directions coexist; see issue #5238.
+            page_direction = self.options.page_direction
+            direction_by_page: dict[int, Literal["ltr", "rtl"]] | None = None
+            if page_direction == "auto":
+                texts_by_page: dict[int, list[str]] = {}
+                for element in page_elements:
+                    texts_by_page.setdefault(element.page_no, []).append(element.text)
+                direction_by_page = {
+                    page_no: detect_text_direction(texts)
+                    for page_no, texts in texts_by_page.items()
+                }
+
             ordered_siblings = {
                 parent_ref: (
                     self.ro_model.predict_reading_order(
@@ -1179,6 +1198,8 @@ class ReadingOrderModel:
                         page_separators=(
                             page_separators if parent_ref is None else None
                         ),
+                        page_direction=page_direction,
+                        direction_by_page=direction_by_page,
                     )
                     if len(siblings) > 1
                     else siblings
@@ -1206,7 +1227,11 @@ class ReadingOrderModel:
             for siblings in ordered_siblings.values():
                 if len(siblings) > 1:
                     el_merges_mapping.update(
-                        self.ro_model.predict_merges(sorted_elements=siblings)
+                        self.ro_model.predict_merges(
+                            sorted_elements=siblings,
+                            page_direction=page_direction,
+                            direction_by_page=direction_by_page,
+                        )
                     )
             host_cids = {
                 element.cid

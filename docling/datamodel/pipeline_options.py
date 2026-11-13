@@ -2344,6 +2344,18 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    reading_order_page_direction: Annotated[
+        Literal["auto", "ltr", "rtl"],
+        Field(
+            description=(
+                "Reading direction for side-by-side blocks in rule-based reading order. "
+                "'auto' detects right-to-left content (Hebrew, Arabic, ...) from the "
+                "text of each page; elements without text, such as pictures and "
+                "tables, contribute no signal. 'ltr'/'rtl' force one direction for "
+                "every page."
+            )
+        ),
+    ] = "ltr"
     heading_hierarchy_options: Annotated[
         HeadingHierarchyOptions,
         Field(
