@@ -58,6 +58,10 @@ def build_generation_config(
     from transformers import GenerationConfig
 
     config = deepcopy(base_config) if base_config is not None else GenerationConfig()
+    # Prevent transformers' PreTrainedModel._prepare_generation_config() from
+    # clobbering explicit overrides below (such as use_cache=True) with stale
+    # model.config defaults when base_config was loaded with _from_model_config=True.
+    config._from_model_config = False
 
     # Model-level defaults, kept at the lowest precedence so caller overrides
     # still win over them -- matching the previous behavior where these were
