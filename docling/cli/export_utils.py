@@ -22,6 +22,17 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
 )
 
 
+def _unique_output_stem(source_stem: str, used_stems: set[str]) -> str:
+    """Reserve a stem for one conversion batch, including case-insensitive paths."""
+    output_stem = source_stem
+    suffix = 2
+    while output_stem.casefold() in used_stems:
+        output_stem = f"{source_stem}_{suffix}"
+        suffix += 1
+    used_stems.add(output_stem.casefold())
+    return output_stem
+
+
 def _should_generate_export_images(
     image_export_mode: ImageRefMode,
     to_formats: list[OutputFormat],

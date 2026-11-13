@@ -54,6 +54,7 @@ from docling.cli.export_utils import (
     _parse_page_range,
     _should_generate_export_images,
     _split_list,
+    _unique_output_stem,
 )
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
@@ -514,12 +515,7 @@ def export_documents(
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
             source_stem = conv_res.input.file.stem
-            doc_filename = source_stem
-            suffix = 2
-            while doc_filename.casefold() in used_output_stems:
-                doc_filename = f"{source_stem}_{suffix}"
-                suffix += 1
-            used_output_stems.add(doc_filename.casefold())
+            doc_filename = _unique_output_stem(source_stem, used_output_stems)
 
             if doc_filename != source_stem:
                 _log.warning(
