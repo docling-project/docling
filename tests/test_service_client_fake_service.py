@@ -24,11 +24,13 @@ from pydantic import ValidationError
 import docling.service_client.client as client_module
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.service.targets import InBodyTarget, PresignedUrlTarget
+from docling.datamodel.service.tasks import TaskStatus
 from docling.service_client import (
     AsyncDoclingServiceClient,
     ConversionError,
     DoclingServiceClient,
     ServiceUnavailableError,
+    TaskCancelledError,
 )
 from docling.service_client.client import ConversionItem, StatusWatcherKind
 from docling.service_client.exceptions import ServiceError, TaskNotFoundError
@@ -272,18 +274,63 @@ def test_convert_falls_back_to_inbody_when_presigned_is_unsupported(client, serv
 
 
 def test_task_failure_raises_conversion_error(client, serve):
-    serve.terminal_status = ConversionStatus.FAILURE
+    serve.terminal_status = TaskStatus.FAILURE
 
     with pytest.raises(ConversionError):
         client.convert(SOURCE)
 
 
 def test_task_failure_is_returned_when_raises_on_error_is_false(client, serve):
-    serve.terminal_status = ConversionStatus.FAILURE
+    serve.terminal_status = TaskStatus.FAILURE
 
     result = client.convert(SOURCE, raises_on_error=False)
 
     assert result.status == ConversionStatus.FAILURE
+
+
+def test_cancelled_task_raises_task_cancelled_error_without_result_get(
+    client, serve, service
+):
+    serve.terminal_status = TaskStatus.CANCELLED
+
+    job = client.submit(SOURCE, target=InBodyTarget())
+
+    with pytest.raises(TaskCancelledError) as excinfo:
+        job.result()
+
+    assert excinfo.value.task_id == job.task_id
+    assert not service.requests_for("GET", r"/v1/result/.*")
+
+
+def test_structured_cancelled_result_409_maps_to_task_cancelled_error(client, service):
+    service.add_route(
+        "GET",
+        r"/v1/result/.*",
+        lambda request, match: Response(
+            status=409,
+            body={"detail": {"code": "TASK_CANCELLED", "message": "cancelled"}},
+        ),
+    )
+
+    job = client.submit(SOURCE, target=InBodyTarget())
+
+    with pytest.raises(TaskCancelledError):
+        job.result()
+
+
+def test_unrelated_result_409_keeps_existing_service_error(client, service):
+    service.add_route(
+        "GET",
+        r"/v1/result/.*",
+        lambda request, match: Response(
+            status=409, body={"detail": {"code": "SOMETHING_ELSE"}}
+        ),
+    )
+
+    job = client.submit(SOURCE, target=InBodyTarget())
+
+    with pytest.raises(ServiceError):
+        job.result()
 
 
 def test_unknown_task_poll_raises_task_not_found(client, service):
@@ -427,7 +474,7 @@ def test_submit_returns_a_job_whose_status_can_be_polled(client, serve):
     job = client.submit(SOURCE, target=InBodyTarget())
     statuses = [update.task_status for update in job.watch(timeout=30)]
 
-    assert statuses[-1] == ConversionStatus.SUCCESS
+    assert statuses[-1] == TaskStatus.SUCCESS
 
 
 # -- the async client ----------------------------------------------------
@@ -478,8 +525,8 @@ async def test_async_watch_yields_every_status_transition(async_client_kwargs, s
         job = await remote.submit(SOURCE, target=InBodyTarget())
         statuses = [update.task_status async for update in job.watch(timeout=30)]
 
-    assert statuses[-1] == ConversionStatus.SUCCESS
-    assert ConversionStatus.STARTED in statuses
+    assert statuses[-1] == TaskStatus.SUCCESS
+    assert TaskStatus.STARTED in statuses
 
 
 @pytest.mark.anyio
