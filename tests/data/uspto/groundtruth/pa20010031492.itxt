@@ -74,32 +74,54 @@ item-0 at level 0: unspecified: group _root_
       item-73 at level 3: paragraph: FIG. 7: Control cells, stationary phase.
       item-74 at level 3: paragraph: FIG. 8: Zeocin™ treated cells, stationary phase.
       item-75 at level 3: table with [6x3]
-      item-76 at level 3: paragraph: In each case, separate graphs of % toxic effect against log₁₀ concentration of ZnSO₄ were plotted on the same axes for each value of time (minutes) after addition of Zeocin™ or water. The sensitivities of the various reagents, expressed as an EC₅₀ value for 15 minutes exposed to ZnSO₄, are summarised in Table 1 below.
-      item-77 at level 3: paragraph: Table 1: Sensitivity of the different assay reagents to ZnSo₄ expressed as EC₅₀ values for 15 minutes exposure to ZNSO₄.
-      item-78 at level 3: paragraph: The results of the toxicity assays indicate that Zeocin™ treatment does not significantly affect the sensitivity of a recombinant bioluminescent E. coli derived assay reagent to ZnSO₄. Similar results could be expected with other toxic substances which have an effect on signal-generating metabolic activities.
-    item-79 at level 2: section_header: EXAMPLE 3
-    item-80 at level 2: section_header: Method to Determine Viable Count
-      item-81 at level 3: paragraph: 1. Samples of bacterial culture to be assayed for viable count were centrifuged at 10,000 rpm for 5 minutes to pellet the bacterial cells.
-      item-82 at level 3: paragraph: 2. Bacterial cells were washed by resuspending in 1 ml of M9 medium, re-centrifuged at 10,000 rpm for 5 minutes and finally re-suspended in 1 ml of M9 medium.
-      item-83 at level 3: paragraph: 3. Serial dilutions of the bacterial cell suspension from 10⁻¹ to 10⁻⁷ were prepared in M9 medium.
-      item-84 at level 3: paragraph: 4. Three separate 10 μl aliquots of each of the serial dilutions were plated out on standard agar plates and the plates incubated at 37° C.
-      item-85 at level 3: paragraph: 5. The number of bacterial colonies present for each of the three aliquots at each of the serial dilutions were counted and the values averaged. Viable count was calculated per ml of bacterial culture.
-    item-86 at level 2: section_header: CLAIMS
-      item-87 at level 3: paragraph: 1. A method of making a non-viable preparation of prokaryotic or eukaryotic cells, which preparation has a signal-generating metabolic activity, which method comprises contacting a viable culture of said cells having signal-generating metabolic activity with an antibiotic selected from the bleomycin/phleomycin family of antibiotics.
-      item-88 at level 3: paragraph: 2. The method as claimed in claim 1 wherein following contact with antibiotic, said cells are subjected to a stabilization step.
-      item-89 at level 3: paragraph: 3. The method as claimed in claim 2 wherein said stabilization step comprises freeze drying.
-      item-90 at level 3: paragraph: 4. The method as claimed in claim 1 wherein said antibiotic is phleomycin D1.
-      item-91 at level 3: paragraph: 5. The method as claimed in claim 5 wherein said signal-generating metabolic activity is bioluminescence.
-      item-92 at level 3: paragraph: 6. The method as claimed in claim 5 wherein said cells are bacteria.
-      item-93 at level 3: paragraph: 7. The method as claimed in claim 6 wherein said bacteria are in an exponential growth phase when contacted with said antibiotic.
-      item-94 at level 3: paragraph: 8. The method as claimed in claim 6 wherein said bacteria are genetically modified.
-      item-95 at level 3: paragraph: 9. The method as claimed in claim 8 wherein said genetically modified bacteria contain nucleic acid encoding luciferase.
-      item-96 at level 3: paragraph: 10. The method as claimed in claim 9 wherein said bacteria are E. coli.
-      item-97 at level 3: paragraph: 11. The method as claimed in claim 5 wherein said cells are eukaryotic cells.
-      item-98 at level 3: paragraph: 12. The method as claimed in claim 11 wherein said eukaryotic cells are genetically modified.
-      item-99 at level 3: paragraph: 13. The method as claimed in claim 12 wherein said genetically modified eukaryotic cells contain nucleic acid encoding luciferase.
-      item-100 at level 3: paragraph: 14. A method of making a non-viable preparation of prokaryotic cells, which preparation has a signal-generating metabolic activity, which method comprises contacting a viable culture of a genetically modified E. coli strain made bioluminescent by transformation with a plasmid carrying the lux operon of Vibrio fischeri with an antibiotic selected from the bleomycin/phleomycin family of antibiotics.
-      item-101 at level 3: paragraph: 15. The method as claimed in claim 14 wherein said cells are contacted with phleomycin D1 at a concentration of at least about 1.5 mg/ml.
-      item-102 at level 3: paragraph: 16. The method as claimed in claim 15 wherein said contact is maintained for at least about 3 hours.
-      item-103 at level 3: paragraph: 17. The method as claimed in claim 16 wherein said antibiotic-treated cells are harvested, washed and freeze-dried.
-  item-104 at level 1: section_header: Drawings
+        item-76 at level 4: inline: group group
+          item-77 at level 5: text: SENSITIVITY-EC
+          item-78 at level 5: text: 50 
+          item-79 at level 5: text: VALUES
+        item-80 at level 4: inline: group group
+          item-81 at level 5: text: 1.445 ppm ZnSO
+          item-82 at level 5: text: 4
+        item-83 at level 4: inline: group group
+          item-84 at level 5: text: 1.580 ppm ZnSO
+          item-85 at level 5: text: 4
+        item-86 at level 4: inline: group group
+          item-87 at level 5: text: 0.446 ppm ZnSO
+          item-88 at level 5: text: 4
+        item-89 at level 4: inline: group group
+          item-90 at level 5: text: 0.446 ZnSO
+          item-91 at level 5: text: 4
+        item-92 at level 4: inline: group group
+          item-93 at level 5: text: 0.426 ppm ZnSO
+          item-94 at level 5: text: 4
+        item-95 at level 4: inline: group group
+          item-96 at level 5: text: 0.457 ppm ZnSO
+          item-97 at level 5: text: 4
+      item-98 at level 3: paragraph: In each case, separate graphs of % toxic effect against log₁₀ concentration of ZnSO₄ were plotted on the same axes for each value of time (minutes) after addition of Zeocin™ or water. The sensitivities of the various reagents, expressed as an EC₅₀ value for 15 minutes exposed to ZnSO₄, are summarised in Table 1 below.
+      item-99 at level 3: paragraph: Table 1: Sensitivity of the different assay reagents to ZnSo₄ expressed as EC₅₀ values for 15 minutes exposure to ZNSO₄.
+      item-100 at level 3: paragraph: The results of the toxicity assays indicate that Zeocin™ treatment does not significantly affect the sensitivity of a recombinant bioluminescent E. coli derived assay reagent to ZnSO₄. Similar results could be expected with other toxic substances which have an effect on signal-generating metabolic activities.
+    item-101 at level 2: section_header: EXAMPLE 3
+    item-102 at level 2: section_header: Method to Determine Viable Count
+      item-103 at level 3: paragraph: 1. Samples of bacterial culture to be assayed for viable count were centrifuged at 10,000 rpm for 5 minutes to pellet the bacterial cells.
+      item-104 at level 3: paragraph: 2. Bacterial cells were washed by resuspending in 1 ml of M9 medium, re-centrifuged at 10,000 rpm for 5 minutes and finally re-suspended in 1 ml of M9 medium.
+      item-105 at level 3: paragraph: 3. Serial dilutions of the bacterial cell suspension from 10⁻¹ to 10⁻⁷ were prepared in M9 medium.
+      item-106 at level 3: paragraph: 4. Three separate 10 μl aliquots of each of the serial dilutions were plated out on standard agar plates and the plates incubated at 37° C.
+      item-107 at level 3: paragraph: 5. The number of bacterial colonies present for each of the three aliquots at each of the serial dilutions were counted and the values averaged. Viable count was calculated per ml of bacterial culture.
+    item-108 at level 2: section_header: CLAIMS
+      item-109 at level 3: paragraph: 1. A method of making a non-viable preparation of prokaryotic or eukaryotic cells, which preparation has a signal-generating metabolic activity, which method comprises contacting a viable culture of said cells having signal-generating metabolic activity with an antibiotic selected from the bleomycin/phleomycin family of antibiotics.
+      item-110 at level 3: paragraph: 2. The method as claimed in claim 1 wherein following contact with antibiotic, said cells are subjected to a stabilization step.
+      item-111 at level 3: paragraph: 3. The method as claimed in claim 2 wherein said stabilization step comprises freeze drying.
+      item-112 at level 3: paragraph: 4. The method as claimed in claim 1 wherein said antibiotic is phleomycin D1.
+      item-113 at level 3: paragraph: 5. The method as claimed in claim 5 wherein said signal-generating metabolic activity is bioluminescence.
+      item-114 at level 3: paragraph: 6. The method as claimed in claim 5 wherein said cells are bacteria.
+      item-115 at level 3: paragraph: 7. The method as claimed in claim 6 wherein said bacteria are in an exponential growth phase when contacted with said antibiotic.
+      item-116 at level 3: paragraph: 8. The method as claimed in claim 6 wherein said bacteria are genetically modified.
+      item-117 at level 3: paragraph: 9. The method as claimed in claim 8 wherein said genetically modified bacteria contain nucleic acid encoding luciferase.
+      item-118 at level 3: paragraph: 10. The method as claimed in claim 9 wherein said bacteria are E. coli.
+      item-119 at level 3: paragraph: 11. The method as claimed in claim 5 wherein said cells are eukaryotic cells.
+      item-120 at level 3: paragraph: 12. The method as claimed in claim 11 wherein said eukaryotic cells are genetically modified.
+      item-121 at level 3: paragraph: 13. The method as claimed in claim 12 wherein said genetically modified eukaryotic cells contain nucleic acid encoding luciferase.
+      item-122 at level 3: paragraph: 14. A method of making a non-viable preparation of prokaryotic cells, which preparation has a signal-generating metabolic activity, which method comprises contacting a viable culture of a genetically modified E. coli strain made bioluminescent by transformation with a plasmid carrying the lux operon of Vibrio fischeri with an antibiotic selected from the bleomycin/phleomycin family of antibiotics.
+      item-123 at level 3: paragraph: 15. The method as claimed in claim 14 wherein said cells are contacted with phleomycin D1 at a concentration of at least about 1.5 mg/ml.
+      item-124 at level 3: paragraph: 16. The method as claimed in claim 15 wherein said contact is maintained for at least about 3 hours.
+      item-125 at level 3: paragraph: 17. The method as claimed in claim 16 wherein said antibiotic-treated cells are harvested, washed and freeze-dried.
+  item-126 at level 1: section_header: Drawings
