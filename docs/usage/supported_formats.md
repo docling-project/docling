@@ -41,7 +41,11 @@ PowerPoint equations stored as Office Math (OMML) in text shapes are converted t
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
 Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
-text in `<footer>` elements is retained in the furniture content layer. Default
+the email holds the items of the HTML conversion of that body, such as headings,
+lists, tables, and pictures. If the email has a subject, it stays the only
+title. An `<h1>` becomes a level 1 section header, and the other headings move
+one level down. Text in `<footer>` elements is retained in the
+furniture content layer. Default
 Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
 `included_content_layers` to export it.
 

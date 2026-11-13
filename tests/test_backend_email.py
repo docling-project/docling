@@ -9,7 +9,16 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import ContentLayer, DocItemLabel, TextItem
+from docling_core.transforms.chunker import HierarchicalChunker
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItemLabel,
+    DoclingDocument,
+    GroupLabel,
+    RichTableCell,
+    SectionHeaderItem,
+    TextItem,
+)
 
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions
@@ -472,6 +481,167 @@ Content-Type: text/html; charset="utf-8"
         doc.export_to_markdown()
     )
     assert "Fish & chips for a<b, see my_file_name.txt" in doc.export_to_text()
+
+
+def test_email_html_body_keeps_the_items_of_the_html_part():
+    """Copy the HTML body as items, not as Markdown text that is escaped again.
+
+    Markdown stored as text showed a code span as `a &lt; b` and a table cell
+    as 1 &amp; 2, and the document held a pipe table as one text item.
+    """
+    raw_email = (
+        b"From: Jan Jansen <jan@example.nl>\r\n"
+        b"To: Piet <piet@example.org>\r\n"
+        b"Subject: Html only\r\n"
+        b"MIME-Version: 1.0\r\n"
+        b"Content-Type: text/html; charset=utf-8\r\n"
+        b"\r\n"
+        b"<html><body><p>Html: 1 &lt; 2 &amp; 3 &gt; 2, a_b.</p>"
+        b"<p>Run <code>a &lt; b</code> first.</p>"
+        b"<table><tr><th>Key</th><th>Value</th></tr>"
+        b"<tr><td>a_b</td><td>1 &amp; 2</td></tr></table>"
+        b"<footer>Footer text</footer></body></html>\r\n"
+    )
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(DocumentStream(name="html-only.eml", stream=BytesIO(raw_email)))
+        .document
+    )
+
+    assert [(item.label, item.text, item.content_layer) for item in doc.texts] == [
+        (DocItemLabel.TITLE, "Html only", ContentLayer.BODY),
+        (DocItemLabel.TEXT, "From: Jan Jansen <jan@example.nl>", ContentLayer.BODY),
+        (DocItemLabel.TEXT, "To: Piet <piet@example.org>", ContentLayer.BODY),
+        (DocItemLabel.TEXT, "Html: 1 < 2 & 3 > 2, a_b.", ContentLayer.BODY),
+        (DocItemLabel.TEXT, "Run ", ContentLayer.BODY),
+        (DocItemLabel.CODE, "a < b", ContentLayer.BODY),
+        (DocItemLabel.TEXT, " first.", ContentLayer.BODY),
+        (DocItemLabel.TEXT, "Footer text", ContentLayer.FURNITURE),
+    ]
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Key",
+        "Value",
+        "a_b",
+        "1 & 2",
+    ]
+    markdown = doc.export_to_markdown()
+    assert "Html: 1 &lt; 2 &amp; 3 &gt; 2, a\\_b." in markdown
+    assert "Run `a < b` first." in markdown
+    assert "1 & 2" in markdown
+    assert "Footer text" not in markdown
+
+
+def test_email_html_body_headings_rank_below_the_subject():
+    """A body <h1> must not replace the subject in the heading context.
+
+    The attachments heading belongs to the email, so it ranks directly below
+    the subject, not below the last heading of the body.
+    """
+    message = EmailMessage()
+    message["Subject"] = "Quarterly report"
+    message.set_content(
+        "<html><body><h1>Revenue</h1><p>Revenue grew.</p>"
+        "<h2>Details</h2><p>Most of it came from services.</p></body></html>",
+        subtype="html",
+    )
+    message.add_attachment(
+        b"%PDF-1.4", maintype="application", subtype="pdf", filename="report.pdf"
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EMAIL],
+        format_options={
+            InputFormat.EMAIL: EmailFormatOption(
+                backend_options=EmailBackendOptions(list_attachments=True)
+            )
+        },
+    )
+
+    doc = converter.convert(
+        DocumentStream(name="report.eml", stream=BytesIO(message.as_bytes()))
+    ).document
+
+    assert [item.text for item in doc.texts if item.label == DocItemLabel.TITLE] == [
+        "Quarterly report"
+    ]
+    assert [
+        (item.text, item.level)
+        for item in doc.texts
+        if isinstance(item, SectionHeaderItem)
+    ] == [("Revenue", 1), ("Details", 2), ("Attachments", 1)]
+    headings = {
+        chunk.text: chunk.meta.headings for chunk in HierarchicalChunker().chunk(doc)
+    }
+    assert headings == {
+        "Revenue grew.": ["Quarterly report", "Revenue"],
+        "Most of it came from services.": ["Quarterly report", "Revenue", "Details"],
+        "- report.pdf (application/pdf)": ["Quarterly report", "Attachments"],
+    }
+
+
+def test_email_html_parts_keep_their_references_in_the_email():
+    """Refs between the copied items point to the copies of the same part."""
+    message = EmailMessage()
+    message["Subject"] = "Two parts"
+    message.make_mixed()
+    for name in ("one", "two"):
+        part = EmailMessage()
+        part.set_content(
+            f"<html><body><p>See <b>{name}</b> now.</p>"
+            f"<figure><img src='cid:{name}'><figcaption>Chart {name}</figcaption>"
+            f"</figure><table><caption>Table {name}</caption>"
+            f"<tr><th>Key</th><th>Notes</th></tr><tr><td>{name}</td>"
+            f"<td><ul><li>{name} a</li><li>{name} b</li></ul></td></tr></table>"
+            "</body></html>",
+            subtype="html",
+        )
+        message.attach(part)
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="two-parts.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert doc.validate_tree(doc.body, raise_on_error=True)
+    inline_groups = [group for group in doc.groups if group.label == GroupLabel.INLINE]
+    assert len(inline_groups) == 2
+    assert [
+        [(ref.resolve(doc).text, ref.resolve(doc).parent) for ref in group.children]
+        for group in inline_groups
+    ] == [
+        [(text, group.get_ref()) for text in ("See ", f"{name} ", "now.")]
+        for group, name in zip(inline_groups, ("one", "two"))
+    ]
+    assert [
+        [ref.resolve(doc).text for ref in picture.captions] for picture in doc.pictures
+    ] == [["Chart one"], ["Chart two"]]
+    assert [
+        [ref.resolve(doc).text for ref in table.captions] for table in doc.tables
+    ] == [["Table one"], ["Table two"]]
+    rich_cells = [
+        (table, cell)
+        for table in doc.tables
+        for cell in table.data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+    assert [
+        (
+            cell.ref.resolve(doc).parent == table.get_ref(),
+            [item.text for item, _ in doc.iterate_items(root=cell.ref.resolve(doc))],
+        )
+        for table, cell in rich_cells
+    ] == [(True, ["one a", "one b"]), (True, ["two a", "two b"])]
+
+    restored = DoclingDocument.model_validate_json(doc.model_dump_json())
+    assert restored.export_to_markdown() == doc.export_to_markdown()
+    assert "See **one** now." in doc.export_to_markdown()
+    text = doc.export_to_text()
+    assert "See one now." in text
+    assert "**" not in text
 
 
 @pytest.mark.parametrize("plain_body", [None, " \n"], ids=["html-only", "blank-plain"])
