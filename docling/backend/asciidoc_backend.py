@@ -27,6 +27,12 @@ from docling_core.types.doc import (
 from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.asciidoc_attributes import (
+    INTRINSIC_ATTRIBUTES,
+    RESTORE_MARKS,
+    apply_attribute_entry,
+    substitute_attributes,
+)
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -287,6 +293,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parents[i] = None
             indents[i] = None
 
+        attributes = self._header_attributes(self.lines)
+
         for block in self._iter_blocks(self.lines):
             if not isinstance(block, str):
                 pending_list_start = None
@@ -306,8 +314,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             line = block
             stripped_line = line.strip()
-            if in_delimited_table and self._continue_table(table_data, line):
+
+            # Attribute entries set or unset a document attribute; they are
+            # never body content. Table rows are split into cells before
+            # references are replaced, so a value containing "|" (e.g.
+            # "{vbar}") stays cell text.
+            if apply_attribute_entry(stripped_line, attributes) or (
+                in_delimited_table
+                and self._continue_table(table_data, line, attributes)
+            ):
                 continue
+
+            # Every other line has its attribute references replaced before
+            # its text is used.
+            text_line = substitute_attributes(line, attributes)
+            paragraph_line = substitute_attributes(line, attributes, protect_marks=True)
 
             in_list, last_list_item, list_continuation = self._close_list_if_needed(
                 line=line,
@@ -321,10 +342,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
             # "[[some-id]]") are metadata that applies to the block that
             # follows; they are never body content, so skip them.
-            if (
-                re.match(r"^\[\[.+\]\]$", stripped_line)
-                or re.match(r"^\[[^\[\]]+\]$", stripped_line)
-                or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
+            if re.match(r"^\[\[.+\]\]$", stripped_line) or re.match(
+                r"^\[[^\[\]]+\]$", stripped_line
             ):
                 start_match = _LIST_START_ATTR_RE.match(stripped_line)
                 pending_list_start = (
@@ -344,7 +363,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Title
             if self._is_title(line):
-                item = self._parse_title(line)
+                item = self._parse_title(text_line)
                 level = item["level"]
 
                 parents[level] = doc.add_text(
@@ -361,7 +380,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     text_data=text_data,
                     parent=self._get_current_parent(parents),
                 )
-                item = self._parse_section_header(line)
+                item = self._parse_section_header(text_line)
                 level = item["level"]
 
                 ancestor = next(
@@ -378,7 +397,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # Lists
             elif self._is_list_item(line):
                 _log.debug(f"line: {line}")
-                item = self._parse_list_item(line)
+                item = self._parse_list_item(text_line)
                 _log.debug(f"parsed list-item: {item}")
 
                 level = self._get_current_level(parents)
@@ -469,7 +488,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             elif self._is_table_line(line):  # within a table
                 in_table = True
-                table_data.append(self._parse_table_cells(line))
+                table_data.append(self._table_cells(line, attributes))
 
             elif in_table and not self._is_table_line(line):  # end of table
                 self._add_table_if_nonempty(
@@ -483,7 +502,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             elif self._is_picture(line):
                 caption_data, in_list, last_list_item = self._add_picture_item(
                     doc=doc,
-                    line=line,
+                    line=text_line,
                     caption_data=caption_data,
                     in_list=in_list,
                     last_list_item=last_list_item,
@@ -493,7 +512,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Caption
             elif self._is_caption(line) and len(caption_data) == 0:
-                item = self._parse_caption(line)
+                item = self._parse_caption(text_line)
                 caption_data.append(item["text"])
 
             elif len(line.strip()) > 0 and len(caption_data) > 0:
@@ -506,7 +525,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 caption_data = self._flush_caption_as_paragraph(
                     doc, caption_data, parent
                 )
-                item = self._parse_text(line)
+                item = self._parse_text(paragraph_line)
                 text_data.append(item["text"])
 
             elif len(line.strip()) == 0:
@@ -518,7 +537,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 )
 
             elif len(line.strip()) > 0:  # allow multiline texts
-                item = self._parse_text(line)
+                item = self._parse_text(paragraph_line)
                 text_data.append(item["text"])
 
         text_data = self._flush_text_data(
@@ -542,6 +561,37 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             )
 
         return doc
+
+    @classmethod
+    def _header_attributes(cls, lines: list[str]) -> dict[str, str]:
+        """Collect the attributes set in the document header.
+
+        Header attributes apply to the whole document, including the document
+        title above them ("= {product} Guide" followed by ":product: Widget").
+        The header is the document title with the lines that follow it up to
+        the first blank line, plus any attribute entries and comments above
+        the title.
+        """
+        attributes = dict(INTRINSIC_ATTRIBUTES)
+        seen_title = False
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                if seen_title:
+                    break
+                continue
+            if cls._is_line_comment(line):
+                continue
+            if not seen_title and cls._is_title(line):
+                seen_title = True
+                continue
+            if apply_attribute_entry(stripped, attributes):
+                continue
+            if not seen_title:
+                # Content before any title: the document has no header.
+                break
+            # Author and revision lines of the header.
+        return attributes
 
     @staticmethod
     def _get_current_level(parents):
@@ -987,12 +1037,19 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         if len(text_data) == 0:
             return []
         text = AsciiDocBackend._join_lines(text_data)
-        runs = AsciiDocBackend._parse_inline(text, bold=bold)
+        runs = [
+            replace(run, text=run.text.translate(RESTORE_MARKS))
+            for run in AsciiDocBackend._parse_inline(text, bold=bold)
+        ]
         if not any(
             run.bold != bold or run.italic or run.code or run.hyperlink for run in runs
         ):
             doc.add_text(
-                text="".join(run.text for run in runs) if bold else text,
+                text=(
+                    "".join(run.text for run in runs)
+                    if bold
+                    else text.translate(RESTORE_MARKS)
+                ),
                 label=DocItemLabel.PARAGRAPH,
                 parent=parent,
                 formatting=Formatting(bold=True) if bold else None,
@@ -1228,7 +1285,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _continue_table(
-        cls, table_data: list[list[_TableCellSource]], line: str
+        cls,
+        table_data: list[list[_TableCellSource]],
+        line: str,
+        attributes: dict[str, str],
     ) -> bool:
         """Consume a line between |=== delimiters that is not a row.
 
@@ -1241,9 +1301,20 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         if stripped and not table_data:
             return False
         if stripped:
+            stripped = substitute_attributes(stripped, attributes)
             cell = table_data[-1][-1]
             cell.text = f"{cell.text} {stripped}".lstrip()
         return True
+
+    @classmethod
+    def _table_cells(
+        cls, line: str, attributes: dict[str, str]
+    ) -> list[_TableCellSource]:
+        """Split a table line into its cells and resolve attribute references."""
+        cells = cls._parse_table_cells(line)
+        for cell in cells:
+            cell.text = substitute_attributes(cell.text, attributes)
+        return cells
 
     @staticmethod
     def _parse_table_cells(line: str) -> list[_TableCellSource]:
