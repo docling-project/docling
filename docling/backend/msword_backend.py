@@ -3389,6 +3389,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style, numid, ilevel)
             elem_ref.extend(h1)
+            # Heading numbering does not open a list. Do not let its numId in
+            # the history make the next paragraph or table close the section.
+            numid, ilevel = None, None
 
         elif len(equations) > 0:
             # The paragraph's text without equations or hidden runs.
