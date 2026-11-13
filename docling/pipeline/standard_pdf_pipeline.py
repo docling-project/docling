@@ -1116,6 +1116,19 @@ class StandardPdfPipeline(ConvertPipeline):
         conv_res.pages = [
             page_map[p.page_no] for p in conv_res.pages if p.page_no in page_map
         ]
+        # Preserve a deterministic page failure for ConversionError chaining.
+        page_failure = min(
+            (
+                (page_no, error)
+                for page_no, error, _ in proc.failed_pages
+                if error is not None
+            ),
+            key=lambda item: item[0],
+            default=None,
+        )
+        conv_res._page_failure_cause = (
+            page_failure[1] if page_failure is not None else None
+        )
         # Add error details from failed pages
         for page_no, error, failure in proc.failed_pages:
             if failure is not None:
