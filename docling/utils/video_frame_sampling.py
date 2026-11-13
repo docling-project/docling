@@ -659,11 +659,17 @@ class SimpleSceneChangeFrameSampler:
 
             peaks, _ = find_peaks(smoothed, prominence=prominence, distance=min_dist)
 
-        # Filter peaks too close to video start
+        # Filter peaks too close to video start. A peak at index p means the
+        # difference between probe frames p and p + 1 spiked, so the cut sits
+        # between them and the new scene starts at timestamps[p + 1] --
+        # timestamps[p] is still the previous scene's last frame (issue #5340).
         valid_peaks = [
-            p for p in peaks if timestamps[p] >= self.min_scene_duration_seconds
+            p
+            for p in peaks
+            if p + 1 < len(timestamps)
+            and timestamps[p + 1] >= self.min_scene_duration_seconds
         ]
-        boundaries = [timestamps[0]] + [timestamps[p] for p in valid_peaks]
+        boundaries = [timestamps[0]] + [timestamps[p + 1] for p in valid_peaks]
         end_time = timestamps[-1]
 
         scenes: list[VideoScene] = []
