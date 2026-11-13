@@ -3271,10 +3271,17 @@ def test_xml_comments_and_processing_instructions_keep_body_text(insert):
 
 def test_xml_comment_text_goes_to_notes():
     """XML comments in the document part are kept in the NOTES layer, out of the
-    body; processing instructions are dropped."""
+    body; blank comments and processing instructions are dropped."""
 
     def insert(data):
-        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1)
+        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT + b"<!--   -->", 1)
+        # indented, in a paragraph that keeps its whitespace, so the comment has a tail
+        data = re.sub(
+            rb"<w:p( [^>]*)?>",
+            rb'<w:p\1 xml:space="preserve"><!-- indented -->\n  ',
+            data,
+            count=1,
+        )
         data = data.replace(b">first run <", b">first <!-- inline -->run <", 1)
         return data.replace(b"<w:tc>", b"<w:tc><?producer note?>", 1)
 
@@ -3287,9 +3294,11 @@ def test_xml_comment_text_goes_to_notes():
         for item, _ in doc.iterate_items(included_content_layers={ContentLayer.NOTES})
         if isinstance(item, TextItem)
     ]
-    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "inline"]
+    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "indented", "inline"]
     markdown = doc.export_to_markdown()
+    assert "# Title" in markdown
     assert "first run second run" in markdown
     assert "docx4j" not in markdown
+    assert "indented" not in markdown
     assert "inline" not in markdown
     assert "producer" not in markdown

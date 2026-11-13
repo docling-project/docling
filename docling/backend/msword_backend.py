@@ -676,26 +676,21 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
     ``<!-- Created by docx4j ... -->``). The backend walks element children and
     reads their tag, which a comment does not have, so a single one fails the
     conversion or drops the content of the table it sits in. Text following a
-    removed node is kept.
+    removed node is kept: lxml moves it, since python-docx makes ``text``
+    read-only on paragraphs and hyperlinks, and clears the run when it is set
+    on a run.
     """
     texts: list[str] = []
     for part in docx_obj.part.package.iter_parts():
         if not isinstance(part, XmlPart):
             continue
-        for node in list(part.element.iter(etree.Comment, etree.ProcessingInstruction)):
-            parent = node.getparent()
-            if parent is None:
-                continue
-            if part is docx_obj.part and node.tag is etree.Comment and node.text:
-                if text := node.text.strip():
+        if part is docx_obj.part:
+            for node in part.element.iter(etree.Comment):
+                if text := (node.text or "").strip():
                     texts.append(text)
-            if node.tail:
-                previous = node.getprevious()
-                if previous is not None:
-                    previous.tail = (previous.tail or "") + node.tail
-                else:
-                    parent.text = (parent.text or "") + node.tail
-            parent.remove(node)
+        etree.strip_elements(
+            part.element, etree.Comment, etree.ProcessingInstruction, with_tail=False
+        )
     return texts
 
 
