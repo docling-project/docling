@@ -759,7 +759,14 @@ def export_documents(
 
             # Export HTML format:
             if export_html_split_page:
-                fname = output_file or output_dir / f"{doc_filename}.html"
+                # Both HTML flavours build on the same stem: give the split-page
+                # view a distinct name when the plain HTML export is requested
+                # too, so one does not overwrite the other.
+                fname = output_file or output_dir / (
+                    f"{doc_filename}.html"
+                    if not export_html
+                    else f"{doc_filename}.split_page.html"
+                )
                 _log.info(f"writing HTML output to {fname}")
                 if show_layout:
                     ser = HTMLDocSerializer(
