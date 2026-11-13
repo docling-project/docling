@@ -1,13 +1,14 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import csv
 import logging
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, replace
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -27,6 +28,7 @@ from docling_core.types.doc import (
 from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.csv_backend import csv_rows_to_table_data
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -139,6 +141,23 @@ class _CommentBlock:
     """
 
     text: str
+
+
+@dataclass(frozen=True)
+class _DataTableBlock:
+    rows: list[list[str]]
+
+
+_DATA_TABLE_DELIMITERS: Final = {",===": "csv", ":===": "dsv"}
+_DATA_TABLE_FORMATS: Final[dict[str, dict[str, Any]]] = {
+    "csv": {"dialect": "excel"},
+    "tsv": {"dialect": "excel-tab"},
+    "dsv": {"delimiter": ":", "escapechar": "\\", "quoting": csv.QUOTE_NONE},
+}
+_TABLE_FORMAT_ATTR_RE: Final = re.compile(
+    r"""^\[(?:[^\]]*,)?\s*format\s*=\s*["']?(csv|dsv|tsv)["']?\s*(?:,[^\]]*)?\]$""",
+    re.IGNORECASE,
+)
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -584,7 +603,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     @classmethod
     def _iter_blocks(
         cls, lines: list[str]
-    ) -> Iterator[str | _LiteralBlock | _CommentBlock]:
+    ) -> Iterator[str | _LiteralBlock | _CommentBlock | _DataTableBlock]:
         block_data: list[str] | None = None
         block_delimiter: str | None = None
         block_language: str | None = None
@@ -677,6 +696,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
+            data_table = cls._read_data_table(lines, i)
+            if data_table is not None:
+                block, i = data_table
+                yield block
+                continue
+
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
             if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
                 block_data = []
@@ -696,6 +721,35 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             comment = cls._make_comment(comment_data)
             if comment is not None:
                 yield comment
+
+    @staticmethod
+    def _read_data_table(
+        lines: list[str], start: int
+    ) -> tuple[_DataTableBlock, int] | None:
+        stripped = lines[start].strip()
+        table_format = _DATA_TABLE_DELIMITERS.get(stripped)
+        body_start = start + 1
+        format_attr = _TABLE_FORMAT_ATTR_RE.match(stripped)
+        if (
+            format_attr is not None
+            and start + 1 < len(lines)
+            and lines[start + 1].strip() == "|==="
+        ):
+            table_format = format_attr.group(1).lower()
+            stripped = "|==="
+            body_start = start + 2
+        if table_format is None:
+            return None
+        end = body_start
+        while end < len(lines) and lines[end].strip() != stripped:
+            end += 1
+        rows = csv.reader(
+            StringIO("\n".join(lines[body_start:end])),
+            **_DATA_TABLE_FORMATS[table_format],
+        )
+        return _DataTableBlock(
+            rows=[[value.strip() for value in row] for row in rows if row]
+        ), end + 1
 
     def _add_picture_item(
         self,
@@ -738,7 +792,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         self,
         *,
         doc: DoclingDocument,
-        block: _LiteralBlock | _CommentBlock,
+        block: _LiteralBlock | _CommentBlock | _DataTableBlock,
         text_data: list[str],
         caption_data: list[str],
         in_list: bool,
@@ -761,6 +815,24 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 parents=parents,
             )
             return text_data, caption_data, in_list, last_list_item, list_continuation
+        if isinstance(block, _DataTableBlock):
+            parent = self._get_current_parent(parents)
+            text_data = self._flush_text_data(
+                doc=doc, text_data=text_data, parent=parent
+            )
+            if block.rows:
+                caption = None
+                if caption_data:
+                    text, hyperlink = self._caption_text(caption_data)
+                    caption = doc.add_text(
+                        text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
+                    )
+                doc.add_table(
+                    data=csv_rows_to_table_data(block.rows),
+                    parent=parent,
+                    caption=caption,
+                )
+            return text_data, [], in_list, last_list_item, list_continuation
         return self._add_literal_block(
             doc=doc,
             block=block,

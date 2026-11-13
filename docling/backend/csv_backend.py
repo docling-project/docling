@@ -117,6 +117,35 @@ def _count_outside_brackets(line: str, char: str) -> int:
     return count
 
 
+def csv_rows_to_table_data(rows: list[list[str]]) -> TableData:
+    num_rows = len(rows)
+    num_cols = max(len(row) for row in rows)
+
+    table_data = TableData(
+        num_rows=num_rows,
+        num_cols=num_cols,
+        table_cells=[],
+    )
+
+    # Convert each cell to TableCell
+    for row_idx, row in enumerate(rows):
+        for col_idx, cell_value in enumerate(row):
+            cell = TableCell(
+                text=str(cell_value),
+                row_span=1,  # CSV doesn't support merged cells
+                col_span=1,
+                start_row_offset_idx=row_idx,
+                end_row_offset_idx=row_idx + 1,
+                start_col_offset_idx=col_idx,
+                end_col_offset_idx=col_idx + 1,
+                column_header=row_idx == 0,  # First row as header
+                row_header=False,
+            )
+            table_data.table_cells.append(cell)
+
+    return table_data
+
+
 class CsvDocumentBackend(DeclarativeDocumentBackend):
     content: StringIO
 
@@ -258,32 +287,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                         f"Ensure all rows have the same number of columns."
                     )
 
-                num_rows = len(self.csv_data)
-                num_cols = max(len(row) for row in self.csv_data)
-
-                table_data = TableData(
-                    num_rows=num_rows,
-                    num_cols=num_cols,
-                    table_cells=[],
-                )
-
-                # Convert each cell to TableCell
-                for row_idx, row in enumerate(self.csv_data):
-                    for col_idx, cell_value in enumerate(row):
-                        cell = TableCell(
-                            text=str(cell_value),
-                            row_span=1,  # CSV doesn't support merged cells
-                            col_span=1,
-                            start_row_offset_idx=row_idx,
-                            end_row_offset_idx=row_idx + 1,
-                            start_col_offset_idx=col_idx,
-                            end_col_offset_idx=col_idx + 1,
-                            column_header=row_idx == 0,  # First row as header
-                            row_header=False,
-                        )
-                        table_data.table_cells.append(cell)
-
-                doc.add_table(data=table_data)
+                doc.add_table(data=csv_rows_to_table_data(self.csv_data))
         else:
             raise RuntimeError(
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
