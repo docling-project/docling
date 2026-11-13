@@ -23,7 +23,11 @@ from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import (
+    decide_device,
+    resolve_torch_dtype,
+    transformers_dtype_kwargs,
+)
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -121,7 +125,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
             self._model = AutoModelForImageTextToText.from_pretrained(
-                artifacts_path, device_map=self.device
+                artifacts_path,
+                device_map=self.device,
+                **transformers_dtype_kwargs(
+                    resolve_torch_dtype("bfloat16", self.device)
+                ),
             )
             self._model.eval()
 
