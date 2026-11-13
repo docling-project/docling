@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage
@@ -18,6 +17,8 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    SectionHeaderItem,
+    TitleItem,
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -80,12 +81,6 @@ _MSG_INSTALL_HINT = (
     "The 'python-oxmsg' package is required to process Outlook .msg files. "
     "Install it with `pip install 'docling-slim[format-email]'`."
 )
-
-
-@dataclass(frozen=True)
-class _BodyParagraph:
-    text: str
-    content_layer: ContentLayer
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
@@ -303,7 +298,30 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         )
         return backend.convert()
 
-    def _get_body_paragraphs(self) -> list[_BodyParagraph]:
+    @staticmethod
+    def _nest_headings_under_subject(html_doc: DoclingDocument) -> None:
+        """Make the headings of an HTML part rank below the email subject.
+
+        The HTML backend makes each <h1> a title item, and <h2> to <h6>
+        section headers of level 1 to 5. The subject is the title of the email,
+        so an <h1> becomes a section header of level 1 and the other headings
+        move one level down. Each item keeps its reference, so the tree of the
+        part does not change.
+        """
+        if not any(isinstance(item, TitleItem) for item in html_doc.texts):
+            return
+        for index, item in enumerate(html_doc.texts):
+            if isinstance(item, SectionHeaderItem):
+                item.level += 1
+            elif isinstance(item, TitleItem):
+                fields = {name: value for name, value in item if name != "label"}
+                html_doc.texts[index] = SectionHeaderItem(**fields, level=1)
+
+    def _get_body(self) -> tuple[list[str], list[DoclingDocument]]:
+        """Return the body as text paragraphs or as converted HTML parts.
+
+        At most one of the two lists is not empty.
+        """
         assert self.mail is not None
 
         # A part being present does not mean it holds a paragraph. A
@@ -313,39 +331,28 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
-            paragraphs: list[_BodyParagraph] = []
-            for part in self.mail.text_plain:
-                paragraphs.extend(
-                    _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-                    for paragraph in self._split_paragraphs(part)
-                )
+            paragraphs = [
+                paragraph
+                for part in self.mail.text_plain
+                for paragraph in self._split_paragraphs(part)
+            ]
             if paragraphs:
-                return paragraphs
+                return paragraphs, []
 
         if self.mail.text_html:
-            paragraphs = []
+            html_docs: list[DoclingDocument] = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
-                # Export each layer separately so furniture remains available
-                # without becoming part of the email's default body export.
-                for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):
-                    # The outer email export escapes these text items.
-                    markdown = html_doc.export_to_markdown(
-                        included_content_layers={content_layer},
-                        escape_html=False,
-                        escape_underscores=False,
-                    )
-                    paragraphs.extend(
-                        _BodyParagraph(text=paragraph, content_layer=content_layer)
-                        for paragraph in self._split_paragraphs(markdown)
-                    )
-            if paragraphs:
-                return paragraphs
+                # A part that holds only a footer still has content.
+                items = html_doc.iterate_items(
+                    included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+                )
+                if next(iter(items), None) is not None:
+                    html_docs.append(html_doc)
+            if html_docs:
+                return [], html_docs
 
-        return [
-            _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-            for paragraph in self._split_paragraphs(self.mail.body)
-        ]
+        return self._split_paragraphs(self.mail.body), []
 
     def _get_date_text(self) -> str:
         assert self.mail is not None
@@ -399,7 +406,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         to_text = self._format_addresses(self.mail.to, fallback="")
         cc_text = self._format_addresses(self.mail.cc, fallback="")
         date_text = self._get_date_text()
-        body_paragraphs = self._get_body_paragraphs()
+        body_paragraphs, html_docs = self._get_body()
 
         if subject:
             doc.add_title(text=subject)
@@ -412,16 +419,27 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if date_text:
             doc.add_text(label=DocItemLabel.TEXT, text=f"Date: {date_text}")
         for body_paragraph in body_paragraphs:
-            doc.add_text(
-                label=DocItemLabel.TEXT,
-                text=body_paragraph.text,
-                content_layer=body_paragraph.content_layer,
-            )
+            doc.add_text(label=DocItemLabel.TEXT, text=body_paragraph)
+        if html_docs:
+            if subject:
+                for html_doc in html_docs:
+                    self._nest_headings_under_subject(html_doc)
+            # Copy the items of the HTML parts, not their Markdown export.
+            # The text stays plain, so an export of the email escapes it once,
+            # and headings, tables, pictures and furniture keep their labels
+            # and content layers. Unlike add_document(), concatenate() also
+            # remaps the caption and footnote references of the copied items.
+            merged = DoclingDocument.concatenate(docs=[doc, *html_docs])
+            merged.name = doc.name
+            merged.origin = doc.origin
+            doc = merged
 
         if self.options.list_attachments:
             attachment_labels = self._get_attachment_labels()
             if attachment_labels:
-                doc.add_heading(text="Attachments", level=2)
+                # Level 1 keeps the attachments directly under the subject,
+                # after any section headers of the body.
+                doc.add_heading(text="Attachments", level=1)
                 attachments_group = doc.add_list_group(name="attachments")
                 for label in attachment_labels:
                     doc.add_list_item(text=label, parent=attachments_group)
