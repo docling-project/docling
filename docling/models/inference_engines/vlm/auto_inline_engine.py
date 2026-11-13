@@ -17,7 +17,10 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
-from docling.models.inference_engines.vlm._utils import engine_version_satisfied
+from docling.models.inference_engines.vlm._utils import (
+    engine_module_available,
+    engine_version_satisfied,
+)
 from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
@@ -108,7 +111,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 try:
                     import mlx_vlm
 
-                    if self._engine_version_is_sufficient(VlmEngineType.MLX):
+                    if self._engine_requirements_satisfied(VlmEngineType.MLX):
                         _log.info(
                             "Selected MLX engine (Apple Silicon with explicit MLX export)"
                         )
@@ -141,7 +144,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 try:
                     import vllm
 
-                    if self._engine_version_is_sufficient(VlmEngineType.VLLM):
+                    if self._engine_requirements_satisfied(VlmEngineType.VLLM):
                         _log.info("Selected vLLM engine (CUDA + prefer_vllm=True)")
                         return VlmEngineType.VLLM
                 except ImportError:
@@ -156,8 +159,8 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         _log.info("Selected Transformers engine (default)")
         return VlmEngineType.TRANSFORMERS
 
-    def _engine_version_is_sufficient(self, engine_type: VlmEngineType) -> bool:
-        """Check an engine's backing library against the model's declared minimum.
+    def _engine_requirements_satisfied(self, engine_type: VlmEngineType) -> bool:
+        """Check the engine version and the model's required native module.
 
         Why: some models need a newer backing library than Docling can depend on,
         and an older release fails deep inside the vendor code rather than at load
@@ -170,7 +173,19 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         required = (
             engine_config.min_engine_version if engine_config is not None else None
         )
-        return engine_version_satisfied(engine_type, required)
+        if not engine_version_satisfied(engine_type, required):
+            return False
+        if engine_config is not None and not engine_module_available(
+            engine_config.required_module
+        ):
+            _log.warning(
+                "%s engine not selected: native model module %s is not installed. "
+                "Falling back to Transformers.",
+                engine_type.value,
+                engine_config.required_module,
+            )
+            return False
+        return True
 
     def initialize(self) -> None:
         """Initialize by selecting and creating the actual engine."""
