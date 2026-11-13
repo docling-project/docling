@@ -57,6 +57,10 @@ def _element(cluster_id: int, text: str) -> TextElement:
         ("algo-", "rithms", "algorithms"),
         ("algo\u00ad", "rithms", "algorithms"),
         ("algo-", "Rithms", "algo- Rithms"),
+        # A hyphen following whitespace is a literal character, not a word split,
+        # so it is kept and the elements are joined with a space.
+        ("run -", "prio now", "run - prio now"),
+        ("the value is -", "five units", "the value is - five units"),
     ],
 )
 def test_merge_elements_dehyphenates_lowercase_continuations(
