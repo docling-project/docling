@@ -2521,11 +2521,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             or ``None`` when there is no address, the URL is malformed, or the
             hyperlink's relationship has been removed from the part.
         """
+        # Resolve the relationship in the part being read: header, footer and
+        # note paragraphs are attached to the document part, but their
+        # hyperlink relationships live in their own part.
+        rid = hyperlink._hyperlink.rId
         try:
-            address = hyperlink.url
+            address = self.current_part.rels[rid].target_ref if rid is not None else ""
         except KeyError:
             # Relationship removed from the part (e.g. by _sanitize_docx); drop target.
             return None
+        if address and hyperlink.fragment:
+            address = f"{address}#{hyperlink.fragment}"
         if address:
             if not urlparse(address).scheme:
                 return Path(address)
@@ -5121,24 +5127,54 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.warning(f"Failed to parse {tag_name}s part")
                 continue
 
-            for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
-                if note.get(f"{_W_NS_CLARK}type") in skip_types:
-                    continue
-                # A note has no layer per paragraph, so hidden ones are left out.
-                texts = [
-                    text
-                    for paragraph in (
-                        Paragraph(p_elm, docx_obj)
-                        for p_elm in note.findall(f".//{_W_NS_CLARK}p")
-                    )
-                    if not self._is_hidden_paragraph(paragraph)
-                    and (text := self._get_paragraph_text(paragraph).strip())
-                ]
-                if not texts:
-                    continue
+            # Hyperlink relationships of a note live in the note part.
+            self.current_part = matches[0].target_part
+            try:
+                for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
+                    if note.get(f"{_W_NS_CLARK}type") not in skip_types:
+                        self._add_note(note, docx_obj, doc)
+            finally:
+                self.current_part = docx_obj.part
+
+    def _add_note(
+        self, note: BaseOxmlElement, docx_obj: DocxDocument, doc: DoclingDocument
+    ) -> None:
+        """Add one footnote/endnote body as a ``FOOTNOTE`` item.
+
+        A note with a hyperlink becomes an inline group of ``FOOTNOTE`` items,
+        so that each linked span keeps its target.
+        """
+        # A note has no layer per paragraph, so hidden ones are left out.
+        paragraphs = [
+            paragraph
+            for paragraph in (
+                Paragraph(p_elm, docx_obj)
+                for p_elm in note.findall(f".//{_W_NS_CLARK}p")
+            )
+            if not self._is_hidden_paragraph(paragraph)
+            and self._get_paragraph_text(paragraph).strip()
+        ]
+        if not paragraphs:
+            return
+        elements = [self._get_paragraph_elements(p) for p in paragraphs]
+        if not any(link for para in elements for _text, _fmt, link in para):
+            doc.add_text(
+                label=DocItemLabel.FOOTNOTE,
+                text=" ".join(self._get_paragraph_text(p).strip() for p in paragraphs),
+                content_layer=ContentLayer.FURNITURE,
+            )
+            return
+
+        group = doc.add_inline_group(content_layer=ContentLayer.FURNITURE)
+        for p_idx, para in enumerate(elements):
+            for e_idx, (text, formatting, hyperlink) in enumerate(para):
                 doc.add_text(
                     label=DocItemLabel.FOOTNOTE,
-                    text=" ".join(texts),
+                    parent=group,
+                    # Paragraphs of a note are joined by a space, as above.
+                    text=f" {text}" if p_idx and not e_idx else text,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
                     content_layer=ContentLayer.FURNITURE,
                 )
 
