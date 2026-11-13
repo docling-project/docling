@@ -367,7 +367,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 39.63,
+            "t": 45.38,
+            "r": 606.47,
+            "b": 102.1,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "Text",
       "text": "Text"
     },
@@ -379,7 +394,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 39.6,
+            "t": 141.73,
+            "r": 753.93,
+            "b": 486.94,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            809
+          ]
+        }
+      ],
       "orig": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc ac faucibus odio. Vestibulum neque massa, scelerisque sit amet ligula eu, congue molestie mi. Praesent ut varius sem. Nullam at porttitor arcu, nec lacinia nisi. Ut ac dolor vitae odio interdum condimentum. Vivamus dapibus sodales ex, vitae malesuada ipsum cursus convallis. Maecenas sed egestas nulla, ac condimentum orci. Mauris diam felis, vulputate ac suscipit et, iaculis non est. Curabitur semper arcu ac ligula semper, nec luctus nisl blandit. Integer lacinia ante ac libero lobortis imperdiet. Nullam mollis convallis ipsum, ac accumsan nunc vehicula vitae. Nulla eget justo in felis tristique fringilla. Morbi sit amet tortor quis risus auctor condimentum. Morbi in ullamcorper elit. Nulla iaculis tellus sit amet mauris tempus fringilla.",
       "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc ac faucibus odio. Vestibulum neque massa, scelerisque sit amet ligula eu, congue molestie mi. Praesent ut varius sem. Nullam at porttitor arcu, nec lacinia nisi. Ut ac dolor vitae odio interdum condimentum. Vivamus dapibus sodales ex, vitae malesuada ipsum cursus convallis. Maecenas sed egestas nulla, ac condimentum orci. Mauris diam felis, vulputate ac suscipit et, iaculis non est. Curabitur semper arcu ac ligula semper, nec luctus nisl blandit. Integer lacinia ante ac libero lobortis imperdiet. Nullam mollis convallis ipsum, ac accumsan nunc vehicula vitae. Nulla eget justo in felis tristique fringilla. Morbi sit amet tortor quis risus auctor condimentum. Morbi in ullamcorper elit. Nulla iaculis tellus sit amet mauris tempus fringilla."
     },
@@ -391,7 +421,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 39.6,
+            "t": 141.73,
+            "r": 753.93,
+            "b": 486.94,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            393
+          ]
+        }
+      ],
       "orig": "Maecenas mauris lectus, lobortis et purus mattis, blandit dictum tellus. Maecenas non lorem quis tellus placerat varius. Nulla facilisi. Aenean congue fringilla justo ut aliquam. Mauris id ex erat. Nunc vulputate neque vitae justo facilisis, non condimentum ante sagittis. Morbi viverra semper lorem nec molestie. Maecenas tincidunt est efficitur ligula euismod, sit amet ornare est vulputate.",
       "text": "Maecenas mauris lectus, lobortis et purus mattis, blandit dictum tellus. Maecenas non lorem quis tellus placerat varius. Nulla facilisi. Aenean congue fringilla justo ut aliquam. Mauris id ex erat. Nunc vulputate neque vitae justo facilisis, non condimentum ante sagittis. Morbi viverra semper lorem nec molestie. Maecenas tincidunt est efficitur ligula euismod, sit amet ornare est vulputate."
     },
@@ -403,7 +448,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 39.63,
+            "t": 45.38,
+            "r": 606.47,
+            "b": 102.1,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Chart",
       "text": "Chart"
     },
@@ -415,7 +475,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 45.38,
+            "r": 606.47,
+            "b": 102.1,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Table",
       "text": "Table"
     },
@@ -427,7 +502,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
       "orig": "Column 1",
       "text": "Column 1"
     },
@@ -439,7 +529,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
       "orig": "Column 2",
       "text": "Column 2"
     },
@@ -451,7 +556,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
       "orig": "Column 3",
       "text": "Column 3"
     },
@@ -463,7 +583,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
       "orig": "Column 4",
       "text": "Column 4"
     },
@@ -475,7 +610,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
       "orig": "Column 5",
       "text": "Column 5"
     },
@@ -487,7 +637,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Row 1",
       "text": "Row 1"
     },
@@ -499,7 +664,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            29
+          ]
+        }
+      ],
       "orig": "Merged cells row 1-3, col 2-3",
       "text": "Merged cells row 1-3, col 2-3"
     },
@@ -511,7 +691,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Row 2",
       "text": "Row 2"
     },
@@ -523,7 +718,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Row 3",
       "text": "Row 3"
     },
@@ -535,7 +745,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 39.63,
+            "t": 45.38,
+            "r": 606.47,
+            "b": 102.1,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Photo",
       "text": "Photo"
     },
@@ -547,7 +772,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 39.63,
+            "t": 45.35,
+            "r": 606.36,
+            "b": 101.96,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
       "orig": "Complex list",
       "text": "Complex list"
     },
@@ -559,7 +799,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "Hello",
       "text": "Hello"
     },
@@ -571,7 +826,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
       "orig": "List item 1",
       "text": "List item 1",
       "enumerated": false,
@@ -592,7 +862,22 @@
       ],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
       "orig": "List item 2",
       "text": "List item 2",
       "enumerated": false,
@@ -610,7 +895,22 @@
       ],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
       "orig": "Nested list item a",
       "text": "Nested list item a",
       "enumerated": true,
@@ -624,7 +924,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
       "orig": "Triple nested",
       "text": "Triple nested",
       "enumerated": true,
@@ -638,7 +953,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
       "orig": "Nested list item b",
       "text": "Nested list item b",
       "enumerated": true,
@@ -652,7 +982,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            7
+          ]
+        }
+      ],
       "orig": "closing",
       "text": "closing",
       "enumerated": false,
@@ -666,7 +1011,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 86.4,
+            "t": 172.8,
+            "r": 691.2,
+            "b": 489.6,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            19
+          ]
+        }
+      ],
       "orig": "Next paragraph text",
       "text": "Next paragraph text"
     },
@@ -678,7 +1038,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 6,
+          "bbox": {
+            "l": 39.63,
+            "t": 45.35,
+            "r": 606.36,
+            "b": 101.96,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            19
+          ]
+        }
+      ],
       "orig": "Table with pictures",
       "text": "Table with pictures"
     }
@@ -1242,7 +1617,22 @@
         }
       },
       "label": "picture",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 133.37,
+            "t": 195.87,
+            "r": 673.97,
+            "b": 479.23,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -1256,7 +1646,22 @@
       "children": [],
       "content_layer": "body",
       "label": "picture",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 108.74,
+            "t": 151.26,
+            "r": 669.6,
+            "b": 482.49,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -1279,7 +1684,22 @@
       "children": [],
       "content_layer": "body",
       "label": "picture",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 6,
+          "bbox": {
+            "l": 244.8,
+            "t": 171.55,
+            "r": 345.6,
+            "b": 230.4,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -1332,7 +1752,22 @@
       ],
       "content_layer": "body",
       "label": "table",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 39.63,
+            "t": 141.76,
+            "r": 754.07,
+            "b": 493.74,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -1845,7 +2280,22 @@
       "children": [],
       "content_layer": "body",
       "label": "table",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 6,
+          "bbox": {
+            "l": 166.28,
+            "t": 257.81,
+            "r": 565.91,
+            "b": 421.4,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -1891,5 +2341,48 @@
   ],
   "key_value_items": [],
   "form_items": [],
-  "pages": {}
+  "pages": {
+    "1": {
+      "size": {
+        "width": 793.76,
+        "height": 595.25
+      },
+      "page_no": 1
+    },
+    "2": {
+      "size": {
+        "width": 793.76,
+        "height": 595.25
+      },
+      "page_no": 2
+    },
+    "3": {
+      "size": {
+        "width": 793.76,
+        "height": 595.25
+      },
+      "page_no": 3
+    },
+    "4": {
+      "size": {
+        "width": 793.76,
+        "height": 595.25
+      },
+      "page_no": 4
+    },
+    "5": {
+      "size": {
+        "width": 793.76,
+        "height": 595.25
+      },
+      "page_no": 5
+    },
+    "6": {
+      "size": {
+        "width": 793.76,
+        "height": 595.25
+      },
+      "page_no": 6
+    }
+  }
 }
