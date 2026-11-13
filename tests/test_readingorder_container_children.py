@@ -128,6 +128,53 @@ def test_container_orders_mixed_children_uniformly() -> None:
     assert [item.text for item in doc.texts] == ["middle"]
 
 
+def test_nested_lists_stay_inside_each_form() -> None:
+    elements = []
+    for index, left in enumerate((0, 200)):
+        container_id = 3 * index
+        parent_cluster = _cluster(
+            container_id + 1, DocItemLabel.LIST_ITEM, (left + 10, 20, left + 180, 35)
+        )
+        child_cluster = _cluster(
+            container_id + 2, DocItemLabel.LIST_ITEM, (left + 40, 60, left + 180, 75)
+        )
+        container_cluster = _cluster(
+            container_id, DocItemLabel.FORM, (left, 10, left + 190, 100)
+        )
+        container_cluster.children = [parent_cluster, child_cluster]
+        elements.append(
+            ContainerElement(
+                id=container_id,
+                label=DocItemLabel.FORM,
+                page_no=1,
+                cluster=container_cluster,
+            )
+        )
+        for cluster, text in [(parent_cluster, "• Parent"), (child_cluster, "o Child")]:
+            elements.append(
+                TextElement(
+                    id=cluster.id,
+                    label=cluster.label,
+                    text=text,
+                    page_no=1,
+                    cluster=cluster,
+                )
+            )
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(_conversion_result(elements))
+
+    forms = [group for group in doc.groups if group.label == GroupLabel.FORM_AREA]
+    assert len(forms) == 2
+    for form in forms:
+        root_list = form.children[0].resolve(doc)
+        parent = root_list.children[0].resolve(doc)
+        nested_list = parent.children[0].resolve(doc)
+        child = nested_list.children[0].resolve(doc)
+        assert root_list.parent == form.get_ref()
+        assert nested_list.parent == parent.get_ref()
+        assert child.text == "Child"
+
+
 def test_container_table_owns_picture_matched_to_rich_cell() -> None:
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 400, 400))
     table_cluster = _cluster(2, DocItemLabel.TABLE, (10, 10, 300, 300))
