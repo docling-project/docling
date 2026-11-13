@@ -191,6 +191,15 @@ def test_download_asr_requires_all(tmp_path):
     assert "--asr requires --all" in _flat(result.output)
 
 
+def test_download_one_mlx_layout_model(tmp_path, recorded_download):
+    result = runner.invoke(
+        app, ["models", "download", "-o", str(tmp_path), "layout_mlx"]
+    )
+
+    assert result.exit_code == 0
+    assert _enabled(recorded_download) == {"with_layout_mlx"}
+
+
 def test_download_explicit_models_override_the_defaults(tmp_path, recorded_download):
     result = runner.invoke(
         app, ["models", "download", "-o", str(tmp_path), "layout", "smolvlm"]

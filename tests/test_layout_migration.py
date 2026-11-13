@@ -10,7 +10,10 @@ import warnings
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItemLabel
+from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
     DOCLING_LAYOUT_EGRET_MEDIUM,
@@ -20,6 +23,9 @@ from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_V2,
     LayoutModelConfig,
 )
+from docling.datamodel.object_detection_engine_options import (
+    MlxObjectDetectionEngineOptions,
+)
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     LayoutOptions,
@@ -27,6 +33,17 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import InferenceSettings, scoped
 from docling.models.factories import get_layout_factory
+from docling.models.inference_engines.object_detection.base import (
+    BaseObjectDetectionEngineOptions,
+    ObjectDetectionEngineOutput,
+    ObjectDetectionEngineType,
+)
+from docling.models.inference_engines.object_detection.factory import (
+    create_object_detection_engine,
+)
+from docling.models.inference_engines.object_detection.mlx_engine import (
+    MlxObjectDetectionEngine,
+)
 from docling.models.stages.layout.layout_model import LayoutModel, _translate
 from docling.models.stages.layout.layout_object_detection_model import (
     LayoutObjectDetectionModel,
@@ -230,3 +247,108 @@ def test_no_layout_model_imports_docling_ibm_models():
         if "docling_ibm_models.layoutmodel" in path.read_text()
     ]
     assert offenders == []
+
+
+# --------------------------------------------------------------------------
+# MLX preset, engine resolution, and label handling
+# --------------------------------------------------------------------------
+
+
+def test_mlx_preset_selects_the_mlx_engine():
+    options = LayoutObjectDetectionOptions.from_preset("layout_heron_mlx")
+
+    assert options.engine_options.engine_type == ObjectDetectionEngineType.MLX
+    assert (
+        options.model_spec.repo_id == "mlx-community/docling-layout-heron-101-mlx-bf16"
+    )
+
+
+def test_engine_options_resolve_from_dict_and_json():
+    options = LayoutObjectDetectionOptions.model_validate(
+        {"engine_options": {"engine_type": "mlx", "score_threshold": 0.5}}
+    )
+    assert isinstance(options.engine_options, MlxObjectDetectionEngineOptions)
+    assert options.engine_options.score_threshold == 0.5
+
+    restored = LayoutObjectDetectionOptions.model_validate_json(
+        options.model_dump_json()
+    )
+    assert isinstance(restored.engine_options, MlxObjectDetectionEngineOptions)
+
+
+def test_factory_returns_the_mlx_engine():
+    options = LayoutObjectDetectionOptions.from_preset("layout_heron_mlx")
+
+    engine = create_object_detection_engine(
+        options=options.engine_options,
+        model_spec=options.model_spec,
+        accelerator_options=AcceleratorOptions(),
+        artifacts_path=None,
+    )
+
+    assert isinstance(engine, MlxObjectDetectionEngine)
+
+
+def test_factory_rejects_base_options_for_mlx():
+    with pytest.raises(ValueError, match="MlxObjectDetectionEngineOptions"):
+        create_object_detection_engine(
+            options=BaseObjectDetectionEngineOptions(
+                engine_type=ObjectDetectionEngineType.MLX
+            ),
+            model_spec=None,
+            accelerator_options=AcceleratorOptions(),
+            artifacts_path=None,
+        )
+
+
+class _LabelEngine:
+    def __init__(self, mapping):
+        self._mapping = mapping
+
+    def get_label_mapping(self):
+        return self._mapping
+
+
+def test_build_label_map_normalizes_model_labels():
+    model = LayoutObjectDetectionModel.__new__(LayoutObjectDetectionModel)
+    model.engine = _LabelEngine({0: "List-item", 1: "Key-Value Region", 2: "text"})
+
+    label_map = model._build_label_map()
+
+    assert label_map[0] is DocItemLabel.LIST_ITEM
+    assert label_map[1] is DocItemLabel.KEY_VALUE_REGION
+    assert label_map[2] is DocItemLabel.TEXT
+
+
+def test_build_label_map_rejects_unknown_labels():
+    model = LayoutObjectDetectionModel.__new__(LayoutObjectDetectionModel)
+    model.engine = _LabelEngine({0: "not-a-label"})
+
+    with pytest.raises(RuntimeError, match="not-a-label"):
+        model._build_label_map()
+
+
+def test_predictions_to_clusters_drops_unknown_labels_and_clamps_boxes():
+    from docling.datamodel.base_models import Page, Size
+
+    model = LayoutObjectDetectionModel.__new__(LayoutObjectDetectionModel)
+    model._label_map = {0: DocItemLabel.TEXT}
+    model._unmapped_label_ids = set()
+
+    page = Page(page_no=1)
+    page.size = Size(width=100.0, height=200.0)
+    image = Image.new("RGB", (50, 100))
+    output = ObjectDetectionEngineOutput(
+        label_ids=[0, 99],
+        scores=[0.9, 0.8],
+        bboxes=[[-10.0, -20.0, 120.0, 240.0], [1.0, 2.0, 3.0, 4.0]],
+    )
+
+    clusters = model._predictions_to_clusters(
+        page=page, image=image, engine_output=output
+    )
+
+    assert len(clusters) == 1
+    bbox = clusters[0].bbox
+    assert (bbox.l, bbox.t, bbox.r, bbox.b) == (0.0, 0.0, 100.0, 200.0)
+    assert 99 in model._unmapped_label_ids

@@ -67,6 +67,18 @@ This requires the `audio` extra and downloads OpenAI-format checkpoints. It does
 not prefetch Transformers-format, MLX, `mlx-audio`, or WhisperS2T models. Prefetch a
 WhisperS2T preset by its name, as shown above.
 
+To prefetch the MLX layout model on Apple Silicon, select `layout_mlx`. The
+checkpoint is stored as
+`mlx-community--docling-layout-heron-101-mlx-bf16` in the output directory:
+
+```sh
+docling-tools models download layout_mlx --output-dir /models
+docling report.pdf --layout-preset layout_heron_mlx --artifacts-path /models
+```
+
+This requires the `models-layout-mlx` extra (or `docling[layout-mlx]`).
+`--all` includes it.
+
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
 Also, you can use `download-hf-repo` parameter to download arbitrary models from HuggingFace by specifying repo id:

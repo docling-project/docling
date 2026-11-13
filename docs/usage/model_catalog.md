@@ -31,6 +31,7 @@ The following table shows all processing stages in Docling, their model families
         <ul>
           <li><code>docling-layout-heron</code> ⭐</li>
           <li><code>docling-layout-heron-101</code></li>
+          <li><code>docling-layout-heron-101-mlx-bf16</code> (MLX, Apple Silicon)</li>
           <li><code>docling-layout-egret-medium</code></li>
           <li><code>docling-layout-egret-large</code></li>
           <li><code>docling-layout-egret-xlarge</code></li>
@@ -39,7 +40,7 @@ The following table shows all processing stages in Docling, their model families
       </td>
     </tr>
     <tr>
-      <td colspan="2"><strong>Inference Engine:</strong> Transformers, ONNXRuntime (in progress)</td>
+      <td colspan="2"><strong>Inference Engine:</strong> Transformers, ONNXRuntime (Heron only), MLX (Apple Silicon)</td>
     </tr>
     <tr>
       <td colspan="2"><strong>Purpose:</strong> Detects document elements (paragraphs, tables, figures, headers, etc.)</td>
@@ -199,10 +200,18 @@ The following table shows all processing stages in Docling, their model families
 
 | Model | Inference Engine | Supported Devices |
 |-------|------------------|-------------------|
-| All layout models | Transformers | CPU, CUDA, MPS, XPU |
+| Heron, Heron 101, Egret medium/large/xlarge | Transformers | CPU, CUDA, MPS, XPU |
+| `docling-layout-heron` | ONNXRuntime | CPU, CUDA, MPS, XPU |
+| `docling-layout-heron-101-mlx-bf16` | MLX | Apple Silicon (Metal) |
 
 **Note:** Layout models run through `AutoModelForObjectDetection`, reading their label map
 from the model repository's own `config.json`. Only `docling-layout-heron` also supports ONNXRuntime.
+
+The MLX engine loads the pre-converted `mlx-community/docling-layout-heron-101-mlx-bf16`
+checkpoint. It requires `mlx-vlm`, which the `docling[layout-mlx]` and
+`docling-slim[models-layout-mlx]` extras install. Select it with
+`LayoutObjectDetectionOptions.from_preset("layout_heron_mlx")` or
+`--layout-preset layout_heron_mlx`.
 
 **Deprecated:** `LayoutOptions` and `docling-layout-v2` are superseded by
 `LayoutObjectDetectionOptions`. `LayoutOptions` still works — it is translated onto the

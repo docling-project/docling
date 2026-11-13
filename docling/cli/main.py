@@ -1110,7 +1110,11 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             ...,
-            help=f"Choose the layout detection preset for PDF processing. Available presets: {', '.join(layout_preset_ids)}",
+            help=(
+                "Choose the layout detection preset for PDF processing. "
+                "Applies only to --pipeline standard or legacy. "
+                f"Available presets: {', '.join(layout_preset_ids)}"
+            ),
         ),
     ] = None,
     asr_model: Annotated[
@@ -1700,6 +1704,16 @@ def convert(  # noqa: C901
     from_formats = _expand_from_formats(from_formats)
 
     pipeline = _resolve_pipeline(pipeline, vlm_model)
+
+    if layout_preset is not None and pipeline not in {
+        ProcessingPipeline.STANDARD,
+        ProcessingPipeline.LEGACY,
+    }:
+        _log.warning(
+            "--layout-preset is only supported with --pipeline standard or "
+            "legacy; ignoring preset %r.",
+            layout_preset,
+        )
 
     if pipeline == ProcessingPipeline.ASR:
         # Only audio and video have a transcription route. Other formats would
