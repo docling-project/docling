@@ -1057,6 +1057,37 @@ def test_jats_inline_term_keeps_its_text():
     ("body", "expected"),
     [
         pytest.param(
+            "<disp-quote><p>To be, or not to be.</p><attrib>W. Shakespeare</attrib>"
+            "</disp-quote>",
+            ["To be, or not to be.", "W. Shakespeare"],
+            id="disp-quote-attrib",
+        ),
+        pytest.param(
+            "<speech><speaker>Alice</speaker><p>Hello there.</p></speech>",
+            ["Alice", "Hello there."],
+            id="speech-speaker",
+        ),
+        pytest.param(
+            "<statement><label>Theorem 1</label><title>Main result</title>"
+            "<p>Every x is y.</p></statement>",
+            ["Theorem 1", "Main result", "Every x is y."],
+            id="statement-label-title",
+        ),
+    ],
+)
+def test_jats_text_outside_paragraphs_is_kept(body, expected):
+    # An attribution, a speaker, or the label and title of a statement are not
+    # in a <p>, and their text was dropped.
+    doc = convert_jats_body(f"<sec><title>T</title>{body}</sec>")
+
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert texts == expected
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        pytest.param(
             "<disp-formula><tex-math>$$E=mc^2$$</tex-math></disp-formula>",
             "E=mc^2",
             id="direct-tex-math",
