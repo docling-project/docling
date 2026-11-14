@@ -64,6 +64,7 @@ from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.chartex import CHARTEX_NAMESPACE, read_chartex
 from docling.backend.utils.charts import (
     ChartContent,
     build_chart_table,
@@ -86,10 +87,12 @@ try:  # pragma: no cover - import-time guard
     from pptx.enum.action import PP_ACTION
     from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
     from pptx.exc import InvalidXmlError
+    from pptx.oxml import parse_xml
     from pptx.oxml.ns import qn
     from pptx.oxml.text import CT_TextLineBreak
     from pptx.shapes.autoshape import Shape
     from pptx.shapes.base import BaseShape
+    from pptx.shapes.graphfrm import GraphicFrame
     from pptx.shapes.picture import Picture
 
     _PPTX_AVAILABLE = True
@@ -170,6 +173,34 @@ _MC_ALTERNATE_CONTENT: Final = (
 _MATH_NAMESPACE: Final = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 _DRAWING_2010_NAMESPACE: Final = "http://schemas.microsoft.com/office/drawing/2010/main"
 _MC_NAMESPACE: Final = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+_MC_CHOICE: Final = f"{{{_MC_NAMESPACE}}}Choice"
+_DRAWINGML_NAMESPACE: Final = "http://schemas.openxmlformats.org/drawingml/2006/main"
+_CHARTEX_CHART_PATH: Final = (
+    f"{{{_DRAWINGML_NAMESPACE}}}graphic/{{{_DRAWINGML_NAMESPACE}}}graphicData"
+    f"/{{{CHARTEX_NAMESPACE}}}chart"
+)
+"""Path from a ``p:graphicFrame`` to the ``cx:chart`` of an Office 2016 chart."""
+
+
+def _shape_parent(element: etree._Element) -> Optional[etree._Element]:
+    """Return the parent of a shape, past an ``mc:AlternateContent`` around it."""
+    parent = element.getparent()
+    while parent is not None and parent.tag in (_MC_CHOICE, _MC_ALTERNATE_CONTENT):
+        parent = parent.getparent()
+    return parent
+
+
+def _chartex_frame(alternate_content: etree._Element) -> Optional[etree._Element]:
+    """Return the graphic frame of an Office 2016 chart in ``mc:AlternateContent``.
+
+    Returns:
+        The ``p:graphicFrame`` of the ``mc:Choice`` that holds a ``cx:chart``,
+        or None when the element holds no such chart.
+    """
+    for frame in alternate_content.iterfind(f"{_MC_CHOICE}/{qn('p:graphicFrame')}"):
+        if frame.find(_CHARTEX_CHART_PATH) is not None:
+            return frame
+    return None
 
 
 def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element]:
@@ -601,7 +632,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             The box as ``[left, top, right, bottom]`` in slide coordinates.
         """
         left, top, right, bottom = bbox
-        parent = shape._element.getparent()
+        parent = _shape_parent(shape._element)
         while parent is not None and parent.tag == qn("p:grpSp"):
             xfrm = parent.find(f"{qn('p:grpSpPr')}/{qn('a:xfrm')}")
             parts = (
@@ -638,7 +669,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             2 * off_y + ext_y - bottom,
                             2 * off_y + ext_y - top,
                         )
-            parent = parent.getparent()
+            parent = _shape_parent(parent)
         return [left, top, right, bottom]
 
     def _get_paragraph_level(self, paragraph) -> int:
@@ -1811,6 +1842,76 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             ),
         )
 
+    def _handle_chartex(self, shape, parent_slide, slide_ind, doc, slide_size):
+        """Add an Office 2016 chart, such as a waterfall or treemap, as a picture.
+
+        The chart is a ``cx:chart`` in the graphic frame, which PowerPoint puts
+        in the ``mc:Choice`` of an ``mc:AlternateContent``. Its classification,
+        title and data come from the chartex part (see ``read_chartex``). The
+        image is the picture that PowerPoint keeps in ``mc:Fallback`` for
+        applications that cannot draw the chart, when there is one. LibreOffice
+        does not draw these charts, so ``render_chart_images`` does not apply.
+        A part that cannot be read still gives a picture, with no data.
+
+        Args:
+            shape: The graphic-frame shape holding the chart.
+            parent_slide: The parent slide group.
+            slide_ind: Zero-based slide index.
+            doc: The DoclingDocument to update.
+            slide_size: The slide size, used for provenance.
+        """
+        rid = shape._element.find(_CHARTEX_CHART_PATH).get(qn("r:id"), "")
+        try:
+            content = read_chartex(parse_xml(shape.part.related_part(rid).blob))
+        except (KeyError, ValueError, etree.XMLSyntaxError) as exc:
+            _log.warning("Could not read an Office 2016 chart: %s", exc)
+            content = ChartContent(
+                labels=[PictureClassificationLabel.OTHER_CHART], title=None, table=None
+            )
+
+        self._add_chart_picture(
+            shape,
+            content,
+            self._chartex_fallback_image(shape),
+            parent_slide,
+            slide_ind,
+            doc,
+            slide_size,
+        )
+
+    def _chartex_fallback_image(self, shape) -> Optional[ImageRef]:
+        """Return the picture PowerPoint keeps for a chartex chart, if any.
+
+        Args:
+            shape: The graphic frame of the chart.
+
+        Returns:
+            The image of the ``p:pic`` in the ``mc:Fallback`` next to the
+            frame's ``mc:Choice``, or None when there is no such picture or it
+            cannot be read.
+        """
+        choice = shape._element.getparent()
+        if choice is None or choice.tag != _MC_CHOICE:
+            return None
+        blip = choice.getparent().find(
+            f"{{{_MC_NAMESPACE}}}Fallback/{qn('p:pic')}/{qn('p:blipFill')}/{qn('a:blip')}"
+        )
+        if blip is None or not blip.get(qn("r:embed")):
+            return None
+        try:
+            image = shape.part.related_part(blip.get(qn("r:embed"))).image
+            return self._decode_picture(image.blob, image.dpi[0])
+        except (
+            UnidentifiedImageError,
+            InvalidXmlError,
+            KeyError,
+            AttributeError,
+            ValueError,
+            OSError,
+        ) as exc:
+            _log.warning("Could not read the fallback image of a chart: %s", exc)
+            return None
+
     def _get_libreoffice_converter(self) -> Optional[Callable]:
         """Lazily initialize and return a LibreOffice converter callable.
 
@@ -2068,6 +2169,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_chart:
                     self._handle_chart(shape, parent_slide, slide_ind, doc, slide_size)
+                if shape._element.find(_CHARTEX_CHART_PATH) is not None:
+                    self._handle_chartex(
+                        shape, parent_slide, slide_ind, doc, slide_size
+                    )
                 if isinstance(shape, Picture):
                     # Handle Pictures, including those inserted into a picture placeholder
                     self._handle_pictures(
@@ -2113,13 +2218,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
                 if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
-                    for groupedshape in self._iter_shapes_by_position(shape.shapes):
+                    for groupedshape in self._iter_shapes_by_position(
+                        self._with_chartex_frames(shape.shapes, shape._element)
+                    ):
                         handle_shapes(
                             groupedshape, parent_slide, slide_ind, doc, slide_size
                         )
 
             # Loop through each shape in the slide
-            for shape in self._iter_shapes_by_position(slide.shapes):
+            for shape in self._iter_shapes_by_position(
+                self._with_chartex_frames(slide.shapes, slide._element.cSld.spTree)
+            ):
                 handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
 
             # Handle notes slide
@@ -2151,6 +2260,34 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 self._hide_slide(doc, parent_slide)
 
         return doc
+
+    @staticmethod
+    def _with_chartex_frames(shapes, container: etree._Element) -> list[BaseShape]:
+        """Return the shapes of a slide or group, with its Office 2016 charts.
+
+        python-pptx skips the ``mc:AlternateContent`` elements of a shape tree.
+        PowerPoint puts each Office 2016 chart, such as a waterfall or treemap,
+        in one: the chart frame is in ``mc:Choice``, and ``mc:Fallback`` holds a
+        picture of the chart or nothing. Each such chart frame is added as a
+        ``GraphicFrame``. Other ``mc:AlternateContent`` elements stay skipped.
+
+        Args:
+            shapes: The python-pptx shape collection of the slide or group.
+            container: The ``p:spTree`` or ``p:grpSp`` element of ``shapes``.
+
+        Returns:
+            The shapes in the order of the shape tree.
+        """
+        by_element = {shape._element: shape for shape in shapes}
+        result: list[BaseShape] = []
+        for child in container.iterchildren():
+            if child in by_element:
+                result.append(by_element[child])
+            elif child.tag == _MC_ALTERNATE_CONTENT:
+                frame = _chartex_frame(child)
+                if frame is not None:
+                    result.append(GraphicFrame(frame, shapes))
+        return result
 
     @staticmethod
     def _is_hidden_shape(shape) -> bool:
