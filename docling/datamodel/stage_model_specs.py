@@ -1001,7 +1001,7 @@ GRANITE_VISION_MODEL_SPEC_BASE = {
     },
     "api_overrides": {
         VlmEngineType.API_OLLAMA: ApiModelConfig(
-            params={"model": "granite3.3-vision:2b"}
+            params={"model": "ibm/granite3.3-vision:2b"}
         ),
     },
 }
