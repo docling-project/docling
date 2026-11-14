@@ -64,7 +64,11 @@ from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
-from docling.backend.utils.charts import build_chart_table, datetime_to_iso
+from docling.backend.utils.charts import (
+    ChartContent,
+    build_chart_table,
+    datetime_to_iso,
+)
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
@@ -1356,29 +1360,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             )
             return
 
-        # Open it with PIL
-        image_ref: Optional[ImageRef] = None
         try:
-            pil_image = normalize_image_for_png(Image.open(BytesIO(image_bytes)))
-            image_ref = ImageRef.from_pil(image=pil_image, dpi=im_dpi)
+            image_ref = self._decode_picture(image_bytes, im_dpi)
         except (UnidentifiedImageError, OSError, ValueError) as e:
-            if not _is_metafile(image_bytes):
-                warnings.warn(
-                    f"Skipping malformed picture shape: {e}",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                return
-            # A metafile Pillow cannot draw on this platform. Rasterize it
-            # externally when possible, and otherwise still record the picture
-            # so its place on the slide survives -- only the pixels are lost.
-            _log.debug("Pillow cannot render this metafile: %s", e)
-            rasterized = self._rasterize_metafile(image_bytes)
-            if rasterized is not None:
-                # Rendered from a PDF rather than decoded from the original
-                # picture, so the metafile's own dpi no longer describes it;
-                # 72 matches the other LibreOffice-rendered images.
-                image_ref = ImageRef.from_pil(image=rasterized, dpi=72)
+            warnings.warn(
+                f"Skipping malformed picture shape: {e}",
+                UserWarning,
+                stacklevel=2,
+            )
+            return
 
         doc.add_picture(
             parent=parent_slide,
@@ -1387,6 +1377,39 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             prov=prov,
         )
         return
+
+    def _decode_picture(self, image_bytes: bytes, dpi: int) -> Optional[ImageRef]:
+        """Open the bytes of a picture as an image.
+
+        Args:
+            image_bytes: The picture as stored in the package.
+            dpi: The resolution the picture declares.
+
+        Returns:
+            The image. A metafile that Pillow cannot draw is rasterized with
+            LibreOffice, and gives None when that is not possible.
+
+        Raises:
+            UnidentifiedImageError, OSError, ValueError: The bytes are neither
+                an image Pillow can open nor a metafile.
+        """
+        try:
+            pil_image = normalize_image_for_png(Image.open(BytesIO(image_bytes)))
+            return ImageRef.from_pil(image=pil_image, dpi=dpi)
+        except (UnidentifiedImageError, OSError, ValueError) as e:
+            if not _is_metafile(image_bytes):
+                raise
+            # A metafile Pillow cannot draw on this platform. Rasterize it
+            # externally when possible, and otherwise still record the picture
+            # so its place on the slide survives -- only the pixels are lost.
+            _log.debug("Pillow cannot render this metafile: %s", e)
+        rasterized = self._rasterize_metafile(image_bytes)
+        if rasterized is None:
+            return None
+        # Rendered from a PDF rather than decoded from the original picture, so
+        # the metafile's own dpi no longer describes it; 72 matches the other
+        # LibreOffice-rendered images.
+        return ImageRef.from_pil(image=rasterized, dpi=72)
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Handling tables, images, charts
@@ -1715,8 +1738,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         except (AttributeError, ValueError, KeyError, InvalidXmlError) as exc:
             _log.warning("Could not extract chart data: %s", exc)
             table_data = None
-
-        prov = self._generate_prov(shape, slide_ind, "", slide_size)
+        content = ChartContent(labels=labels, title=caption_text, table=table_data)
 
         image_ref = None
         if self._render_charts:
@@ -1730,14 +1752,42 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     exc_info=True,
                 )
 
+        self._add_chart_picture(
+            shape, content, image_ref, parent_slide, slide_ind, doc, slide_size
+        )
+
+    def _add_chart_picture(
+        self,
+        shape,
+        content: ChartContent,
+        image_ref: Optional[ImageRef],
+        parent_slide,
+        slide_ind,
+        doc,
+        slide_size,
+    ) -> None:
+        """Add a chart as a PictureItem with its classification and data.
+
+        The chart title, if any, becomes the picture caption.
+
+        Args:
+            shape: The graphic-frame shape holding the chart.
+            content: The chart's classification labels, title and data.
+            image_ref: The chart's image, or None.
+            parent_slide: The parent slide group.
+            slide_ind: Zero-based slide index.
+            doc: The DoclingDocument to update.
+            slide_size: The slide size, used for provenance.
+        """
+        prov = self._generate_prov(shape, slide_ind, "", slide_size)
         caption_item = (
             doc.add_text(
                 label=DocItemLabel.CAPTION,
-                text=caption_text,
+                text=content.title,
                 parent=parent_slide,
-                prov=self._generate_prov(shape, slide_ind, caption_text, slide_size),
+                prov=self._generate_prov(shape, slide_ind, content.title, slide_size),
             )
-            if caption_text
+            if content.title
             else None
         )
 
@@ -1751,16 +1801,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             classification=PictureClassificationMetaField(
                 predictions=[
                     PictureClassificationPrediction(class_name=label)
-                    for label in labels
+                    for label in content.labels
                 ]
             ),
             tabular_chart=(
-                TabularChartMetaField(chart_data=table_data)
-                if table_data is not None
+                TabularChartMetaField(chart_data=content.table)
+                if content.table is not None
                 else None
             ),
         )
-        return
 
     def _get_libreoffice_converter(self) -> Optional[Callable]:
         """Lazily initialize and return a LibreOffice converter callable.

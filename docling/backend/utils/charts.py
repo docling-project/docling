@@ -8,10 +8,11 @@ chart in their own way, and then lay them out as a table with the same helpers.
 """
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Final
 
-from docling_core.types.doc import TableCell, TableData
+from docling_core.types.doc import PictureClassificationLabel, TableCell, TableData
 
 _log = logging.getLogger(__name__)
 
@@ -23,6 +24,21 @@ to populated rows first; this cap only binds genuinely huge charts. 100k cells
 still admit e.g. a 10k-point, 5-series chart while keeping any single chart's
 markdown output to a few megabytes.
 """
+
+
+@dataclass(frozen=True)
+class ChartContent:
+    """The kind, title and data of a native chart.
+
+    Attributes:
+        labels: One classification label per kind of plot, back-most first.
+        title: The chart title, or None when the chart shows no title.
+        table: The data of the chart, or None when it has no usable data.
+    """
+
+    labels: list[PictureClassificationLabel]
+    title: str | None
+    table: TableData | None
 
 
 def _last_populated_row(
