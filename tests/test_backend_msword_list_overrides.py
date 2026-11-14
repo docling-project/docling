@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Tests for the ``w:lvlOverride`` of Word numbering instances.
+"""Tests for the ``w:lvlOverride`` of Word numbering instances and the start values
+of list levels.
 
 Kept separate from ``test_backend_msword_lists.py`` so that file stays under the
 repository's per-file line limit.
@@ -14,6 +15,11 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls, qn
 
 from .test_backend_msword_lists import _convert_docx
+
+_DECIMAL_LEVEL = (
+    '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/>'
+    '<w:lvlText w:val="%1."/></w:lvl>'
+)
 
 
 def _numbering_instances_docx(
@@ -33,8 +39,7 @@ def _numbering_instances_docx(
     numbering.find(qn("w:num")).addprevious(
         parse_xml(
             f'<w:abstractNum {nsdecls("w")} w:abstractNumId="90">'
-            '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/>'
-            '<w:lvlText w:val="%1."/></w:lvl></w:abstractNum>'
+            f"{_DECIMAL_LEVEL}</w:abstractNum>"
         )
     )
     for num_id, level_override in level_overrides.items():
@@ -173,3 +178,111 @@ def test_invalid_start_override_keeps_the_start_of_the_level(tmp_path, start_ove
     doc = _convert_docx(document, tmp_path)
 
     assert _list_markers(doc) == [("apple", "a)"), ("banana", "b)")]
+
+
+_SUB_LIST = [
+    ("one", 0),
+    ("one-a", 1),
+    ("one-b", 1),
+    ("two", 0),
+    ("two-a", 1),
+    ("two-b", 1),
+]
+
+
+def _sub_level(start: int, lvl_restart: str = "") -> str:
+    """Return a decimal ``%1.%2.`` level 1 that starts at ``start``.
+
+    ``lvl_restart`` is an optional ``w:lvlRestart`` element for the level.
+    """
+    return (
+        f'<w:lvl w:ilvl="1"><w:start w:val="{start}"/><w:numFmt w:val="decimal"/>'
+        f'{lvl_restart}<w:lvlText w:val="%1.%2."/></w:lvl>'
+    )
+
+
+def _sub_list_docx(sub_level: str, level_override: str | None):
+    """Build the paragraphs of ``_SUB_LIST`` as a list with two levels.
+
+    Level 0 of the abstract numbering definition is decimal, ``%1.``, start 1,
+    and ``sub_level`` is level 1. ``level_override`` is the content of the
+    ``w:lvlOverride`` of numbering instance 91 for level 1, or ``None`` for no
+    override. ``_SUB_LIST`` gives the text and ``w:ilvl`` of each paragraph.
+    """
+    document = Document()
+    numbering = document.part.numbering_part.element
+    # All w:abstractNum elements come before the first w:num.
+    numbering.find(qn("w:num")).addprevious(
+        parse_xml(
+            f'<w:abstractNum {nsdecls("w")} w:abstractNumId="90">'
+            f"{_DECIMAL_LEVEL}{sub_level}</w:abstractNum>"
+        )
+    )
+    num = parse_xml(
+        f'<w:num {nsdecls("w")} w:numId="91"><w:abstractNumId w:val="90"/></w:num>'
+    )
+    if level_override is not None:
+        num.append(
+            parse_xml(
+                f'<w:lvlOverride {nsdecls("w")} w:ilvl="1">'
+                f"{level_override}</w:lvlOverride>"
+            )
+        )
+    numbering.append(num)
+    for text, ilvl in _SUB_LIST:
+        num_pr = document.add_paragraph(text)._p.get_or_add_pPr().get_or_add_numPr()
+        num_pr.get_or_add_ilvl().val = ilvl
+        num_pr.get_or_add_numId().val = 91
+    return document
+
+
+_RESTARTS_AT_3 = ["1.", "1.3.", "1.4.", "2.", "2.3.", "2.4."]
+
+
+@pytest.mark.parametrize(
+    ("sub_level", "level_override", "markers"),
+    [
+        pytest.param(_sub_level(3), None, _RESTARTS_AT_3, id="start"),
+        pytest.param(
+            _sub_level(1),
+            '<w:startOverride w:val="3"/>',
+            _RESTARTS_AT_3,
+            id="start-override",
+        ),
+        pytest.param(
+            _sub_level(3, '<w:lvlRestart w:val="1"/>'),
+            None,
+            _RESTARTS_AT_3,
+            id="start-with-lvl-restart-ignored",
+        ),
+        pytest.param(
+            _sub_level(0),
+            None,
+            ["1.", "1.0.", "1.1.", "2.", "2.0.", "2.1."],
+            id="start-0",
+        ),
+        pytest.param(
+            _sub_level(1),
+            None,
+            ["1.", "1.1.", "1.2.", "2.", "2.1.", "2.2."],
+            id="start-1",
+        ),
+    ],
+)
+def test_restarted_level_starts_at_its_start_value(
+    tmp_path, sub_level, level_override, markers
+):
+    """A level that restarts after a higher level advances starts at its start value.
+
+    The start value is the w:startOverride of the numbering instance for the
+    level, else the w:start of the level. It applies when the level starts and
+    whenever it restarts (ECMA-376 Part 1, 17.9.26 and 17.9.27). The backend
+    does not read w:lvlRestart. In the ``start-with-lvl-restart-ignored`` case,
+    w:lvlRestart names level 0 (the value is one-based), which is also the
+    default for level 1, so the level restarts as it does without it.
+    """
+    doc = _convert_docx(_sub_list_docx(sub_level, level_override), tmp_path)
+
+    assert _list_markers(doc) == [
+        (text, marker) for (text, _), marker in zip(_SUB_LIST, markers, strict=True)
+    ]
