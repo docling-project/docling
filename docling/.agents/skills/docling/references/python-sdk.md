@@ -62,6 +62,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `do_ocr` | Run OCR (default engine EasyOCR) |
 | `do_table_structure` | Detect table structure |
 | `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields with keys from printed text |
+| `tagged_structure` | `"off"` (default), `"prefer"` or `"require"`: derive layout, heading levels and alt text from a tagged PDF's structure tree (docling-parse backend) |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
 | `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |

@@ -223,6 +223,20 @@ cells need `do_table_structure=True`. Raw widget metadata is not stored in the
 that PDF-specific data is needed. Field items are not supported by the DocTags
 export.
 
+### Use the tagged-PDF structure tree
+
+Tagged PDFs (ISO 32000-2, 14.7; PDF/UA) carry the author's logical structure:
+paragraphs, headings with explicit levels, list items, captions, figures with
+alternate text, and which content is a pagination artifact. Set
+`PdfPipelineOptions(tagged_structure="prefer")` to derive layout from that
+structure where a page has it, keeping layout-model regions the tags do not
+cover; `"require"` uses the tags only. The default `"off"` ignores the tree.
+
+With the tags in charge, headings keep their `H1`..`Hn` levels, a figure's
+`/Alt` becomes its description, and pagination artifacts land in the furniture
+layer. Only the docling-parse backend reads the structure tree; untagged pages
+and other backends fall back to the layout model.
+
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata

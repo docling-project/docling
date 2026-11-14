@@ -25,6 +25,7 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
+from docling.datamodel.base_models import TaggedTextCell
 from docling.exceptions import DocumentLoadError
 from docling.utils.pdf_outline import (
     _PdfOutlineItem,
@@ -46,6 +47,7 @@ try:  # pragma: no cover - import-time guard
         DecodeConfig,
         DoclingThreadedPdfParser,
         PageParseResult,
+        PdfStructure,
         RenderConfig,
         ThreadedPdfParserConfig,
     )
@@ -129,6 +131,26 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         self._result = result
         self._rendered = rendered
         self._seg_page: Optional[SegmentedPdfPage] = None
+
+    def get_marked_content(self) -> list[TaggedTextCell]:
+        """Per-cell /MCID and /Artifact tags from the threaded decode result."""
+        if not self._result.success:
+            return []
+        height = self.get_size().height
+        cells: list[TaggedTextCell] = []
+        for tag in self._result.get_marked_content():
+            if tag.rect is None:
+                continue
+            cells.append(
+                TaggedTextCell(
+                    text=tag.text,
+                    bbox=tag.rect.to_bounding_box().to_top_left_origin(height),
+                    mcid=tag.mcid,
+                    artifact_type=tag.artifact_type,
+                    artifact_subtype=tag.artifact_subtype,
+                )
+            )
+        return cells
 
     @property
     def page_no(self) -> int:
@@ -403,6 +425,8 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             parser_config.max_concurrent_results = (
                 threaded_options.max_concurrent_results
             )
+        self._structure: Optional[PdfStructure] = None
+        self._structure_loaded = False
         self.parser = DoclingThreadedPdfParser(
             parser_config=parser_config,
             decode_config=decode_config,
@@ -444,6 +468,18 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         annotations = self.parser.get_annotations(self.doc_key)
         toc = annotations.table_of_contents if annotations is not None else None
         return extract_outline_from_docling_parse(toc)
+
+    def get_structure(self) -> Optional[PdfStructure]:
+        """The logical structure tree, read once from the loaded document's annotations.
+
+        Annotations are structure-only: reading them decodes no page, so this
+        neither waits for nor interferes with the threaded page decoding.
+        """
+        if not self._structure_loaded:
+            self._structure_loaded = True
+            annotations = self.parser.get_annotations(self.doc_key)
+            self._structure = annotations.structure if annotations is not None else None
+        return self._structure
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(
