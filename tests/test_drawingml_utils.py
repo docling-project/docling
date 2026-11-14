@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 
 from docling.backend.docx.drawingml import utils as drawingml_utils
+from docling.datamodel.base_models import ConversionStatus, DocumentStream
+from docling.document_converter import DocumentConverter
 
 
 def _track_mkdtemp(monkeypatch) -> list[Path]:
@@ -263,3 +265,40 @@ def test_run_hardened_soffice_raises_on_nonzero_exit(monkeypatch):
 
     with pytest.raises(subprocess.CalledProcessError):
         drawingml_utils._run_hardened_soffice(["/usr/bin/soffice"], timeout_s=5)
+
+
+@pytest.mark.parametrize(
+    "popen_kwargs",
+    [
+        pytest.param({"returncode": 1}, id="nonzero-exit"),
+        pytest.param(
+            {"wait_exc": subprocess.TimeoutExpired(cmd="soffice", timeout=5)},
+            id="timeout",
+        ),
+    ],
+)
+def test_libreoffice_failure_continues_batch(monkeypatch, popen_kwargs):
+    """A failed LibreOffice conversion gives a FAILURE result; the batch continues."""
+    monkeypatch.setattr(
+        drawingml_utils, "get_libreoffice_cmd", lambda: "/usr/bin/soffice"
+    )
+    monkeypatch.setattr(
+        drawingml_utils, "_kill_soffice_process_group", lambda proc: None
+    )
+    _install_fake_popen(monkeypatch, **popen_kwargs)
+
+    results = DocumentConverter().convert_all(
+        [
+            DocumentStream(name="broken.doc", stream=BytesIO(b"legacy bytes")),
+            DocumentStream(
+                name="second.html",
+                stream=BytesIO(b"<html><body><p>Second.</p></body></html>"),
+            ),
+        ],
+        raises_on_error=False,
+    )
+
+    assert [(result.input.file.name, result.status) for result in results] == [
+        ("broken.doc", ConversionStatus.FAILURE),
+        ("second.html", ConversionStatus.SUCCESS),
+    ]
