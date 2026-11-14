@@ -10,6 +10,7 @@ import pytest
 from matplotlib.figure import Figure
 
 from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -177,6 +178,53 @@ def test_threaded_pipeline_keeps_backend_for_embedded_picture_images():
 
     assert pipeline is not None
     assert pipeline.keep_backend is True
+
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_embedded_picture_images_with_docling_parse_subclass():
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                backend=DoclingParseDocumentBackend,
+                pipeline_options=ThreadedPdfPipelineOptions(
+                    do_table_structure=False,
+                    do_ocr=False,
+                    generate_picture_images=True,
+                    use_embedded_picture_images=True,
+                ),
+            )
+        }
+    )
+
+    result = converter.convert(
+        "tests/data/pdf/sources/picture_classification.pdf", page_range=(1, 1)
+    )
+
+    assert result.status == ConversionStatus.SUCCESS
+    sizes = [
+        (picture.image.size.width, picture.image.size.height)
+        for picture in result.document.pictures
+        if picture.image is not None
+    ]
+    assert sizes == [(768, 474)]
+
+
+def test_embedded_picture_images_keep_shared_backend_options_unchanged():
+    shared = ThreadedDoclingParseBackendOptions(parser_threads=2)
+    plain = PdfFormatOption(
+        pipeline_options=ThreadedPdfPipelineOptions(), backend_options=shared
+    )
+    embedded = PdfFormatOption(
+        pipeline_options=ThreadedPdfPipelineOptions(use_embedded_picture_images=True),
+        backend_options=shared,
+    )
+
+    assert embedded.backend_options is not None
+    assert embedded.backend_options.include_bitmap_images is True
+    assert embedded.backend_options.parser_threads == 2
+    assert shared.include_bitmap_images is False
+    assert plain.backend_options is not None
+    assert plain.backend_options.include_bitmap_images is False
 
 
 def test_threaded_pipeline_drops_page_backends_when_kept_for_enrichment():
