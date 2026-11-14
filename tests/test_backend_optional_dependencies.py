@@ -217,6 +217,28 @@ def test_lightonocr_parser_reports_missing_markdown_dependency() -> None:
     assert "actionable-error-raised" in result.stdout
 
 
+def test_typhoon_ocr2_parser_reports_missing_markdown_dependency() -> None:
+    # Plain text needs no Markdown parser; emphasis does.
+    result = _run_with_blocked_module(
+        "marko",
+        "from docling.utils.typhoon_ocr2_utils import parse_typhoon_ocr2_json\n"
+        "from docling_core.types.doc import Size\n"
+        "size = Size(width=600, height=800)\n"
+        'reply = \'[{"bbox": [0, 0, 1000, 100], "category": "text", "text": "%s"}]\'\n'
+        "doc = parse_typhoon_ocr2_json(reply % 'ราคา 1000', size, page_no=1)\n"
+        "assert [item.text for item in doc.texts] == ['ราคา 1000']\n"
+        "try:\n"
+        "    parse_typhoon_ocr2_json(reply % '**ตัวหนา**', size, page_no=1)\n"
+        "except ImportError as exc:\n"
+        "    assert \"pip install 'docling-slim[format-markdown]'\" in str(exc), str(exc)\n"
+        "    print('actionable-error-raised')\n"
+        "else:\n"
+        "    raise AssertionError('expected ImportError when marko is missing')\n",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "actionable-error-raised" in result.stdout
+
+
 def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
     # The service client reaches docling.utils.pdf_outline (via noop_backend ->
     # datamodel.document, which needs only the _PdfOutlineItem model), so a

@@ -87,6 +87,7 @@ BBOX_RESPONSE_FORMATS: Final = frozenset(
         ResponseFormat.NEMOTRON_PARSE_V2,
         ResponseFormat.NEMOTRON_PARSE_V3_5,
         ResponseFormat.MINERU2,
+        ResponseFormat.TYPHOON_OCR2_JSON,
     }
 )
 NO_BBOX_RESPONSE_FORMATS: Final = frozenset(
@@ -139,6 +140,7 @@ _VLM_FAMILIES: Final = (
     ("phi", "Phi"),
     ("pixtral", "Pixtral"),
     ("qwen", "Qwen"),
+    ("typhoon", "Typhoon"),
     ("unlimited_ocr", "Unlimited-OCR"),
 )
 # A new preset without an entry above goes to this group. Add an entry to name its family.

@@ -310,6 +310,53 @@ pipeline_options = VlmPipelineOptions(
 The `surya-ocr` package is not needed. With `llama-server`, add `--special`, or the
 reply loses its block labels and boxes.
 
+For Typhoon OCR V2 (Thai and English pages), use the `typhoon_ocr2_2b` preset, or
+`typhoon_ocr2_08b` for faster page parsing:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("typhoon_ocr2_2b"),
+)
+```
+
+Auto-inline picks MLX on Apple Silicon (`mlx-vlm>=0.7.6`) and Transformers elsewhere
+(`transformers>=5.15.1`). On a CPU, Transformers takes hours for one page. On CUDA, pass
+`engine_options=AutoInlineVlmEngineOptions(prefer_vllm=True)` to `from_preset` to
+pick vLLM (`vllm>=0.30.0`).
+
+To use a vLLM server instead, start `vllm serve typhoon-ai/typhoon-ocr2-2b` with
+`--served-model-name typhoon-ocr2` and the other flags in the Docling model catalog.
+Then pass `ApiVlmEngineOptions`:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "typhoon_ocr2_2b",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:8000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+The presets switch off the thinking block of the chat template. They also send
+`chat_template_kwargs={"enable_thinking": False}` to servers. If you set your own
+`params`, Docling sends no preset parameters, so include `model`, `top_p=1.0`, and
+`chat_template_kwargs`. Page headers and footers go to the furniture layer; page
+footnotes stay in the body. Image files render with a 2048-pixel long side, as PDF
+pages do. If the model misreads Thai text that the PDF shows correctly, pass
+`backend=PyPdfiumDocumentBackend` to `PdfFormatOption`: the default docling-parse page
+render drew wrong Thai glyphs for one test PDF. Slim installs need
+`docling-slim[format-markdown]`.
+
 Model presets (`docling.datamodel.vlm_model_specs`):
 
 | Preset | Backend | Device | Notes |

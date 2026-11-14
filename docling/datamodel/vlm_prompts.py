@@ -81,3 +81,19 @@ SURYA_OCR_PROMPT = (
     "OCR this image to HTML. Each block is a div with data-label and data-bbox "
     "(x0 y0 x1 y1, normalized 0-1000)."
 )
+
+# Typhoon OCR V2 by the Typhoon team: https://huggingface.co/typhoon-ai/typhoon-ocr2-2b
+# Keep this full-page prompt verbatim: the models were trained with it. It has 836
+# characters and no leading or trailing line break.
+TYPHOON_OCR2_PARSE_PROMPT = """- Extract layout information from the provided PDF image.
+- For each layout element, output its bbox, category, and the text content within the bbox.
+- Bbox format: [x1, y1, x2, y2].
+- Allowed layout categories: ['header', 'title', 'text', 'figure', 'table', 'formula', 'figure_caption', 'table_caption', 'formula_caption', 'figure_footnote', 'table_footnote', 'page_footnote', 'footer'].
+- Text extraction and formatting:
+  1) For 'figure', the text field must be an empty string.
+  2) For 'formula', format text as LaTeX.
+  3) For 'table', format text as HTML.
+  4) For all other categories (e.g., text, title), format text as Markdown.
+- The output text must be exactly the original text from the image, with no translation or rewriting.
+- Sort all layout elements in human reading order.
+- Final output must be a single JSON object."""

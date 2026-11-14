@@ -286,6 +286,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                     temperature=0.0,
                     max_new_tokens=2048,
                     extra_generation_config=extra_generation_config,
+                    chat_template_kwargs=self.options.model_spec.chat_template_kwargs,
                 )
                 for image, label in zip(images, labels)
             ]

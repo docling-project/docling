@@ -80,6 +80,7 @@ _RAW_HEADING_DEPTH_FORMATS = frozenset(
         ResponseFormat.NEMOTRON_PARSE_V2,
         ResponseFormat.NEMOTRON_PARSE_V3_5,
         ResponseFormat.SURYA_HTML,
+        ResponseFormat.TYPHOON_OCR2_JSON,
         ResponseFormat.UNLIMITED_OCR_MARKDOWN,
         ResponseFormat.UNLIMITED_OCR2,
     }
@@ -648,6 +649,29 @@ class VlmPipeline(PaginatedPipeline):
                         component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
                         error_message=f"Invalid Surya response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
+        elif response_format == ResponseFormat.TYPHOON_OCR2_JSON:
+            from docling.utils.typhoon_ocr2_utils import parse_typhoon_ocr2_json
+
+            try:
+                document = parse_typhoon_ocr2_json(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                    normalize_heading_levels=False,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid Typhoon OCR V2 response: {exc}",
                         category=FailureCategory.INFERENCE_FAILURE,
                         page_no=page.page_no,
                     )
