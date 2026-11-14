@@ -86,6 +86,7 @@ _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.dammit import EncodingDetector
     from bs4.element import PreformattedString
 
     _BS4_AVAILABLE = True
@@ -125,6 +126,30 @@ def _warn_headers_without_origin() -> None:
 # Sentinel character for explicit line breaks from <br> tags
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
+
+
+def _parse_html(markup: bytes) -> BeautifulSoup:
+    """Parse HTML, reading bytes that declare no encoding as UTF-8 when they are UTF-8.
+
+    When the bytes declare no encoding (no ``<meta charset>``), BeautifulSoup asks
+    a statistical detector first and tries UTF-8 last. On short text the detector
+    can pick another encoding, so valid UTF-8 comes out as garbled text. UTF-8 is
+    the likely encoding of such a page. Bytes that are not valid UTF-8 still go to
+    the detector. So do bytes with a NUL byte, such as UTF-16 text, which can be
+    valid UTF-8 only by accident.
+    """
+    encoding: Optional[str] = None
+    if (
+        b"\x00" not in markup
+        and EncodingDetector.find_declared_encoding(markup, is_html=True) is None
+    ):
+        try:
+            markup.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+        else:
+            encoding = "utf-8"
+    return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
 
 
 def _resolve_line_breaks(text: str) -> str:
@@ -633,7 +658,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._mhtml_resources = resources
                 self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
-            self.soup = BeautifulSoup(raw, "html.parser")
+            self.soup = _parse_html(raw)
         except DocumentLoadError:
             raise
         except Exception as e:
