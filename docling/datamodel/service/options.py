@@ -457,9 +457,16 @@ class ConvertDocumentsOptions(BaseModel):
     ] = TableStructureOptions().do_cell_matching
 
     pipeline: Annotated[
-        ProcessingPipeline,
-        Field(description="Choose the pipeline to process PDF or image files."),
-    ] = ProcessingPipeline.STANDARD
+        Optional[ProcessingPipeline],
+        Field(
+            description=(
+                "Choose the pipeline to process PDF or image files. "
+                "If not set, the server uses its default pipeline "
+                "(`standard` unless the administrator configured another one)."
+            ),
+            examples=[ProcessingPipeline.STANDARD, ProcessingPipeline.VLM],
+        ),
+    ] = None
 
     page_range: Annotated[
         PageRange,
