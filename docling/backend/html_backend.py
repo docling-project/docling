@@ -259,6 +259,8 @@ _FORM_VALUE_ID_RE: Final = re.compile(
 _LIST_STYLE_STRING_RE: Final = re.compile(
     r"list-style-type\s*:\s*(?P<quote>['\"])(?P<marker>.*?)(?P=quote)", re.IGNORECASE
 )
+# `list-style-type: none` hides the marker of a list item.
+_LIST_STYLE_NONE_RE: Final = re.compile(r"list-style-type\s*:\s*none\b", re.IGNORECASE)
 # The `start` attribute of an `<ol>`, by the HTML rules for parsing integers:
 # leading ASCII whitespace, an optional plus sign, and ASCII digits.
 _OL_START_RE: Final = re.compile(r"[ \t\n\f\r]*\+?(?P<digits>[0-9]+)")
@@ -3374,11 +3376,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         enumerated=is_ordered,
                         marker=marker,
                     )
+                    # A <li> without a marker in a <ul> only indents its nested list
+                    indent_only = not is_ordered and bool(
+                        _LIST_STYLE_NONE_RE.search(str(li.get("style", "")))
+                    )
+                    holders = ["table", "img"]
+                    if not indent_only:
+                        holders += ["ul", "ol", "dl"]
                     if list_item is None and any(
                         not self._has_list_ancestor(elem, li)
-                        for elem in li.find_all(["table", "img"])
+                        for elem in li.find_all(holders)
                     ):
-                        # An item without text still holds its table or image
+                        # An item without text still holds its table, image or list
                         list_item = doc.add_list_item(
                             text="",
                             enumerated=is_ordered,
