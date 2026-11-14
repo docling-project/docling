@@ -385,7 +385,8 @@ docling recording.wav --asr-model parakeet_ctc_1_1b --to md
 The backend changes the output:
 
 - Granite gives one segment for each window on both backends. See [Long recordings](#long-recordings).
-- Parakeet and Nemotron give one segment for each sentence on `mlx-audio`, and one segment for the full audio on Transformers.
+- Parakeet on Transformers groups word times. Words less than 0.8 seconds apart stay in one segment. A pause of 0.8 seconds, or sentence punctuation, starts a new segment. On `mlx-audio`, Parakeet gives one segment for each sentence.
+- Nemotron gives one segment for each sentence on `mlx-audio`, and one segment for the full audio on Transformers.
 - The backends can also give slightly different text for the same model.
 
 More notes:
