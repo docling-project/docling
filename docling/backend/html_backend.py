@@ -2841,16 +2841,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 If None, the context manager does nothing.
 
         While the context manager is active, the hierarchy level is increased
-        and the parent is set. When exiting, the level and parent are restored.
+        and the parent is set. When exiting, the level and parents are restored.
         """
         if parent_item:
+            # Restore rather than step down: a heading in the nested content, such
+            # as an <h1> between the items of a nested list, resets the hierarchy,
+            # and stepping down from there leaves the level below 0.
+            original_level = self.level
+            original_parents = self.parents.copy()
             self.parents[self.level + 1] = parent_item
             self.level += 1
             try:
                 yield
             finally:
-                self.parents[self.level + 1] = None
-                self.level -= 1
+                self.level = original_level
+                self.parents = original_parents
         else:
             yield
 

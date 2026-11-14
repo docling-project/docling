@@ -1120,6 +1120,28 @@ def test_list_non_li_children_stay_in_table_cell():
     assert texts["After."].parent.resolve(doc) == doc.body
 
 
+def test_heading_between_items_of_nested_list():
+    """A heading between the items of a nested list resets the hierarchy.
+
+    Leaving the list item stepped the level down from there, so the content after
+    the outer list raised `KeyError: -1` (<h1>) or moved up a section (<h3>).
+    """
+    doc = _convert_html(
+        b"<html><body><ol><li>First.<ul><li>Nested.</li><h1>Title.</h1></ul></li>"
+        b"<li>Second.</li></ol><p>After.</p></body></html>"
+    )
+    texts = {item.text: item for item in doc.texts}
+    assert texts["Second."].parent.cref == texts["First."].parent.cref
+    assert texts["After."].parent.resolve(doc) == doc.body
+
+    doc = _convert_html(
+        b"<html><body><h2>Section.</h2><ul><li>First.<ul><li>Nested.</li>"
+        b"<h3>Sub.</h3></ul></li></ul><p>After.</p></body></html>"
+    )
+    texts = {item.text: item for item in doc.texts}
+    assert texts["After."].parent.cref == texts["Section."].self_ref
+
+
 def test_list_item_without_text():
     """Regression for #4462: a <li> without text keeps its table or image.
 
