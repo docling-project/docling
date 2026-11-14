@@ -6,7 +6,7 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import ListGroup, SectionHeaderItem
+from docling_core.types.doc import DocItemLabel, ListGroup, SectionHeaderItem
 from docx import Document
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
@@ -104,3 +104,42 @@ def test_numbered_heading_keeps_section_content(
         assert group.parent == scope.get_ref()
     elif following_block == "table":
         assert doc.tables[0].parent == scope.get_ref()
+
+
+@pytest.mark.parametrize("numbering_source", ["style", "paragraph"])
+@pytest.mark.parametrize("following_block", ["paragraph", "table"])
+def test_numbered_title_keeps_following_content(
+    tmp_path: Path, numbering_source: str, following_block: str
+) -> None:
+    """A numbered Title must not close its own section on the next block."""
+    source = Document()
+    numbering = source.part.numbering_part.element
+    for child in list(numbering):
+        numbering.remove(child)
+    numbering.extend(
+        parse_xml(
+            f"<w:numbering {nsdecls('w')}>"
+            '<w:abstractNum w:abstractNumId="10">'
+            '<w:lvl w:ilvl="0"><w:start w:val="1"/>'
+            '<w:numFmt w:val="decimal"/><w:pStyle w:val="Title"/>'
+            '<w:lvlText w:val="%1."/></w:lvl></w:abstractNum>'
+            '<w:num w:numId="1"><w:abstractNumId w:val="10"/></w:num>'
+            "</w:numbering>"
+        )
+    )
+    if numbering_source == "style":
+        _set_numbering(source.styles["Title"].element.get_or_add_pPr(), 1, 0)
+
+    title = source.add_paragraph("Annual report", style="Title")
+    if numbering_source == "paragraph":
+        _set_numbering(title._p.get_or_add_pPr(), 1, 0)
+    if following_block == "table":
+        source.add_table(rows=1, cols=1).cell(0, 0).text = "Revenue"
+    source.add_paragraph("Report body.")
+
+    doc = _convert_docx(source, tmp_path)
+    title_item = next(item for item in doc.texts if item.label == DocItemLabel.TITLE)
+    body_item = next(item for item in doc.texts if item.text == "Report body.")
+    assert body_item.parent == title_item.get_ref()
+    if following_block == "table":
+        assert doc.tables[0].parent == title_item.get_ref()

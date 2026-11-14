@@ -3382,6 +3382,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             self.parents[0] = te
             elem_ref.append(te.get_ref())
+            # A numbered title is a document section, not an open list.
+            # Do not let its numId close this section on the next block.
+            numid, ilevel = None, None
         elif "Heading" in p_style_id:
             # _add_heading clears the parents tail; reset list context so the
             # next list item opens fresh under this heading.
