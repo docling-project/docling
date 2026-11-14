@@ -683,6 +683,38 @@ Relative image paths are resolved against the current working directory. The
 in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
 through the CLI again with its images.
 
+### OXR JSON input
+
+A saved [SoMark OXR](https://github.com/SoMarkAI/OXR) parse result can be
+converted directly. Name the file `*.oxr.json`. A plain `.json` file is also
+detected when its content carries the OXR response markers; a Docling JSON
+document stays the default for the shared `application/json` MIME type.
+
+Docling keeps the OXR page canvas in pixels with a top-left origin and does not
+rescale coordinates to PDF points. OXR reports no heading depth, so section
+header levels are normalized per document. Pictures name a file on the OXR
+host; those files are ignored unless local fetching is enabled:
+
+```python
+from docling.datamodel.backend_options import DeclarativeBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, OxrFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.OXR: OxrFormatOption(
+            backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+        )
+    }
+)
+doc = converter.convert("result.oxr.json")
+```
+
+To parse a document with a running OXR service first, use
+`docling.utils.oxr_utils.run_oxr_parse` and pass its result to
+`parse_oxr_result`. See
+[oxr_result_to_docling.py](../examples/oxr_result_to_docling.py).
+
 ### Load local JATS figure images
 
 JATS figure images require both `fetch_images=True` and
