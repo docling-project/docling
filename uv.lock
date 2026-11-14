@@ -1975,6 +1975,9 @@ easyocr = [
 htmlrender = [
     { name = "docling-slim", extra = ["format-html-render"] },
 ]
+layout-mlx = [
+    { name = "docling-slim", extra = ["models-layout-mlx"] },
+]
 ocrmac = [
     { name = "docling-slim", extra = ["feat-ocr-mac"] },
 ]
@@ -2007,12 +2010,13 @@ requires-dist = [
     { name = "docling-slim", extras = ["format-html-render"], marker = "extra == 'htmlrender'", editable = "." },
     { name = "docling-slim", extras = ["format-xml-xbrl"], marker = "extra == 'xbrl'", editable = "." },
     { name = "docling-slim", extras = ["models-asr-inline"], marker = "extra == 'asr'", editable = "." },
+    { name = "docling-slim", extras = ["models-layout-mlx"], marker = "extra == 'layout-mlx'", editable = "." },
     { name = "docling-slim", extras = ["models-onnxruntime"], marker = "extra == 'onnxruntime'", editable = "." },
     { name = "docling-slim", extras = ["models-remote"], marker = "extra == 'remote-serving'", editable = "." },
     { name = "docling-slim", extras = ["models-vlm-inline"], marker = "extra == 'vlm'", editable = "." },
     { name = "docling-slim", extras = ["standard"], editable = "." },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "audio", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
+provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "layout-mlx", "rapidocr", "audio", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
 
 [[package]]
 name = "docling-client"
@@ -2383,6 +2387,11 @@ models-asr-inline = [
     { name = "transformers", version = "5.20.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or python_full_version >= '3.14' or sys_platform != 'darwin'" },
     { name = "whisper-s2t-reborn", marker = "platform_machine != 'arm64' or sys_platform != 'darwin'" },
 ]
+models-layout-mlx = [
+    { name = "mlx-vlm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "transformers", version = "5.16.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'darwin'" },
+    { name = "transformers", version = "5.20.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or python_full_version >= '3.14' or sys_platform != 'darwin'" },
+]
 models-local = [
     { name = "accelerate" },
     { name = "defusedxml" },
@@ -2587,6 +2596,7 @@ requires-dist = [
     { name = "mail-parser", marker = "extra == 'format-email'", specifier = ">=4.1.4,<5.0.0" },
     { name = "marko", marker = "extra == 'format-markdown'", specifier = ">=2.1.2,<3.0.0" },
     { name = "mlx-audio", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'feat-asr-mlx-audio'", specifier = ">=0.6.4,<0.7.0" },
+    { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'models-layout-mlx'", specifier = ">=0.7.0,<1.0.0" },
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'models-vlm-inline'", specifier = ">=0.7.0,<1.0.0" },
     { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'format-audio'", specifier = ">=0.4.3" },
     { name = "nemotron-ocr", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'feat-ocr-nemotron'", specifier = ">=2.0.0" },
@@ -2641,7 +2651,9 @@ requires-dist = [
     { name = "torchvision", marker = "extra == 'models-local'", specifier = ">=0,<1" },
     { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
     { name = "transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'feat-asr-mlx-audio'", specifier = ">=5.16.0,<6.0.0" },
+    { name = "transformers", marker = "sys_platform == 'darwin' and extra == 'models-layout-mlx'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.9.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.*,<6.0.0" },
     { name = "transformers", marker = "sys_platform == 'darwin' and extra == 'models-vlm-inline'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.9.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.*,<6.0.0" },
+    { name = "transformers", marker = "sys_platform != 'darwin' and extra == 'models-layout-mlx'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.13.0,<6.0.0" },
     { name = "transformers", marker = "sys_platform != 'darwin' and extra == 'models-vlm-inline'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.13.0,<6.0.0" },
     { name = "transformers", marker = "extra == 'feat-asr-transformers'", specifier = ">=5.16.0,<6.0.0" },
     { name = "tritonclient", extras = ["grpc"], marker = "extra == 'models-remote'", specifier = ">=2.65.0,<3.0.0" },
@@ -2650,7 +2662,7 @@ requires-dist = [
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<18.0" },
     { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.8.0,<2.0.0" },
 ]
-provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-iwork", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "feat-asr-transformers", "feat-asr-mlx-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "models-asr-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-iwork", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "feat-asr-transformers", "feat-asr-mlx-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "models-asr-inline", "models-layout-mlx", "feat-chunking", "service-client", "cli", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [

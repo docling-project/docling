@@ -173,7 +173,7 @@ OCR engines are optional dependencies — see
 ```bash
 docling report.pdf --no-tables --output /tmp/            # skip table structure (faster)
 docling report.pdf --table-mode accurate --output /tmp/  # vs. fast
-docling report.pdf --layout-engine docling_layout_default --output /tmp/  # choose layout engine
+docling report.pdf --layout-engine docling_layout_default --output /tmp/  # layout stage implementation (not the model)
 docling report.pdf --table-structure-engine docling_tableformer_v2 --output /tmp/  # choose table engine
 docling form.pdf --extract-form-fields --output /tmp/    # AcroForm widgets as fields with keys from printed text (not with --to doctags)
 docling report.pdf --enrich-code --output /tmp/          # code understanding
@@ -181,6 +181,44 @@ docling report.pdf --enrich-formula --output /tmp/       # formula understanding
 docling report.pdf --enrich-picture-classes --output /tmp/
 docling report.pdf --enrich-picture-description --output /tmp/
 ```
+
+### Layout model selection
+
+`--layout-preset` picks the layout detection model. It applies only to the
+standard (and legacy) PDF pipeline. The CLI warns and ignores it for
+`--pipeline native`, `--pipeline vlm`, and `--pipeline asr`.
+
+```bash
+docling report.pdf --layout-preset layout_egret_large --output /tmp/
+docling report.pdf --layout-preset layout_heron_mlx --output /tmp/   # Apple Silicon
+```
+
+| Preset | Model | Engine |
+|---|---|---|
+| `layout_heron_default` | RT-DETR Heron (ResNet50) | Transformers (default) |
+| `layout_heron_101` | RT-DETR Heron (ResNet101) | Transformers |
+| `layout_egret_medium` | D-FINE Egret medium | Transformers |
+| `layout_egret_large` | D-FINE Egret large | Transformers |
+| `layout_egret_xlarge` | D-FINE Egret xlarge | Transformers |
+| `layout_heron_mlx` | RT-DETR Heron 101, bf16 | MLX, Apple Silicon only |
+
+- The default is `layout_heron_default`. For higher accuracy, try
+  `layout_egret_large` or `layout_egret_xlarge`.
+- `layout_heron_mlx` loads
+  `mlx-community/docling-layout-heron-101-mlx-bf16@main`. It needs Apple
+  Silicon and `mlx-vlm`, installed by `docling[layout-mlx]` or
+  `docling-slim[models-layout-mlx]`. `docling[vlm]` and `docling-slim[all]`
+  also install `mlx-vlm` on Apple Silicon.
+- There is no auto-detection and no fallback. A host without `mlx-vlm` or
+  Apple Silicon fails when the engine initializes.
+- `--device`, `--num-threads`, and `accelerator_options` do not affect the MLX
+  engine. Metal is used automatically.
+- `--layout-engine` chooses the layout *stage* implementation, not the model.
+  Use `--layout-preset` to choose the model. A preset replaces the layout
+  options, so the preset wins when both are given.
+- Offline: prefetch with `docling-tools models download layout_mlx`, or place
+  the repository under `--artifacts-path` as
+  `mlx-community--docling-layout-heron-101-mlx-bf16`.
 
 ## Common situations
 
@@ -199,6 +237,9 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | Choose GPU/CPU explicitly | `--device cuda` / `--device cpu` / `--device mps` |
 | HTML images on remote hosts | `--html-image-fetch remote`; add auth with `--html-image-headers '{"Authorization": "Bearer T"}'` (sent only to the source page's origin, or to each `--html-image-headers-origin https://cdn.example.com`) |
 | Script or CI must detect failed documents | Exit code 1 when a document fails; partially converted documents are still written and exit 0. `--fail-on partial` also exits 1 for them, `--fail-on never` always exits 0 (same flag on `convert-remote`). `--abort-on-error` stops at the first failure instead |
+
+> `--device` and `--num-threads` configure the torch- and ONNX-based stages.
+> The MLX layout engine ignores them and always uses Metal.
 
 ## Remote VLM services from the CLI
 

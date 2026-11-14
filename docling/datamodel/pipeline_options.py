@@ -1791,6 +1791,9 @@ LayoutObjectDetectionOptions.register_preset(
 LayoutObjectDetectionOptions.register_preset(
     stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_XLARGE
 )
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON_MLX
+)
 
 
 class BaseLayoutPostprocessorOptions(BaseOptions):

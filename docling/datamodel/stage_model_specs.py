@@ -796,6 +796,12 @@ class ObjectDetectionStagePresetMixin:
                 engine_options = OnnxRuntimeObjectDetectionEngineOptions()
             elif preset.default_engine_type == ObjectDetectionEngineType.TRANSFORMERS:
                 engine_options = TransformersObjectDetectionEngineOptions()
+            elif preset.default_engine_type == ObjectDetectionEngineType.MLX:
+                from docling.datamodel.object_detection_engine_options import (
+                    MlxObjectDetectionEngineOptions,
+                )
+
+                engine_options = MlxObjectDetectionEngineOptions()
             elif preset.default_engine_type == ObjectDetectionEngineType.API_KSERVE_V2:
                 raise ValueError(
                     f"Preset '{preset_id}' uses API_KSERVE_V2 engine which requires explicit "
@@ -1075,6 +1081,18 @@ OBJECT_DETECTION_LAYOUT_EGRET_XLARGE = ObjectDetectionStagePreset(
         revision="main",
     ),
     default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_HERON_MLX = ObjectDetectionStagePreset(
+    preset_id="layout_heron_mlx",
+    name="Layout Heron MLX",
+    description="RT-DETR layout-heron-101 model (MLX, Apple Silicon only)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_heron_mlx",
+        repo_id="mlx-community/docling-layout-heron-101-mlx-bf16",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.MLX,
 )
 
 

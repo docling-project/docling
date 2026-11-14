@@ -110,5 +110,25 @@ def create_object_detection_engine(
             artifacts_path=artifacts_path,
         )
 
+    elif options.engine_type == ObjectDetectionEngineType.MLX:
+        from docling.datamodel.object_detection_engine_options import (
+            MlxObjectDetectionEngineOptions,
+        )
+        from docling.models.inference_engines.object_detection.mlx_engine import (
+            MlxObjectDetectionEngine,
+        )
+
+        if not isinstance(options, MlxObjectDetectionEngineOptions):
+            raise ValueError(
+                f"Expected MlxObjectDetectionEngineOptions, got {type(options)}"
+            )
+
+        return MlxObjectDetectionEngine(
+            options=options,
+            model_config=model_config,
+            accelerator_options=accelerator_options,
+            artifacts_path=artifacts_path,
+        )
+
     else:
         raise ValueError(f"Unknown engine type: {options.engine_type}")

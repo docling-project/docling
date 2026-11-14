@@ -406,6 +406,9 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
 chart_extraction_preset_ids = ChartExtractionVlmEngineOptions.list_preset_ids()
 
+# Get available layout presets from the registry
+layout_preset_ids = LayoutObjectDetectionOptions.list_preset_ids()
+
 DOCLING_ASCII_ART = r"""
                              ████ ██████
                            ███░░██░░░░░██████
@@ -1103,6 +1106,18 @@ def convert(  # noqa: C901
             ),
         ),
     ] = False,
+    layout_preset: Annotated[
+        str | None,
+        typer.Option(
+            ...,
+            help=(
+                "Choose the layout detection preset for PDF processing. "
+                "Applies only to --pipeline standard or legacy. A preset "
+                "replaces the layout options chosen by --layout-engine. "
+                f"Available presets: {', '.join(layout_preset_ids)}"
+            ),
+        ),
+    ] = None,
     asr_model: Annotated[
         AsrModelType | None,
         typer.Option(
@@ -1691,6 +1706,16 @@ def convert(  # noqa: C901
 
     pipeline = _resolve_pipeline(pipeline, vlm_model)
 
+    if layout_preset is not None and pipeline not in {
+        ProcessingPipeline.STANDARD,
+        ProcessingPipeline.LEGACY,
+    }:
+        _log.warning(
+            "--layout-preset is only supported with --pipeline standard or "
+            "legacy; ignoring preset %r.",
+            layout_preset,
+        )
+
     if pipeline == ProcessingPipeline.ASR:
         # Only audio and video have a transcription route. Other formats would
         # otherwise fall through to their default pipelines without notice.
@@ -1979,6 +2004,19 @@ def convert(  # noqa: C901
                 chart_extraction_options=chart_extraction_options,
                 document_timeout=document_timeout,
             )
+            if layout_preset is not None:
+                try:
+                    pipeline_options.layout_options = (
+                        LayoutObjectDetectionOptions.from_preset(layout_preset)
+                    )
+                except KeyError:
+                    err_console.print(
+                        f"[red]Error: Layout preset '{layout_preset}' not found.[/red]"
+                    )
+                    err_console.print(
+                        f"[yellow]Available presets: {', '.join(layout_preset_ids)}[/yellow]"
+                    )
+                    raise typer.Abort()
             if picture_description_max_new_tokens is not None:
                 pipeline_options.picture_description_options.generation_config[
                     "max_new_tokens"

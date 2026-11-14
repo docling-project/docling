@@ -76,3 +76,9 @@ class ApiKserveV2ObjectDetectionEngineOptions(
     engine_type: Literal[ObjectDetectionEngineType.API_KSERVE_V2] = (
         ObjectDetectionEngineType.API_KSERVE_V2
     )
+
+
+class MlxObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
+    """Runtime configuration for MLX-based object-detection (Apple Silicon only)."""
+
+    engine_type: Literal[ObjectDetectionEngineType.MLX] = ObjectDetectionEngineType.MLX
