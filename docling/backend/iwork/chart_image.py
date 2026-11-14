@@ -28,6 +28,7 @@ import logging
 import shutil
 import zipfile
 from collections.abc import Callable, Sequence
+from contextlib import closing
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -37,6 +38,7 @@ from PIL import Image
 
 from docling.backend.docx.drawingml.utils import crop_whitespace
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries, Geometry
+from docling.utils.locks import pypdfium2_lock
 
 _log = logging.getLogger(__name__)
 
@@ -221,11 +223,13 @@ def render_chart(
         if not output_path.exists():
             _log.debug("LibreOffice produced no PDF output for an iWork chart")
             return None
-        pdf = pypdfium2.PdfDocument(str(output_path))
-        page = pdf[0]
-        image = crop_whitespace(page.render(scale=RENDER_SCALE).to_pil())
-        page.close()
-        pdf.close()
+        with (
+            pypdfium2_lock,
+            closing(pypdfium2.PdfDocument(str(output_path))) as pdf,
+            closing(pdf[0]) as page,
+            closing(page.render(scale=RENDER_SCALE)) as bitmap,
+        ):
+            image = crop_whitespace(bitmap.to_pil().copy())
         return image
     except Exception as exc:
         _log.debug("iWork chart rendering via LibreOffice failed: %s", exc)
