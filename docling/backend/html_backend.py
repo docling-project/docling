@@ -2867,6 +2867,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             annotated_text_list.normalize_whitespace().to_single_text_element()
         )
         text_clean = HTMLDocumentBackend._clean_unicode(annotated_text.text)
+        if not text_clean.strip():
+            # A heading without text (`<h2></h2>`, `<h2><a name="x"></a></h2>`)
+            # has no title to show: add no item and leave the section structure
+            # unchanged. Images in the heading stay.
+            return [
+                im_ref
+                for img_tag in tag("img")
+                if isinstance(img_tag, Tag)
+                and (im_ref := self._emit_image(img_tag, doc))
+            ]
         prov = self._make_text_prov(
             text=text_clean,
             tag=tag,
