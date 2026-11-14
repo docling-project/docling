@@ -495,6 +495,22 @@ kept apart, unless the caption says it is continued. In the merged table:
 
 The DocLang export writes the merged table as one threaded `<table>` fragment per page.
 
+The step works only from layout and is deliberately conservative. A pair that fails any check
+stays as two tables, exactly as without the option. It does not merge:
+
+- fragments with body content between them in reading order, such as a paragraph or a picture
+  (page headers and footers do not count);
+- fragments on pages that are not consecutive;
+- fragments whose column count differs, for example when table structure merged or split a
+  column on one page, or whose columns are shifted (a different page layout or a rotated table);
+- a continuation with a caption of its own that does not say it is continued;
+- a continuation with rich cells or other nested content.
+
+To see why a pair was or was not merged, enable debug logging for
+`docling.models.stages.table_continuation`: each candidate pair is logged with its reason.
+`TableContinuationModel(options).merge_continued_tables(document)` also returns these decisions,
+and works on an already converted `DoclingDocument`.
+
 ### PowerPoint and Excel charts
 
 A chart on a PowerPoint slide or an Excel sheet becomes a picture classified by
