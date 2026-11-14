@@ -588,10 +588,14 @@ Notes:
 - `enable_remote_services=True` is required, as for remote picture description: without it the pipeline raises
   `OperationNotAllowed` and nothing is sent.
 - FFmpeg is not needed for audio files, the server decodes them. (The video pipeline still uses it to extract the
-  audio track.)
+  audio track.) Splitting with `max_chunk_seconds` needs it.
 - The server must return timed segments (`verbose_json`). An answer without them fails the conversion with a message
   saying so. Speaker labels are not part of the OpenAI transcription API, so the items have no speaker.
 - The request waits up to `timeout` seconds (600 by default), which long recordings may need to exceed.
+- Servers limit the upload size, and the video pipeline sends a 16 kHz mono WAV of about 115 MB per hour (OpenAI
+  accepts 25 MB, about 13 minutes). Set `max_chunk_seconds` to send long recordings in pieces of at most that length:
+  each piece is transcribed in its own request and its times are shifted by its start. `600` fits the OpenAI limit.
+  A word spoken across a cut can be split between two items.
 
 ### From the command line
 
