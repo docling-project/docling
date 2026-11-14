@@ -65,6 +65,12 @@ _UNSUPPORTED_CONTENT = {
     b"\xd3\xee\x92": "object-container data",
 }
 
+# This backend reads no page geometry, so every page keeps the unit size used
+# elsewhere for an unknown one. A zero size cannot stand in for it: serializers
+# normalize a bounding box against the page dimensions, and dividing by a zero
+# width raises instead of writing a document.
+_UNKNOWN_PAGE_SIZE = Size(width=1, height=1)
+
 _TRN_TYPES = {0xDA, 0xDB}
 _BEGIN_LINE_TYPES = {0xD8, 0xD9}
 # Absolute Move Baseline. Producers such as Apache FOP place every line with
@@ -358,7 +364,7 @@ class AfpDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
             page for page in self._pages if start_page <= page.number <= end_page
         )
         for page in selected_pages:
-            doc.add_page(page_no=page.number, size=Size(width=0, height=0))
+            doc.add_page(page_no=page.number, size=_UNKNOWN_PAGE_SIZE)
             parent = doc.add_group(name=f"page-{page.number}", label=GroupLabel.CHAPTER)
             for text_block in page.text_blocks:
                 for paragraph in filter(
