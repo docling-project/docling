@@ -4,7 +4,7 @@
 """Helpers shared by the backends that rebuild the data table of a chart.
 
 The PowerPoint and Excel backends read the categories and series of a native
-chart in their own way, and then lay them out as a table with the same helper.
+chart in their own way, and then lay them out as a table with the same helpers.
 """
 
 import logging
@@ -63,13 +63,6 @@ def build_chart_table(
         | cat_0    | val_0,0         | val_1,0         | ...
         | cat_1    | val_0,1         | val_1,1         | ...
 
-    The declared category range can far exceed the plotted data (e.g. a chart
-    referencing whole Excel columns declares ~1M categories for a handful of
-    points), so trailing rows whose category label and every series value are
-    empty are trimmed and the table is sized by populated data instead. As a
-    backstop for genuinely huge charts, the emitted table is additionally capped
-    at ``MAX_CHART_TABLE_CELLS`` cells.
-
     Args:
         categories: Category labels, one per data row.
         columns: ``(series name, values)`` pairs, one per chart series.
@@ -79,16 +72,51 @@ def build_chart_table(
     Returns:
         A TableData, or None when no data row is populated.
     """
-    num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
+    return build_chart_grid([(corner, categories)], columns)
+
+
+def build_chart_grid(
+    category_columns: list[tuple[str, list[str]]],
+    value_columns: list[tuple[str, list[str]]],
+) -> TableData | None:
+    """Build the data table of a chart whose categories can have several levels.
+
+    Layout produced (one column per category level, outer level first, then one
+    column per series):
+
+        | <level 0 header> | <level 1 header> | <series 0 name> | ...
+        | outer_0          | inner_0          | val_0,0         | ...
+        | outer_0          | inner_1          | val_0,1         | ...
+
+    A chart can have no categories, such as a histogram drawn from a list of
+    values. Its table then has only the series columns.
+
+    The declared category range can far exceed the plotted data (e.g. a chart
+    referencing whole Excel columns declares ~1M categories for a handful of
+    points), so trailing rows whose category labels and every series value are
+    empty are trimmed and the table is sized by populated data instead. As a
+    backstop for genuinely huge charts, the emitted table is additionally capped
+    at ``MAX_CHART_TABLE_CELLS`` cells.
+
+    Args:
+        category_columns: ``(header, labels)`` pairs, one per category level,
+            outer level first. The labels have one entry per data row.
+        value_columns: ``(series name, values)`` pairs, one per chart series.
+
+    Returns:
+        A TableData, or None when no data row is populated.
+    """
+    columns = category_columns + value_columns
+    num_data_rows = max((len(values) for _, values in columns), default=0)
     if num_data_rows == 0:
         return None
 
     # Trim trailing rows that carry no data at all; interior gaps are kept.
-    num_data_rows = _last_populated_row(categories, columns, num_data_rows) + 1
+    num_data_rows = _last_populated_row([], columns, num_data_rows) + 1
     if num_data_rows == 0:
         return None
 
-    num_cols = 1 + len(columns)
+    num_cols = len(columns)
     if (num_data_rows + 1) * num_cols > MAX_CHART_TABLE_CELLS:
         capped_rows = max(1, MAX_CHART_TABLE_CELLS // num_cols - 1)
         _log.warning(
@@ -104,8 +132,7 @@ def build_chart_table(
     num_rows = num_data_rows + 1
     cells: list[TableCell] = []
 
-    header_labels = [corner] + [name for name, _ in columns]
-    for col_idx, label in enumerate(header_labels):
+    for col_idx, (label, _) in enumerate(columns):
         cells.append(
             TableCell(
                 text=label,
@@ -121,8 +148,7 @@ def build_chart_table(
         )
     for data_row in range(num_data_rows):
         row_idx = data_row + 1
-        category = categories[data_row] if data_row < len(categories) else ""
-        row_texts = [category] + [
+        row_texts = [
             (values[data_row] if data_row < len(values) else "")
             for _, values in columns
         ]
@@ -137,7 +163,7 @@ def build_chart_table(
                     start_col_offset_idx=col_idx,
                     end_col_offset_idx=col_idx + 1,
                     column_header=False,
-                    row_header=(col_idx == 0),
+                    row_header=(col_idx < len(category_columns)),
                 )
             )
 
