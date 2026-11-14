@@ -2072,6 +2072,65 @@ def test_ods_sheet_names_filter(tmp_path: Path):
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
 
 
+def _add_table_style(doc: OdfDocument, name: str, display: str) -> None:
+    """Add a sheet's table style with *display* as table:display, as Calc saves it."""
+    style = Style("table", name=name)
+    properties = Element.from_tag("style:table-properties")
+    properties.set_attribute("table:display", display)
+    style.append(properties)
+    doc.insert_style(style, automatic=True)
+
+
+@pytest.mark.parametrize(
+    ("style_name", "display"),
+    [
+        ("sheet_style", "false"),
+        ("sheet_style", "true"),
+        ("sheet_style", None),
+        (None, None),
+    ],
+    ids=["hidden", "shown", "missing-style", "no-style"],
+)
+def test_ods_sheet_content_layer_follows_table_style(
+    tmp_path: Path, style_name: str | None, display: str | None
+):
+    """Only a sheet whose own table style has table:display="false" is invisible."""
+    doc = OdfDocument("spreadsheet")
+    doc.body.clear()
+    # None means that no style definition is added.
+    if style_name is not None and display is not None:
+        _add_table_style(doc, style_name, display)
+    for name, text, table_style in [
+        ("Sheet", "Sheet text", style_name),
+        ("Shown", "Visible text", None),
+    ]:
+        sheet = Table(name, style=table_style)
+        sheet.set_value("A1", text)
+        doc.body.append(sheet)
+    path = tmp_path / "sheets.ods"
+    doc.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path).document
+    )
+
+    layer = ContentLayer.INVISIBLE if display == "false" else ContentLayer.BODY
+    assert [(group.name, group.content_layer) for group in document.groups] == [
+        ("sheet: Sheet", layer),
+        ("sheet: Shown", ContentLayer.BODY),
+    ]
+    assert [
+        (table.content_layer, table.data.table_cells[0].text)
+        for table in document.tables
+    ] == [
+        (layer, "Sheet text"),
+        (ContentLayer.BODY, "Visible text"),
+    ]
+    markdown = document.export_to_markdown()
+    assert "Visible text" in markdown
+    assert ("Sheet text" in markdown) == (layer == ContentLayer.BODY)
+
+
 def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
     """Test a sheet that LibreOffice padded towards its full grid.
 
@@ -2116,9 +2175,9 @@ def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
     ods = OdfDocument("spreadsheet")
     ods.body.clear()
 
-    sheet = Table("Sheet")
     if hidden:
-        sheet.set_attribute("table:display", "false")
+        _add_table_style(ods, "sheet_style", "false")
+    sheet = Table("Sheet", style="sheet_style" if hidden else None)
     sheet.set_value("B2", "a")
     sheet.set_value("C2", "b")
     sheet.set_value("B3", "1")
@@ -2142,6 +2201,9 @@ def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
         if isinstance(item, TableItem)
     ]
     assert len(tables) == 1
+    assert tables[0].content_layer == (
+        ContentLayer.INVISIBLE if hidden else ContentLayer.BODY
+    )
     bbox = tables[0].prov[0].bbox
     assert (bbox.l, bbox.t, bbox.r, bbox.b) == (1.0, 1.0, 3.0, 3.0)
 
