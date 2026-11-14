@@ -60,6 +60,12 @@ class FakeOpenAiApi:
     #: Go silent for ``delay_seconds`` after this many stream chunks, to drive a
     #: client read timeout in the middle of a stream.
     stream_stall_after: int | None = None
+    #: Sent verbatim as the stream's Content-Type. Ollama and llama.cpp send a
+    #: bare ``text/event-stream``; by default Starlette appends a charset.
+    stream_content_type: str | None = None
+    #: Escape non-ASCII in stream chunks as ``\uXXXX``. Go's ``json.Marshal``
+    #: (Ollama) and llama.cpp write raw UTF-8 instead.
+    stream_ascii_json: bool = True
     router: APIRouter = field(init=False)
     #: Set by the fixture once the server is bound, so tests can reach it.
     service: Any = field(init=False, default=None)
@@ -124,7 +130,8 @@ class FakeOpenAiApi:
                 "created": 1_700_000_000,
                 "choices": [choice],
             }
-            yield f"data: {json.dumps(event)}\n\n".encode()
+            data = json.dumps(event, ensure_ascii=self.stream_ascii_json)
+            yield f"data: {data}\n\n".encode()
         usage = self._usage()
         if usage is not None:
             final = {
@@ -156,6 +163,11 @@ class FakeOpenAiApi:
                     status_code=self.fail_status,
                 )
             if payload.get("stream"):
+                if self.stream_content_type is not None:
+                    return StreamingResponse(
+                        self._sse(model),
+                        headers={"content-type": self.stream_content_type},
+                    )
                 return StreamingResponse(
                     self._sse(model), media_type="text/event-stream"
                 )

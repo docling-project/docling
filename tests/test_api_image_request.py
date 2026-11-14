@@ -454,16 +454,16 @@ class TestApiImageRequest:
             def raise_for_status(self):
                 return None
 
-            def iter_lines(self, decode_unicode=True):
-                yield ""
-                yield "event: keepalive"
-                yield "data: not-json"
-                yield 'data: {"choices": [{"delta": {"content": "hel"}}]}'
+            def iter_lines(self, decode_unicode=False):
+                yield b""
+                yield b"event: keepalive"
+                yield b"data: not-json"
+                yield b'data: {"choices": [{"delta": {"content": "hel"}}]}'
                 yield (
-                    'data: {"choices": [{"delta": {"content": "lo"}}], '
-                    '"usage": {"total_tokens": 8}}'
+                    b'data: {"choices": [{"delta": {"content": "lo"}}], '
+                    b'"usage": {"total_tokens": 8}}'
                 )
-                yield "data: [DONE]"
+                yield b"data: [DONE]"
 
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             _StreamingResponse()
@@ -505,12 +505,12 @@ class TestApiImageRequest:
             def raise_for_status(self):
                 return None
 
-            def iter_lines(self, decode_unicode=True):
+            def iter_lines(self, decode_unicode=False):
                 yield (
-                    'data: {"choices": [{"delta": {"content": "done"}}], '
-                    '"meta": {"usage": {"total_tokens": 3}}}'
+                    b'data: {"choices": [{"delta": {"content": "done"}}], '
+                    b'"meta": {"usage": {"total_tokens": 3}}}'
                 )
-                yield 'data: {"choices": [{"delta": {"content": " ignored"}}]}'
+                yield b'data: {"choices": [{"delta": {"content": " ignored"}}]}'
 
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             _StreamingResponse()
