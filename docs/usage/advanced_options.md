@@ -701,6 +701,14 @@ location such as `file:///path/to/article.nxml` instead.
 Missing or damaged images produce a warning. The figure, its caption, and the
 rest of the article remain in the converted document. SVG figures are skipped.
 
+### Fetch HTML images from local files
+
+Set `fetch_images=True` and `enable_local_fetch=True` on `HTMLBackendOptions`.
+For stream inputs, set `source_uri` to the HTML file path or its `file://` URI.
+Relative image URLs are decoded once: `figure%20one.png` refers to `figure one.png`.
+The URL query and fragment are not part of the filename. Files outside the
+source document's directory are still blocked by the directory-confinement check.
+
 ### Fetch HTML images from remote hosts
 
 The HTML backend only downloads images referenced by a page when you opt in with

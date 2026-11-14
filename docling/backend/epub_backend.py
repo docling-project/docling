@@ -534,6 +534,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             in_doc=in_doc,
             path_or_stream=html_stream,
             options=html_options,
+            _decode_local_image_urls=False,  # EPUB has already decoded these paths.
         )
 
         # Convert and return the combined document
