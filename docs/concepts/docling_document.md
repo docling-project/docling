@@ -68,3 +68,62 @@ TBD
 
 TBD
  -->
+
+## Reassembling complete VLM page ranges
+
+`DocumentConverter.convert(source, page_range=(first, last))` uses inclusive,
+one-based page numbers. The VLM pipeline preserves those source page numbers in
+the returned document and its provenance. An external scheduler can distribute
+ranges to separate workers, each with its own converter, and assemble their
+documents afterwards.
+
+For a **complete document**, sort successful ranges by their first page, check
+that they cover every page from 1 through the source page count exactly once,
+then call `DoclingDocument.concatenate(docs)`. This method normally renumbers
+documents into a continuous sequence. For an ordered, gap-free partition starting
+at page 1, each offset is zero and source page numbers are preserved.
+
+```python
+from docling_core.types.doc import DoclingDocument
+from docling.datamodel.base_models import ConversionStatus
+
+# Each result comes from the same source and VLM configuration.
+results = list(results)
+if not results:
+    raise ValueError("No ranges to assemble")
+for result in results:
+    if result.status != ConversionStatus.SUCCESS:
+        raise ValueError("A range did not complete successfully")
+    if not result.document.pages:
+        raise ValueError("A range has no pages")
+source_page_count = results[0].input.page_count
+results.sort(key=lambda result: min(result.document.pages))
+next_page = 1
+for result in results:
+    pages = sorted(result.document.pages)
+    if pages != list(range(next_page, next_page + len(pages))):
+        raise ValueError("Missing, overlapping, or unordered pages")
+    next_page += len(pages)
+if next_page != source_page_count + 1:
+    raise ValueError("The final range is missing pages")
+document = DoclingDocument.concatenate([result.document for result in results])
+```
+
+The VLM pipeline interprets each page independently. With the same page responses,
+range conversion retains the same page-local reading order, lists, tables,
+headers, footers, and key/value cell provenance as whole conversion. It does not
+infer relationships across pages, such as joining a table or list that continues
+onto another page.
+Model responses can vary with inference batching, so this structural property
+does not promise identical model predictions.
+
+This recipe requires complete coverage. A subset starting after page 1, a missing
+page, or a failed range must not be concatenated as though it were a complete
+document: concatenation closes gaps and shifts page numbers and provenance
+without reporting an error. This recipe also does not establish equivalence for
+document-wide assembly or enrichment. Conversion results' status, errors,
+timings, and input metadata are separate from `DoclingDocument.concatenate`;
+callers must handle them explicitly. Concatenation also leaves the resulting
+document's `origin` unset; callers that need it must assign it separately. Each
+range opens the source independently, so measure the extra backend and rendering
+work when choosing a range size.
