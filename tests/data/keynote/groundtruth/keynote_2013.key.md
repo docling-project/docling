@@ -11,4 +11,4 @@ For the Apache Tika project
 | Cell one   | Cell two   | Cell three   |
 |------------|------------|--------------|
 | Cell four  | Cell 5     | Cell six     |
-|            | Cell eight | 5/5/1985     |
+| 7          | Cell eight | 5/5/1985     |

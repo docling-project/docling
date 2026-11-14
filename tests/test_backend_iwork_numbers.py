@@ -66,7 +66,7 @@ from PIL import Image, ImageDraw
 
 import docling.backend.iwork_backend as iwork_backend
 from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
-from docling.backend.iwork import cells, numbers_iwa, numbers_xml
+from docling.backend.iwork import archives, cells, numbers_xml
 from docling.backend.iwork.archives import (
     PACKAGE_DATAS_FIELD,
     TSD_GROUP,
@@ -81,7 +81,6 @@ from docling.backend.iwork.numbers_iwa import (
     SHEET_DRAWABLES_FIELD,
     SHEET_NAME_FIELD,
     TN_SHEET_ARCHIVE,
-    render,
 )
 from docling.backend.iwork_backend import IWorkNumbersDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
@@ -252,6 +251,32 @@ def test_typed_cells_are_rendered_as_the_sheet_shows_them(source: Path):
     assert totals[(6, 1)] == "-2575.9"
 
 
+def test_the_table_reader_of_pages_and_keynote_renders_the_same_values():
+    """Pages and Keynote read the same ``TST`` tables through ``iwa_table``. This
+    fixture holds real number and date cells, which no Pages fixture does, so it
+    shows that the shared reader and the Numbers reader give the same text.
+    """
+    with zipfile.ZipFile(NUMBERS_2013) as archive:
+        objects = _objects(archive)
+    tables = [
+        archives.iwa_table(model, objects)
+        for model in objects.values()
+        if model.message_type == archives.TST_TABLE_MODEL
+    ]
+    shared = [
+        {
+            (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+            for cell in table.table_cells
+        }
+        for table in tables
+        if table is not None
+    ]
+    numbers = [_grid(table) for table in _tables(_backend(NUMBERS_2013).convert())]
+
+    assert len(shared) == len(numbers)
+    assert all(grid in shared for grid in numbers)
+
+
 def test_both_generations_agree_on_the_spreadsheet():
     """The two fixtures are the same document saved by different Numbers
     releases, so the independent IWA and XML readers must agree on it.
@@ -331,7 +356,7 @@ def test_version_5_cell_storage_is_decoded(buffer: str, expected: str | None):
     values = cells.CellValues(strings={14: "YYY_2_1"})
     decoded = cells.iwa_cell(bytes.fromhex(buffer), 0, values)
 
-    assert render(decoded) == expected
+    assert cells.render(decoded) == expected
 
 
 def _decimal128_cell(coefficient: int, exponent: int) -> bytes:
@@ -373,7 +398,7 @@ def test_decimal128_keeps_every_encoded_digit(
         _decimal128_cell(coefficient, exponent), 0, cells.CellValues()
     )
 
-    assert render(decoded) == expected
+    assert cells.render(decoded) == expected
 
 
 def _write_numbers(
@@ -1226,7 +1251,7 @@ def test_render_leaves_a_date_or_duration_no_timedelta_can_hold_empty():
     """The IWA reader can carry a decimal128 whose exponent no double holds, and
     a corrupt double can be infinite; both render to nothing rather than raise."""
     huge = cells.Cell(cells.CELL_TYPE_DATE, number=Decimal("1E+6100"))
-    assert numbers_iwa.render(huge) is None
+    assert cells.render(huge) is None
 
     endless = cells.Cell(cells.CELL_TYPE_DURATION, number=float("inf"))
-    assert numbers_iwa.render(endless) is None
+    assert cells.render(endless) is None
