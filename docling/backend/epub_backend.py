@@ -390,7 +390,13 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self.path_or_stream.close()
         self.path_or_stream = None
 
-        # Clean up temporary directory
+        self._remove_temp_dir()
+
+    def _remove_temp_dir(self) -> None:
+        """Remove the directory the EPUB was extracted to, if any.
+
+        If removal fails, the path is kept so that a later call can try again.
+        """
         if self.temp_dir and self.temp_dir.exists():
             try:
                 shutil.rmtree(self.temp_dir)
@@ -399,7 +405,8 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 _log.warning(
                     f"Failed to clean up temporary directory {self.temp_dir}: {e}"
                 )
-            self.temp_dir = None
+                return
+        self.temp_dir = None
 
     @classmethod
     @override
@@ -418,6 +425,14 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         This method extracts all content files from the EPUB and processes
         them sequentially using the HTMLDocumentBackend.
         """
+        try:
+            return self._convert_epub()
+        finally:
+            # The extracted files are read only while converting: pictures are
+            # embedded in the document.
+            self._remove_temp_dir()
+
+    def _convert_epub(self) -> DoclingDocument:
         _log.debug("Converting EPUB...")
 
         if not self.is_valid() or not self.epub_zip:
