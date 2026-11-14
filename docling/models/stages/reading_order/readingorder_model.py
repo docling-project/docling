@@ -778,7 +778,10 @@ class ReadingOrderModel:
                         for merged_cid in el_merges_mapping.get(rel.cid, []):
                             merged_elem = id_to_elem[cid_to_rels[merged_cid].ref.cref]
                             self._merge_elements(
-                                element, merged_elem, new_item, page_height
+                                element,
+                                merged_elem,
+                                new_item,
+                                page_no_to_pages[merged_elem.page_no].size.height,  # type: ignore
                             )
 
                 elif isinstance(element, Table):
