@@ -149,6 +149,7 @@ from docling.datamodel.asr_model_specs import (
 )
 from docling.datamodel.backend_options import (
     EpubBackendOptions,
+    GitHubJSONBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
     PdfBackendOptions,
@@ -164,6 +165,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.document import ConversionResult, DoclingVersion
+from docling.datamodel.github import is_github_url
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     BaseLayoutOptions,
@@ -200,6 +202,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
+from docling.utils.github import fetch_github_conversation
 from docling.utils.profiling import ProfilingItem
 from docling.utils.progress import ProgressPrinter
 
@@ -836,7 +839,10 @@ def export_documents(
             if export_dclx:
                 fname = output_file or output_dir / f"{doc_filename}.dclx"
                 _log.info(f"writing DCLX output to {fname}")
-                conv_res.document.save_as_doclang_archive(filename=fname)
+                conv_res.document.save_as_doclang_archive(
+                    filename=fname,
+                    add_named_groups=conv_res.input.format == InputFormat.JSON_GITHUB,
+                )
 
             # Export LaTeX format:
             if export_latex:
@@ -1052,6 +1058,28 @@ def convert(  # noqa: C901
             help="Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all.",
         ),
     ] = HtmlImageFetchMode.NONE,
+    github_image_fetch: Annotated[
+        HtmlImageFetchMode,
+        typer.Option(
+            "--github-image-fetch",
+            help="Load GitHub image assets: none, local, remote, or all.",
+        ),
+    ] = HtmlImageFetchMode.NONE,
+    github_timeout: Annotated[
+        float,
+        typer.Option(
+            "--github-timeout",
+            min=0.001,
+            help="Total timeout in seconds for gh conversation retrieval.",
+        ),
+    ] = 60,
+    github_strict_assets: Annotated[
+        bool,
+        typer.Option(
+            "--github-strict-assets",
+            help="Fail if a GitHub picture asset cannot be loaded.",
+        ),
+    ] = False,
     pipeline: Annotated[
         ProcessingPipeline | None,
         typer.Option(
@@ -1608,6 +1636,7 @@ def convert(  # noqa: C901
         EpubFormatOption,
         ExcelFormatOption,
         FormatOption,
+        GitHubJSONFormatOption,
         HTMLFormatOption,
         IWorkKeynoteFormatOption,
         IWorkNumbersFormatOption,
@@ -1764,6 +1793,22 @@ def convert(  # noqa: C901
         input_doc_paths: list[Path | str] = []
         for src in source:
             try:
+                if InputFormat.JSON_GITHUB in from_formats and is_github_url(src):
+                    try:
+                        export = fetch_github_conversation(src, timeout=github_timeout)
+                    except (ValueError, RuntimeError) as exc:
+                        err_console.print(
+                            f"GitHub retrieval failed: {exc}", markup=False
+                        )
+                        raise typer.Exit(code=1) from exc
+                    locator = export.conversation.source
+                    path = (
+                        Path(tempdir)
+                        / f"{locator.owner}-{locator.repository}-{locator.kind}-{locator.number}.github.json"
+                    )
+                    path.write_text(export.model_dump_json(), encoding="utf-8")
+                    input_doc_paths.append(path)
+                    continue
                 if _is_http_url(src) and _is_html_source(src, from_formats):
                     input_doc_paths.append(src)
                     continue
@@ -1776,8 +1821,10 @@ def convert(  # noqa: C901
                         )
                     elif _is_office_lock_file(local_path):
                         _log.info(f"Ignoring temporary Office file: {local_path}")
-                    elif _is_html_source(src, from_formats) or _is_latex_source(
-                        local_path, from_formats
+                    elif (
+                        local_path.suffix.lower() == ".json"
+                        or _is_html_source(src, from_formats)
+                        or _is_latex_source(local_path, from_formats)
                     ):
                         # Keep the file in place: these backends resolve images
                         # and included files relative to the document.
@@ -2205,6 +2252,16 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: image_format_option,
             }
+
+        format_options[InputFormat.JSON_GITHUB] = GitHubJSONFormatOption(
+            backend_options=GitHubJSONBackendOptions(
+                enable_local_fetch=github_image_fetch
+                in {HtmlImageFetchMode.LOCAL, HtmlImageFetchMode.ALL},
+                enable_remote_fetch=github_image_fetch
+                in {HtmlImageFetchMode.REMOTE, HtmlImageFetchMode.ALL},
+                strict_assets=github_strict_assets,
+            ),
+        )
 
         # Set ASR options
         asr_pipeline_options = AsrPipelineOptions(

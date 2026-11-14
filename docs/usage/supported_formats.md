@@ -62,6 +62,7 @@ Schema-specific support:
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard; also inline XBRL (iXBRL) reports in `.htm`, `.html` and `.xhtml` files; needs the `xbrl` extra |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
+| GitHub JSON | Native issues, pull requests, and discussions from JSON or authenticated `gh` retrieval; see [GitHub conversations](./github.md) |
 
 ## Supported output formats
 

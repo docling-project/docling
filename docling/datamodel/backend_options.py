@@ -111,6 +111,13 @@ class HTMLBackendOptions(BaseBackendOptions):
     """
 
     kind: Literal["html"] = Field("html", exclude=True, repr=False)
+    preserve_code_whitespace: bool = Field(
+        False,
+        description=(
+            "Preserve leading and trailing whitespace in preformatted code blocks. "
+            "When disabled, leading newlines and trailing whitespace are trimmed."
+        ),
+    )
     render_page: bool = Field(
         False,
         description=(
@@ -237,6 +244,14 @@ class MarkdownBackendOptions(TextBackendOptions):
     """Options specific to the Markdown backend."""
 
     kind: Literal["md"] = Field("md", exclude=True, repr=False)
+    preserve_code_whitespace: bool = Field(
+        False,
+        description=(
+            "Preserve parser-provided whitespace in fenced and indented code blocks "
+            "and in embedded HTML preformatted code. When disabled, code block "
+            "edges are trimmed. Inline code follows Markdown whitespace rules."
+        ),
+    )
     fetch_images: bool = Field(
         False,
         description=(
@@ -261,6 +276,17 @@ class MarkdownBackendOptions(TextBackendOptions):
             "The maximum number of pixels (width x height) of an embedded or "
             "fetched image. Larger images are skipped with a warning."
         ),
+    )
+
+
+class GitHubJSONBackendOptions(MarkdownBackendOptions):
+    """Markdown and asset options for GitHub conversation JSON."""
+
+    kind: Literal["json_github"] = Field("json_github", exclude=True, repr=False)
+    preserve_code_whitespace: bool = True
+    fetch_images: bool = True
+    strict_assets: bool = Field(
+        False, description="Fail conversion if any referenced picture cannot be loaded."
     )
 
 
@@ -975,6 +1001,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         JatsBackendOptions,
         MarkdownBackendOptions,
+        GitHubJSONBackendOptions,
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,

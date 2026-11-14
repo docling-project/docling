@@ -1118,23 +1118,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)
             and len(element.children) > 0
             and isinstance((child := element.children[0]), marko.inline.RawText)
-            # Drop blank lines around the code but keep the first line's
-            # indentation, which is part of the code.
-            and len(
-                snippet_text := re.sub(
-                    r"\A(?:[ \t]*\r?\n)+", "", child.children
-                ).rstrip()
-            )
-            > 0
         ):
-            _log.debug(" - Code Block: %s", element.children)
-            doc.add_code(
-                parent=parent_item,
-                text=snippet_text,
-                code_language=detect_code_language(snippet_text, hint=element.lang),
-                formatting=formatting,
-                hyperlink=hyperlink,
-            )
+            snippet_text = child.children
+            if not cast(MarkdownBackendOptions, self.options).preserve_code_whitespace:
+                # Keep the first line's indentation even when trimming block edges.
+                snippet_text = re.sub(r"\A(?:[ \t]*\r?\n)+", "", snippet_text).rstrip()
+            if snippet_text:
+                _log.debug(" - Code Block: %s", element.children)
+                doc.add_code(
+                    parent=parent_item,
+                    text=snippet_text,
+                    code_language=detect_code_language(snippet_text, hint=element.lang),
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
 
         elif isinstance(element, marko.inline.LineBreak):
             if element.soft:
@@ -1300,6 +1297,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.MD}
 
+    def _make_markdown_parser(self) -> Markdown:
+        return Markdown(extensions=[_GFM_EXTENSION])
+
+    def _prepare_markdown_ast(self, element: marko.block.Document) -> None:
+        """Allow format-specific backends to resolve links before HTML conversion."""
+
     def convert(self) -> DoclingDocument:
         _log.debug("converting Markdown...")
 
@@ -1314,8 +1317,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if self.is_valid():
             # The GFM extension gives tables a structured AST with inline
             # children per cell, enabling RichTableCell for formatted content.
-            marko_parser = Markdown(extensions=[_GFM_EXTENSION])
+            marko_parser = self._make_markdown_parser()
             parsed_ast = marko_parser.parse(self.markdown)
+            self._prepare_markdown_ast(parsed_ast)
             _merge_adjacent_text_runs(parsed_ast)
             self._iterate_elements(
                 element=parsed_ast,
@@ -1358,6 +1362,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
                 md_options = cast(MarkdownBackendOptions, self.options)
                 html_options = HTMLBackendOptions(
+                    preserve_code_whitespace=md_options.preserve_code_whitespace,
                     enable_local_fetch=md_options.enable_local_fetch,
                     enable_remote_fetch=md_options.enable_remote_fetch,
                     fetch_images=md_options.fetch_images,

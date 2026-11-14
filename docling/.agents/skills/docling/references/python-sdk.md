@@ -21,6 +21,34 @@ data = doc.export_to_dict()  # structured / lossless
 `result.status` reports success/failure; `result.document` is always a
 `DoclingDocument`.
 
+## GitHub conversations
+
+Use `InputFormat.JSON_GITHUB` for native issue, pull request, and discussion JSON.
+For a URL, call `fetch_github_conversation(url)` and pass
+`github_document_stream(export)` to `DocumentConverter.convert()`. Both helpers
+are in `docling.utils.github`; URL retrieval requires authenticated `gh`.
+The returned `GitHubExport` can be saved with `model_dump_json()`.
+
+Use `GitHubJSONFormatOption` with `GitHubJSONBackendOptions` to enable local or
+remote image loading. The backend preserves code whitespace and literal fenced
+HTML. Source metadata is on the title in `meta.github__source`; entry metadata
+is on headings in `meta.github__entry`. Visible label names and descriptions
+appear after source information. Use `save_as_doclang_archive(...,
+add_named_groups=True)` to retain conversation and reply ownership.
+
+## Preserve code block whitespace
+
+For code snippets that require leading blank lines, trailing spaces, or trailing
+newlines, set `preserve_code_whitespace=True` on `MarkdownBackendOptions` or
+`HTMLBackendOptions`. Pass the backend options through `MarkdownFormatOption` or
+`HTMLFormatOption` in `DocumentConverter(format_options=...)`.
+
+The default is `False`, which keeps code block edge trimming. The Markdown
+option also applies to embedded HTML `<pre>` blocks. Markdown retains the
+parser's code text after fence removal and container indentation processing.
+Inline code still follows Markdown whitespace rules. Export formats can apply
+their own whitespace rules.
+
 ## Configuring the pipeline with PipelineOptions
 
 `DocumentConverter(format_options=...)` maps an **`InputFormat`** to a

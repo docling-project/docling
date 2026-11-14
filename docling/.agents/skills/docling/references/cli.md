@@ -1,5 +1,20 @@
 # Docling CLI reference
 
+## GitHub conversations
+
+Use `docling convert https://github.com/OWNER/REPO/pull/NUMBER --from json_github --to dclx --output ./output`.
+Issue and discussion URLs use `/issues/NUMBER` and `/discussions/NUMBER`.
+Install `gh` and run `gh auth login` first. Retrieval follows comments, reviews,
+threads, and nested replies through all pages. Use `--github-timeout 180` for a
+longer total retrieval timeout. Local native JSON uses the same `json_github`
+format and needs no gh installation.
+
+Use `--github-image-fetch remote` to load remote images, or `local` for images
+beside a saved JSON file. The default blocks both. Embedded data images remain
+available. Add `--github-strict-assets` to reject missing picture assets. DCLX
+exports preserve named entry and reply groups. Labels appear between source
+information and body, with names and descriptions.
+
 For Granite, Parakeet, and Nemotron ASR, select `--asr-model granite_speech_5_0_2b`
 (or another speech preset). Install `docling-slim[models-asr-inline]` for all engines,
 `docling-slim[feat-asr-transformers]` for Transformers, or
