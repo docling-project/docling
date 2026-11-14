@@ -126,6 +126,10 @@ def _warn_headers_without_origin() -> None:
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
 
+# The quotation marks that the default style sheet of a browser gives <q>:
+# double for the outer quotation, single for a quotation nested in it.
+_Q_QUOTATION_MARKS: Final = (("\u201c", "\u201d"), ("\u2018", "\u2019"))
+
 
 def _resolve_line_breaks(text: str) -> str:
     """Replace the sentinels of <br> tags with a line break.
@@ -1038,6 +1042,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 text_node.replace_with(text_node.replace(_BR_SENTINEL, ""))
         for br in content("br"):
             br.replace_with(NavigableString(_BR_SENTINEL))
+
+        # A browser renders the quotation marks of <q> from CSS (open-quote and
+        # close-quote), so the markup does not hold them. Add them as text.
+        for q in content("q"):
+            depth = min(len(q.find_parents("q")), len(_Q_QUOTATION_MARKS) - 1)
+            open_mark, close_mark = _Q_QUOTATION_MARKS[depth]
+            q.insert(0, NavigableString(open_mark))
+            q.append(NavigableString(close_mark))
 
         # Furniture before the first heading rule, except for headers in tables and lists
         header = None
