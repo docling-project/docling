@@ -43,6 +43,10 @@ _log = logging.getLogger(__name__)
 # to an identical line is a comment.
 _LINE_COMMENT_RE = re.compile(r"^//(?!/)")
 _COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
+# A thematic break ("'''", "---", "- - -", "***", "* * *", "___", "_ _ _") or a page
+# break ("<<<") is a separator, not content when it starts a block. The
+# Markdown-style forms are exactly three marks, with the same spacing between them.
+_BREAK_RE = re.compile(r"(?:'{3,}|<{3,}|([-*_])( *)\1\2\1)")
 # The "start" attribute of an ordered list, e.g. "[start=4]" or
 # "[loweralpha,start=4]", sets the number of its first item.
 _LIST_START_ATTR_RE = re.compile(
@@ -320,11 +324,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
             # "[[some-id]]") are metadata that applies to the block that
-            # follows; they are never body content, so skip them.
+            # follows, and a thematic or page break is a separator. Neither is
+            # body content, so skip them.
             if (
                 re.match(r"^\[\[.+\]\]$", stripped_line)
                 or re.match(r"^\[[^\[\]]+\]$", stripped_line)
                 or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
+                or (
+                    not text_data
+                    and not in_table
+                    and _BREAK_RE.fullmatch(line.rstrip())
+                )
             ):
                 start_match = _LIST_START_ATTR_RE.match(stripped_line)
                 pending_list_start = (
