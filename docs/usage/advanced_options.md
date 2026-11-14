@@ -465,6 +465,51 @@ The equivalent CLI option is:
 docling convert document.pdf --use-embedded-picture-images
 ```
 
+### Merge tables that continue across pages
+
+Tables are detected one page at a time, so by default a table that runs over a page break comes
+out as one table per page. Docling can join the fragments into one table:
+
+```python
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TableContinuationOptions,
+)
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.table_continuation_options = TableContinuationOptions(enabled=True)
+```
+
+On the command line, use `--table-continuation`.
+
+A table is joined to the table right before it when the two are on consecutive pages with
+nothing in between, have the same number of columns, and the left edges of their columns line up
+(within `max_column_shift`, a fraction of the page width). A continuation with its own caption is
+kept apart, unless the caption says it is continued. In the merged table:
+
+- a header that repeats on each page is kept once, and rows that table structure wrongly flagged
+  as headers at the top of a page are cleared;
+- a record that the page break cut in two is joined back into one row (`repair_split_rows`);
+- `prov` has one entry per page, and every cell keeps its bounding box in the coordinates of its
+  own page.
+
+The DocLang export writes the merged table as one threaded `<table>` fragment per page.
+
+The step works only from layout and is deliberately conservative. A pair that fails any check
+stays as two tables, exactly as without the option. It does not merge:
+
+- fragments with body content between them in reading order, such as a paragraph or a picture
+  (page headers and footers do not count);
+- fragments on pages that are not consecutive;
+- fragments whose column count differs, for example when table structure merged or split a
+  column on one page, or whose columns are shifted (a different page layout or a rotated table);
+- a continuation with a caption of its own that does not say it is continued;
+- a continuation with rich cells or other nested content.
+
+To see why a pair was or was not merged, enable debug logging for
+`docling.models.stages.table_continuation`: each candidate pair is logged with its reason.
+`TableContinuationModel(options).merge_continued_tables(document)` also returns these decisions,
+and works on an already converted `DoclingDocument`.
 
 ### PowerPoint and Excel charts
 

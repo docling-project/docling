@@ -474,14 +474,19 @@ def test_cli_picture_description_max_new_tokens(
 
 
 @pytest.mark.parametrize(
-    ("args", "expected"),
-    [([], False), (["--heading-hierarchy"], True)],
+    ("args", "heading_hierarchy", "table_continuation"),
+    [
+        ([], False, False),
+        (["--heading-hierarchy"], True, False),
+        (["--table-continuation"], False, True),
+    ],
 )
-def test_cli_heading_hierarchy_flag(
+def test_cli_assembly_stage_flags(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     args: list[str],
-    expected: bool,
+    heading_hierarchy: bool,
+    table_continuation: bool,
 ) -> None:
     captured_pdf_option: PdfFormatOption | None = None
 
@@ -513,10 +518,9 @@ def test_cli_heading_hierarchy_flag(
 
     assert result.exit_code == 0, result.output
     assert captured_pdf_option is not None
-    assert (
-        captured_pdf_option.pipeline_options.heading_hierarchy_options.enabled
-        is expected
-    )
+    pipeline_options = captured_pdf_option.pipeline_options
+    assert pipeline_options.heading_hierarchy_options.enabled is heading_hierarchy
+    assert pipeline_options.table_continuation_options.enabled is table_continuation
 
 
 def test_cli_vlm_max_new_tokens(

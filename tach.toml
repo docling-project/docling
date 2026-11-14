@@ -397,6 +397,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.models.stages.table_continuation"
+layer = "models"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
 path = "docling.models.stages.table_structure"
 layer = "core"
 depends_on = [
@@ -604,6 +609,7 @@ depends_on = [
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
   "docling.models.stages.script_position",
+  "docling.models.stages.table_continuation",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]
