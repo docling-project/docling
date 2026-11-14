@@ -390,3 +390,62 @@ def test_text_axis_categories_follow_the_shown_number_format(
 def test_serial_to_iso(text: str, date1904: bool, expected: str):
     """Excel serials map to ISO dates in both date systems; other text stays."""
     assert _serial_to_iso(text, date1904) == expected
+
+
+@pytest.mark.parametrize("axis_titles", [False, True], ids=["untitled", "titled"])
+def test_bubble_chart_keeps_coordinates_sizes_and_series(
+    tmp_path: Path, axis_titles: bool
+):
+    """Bubble coordinates and sizes stay aligned, including gaps and zeroes."""
+    from pptx import Presentation
+    from pptx.chart.data import BubbleChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    data = BubbleChartData()
+    mumbai = data.add_series("Mumbai")
+    mumbai.add_data_point(300, 31.4, 12)
+    mumbai.add_data_point(280, 0, 0)
+    mumbai.add_data_point(260, 29, 15)
+    data.add_series("Delhi").add_data_point(250, 29.8, 18)
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.BUBBLE, Inches(1), Inches(1), Inches(6), Inches(4), data
+    ).chart
+    chart.has_title = True
+    chart.chart_title.text_frame.text = "Our highest-value circles"
+    if axis_titles:
+        chart.category_axis.has_title = True
+        chart.category_axis.axis_title.text_frame.text = "ARPU"
+        chart.value_axis.has_title = True
+        chart.value_axis.axis_title.text_frame.text = "Revenue market share (%)"
+    # An absent cache entry must not shift the remaining coordinates.
+    plot = chart.element.chart.plotArea.xCharts[0]
+    cache = plot.xpath("./c:ser[1]/c:xVal/c:numRef/c:numCache")[0]
+    cache.remove(plot.xpath("./c:ser[1]/c:xVal/c:numRef/c:numCache/c:pt[@idx='1']")[0])
+    path = tmp_path / "bubble_chart.pptx"
+    prs.save(path)
+
+    doc = get_converter().convert(path).document
+    picture = doc.pictures[0]
+    x_label = "ARPU" if axis_titles else "X"
+    y_label = "Revenue market share (%)" if axis_titles else "Y"
+    assert _grid(picture) == [
+        [
+            "",
+            f"Mumbai ({x_label})",
+            f"Mumbai ({y_label})",
+            "Mumbai (Bubble size)",
+            f"Delhi ({x_label})",
+            f"Delhi ({y_label})",
+            "Delhi (Bubble size)",
+        ],
+        ["", "300", "31.4", "12", "250", "29.8", "18"],
+        ["", "", "0", "0", "", "", ""],
+        ["", "260", "29", "15", "", "", ""],
+    ]
+    assert picture.caption_text(doc) == "Our highest-value circles"
+    markdown = doc.export_to_markdown()
+    assert "Mumbai (Bubble size)" in markdown
+    assert "31.4" in markdown and "300" in markdown

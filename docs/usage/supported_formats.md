@@ -40,6 +40,11 @@ and retains the decoder error as its cause.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+PowerPoint bubble charts retain three data columns per series: X values, Y values,
+and bubble sizes. Column headers include the series name and axis title, with
+`X` and `Y` as defaults for axes without titles. The chart title remains the
+picture caption.
+
 Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
 text in `<footer>` elements is retained in the furniture content layer. Default
 Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
