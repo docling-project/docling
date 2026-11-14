@@ -1,0 +1,127 @@
+name: "AI Issue Triage"
+
+# Advisory classification. Read only trusted repository code. The model has
+# no write token; a separate job validates and applies the classification.
+on:
+  issues:
+    types: [opened, reopened, edited]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Number of an open issue that has not been classified.
+        required: true
+        type: number
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  analyze:
+    if: >-
+      github.event_name == 'issues' ||
+      github.event_name == 'workflow_dispatch' ||
+      (!github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/ai triage') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      issue: ${{ steps.prepare.outputs.issue }}
+      ready: ${{ steps.validate.outputs.ready }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Collect issue data
+        id: prepare
+        timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 .github/scripts/ai_issue_triage.py prepare \
+            --repo "${REPO}" --event-name "${EVENT_NAME}" \
+            --event-path "${GITHUB_EVENT_PATH}" --out .ai-issue-triage
+
+      - name: Run Bob Shell (read-only classification mode)
+        id: bob
+        if: steps.prepare.outputs.run == 'true'
+        timeout-minutes: 8
+        uses: ./.github/actions/run-bobshell
+        with:
+          api-key: ${{ secrets.BOB_API_KEY }}
+          team-id: ${{ vars.BOB_TEAM_ID }}
+          mode: docling-issue-triage
+          prompt-file: .github/ai-triage/issue-prompt.md
+          max-turns: "10"
+          max-cost: ${{ vars.BOB_TRIAGE_MAX_COST || '2' }}
+          output: ${{ runner.temp }}/bob-issue-output.json
+
+      - name: Validate the classification
+        id: validate
+        if: steps.prepare.outputs.run == 'true' && steps.bob.outcome == 'success'
+        env:
+          BOB_API_KEY: ${{ secrets.BOB_API_KEY }}
+        run: |
+          python3 .github/scripts/ai_issue_triage.py extract \
+            --bob-output "${RUNNER_TEMP}/bob-issue-output.json" \
+            --out .ai-issue-triage/result.json
+          if grep -qF -- "${BOB_API_KEY}" .ai-issue-triage/result.json; then
+            echo "::error::The classification contains the API key. It is discarded."
+            exit 1
+          fi
+          echo "ready=true" >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.validate.outputs.ready == 'true'
+        with:
+          name: ai-issue-classification
+          path: .ai-issue-triage
+          include-hidden-files: true
+          retention-days: 7
+
+  publish:
+    needs: analyze
+    if: needs.analyze.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ai-issue-classification
+          path: ${{ runner.temp }}/ai-issue-triage
+
+      - name: Apply classification labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ needs.analyze.outputs.issue }}
+        run: |
+          python3 .github/scripts/ai_issue_triage.py publish \
+            --repo "${REPO}" --issue "${ISSUE_NUMBER}" \
+            --context "${RUNNER_TEMP}/ai-issue-triage/context.json" \
+            --result "${RUNNER_TEMP}/ai-issue-triage/result.json"

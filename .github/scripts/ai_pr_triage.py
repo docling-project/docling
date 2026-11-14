@@ -30,6 +30,11 @@ from typing import Any
 from groundtruth_diff import is_groundtruth_path, render_markdown, summarize_file
 from pr_topic_labels import deterministic_topics, parse_model_topics, select_topics
 from safe_markdown import clean_text, markdown_code, markdown_text
+from triage_classification import (
+    Classification,
+    classification_labels,
+    parse_classification,
+)
 
 COMMENT_MARKER = "<!-- ai-pr-triage -->"
 LABEL_DUPLICATE = "ai:possible-duplicate"
@@ -218,6 +223,7 @@ class TriageResult:
     groundtruth_verdict: str | None
     groundtruth_reason: str
     topics: list[str]
+    classification: Classification | None = None
 
 
 DUPLICATE_VERDICTS = frozenset({"duplicate", "related", "unrelated"})
@@ -268,6 +274,11 @@ def parse_triage_result(data: Any, allowed_prs: set[int]) -> TriageResult:
         groundtruth_verdict=groundtruth_verdict,
         groundtruth_reason=groundtruth_reason,
         topics=parse_model_topics(data.get("topics")),
+        classification=(
+            parse_classification(data["classification"])
+            if data.get("classification") is not None
+            else None
+        ),
     )
 
 
@@ -624,6 +635,37 @@ def gh_write(method: str, path: str, payload: dict[str, Any] | None = None) -> N
         text=True,
         input=json.dumps(payload) if payload is not None else None,
     )
+
+
+def ensure_classification_labels(repo: str) -> set[str]:
+    """Reuse repository labels and create only the two missing classifications."""
+    available = {
+        label["name"]
+        for label in gh_api(f"repos/{repo}/labels?per_page=100", paginate=True)
+    }
+    definitions = (
+        (
+            "priority:critical",
+            "b60205",
+            "Critical impact: security, data loss, or widespread outage",
+        ),
+        ("chore", "ededed", "Maintenance, tooling, or internal cleanup"),
+    )
+    for name, color, description in definitions:
+        if name not in available:
+            try:
+                gh_write(
+                    "POST",
+                    f"repos/{repo}/labels",
+                    {"name": name, "color": color, "description": description},
+                )
+            except subprocess.CalledProcessError:
+                # Another issue or PR run can create the same label first.
+                refreshed = gh_api(f"repos/{repo}/labels?per_page=100", paginate=True)
+                if name not in {label["name"] for label in refreshed}:
+                    raise
+            available.add(name)
+    return available
 
 
 def pr_files(repo: str, number: int) -> list[dict[str, Any]]:
@@ -1011,14 +1053,19 @@ def publish(
     # Topic labels are set only on the first triage of a PR, so a label that a
     # maintainer removed is not added again after the next push.
     topics: list[str] = []
-    if existing is None:
-        repo_labels = gh_api(f"repos/{repo}/labels?per_page=100", paginate=True)
-        topics = select_topics(
-            context.topic_labels,
-            result.topics if result is not None else [],
-            {label["name"] for label in repo_labels},
-        )
     current = {label["name"] for label in pr["labels"]}
+    if existing is None:
+        available = ensure_classification_labels(repo)
+        topics = classification_labels(
+            result.classification if result is not None else None,
+            select_topics(
+                context.topic_labels,
+                result.topics if result is not None else [],
+                available,
+            ),
+            current,
+            available,
+        )
     stale = (current & set(MANAGED_LABELS)) - labels
     if current & set(REVIEW_LABELS):
         reviews = gh_api(
@@ -1062,6 +1109,7 @@ def _result_to_answer(data: dict[str, Any]) -> dict[str, Any]:
         "ci_safety": {"verdict": data["ci_verdict"], "concerns": data["ci_concerns"]},
         "groundtruth": groundtruth,
         "topics": data["topics"],
+        "classification": data.get("classification"),
     }
 
 

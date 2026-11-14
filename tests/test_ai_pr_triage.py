@@ -251,11 +251,71 @@ def test_stored_result_round_trips_through_validation_in_publish() -> None:
         answer(
             groundtruth={"verdict": "expected", "reason": "Matches | [the](fix)."},
             topics=["table structure"],
+            classification={
+                "severity": "high",
+                "application": "bug",
+                "formats": ["pdf"],
+            },
         ),
         {7},
     )
     stored = json.loads(json.dumps(triage.asdict(result)))
     assert triage.parse_triage_result(triage._result_to_answer(stored), {7}) == result
+
+
+def test_first_pr_triage_publishes_classification_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_context(topic_labels=["bug", "pdf"])
+    context_path = tmp_path / "context.json"
+    context_path.write_text(json.dumps(triage.asdict(context)), encoding="utf-8")
+    result = triage.parse_triage_result(
+        answer(
+            classification={
+                "severity": "high",
+                "application": "bug",
+                "formats": ["pdf"],
+            }
+        ),
+        {7},
+    )
+    result_path = tmp_path / "result.json"
+    result_path.write_text(json.dumps(triage.asdict(result)), encoding="utf-8")
+    comments: list[dict] = []
+    writes: list[tuple[str, str, dict]] = []
+    current = {"head": {"sha": context.pr.head_sha}, "labels": []}
+
+    def read(path: str, **_: object) -> object:
+        if path.endswith("/comments?per_page=100"):
+            return comments
+        assert path == f"repos/{REPO}/pulls/10"
+        return current
+
+    def write(method: str, path: str, payload=None) -> None:
+        writes.append((method, path, payload))
+        if path.endswith("/comments"):
+            comments.append({"id": 5, "user": {"login": triage.BOT_LOGIN}, **payload})
+
+    monkeypatch.setattr(triage, "gh_api", read)
+    monkeypatch.setattr(triage, "gh_write", write)
+    monkeypatch.setattr(
+        triage,
+        "ensure_classification_labels",
+        lambda _: {"bug", "pdf", "priority:high"},
+    )
+    triage.publish(REPO, 10, context_path, result_path)
+    label_writes = [write for write in writes if write[1].endswith("/labels")]
+    assert len(label_writes) == 1
+    assert {"bug", "pdf", "priority:high"} <= set(label_writes[0][2]["labels"])
+    # A maintainer removed the classification labels before another run.
+    current["labels"] = [
+        {"name": triage.LABEL_CI_SAFE},
+        {"name": triage.LABEL_DUPLICATE},
+    ]
+    writes.clear()
+    triage.publish(REPO, 10, context_path, result_path)
+    assert not any(write[1].endswith("/labels") for write in writes)
 
 
 def test_comment_shows_duplicates_collapses_related_and_hides_unrelated() -> None:
