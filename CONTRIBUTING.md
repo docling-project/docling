@@ -84,20 +84,33 @@ All PRs modifying the reference test data require a double review to guarantee w
 
 ## Documentation
 
-We use [MkDocs](https://www.mkdocs.org/) to write documentation.
+We use [Zensical](https://zensical.org/) to build the documentation. The site settings
+and navigation are configured in `mkdocs.yml`.
 
-To run the documentation server, run:
+From the repository root, install the documentation environment used by CI:
 
 ```bash
-mkdocs serve
+uv sync --frozen --group docs --all-extras --all-packages --no-group dev --no-group examples
+```
+
+To preview the documentation, run:
+
+```bash
+make docs-serve
 ```
 
 The server will be available at [http://localhost:8000](http://localhost:8000).
+This target renders the notebook examples and CLI reference before starting Zensical.
 
-### Pushing Documentation to GitHub Pages
-
-Run the following:
+To build the site locally, run:
 
 ```bash
-mkdocs gh-deploy
+make docs-build
 ```
+
+The generated site is written to `site/`.
+
+### Publishing Documentation to GitHub Pages
+
+The [docs deployment workflow](.github/workflows/cd-docs.yml) builds and publishes
+the documentation when changes are pushed to `main`.
