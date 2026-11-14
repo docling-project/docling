@@ -45,6 +45,12 @@ text in `<footer>` elements is retained in the furniture content layer. Default
 Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
 `included_content_layers` to export it.
 
+Email conversion also reads the calendar parts of a message, such as meeting
+invitations, cancellations and attached `.ics` files. Their events are added under
+a "Calendar" heading after the body, with the same fields as iCalendar input. An
+event that the message carries both inline and as an attachment is added once. Set
+`EmailBackendOptions.parse_calendar_invitations` to `False` to leave them out.
+
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula
 children. The `metadata`, `authors`, and `affiliations` groups record source roles.
