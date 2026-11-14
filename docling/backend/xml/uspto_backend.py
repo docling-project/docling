@@ -1642,7 +1642,13 @@ class XmlTable:
         return colinfo
 
     def _get_max_ncols(self, tgs_info: dict[int, ColInfoType]) -> NonNegativeInt:
-        """Get the maximum number of columns across table groups.
+        """Get the width of the grid the table groups are mapped onto.
+
+        A group's own colspecs say how many columns it declares, which is not
+        how many it occupies: `cell_offst` maps each declared column onto the
+        finest grid shared by every group, so a group of four columns can cover
+        eleven of them. Entry offsets are resolved on that shared grid, so the
+        count has to come from the same place or cells land outside the table.
 
         Args:
             tgs_info: Unified group column specifications.
@@ -1652,7 +1658,7 @@ class XmlTable:
         """
         ncols_max = 0
         for rowinfo in tgs_info.values():
-            ncols_max = max(ncols_max, len(rowinfo["colwidth"]))
+            ncols_max = max(ncols_max, rowinfo["cell_offst"][-1])
 
         return ncols_max
 
