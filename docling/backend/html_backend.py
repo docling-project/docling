@@ -2635,6 +2635,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
         return result
 
+    def _resolve_hyperlink(self, href: str) -> str:
+        """Resolve the target of a link against the location of the document.
+
+        A link is not fetched: a target outside the base directory (e.g.
+        "/about" or "../index.html") is kept as written instead of failing the
+        conversion.
+
+        Args:
+            href: The href attribute of the link.
+
+        Returns:
+            The resolved target, or href as written if it cannot be resolved.
+        """
+        try:
+            return self._resolve_relative_path(href)
+        except ValueError:
+            return href
+
     @contextmanager
     def _use_hyperlink(self, tag: Tag):
         old_hyperlink: Union[AnyUrl, Path, None] = None
@@ -2645,13 +2663,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             if isinstance(this_href, str) and this_href:
                 old_hyperlink = self.hyperlink
-                try:
-                    this_href = self._resolve_relative_path(this_href)
-                except ValueError:
-                    # A link is not fetched: a target outside the base
-                    # directory (e.g. "/about" or "../index.html") is kept
-                    # as written instead of failing the conversion.
-                    pass
+                this_href = self._resolve_hyperlink(this_href)
                 # ugly fix for relative links since pydantic does not support them.
                 try:
                     new_hyperlink = AnyUrl(this_href)
