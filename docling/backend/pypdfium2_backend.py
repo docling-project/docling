@@ -483,12 +483,23 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                     vertical_threshold = row_height * vertical_threshold_factor
                     bbox = cell.rect.to_bounding_box()
                     if (
-                        abs(bbox.t - row_top) <= vertical_threshold
-                        and abs(bbox.b - row_bottom) <= vertical_threshold
-                    ) or (
-                        # PDFium boxes a punctuation run tightly on the baseline,
-                        # so its edges miss the row's, though it sits inside it.
-                        bbox.t >= row_top and bbox.b <= row_bottom
+                        (
+                            abs(bbox.t - row_top) <= vertical_threshold
+                            and abs(bbox.b - row_bottom) <= vertical_threshold
+                        )
+                        or (
+                            # PDFium boxes a punctuation run tightly on the baseline,
+                            # so its edges miss the row's, though it sits inside it.
+                            bbox.t >= row_top and bbox.b <= row_bottom
+                        )
+                        or (
+                            # A comma run hangs below the baseline: on a row without
+                            # descenders its top edge still sits inside the row while
+                            # its bottom edge dips below row_bottom by less than the
+                            # tolerance, so the containment rule above misses it.
+                            row_top <= bbox.t <= row_bottom
+                            and bbox.b - row_bottom <= vertical_threshold
+                        )
                     ):
                         current_row.append(cell)
                         row_top = min(row_top, cell.rect.to_bounding_box().t)
