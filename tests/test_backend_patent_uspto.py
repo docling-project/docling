@@ -558,6 +558,29 @@ def test_patent_uspto_grant_v2_italic_h() -> None:
     assert "\U0001d455" not in claim
 
 
+def test_uspto_table_cells_stay_inside_the_declared_grid():
+    # A group declaring fewer columns than it occupies on the shared grid left
+    # every spanning entry past `num_cols`, where the markdown and dataframe
+    # exports cannot reach it.
+    source = Path("tests/data/uspto/sources/ipa20110039701.xml")
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+        .convert(source)
+        .document
+    )
+
+    assert doc.tables
+    for table in doc.tables:
+        data = table.data
+        outside = [
+            cell
+            for cell in data.table_cells
+            if cell.end_row_offset_idx > data.num_rows
+            or cell.end_col_offset_idx > data.num_cols
+        ]
+        assert not outside, f"{table.self_ref} is {data.num_rows}x{data.num_cols}"
+
+
 def test_patent_uspto_app_v1(patents):
     """Test applications Full Text Data/XML Version 1.x."""
 
@@ -585,7 +608,13 @@ def test_patent_uspto_app_v1(patents):
     assert texts[63].text == "where: Cₒ=light in control at time zero"
     assert len(doc.tables) == 1
     assert doc.tables[0].data.num_rows == 6
-    assert doc.tables[0].data.num_cols == 3
+    # The group declares three columns but its colspecs put them on a four-column
+    # shared grid, which is the grid the entry offsets are resolved on.
+    assert doc.tables[0].data.num_cols == 4
+    assert all(
+        cell.end_row_offset_idx <= 6 and cell.end_col_offset_idx <= 4
+        for cell in doc.tables[0].data.table_cells
+    )
 
 
 def test_patent_uspto_grant_aps(patents):
