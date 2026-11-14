@@ -169,6 +169,13 @@ def _format_excel_value(value: Any, number_format: str) -> str:
         return str(value)
     if isinstance(value, str):
         return value
+    if isinstance(value, float):
+        # Excel keeps 15 significant digits, but it caches a formula result
+        # with 17: the sum of 10.1 and 20.2 is stored as 30.299999999999997.
+        # Round it to what Excel shows before any format is applied. The
+        # workbook is read with data_only=True, so a typed constant with
+        # more than 15 digits (as pandas may write) is shown the same way.
+        value = float(f"{value:.15g}")
 
     if number_format.lower() in _GENERAL_NUMBER_FORMATS:
         return str(value)
