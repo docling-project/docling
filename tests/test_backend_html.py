@@ -1435,6 +1435,21 @@ def test_unicode_characters():
     assert doc.texts[0].text == "Hello World!"
 
 
+def test_h1_title_preserves_original_text():
+    original = "می\u200cروم"
+    html = (
+        '<html><head><meta charset="utf-8"></head>'
+        f"<body><h1>{original}</h1></body></html>"
+    ).encode()
+    doc = _convert_html(html)
+
+    (title,) = doc.texts
+    assert title.label == DocItemLabel.TITLE
+    assert title.orig == original
+    assert title.text == original.replace("\u200c", "")
+    assert doc.export_to_markdown() == f"# {title.text}"
+
+
 def test_extract_parent_hyperlinks():
     html_path = Path("./tests/data/html/sources/hyperlink_04.html")
     in_doc = InputDocument(
