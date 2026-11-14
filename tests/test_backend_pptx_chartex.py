@@ -39,10 +39,13 @@ _EMU_PER_INCH = 914400
 
 
 def _level(points: list[str], extra: str = "") -> str:
+    """Return a ``cx:lvl``. An empty point gets no ``cx:pt``, as for an empty cell."""
     return (
         f'<cx:lvl ptCount="{len(points)}"{extra}>'
         + "".join(
-            f'<cx:pt idx="{index}">{text}</cx:pt>' for index, text in enumerate(points)
+            f'<cx:pt idx="{index}">{text}</cx:pt>'
+            for index, text in enumerate(points)
+            if text
         )
         + "</cx:lvl>"
     )
@@ -358,6 +361,39 @@ def test_hierarchical_categories_get_one_column_per_level():
         ["South", "Kerala", "1870"],
     ]
     assert [cell.row_header for cell in content.table.grid[1]] == [True, True, False]
+
+
+def test_sparse_parent_labels_are_filled_from_the_row_above():
+    """A parent label written only on the first row of its group covers the group.
+
+    Excel accepts a hierarchy in this sparse form, and an empty cell means the
+    parent of the row above. The cache then has no point for the empty cell.
+    An empty cell after the first label of a row stays empty: "Jan" and "Mar"
+    are leaves at the month level, and "2nd" is a leaf at the quarter level.
+    """
+    content = read_chartex(
+        etree.fromstring(
+            _chart_space(
+                _series("sunburst", name="Sales"),
+                _categories(
+                    ["", "Wk.1", "Wk.2", "", ""],
+                    ["Jan", "Feb", "", "Mar", ""],
+                    ["1st", "", "", "", "2nd"],
+                )
+                + _values(["3.5", "1.2", "0.8", "2", "5"], dim_type="size"),
+            )
+        )
+    )
+
+    assert content.table is not None
+    assert [[cell.text for cell in row] for row in content.table.grid] == [
+        ["", "", "", "Sales"],
+        ["1st", "Jan", "", "3.5"],
+        ["1st", "Feb", "Wk.1", "1.2"],
+        ["1st", "Feb", "Wk.2", "0.8"],
+        ["1st", "Mar", "", "2"],
+        ["2nd", "", "", "5"],
+    ]
 
 
 def test_values_without_categories_get_no_category_column():

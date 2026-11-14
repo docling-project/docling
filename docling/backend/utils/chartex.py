@@ -156,9 +156,34 @@ def _category_columns(data: etree._Element, corner: str) -> list[tuple[str, list
             ][::-1]
             return [
                 (corner if index == 0 else "", values)
-                for index, values in enumerate(levels)
+                for index, values in enumerate(_fill_parent_labels(levels))
             ]
     return []
+
+
+def _fill_parent_labels(levels: list[list[str]]) -> list[list[str]]:
+    """Give a row the parent labels of the row above when its outer cells are empty.
+
+    Excel accepts a hierarchy in sparse form: a parent label is only on the first
+    row of its group, and an empty cell means the parent of the row above. Only
+    the empty cells before the first label of a row are filled. An empty cell
+    after it stays empty, because a row can stop at a higher level.
+
+    Args:
+        levels: The labels of each category level, outer level first.
+
+    Returns:
+        The levels, all with the same length, with the parent labels filled in.
+    """
+    num_rows = max((len(level) for level in levels), default=0)
+    filled = [level + [""] * (num_rows - len(level)) for level in levels]
+    for row in range(1, num_rows):
+        first_label = next(
+            (depth for depth, level in enumerate(filled) if level[row]), 0
+        )
+        for depth in range(first_label):
+            filled[depth][row] = filled[depth][row - 1]
+    return filled
 
 
 def _level_values(level: etree._Element | None, numeric: bool) -> list[str]:
