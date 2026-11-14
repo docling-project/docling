@@ -15,6 +15,7 @@ from typing import Final
 
 from docling_core.types.doc import (
     BoundingBox,
+    CodeLanguageLabel,
     ContentLayer,
     CoordOrigin,
     DescriptionMetaField,
@@ -42,7 +43,11 @@ from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
 
 from docling.utils._inline_runs import trim_run_edges
-from docling.utils.code_language import detect_code_language
+from docling.utils.code_language import (
+    _HINT_PREFIXES,
+    detect_code_language,
+    normalize_code_language,
+)
 from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
@@ -133,6 +138,26 @@ class _Element:
             else child.text() + ("\n" if child.tag in _BLOCK_TAGS else "")
             for child in self.children
         )
+
+
+def _code_language_hint(node: _Element) -> str | None:
+    """Pick the language class a highlighter set on a ``<pre>`` or ``<code>``.
+
+    ``class`` holds space-separated tokens and the language is often on the
+    nested ``<code>`` (``<pre><code class="language-python">``) or next to
+    another class (``hljs language-python``), so each token of the node and
+    its ``<code>`` descendants is tried, ``language-``/``lang-`` ones first.
+    """
+    tokens: set[str] = set()
+    for element in (node, *node.elements()):
+        if element is node or element.tag == "code":
+            tokens.update((element.attrs.get("class") or "").split())
+    prefixed = sorted(t for t in tokens if t.lower().startswith(_HINT_PREFIXES))
+    bare = sorted(tokens - set(prefixed))
+    for token in (*prefixed, *bare):
+        if normalize_code_language(token) is not CodeLanguageLabel.UNKNOWN:
+            return token
+    return None
 
 
 class _HTMLTreeParser(HTMLParser):
@@ -596,7 +621,9 @@ class _ChandraDocumentBuilder:
                 text=text,
                 parent=parent,
                 prov=self._text_prov(prov, text),
-                code_language=detect_code_language(text, hint=node.attrs.get("class")),
+                code_language=detect_code_language(
+                    text, hint=_code_language_hint(node)
+                ),
             )
         elif node.tag == "math":
             text = node.text().strip()
