@@ -1,0 +1,11 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: paragraph: CUSTOMERS  |  SCATTER CHART
+    item-3 at level 2: title: Circles with better network availability lose fewer customers
+    item-4 at level 2: caption: Network Availability vs Monthly Churn by Circle, FY 2025–26
+    item-5 at level 2: picture
+      item-5 at level 3: caption: Network Availability vs Monthly Churn by Circle, FY 2025–26
+    item-6 at level 2: paragraph: Every 0.1 point of availability matters
+    item-7 at level 2: list: group list
+      item-8 at level 3: list_item: Circles above 99.6% availability kept churn below 1.6% a month.
+      item-9 at level 3: list_item: Network investment in the lowest circles is planned for FY 2026–27.

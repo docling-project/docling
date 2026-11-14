@@ -1559,20 +1559,22 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return None
 
     @staticmethod
-    def _categories_are_dates(axis: Any, ser: Any) -> bool:
-        """Return True when an axis shows its categories as dates.
+    def _axis_values_are_dates(axis: Any, ser: Any, cache: str) -> bool:
+        """Return True when an axis shows its values as dates.
 
-        A date axis always does. A text axis does when its number format is a
-        date format. That format is the axis's own, unless the axis links it to
-        the source data, in which case it is the format of the cached
-        categories.
+        A date axis always does. A text or value axis does when its number
+        format is a date format. That format is the axis's own, unless the
+        axis links it to the source data, in which case it is the format of
+        the cached values.
 
         Args:
-            axis: The plot's ``c:catAx`` or ``c:dateAx`` element.
+            axis: The plot's ``c:catAx``, ``c:dateAx`` or ``c:valAx`` element.
             ser: The first ``c:ser`` element of the plot.
+            cache: The cache element holding the values, ``"cat"`` or
+                ``"xVal"``.
 
         Returns:
-            True when the categories are dates.
+            True when the values are dates.
         """
         if axis.tag == qn("c:dateAx"):
             return True
@@ -1583,7 +1585,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         ):
             format_code = number_format.get("formatCode", "")
         else:
-            format_code = "".join(ser.xpath("./c:cat//c:numCache/c:formatCode/text()"))
+            format_code = "".join(
+                ser.xpath(f"./c:{cache}//c:numCache/c:formatCode/text()")
+            )
         return _is_date_format(format_code)
 
     @staticmethod
@@ -1631,8 +1635,70 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         points = ser.xpath("./c:cat//c:lvl[1]/c:pt") or ser.xpath("./c:cat//c:pt")
         texts = {point.idx: point.v.text or "" for point in points}
         labels = [texts.get(idx, "") for idx in range(ser.cat_ptCount_val)]
-        if axis is None or not self._categories_are_dates(axis, ser):
+        if axis is None or not self._axis_values_are_dates(axis, ser, "cat"):
             return labels
+        date1904 = bool(chart.element.date_1904)
+        return [_serial_to_iso(label, date1904) for label in labels]
+
+    @staticmethod
+    def _x_axis(chart: Any, x_chart: Any) -> Any:
+        """Return the x axis of an XY plot, or None when it has none.
+
+        A scatter plot has no ``c:catAx``: both of its axes are ``c:valAx``,
+        and the first ``c:axId`` of the plot names the x axis, as
+        python-pptx's ``chart.category_axis`` does for XY charts. The axis
+        is matched by that id, so a secondary plot cannot pick up the x
+        axis of another plot.
+
+        Args:
+            chart: A python-pptx ``Chart`` object.
+            x_chart: The plot element, such as ``c:scatterChart``.
+
+        Returns:
+            The ``c:valAx`` element of the plot's x axis, or None.
+        """
+        axis_ids = [ax.get("val") for ax in x_chart.iterchildren(qn("c:axId"))]
+        if not axis_ids:
+            return None
+        for axis in chart.element.chart.plotArea.xpath("./c:valAx"):
+            if axis_ids[0] in axis.xpath("./c:axId/@val"):
+                return axis
+        return None
+
+    def _series_x_values(self, chart: Any, x_axis: Any, series: Any) -> list[str]:
+        """Return the x values of an XY series, formatted as cell text.
+
+        The values are read from the series' ``c:xVal`` cache, because
+        python-pptx's ``XySeries`` exposes only the y values. A series
+        without an ``c:xVal`` cache gives []. A missing point gives "".
+        Numbers read like the source data; a value that is not a number,
+        such as an ISO date, is kept as its cached text, so it never drops
+        the table. X values on a date axis read as ISO 8601 dates, like
+        date categories.
+
+        Args:
+            chart: A python-pptx ``Chart`` object.
+            x_axis: The plot's x axis, or None.
+            series: A python-pptx ``XySeries``.
+
+        Returns:
+            One value per cached point.
+        """
+        ser = series._element
+        x_val = ser.xVal
+        if x_val is None:
+            return []
+        points = x_val.xpath(".//c:pt")
+        texts = {point.idx: point.v.text or "" for point in points}
+        labels = [texts.get(idx, "") for idx in range(x_val.ptCount_val)]
+        if x_axis is None or not self._axis_values_are_dates(x_axis, ser, "xVal"):
+            values = []
+            for label in labels:
+                try:
+                    values.append(self._cell_text(float(label)))
+                except ValueError:
+                    values.append(label)
+            return values
         date1904 = bool(chart.element.date_1904)
         return [_serial_to_iso(label, date1904) for label in labels]
 
@@ -1649,6 +1715,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         The categories come from the first plot that has them, and the title of
         that plot's category axis goes in the top-left cell.
 
+        A scatter plot has no categories: each series carries its own x
+        values in ``c:xVal``. The x values of the first series that has
+        any head the table, like the categories of other plots, and the
+        title of the plot's x axis goes in the top-left cell. A series
+        whose x values differ from those gets an extra ``"<name> (X)"``
+        column next to its y column, so no point loses its x coordinate.
+        Series that share their x values keep a single shared column. X
+        values on a date axis read as ISO 8601 dates, like date
+        categories.
+
         Args:
             chart: A python-pptx ``Chart`` object.
             plots: The chart's plot elements, back-most first.
@@ -1661,6 +1737,23 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         corner = ""
         columns: list[tuple[str, list[str]]] = []
         for x_chart in plots:
+            if etree.QName(x_chart).localname == "scatterChart":
+                x_axis = self._x_axis(chart, x_chart)
+                if not categories:
+                    corner = self._axis_title_text(x_axis) if x_axis is not None else ""
+                for series in self._plot_series(x_chart):
+                    name = (
+                        self._cell_text(series.name) if series.name is not None else ""
+                    )
+                    x_values = self._series_x_values(chart, x_axis, series)
+                    if not categories and x_values:
+                        categories = x_values
+                    elif x_values and x_values != categories:
+                        x_name = f"{name} (X)" if name else "X"
+                        columns.append((x_name, x_values))
+                    values = [self._cell_text(v) for v in series.values]
+                    columns.append((name, values))
+                continue
             if not categories:
                 axis = self._category_axis(chart, x_chart)
                 categories = self._category_labels(chart, axis, x_chart)
