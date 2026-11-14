@@ -150,41 +150,60 @@ _EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def _displayed_cell_text(cell: Cell | MergedCell) -> str:
-    """Return the cell text as Excel would display it.
+def _cell_text_and_orig(cell: Cell | MergedCell) -> tuple[str, str]:
+    """Return the normalized text of a cell and its text as Excel displays it.
 
-    ``data_only=True`` gives the cached computed value. Applying the stored
-    number format keeps currency, percentages, and dates from collapsing to
-    ``str(value)`` (``12.5``, ``0.1``, ``2025-02-01 00:00:00``).
+    ``data_only=True`` gives the cached computed value. See
+    ``_format_excel_value`` for the two values.
     """
     value = cell.value
     if value is None:
-        return ""
+        return "", ""
     return _format_excel_value(value, cell.number_format)
 
 
-def _format_excel_value(value: Any, number_format: str) -> str:
-    """Apply well-known Excel formats; leave custom formats as ``str(value)``."""
-    if isinstance(value, bool):
-        return str(value)
-    if isinstance(value, str):
-        return value
+def _format_excel_value(value: Any, number_format: str) -> tuple[str, str]:
+    """Return the ``(text, orig)`` pair of a cell value.
 
+    ``text`` is the normalized value: the stored value as ``str(value)``, the
+    same as with the ``General`` format (``1234567.891``, ``0.125``,
+    ``2025-02-01 00:00:00``). ``orig`` is the value as Excel displays it, with
+    the number format applied (``1,234,568``, ``13%``, ``Feb-25``). Formats that
+    are not supported keep ``str(value)`` in ``orig`` too.
+    """
+    if isinstance(value, bool):
+        return str(value), str(value)
+    if isinstance(value, str):
+        return value, value
+
+    text = str(value)
     if number_format.lower() in _GENERAL_NUMBER_FORMATS:
-        return str(value)
+        return text, text
     if isinstance(value, (datetime, date, time)):
-        return _format_excel_date(value, number_format)
+        return text, _format_excel_date(value, number_format)
     if isinstance(value, (int, float)):
         if is_date_format(number_format):
             # Workbooks are loaded by openpyxl with their own date epoch. Do not
             # reinterpret a remaining numeric value with an assumed 1900 epoch.
-            return str(value)
+            return text, text
         return _format_excel_number(value, number_format)
-    return str(value)
+    return text, text
 
 
-def _format_excel_number(value: int | float, fmt: str) -> str:
-    """Apply simple currency/percent sections, with Excel's rounding rule."""
+def _format_excel_number(value: int | float, fmt: str) -> tuple[str, str]:
+    """Return ``(text, orig)`` for a number, with ``fmt`` applied to ``orig``.
+
+    ``orig`` applies simple number, currency and percent sections, with Excel's
+    rounding rule. Fixed decimals and thousands separators apply also without a
+    currency or percent sign, as in the built-in formats ``0.00`` and ``#,##0``.
+    ``text`` is always ``str(value)``.
+    """
+    text = str(value)
+    return text, _apply_excel_number_format(value, fmt)
+
+
+def _apply_excel_number_format(value: int | float, fmt: str) -> str:
+    """Apply a supported number format, or return ``str(value)``."""
     # Conditions, unsupported locale markers, optional decimals and scaling
     # must not be silently removed and mistaken for a supported number format.
     without_colors = re.sub(
@@ -222,8 +241,6 @@ def _format_excel_number(value: int | float, fmt: str) -> str:
         normalized,
     )
     if match is None or normalized.count("%") > 1 or normalized.count("$") > 1:
-        return str(value)
-    if "$" not in normalized and "%" not in normalized:
         return str(value)
     amount = Decimal(str(abs(value)))
     if not amount.is_finite():
@@ -898,10 +915,13 @@ class ExcelCell(BaseModel):
     Attributes:
         row: The row number of the cell.
         col: The column number of the cell.
-        text: The text content of the cell.
+        text: The text content of the cell, as selected by the
+            ``cell_text_mode`` backend option.
         row_span: The number of rows the cell spans.
         col_span: The number of columns the cell spans.
         image: The image placed in the cell, if any.
+        orig: The cell text as Excel displays it, with the number format
+            applied. None if it is the same as ``text``.
     """
 
     row: int
@@ -910,6 +930,7 @@ class ExcelCell(BaseModel):
     row_span: int
     col_span: int
     image: ExcelCellImage | None = None
+    orig: str | None = None
 
 
 class ExcelTable(BaseModel):
@@ -1410,6 +1431,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 if title_cell is not None:
                     doc.add_text(
                         text=title_cell.text,
+                        orig=title_cell.orig,
                         label=DocItemLabel.TEXT,
                         parent=self.parent,
                         prov=self._cell_prov(
@@ -1438,6 +1460,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     else:
                         doc.add_text(
                             text=single_cell.text,
+                            orig=single_cell.orig,
                             label=DocItemLabel.TEXT,
                             parent=self.parent,
                             prov=table_prov,
@@ -1745,6 +1768,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             empty cells to be considered part of the same table if within tolerance distance.
         """
         GAP_TOLERANCE = cast(MsExcelBackendOptions, self.options).gap_tolerance
+        cell_text_mode = cast(MsExcelBackendOptions, self.options).cell_text_mode
 
         # Queue for BFS: (row, col)
         queue = collections.deque([(start_row, start_col)])
@@ -1831,10 +1855,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     if cell is not None and cell.data_type == "e"
                     else None
                 )
-                cell_text = (
-                    ""
+                normalized_text, displayed_text = (
+                    ("", "")
                     if image is not None or cell is None
-                    else _displayed_cell_text(cell)
+                    else _cell_text_and_orig(cell)
+                )
+                cell_text = (
+                    normalized_text
+                    if cell_text_mode == "normalized"
+                    else displayed_text
                 )
 
                 # Compute Spans
@@ -1848,6 +1877,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         row_span=row_span,
                         col_span=col_span,
                         image=image,
+                        orig=displayed_text if displayed_text != cell_text else None,
                     )
                 )
 

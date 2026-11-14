@@ -624,6 +624,26 @@ converter = DocumentConverter(
     format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
 )
 ```
+## XLSX: formatted or stored cell values
+
+Number and date cells get the text that Excel displays (`1,234,568`, `$12.50`,
+`13%`). For the stored value (`1234567.891`, `12.5`, `0.125`), set
+`cell_text_mode="normalized"`:
+
+```python
+from docling.datamodel.backend_options import MsExcelBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, ExcelFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.XLSX: ExcelFormatOption(
+            backend_options=MsExcelBackendOptions(cell_text_mode="normalized")
+        )
+    }
+)
+```
+
 ## DOCX, XLSX and EPUB size limits
 
 These formats are ZIP archives. Docling checks the decompressed sizes before it

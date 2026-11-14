@@ -492,6 +492,39 @@ The picture itself is empty unless you set `render_chart_images=True` in
 `MsPowerpointBackendOptions` or `MsExcelBackendOptions`. That draws each chart
 with LibreOffice.
 
+### Excel number formats
+
+By default, a number or date cell in an Excel sheet gets the text that Excel
+displays, with the number format of the cell applied. Set
+`cell_text_mode="normalized"` in `MsExcelBackendOptions` to get the stored
+value instead, the same as with the `General` format:
+
+| Number format | Stored value | `"formatted"` (default) | `"normalized"` |
+|---|---|---|---|
+| `#,##0` | `1234567.891` | `1,234,568` | `1234567.891` |
+| `"$"#,##0.00` | `12.5` | `$12.50` | `12.5` |
+| `0%` | `0.125` | `13%` | `0.125` |
+| `mmm-yy` | 1 February 2025 | `Feb-25` | `2025-02-01 00:00:00` |
+
+Text cells and number formats that Docling does not support always keep the
+stored value. Table cells have only one text. A cell that becomes a text item
+(see `treat_singleton_as_text`) keeps the displayed value in its `orig` field
+in both modes.
+
+```python
+from docling.datamodel.backend_options import MsExcelBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, ExcelFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.XLSX: ExcelFormatOption(
+            backend_options=MsExcelBackendOptions(cell_text_mode="normalized")
+        )
+    }
+)
+```
+
 ### Apple iWork options
 
 Pages (`.pages`), Numbers (`.numbers`) and Keynote (`.key`) share their
