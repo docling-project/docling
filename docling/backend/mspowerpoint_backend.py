@@ -1636,6 +1636,45 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         date1904 = bool(chart.element.date_1904)
         return [_serial_to_iso(label, date1904) for label in labels]
 
+    def _bubble_chart_columns(
+        self, chart: Any, x_chart: Any
+    ) -> list[tuple[str, list[str]]]:
+        """Read each bubble series as aligned X, Y and size columns.
+
+        Bubble plots reference two value axes, with the X axis first. Keep
+        their titles in the column headers and the series names on all three
+        columns. Cache indices preserve gaps between points.
+        """
+        axes = {
+            axis.find(qn("c:axId")).get("val"): axis
+            for axis in chart.element.chart.plotArea.xpath("./c:valAx")
+        }
+        titles = []
+        for axis_id in x_chart.iterchildren(qn("c:axId")):
+            axis = axes.get(axis_id.get("val"))
+            titles.append(self._axis_title_text(axis) if axis is not None else "")
+        x_title = titles[0] if titles and titles[0] else "X"
+        y_title = titles[1] if len(titles) > 1 and titles[1] else "Y"
+        columns: list[tuple[str, list[str]]] = []
+        for series in self._plot_series(x_chart):
+            name = self._cell_text(series.name)
+            for tag, title in (
+                ("xVal", x_title),
+                ("yVal", y_title),
+                ("bubbleSize", "Bubble size"),
+            ):
+                source = series._element.find(qn(f"c:{tag}"))
+                values = (
+                    [
+                        self._cell_text(source.pt_v(idx))
+                        for idx in range(source.ptCount_val)
+                    ]
+                    if source is not None
+                    else []
+                )
+                columns.append((f"{name} ({title})" if name else title, values))
+        return columns
+
     def _chart_to_table_data(self, chart: Any, plots: list[Any]) -> Optional[TableData]:
         """Reconstruct a chart's underlying data grid as a TableData.
 
@@ -1647,7 +1686,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         The series of every plot become columns in drawing order, so a
         combination chart keeps its line series next to its column series.
         The categories come from the first plot that has them, and the title of
-        that plot's category axis goes in the top-left cell.
+        that plot's category axis goes in the top-left cell. Bubble series use
+        three columns each to preserve their X, Y and size values.
 
         Args:
             chart: A python-pptx ``Chart`` object.
@@ -1661,6 +1701,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         corner = ""
         columns: list[tuple[str, list[str]]] = []
         for x_chart in plots:
+            if x_chart.tag == qn("c:bubbleChart"):
+                columns.extend(self._bubble_chart_columns(chart, x_chart))
+                continue
             if not categories:
                 axis = self._category_axis(chart, x_chart)
                 categories = self._category_labels(chart, axis, x_chart)
