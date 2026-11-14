@@ -1399,6 +1399,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             num_cols = 0
             num_rows = len(table.rows)
             tcells = []
+            # PowerPoint's "Header Row" and "First Column" table style options
+            # (a:tblPr firstRow / firstCol) say which cells are headers.
+            header_row = table.first_row
+            header_col = table.first_col
             # Access the XML element for the shape that contains the table
             table_xml = shape._element
 
@@ -1436,8 +1440,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         end_row_offset_idx=row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=row_idx == 0,
-                        row_header=False,
+                        column_header=header_row and row_idx == 0,
+                        row_header=header_col
+                        and col_idx == 0
+                        and not (header_row and row_idx == 0),
                     )
                     if len(cell.text.strip()) > 0:
                         tcells.append(icell)
