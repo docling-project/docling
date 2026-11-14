@@ -87,6 +87,8 @@ _MSG_INSTALL_HINT = (
 # Gmail sends the invite.ics copy of an invitation as application/ics.
 _CALENDAR_CONTENT_TYPES = frozenset({"text/calendar", "application/ics"})
 _CALENDAR_ENTRIES = frozenset({"VEVENT", "VTODO", "VJOURNAL", "VFREEBUSY"})
+# The calendar properties that are shown when a calendar has no entry.
+_CALENDAR_LABELS = ("X-WR-CALNAME", "NAME", "X-WR-CALDESC", "DESCRIPTION")
 # The delimiter mailparser puts between the parts of its whole-message body.
 _MAILPARSER_BODY_DELIMITER = "\n--- mail_boundary ---\n"
 
@@ -119,28 +121,56 @@ def _is_new_entry(entry: Component, seen: set[tuple[str, str, str]]) -> bool:
     return True
 
 
-def _merge_calendar_parts(calendar_parts: list[list[Component]]) -> list[Component]:
+def _new_components(
+    components: list[Component], seen: set[tuple[str, str, str]]
+) -> list[Component]:
+    """Return the components of one calendar part that add something to show.
+
+    A calendar is kept when it has an entry that was not seen before. A
+    calendar without entries is kept when it has a name or a description, as
+    the .ics backend shows them.
+    """
+    kept: list[Component] = []
+    for component in components:
+        if component.name == "VCALENDAR":
+            entries = [c for c in component.components if c.name in _CALENDAR_ENTRIES]
+            if not entries:
+                if any(component.text(name).strip() for name in _CALENDAR_LABELS):
+                    kept.append(component)
+                continue
+            children = [
+                child
+                for child in component.components
+                if child.name not in _CALENDAR_ENTRIES or _is_new_entry(child, seen)
+            ]
+            if any(child.name in _CALENDAR_ENTRIES for child in children):
+                kept.append(replace(component, components=children))
+        elif component.name in _CALENDAR_ENTRIES and _is_new_entry(component, seen):
+            kept.append(component)
+    return kept
+
+
+def _merge_calendar_parts(
+    calendar_parts: list[list[Component]],
+) -> tuple[list[list[Component]], list[Component]]:
     """Join the calendar parts and keep the first copy of each entry.
 
     Gmail sends an invitation twice, as an inline part and as an invite.ics
     attachment. Two entries are the same when their UID, RECURRENCE-ID and
-    SEQUENCE are the same. A calendar that has no new entry is dropped.
+    SEQUENCE are the same.
+
+    Returns:
+        The parts that add something to show, and the components to show.
     """
     seen: set[tuple[str, str, str]] = set()
+    shown_parts: list[list[Component]] = []
     merged: list[Component] = []
     for components in calendar_parts:
-        for component in components:
-            if component.name == "VCALENDAR":
-                children = [
-                    child
-                    for child in component.components
-                    if child.name not in _CALENDAR_ENTRIES or _is_new_entry(child, seen)
-                ]
-                if any(child.name in _CALENDAR_ENTRIES for child in children):
-                    merged.append(replace(component, components=children))
-            elif component.name in _CALENDAR_ENTRIES and _is_new_entry(component, seen):
-                merged.append(component)
-    return merged
+        kept = _new_components(components, seen)
+        if kept:
+            shown_parts.append(components)
+            merged.extend(kept)
+    return shown_parts, merged
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
@@ -382,25 +412,25 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 calendar_parts.append(components)
         return calendar_parts
 
-    def _get_fallback_body(self, calendar_parts: list[list[Component]]) -> str:
+    def _get_fallback_body(self, shown_parts: list[list[Component]]) -> str:
         assert self.mail is not None
 
-        if not calendar_parts:
+        if not shown_parts:
             return self.mail.body
         # mailparser also puts a calendar part in its body. Drop a part only
-        # when it parses to a calendar that is added below, so that text is
-        # never lost.
+        # when it parses to a calendar part that is added below, so that text
+        # is never lost.
         other_parts = [
             text
             for text in self.mail.text_not_managed
-            if parse_components(unfold_text(text)) not in calendar_parts
+            if parse_components(unfold_text(text)) not in shown_parts
         ]
         return _MAILPARSER_BODY_DELIMITER.join(
             self.mail.text_plain + self.mail.text_html + other_parts
         )
 
     def _get_body_paragraphs(
-        self, calendar_parts: list[list[Component]]
+        self, shown_parts: list[list[Component]]
     ) -> list[_BodyParagraph]:
         assert self.mail is not None
 
@@ -443,7 +473,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return [
             _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
             for paragraph in self._split_paragraphs(
-                self._get_fallback_body(calendar_parts)
+                self._get_fallback_body(shown_parts)
             )
         ]
 
@@ -504,7 +534,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             if self.options.parse_calendar_invitations
             else []
         )
-        body_paragraphs = self._get_body_paragraphs(calendar_parts)
+        shown_parts, calendars = _merge_calendar_parts(calendar_parts)
+        body_paragraphs = self._get_body_paragraphs(shown_parts)
 
         if subject:
             doc.add_title(text=subject)
@@ -523,7 +554,6 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=body_paragraph.content_layer,
             )
 
-        calendars = _merge_calendar_parts(calendar_parts)
         if calendars:
             doc.add_heading(text="Calendar", level=2)
             add_calendar_components(doc, calendars, base_level=3, name_as_title=False)

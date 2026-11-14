@@ -807,6 +807,46 @@ def test_email_calendar_body_is_not_kept_as_raw_text():
     assert markdown == "# Quarterly planning\n\n" + _INVITATION_MARKDOWN
 
 
+def test_email_adds_the_name_of_a_calendar_without_entries():
+    """The .ics backend shows the name and description of such a calendar."""
+    message = EmailMessage()
+    message["Subject"] = "Team calendar"
+    message.set_content(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "X-WR-CALNAME:Team\r\n"
+        "X-WR-CALDESC:Shared team dates.\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown == (
+        "# Team calendar\n\n### Calendar\n\nCalendar name: Team\n\nShared team dates."
+    )
+
+
+def test_email_keeps_a_calendar_part_with_nothing_to_show_as_text():
+    """A part leaves the body text only when it is added as a calendar."""
+    message = EmailMessage()
+    message["Subject"] = "Time zone"
+    message.set_content(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "BEGIN:VTIMEZONE\r\n"
+        "TZID:Europe/Berlin\r\n"
+        "END:VTIMEZONE\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert "TZID:Europe/Berlin" in markdown
+    assert "### Calendar" not in markdown
+
+
 def test_email_skips_a_calendar_part_that_cannot_be_decoded():
     message = _invitation_email("Quarterly planning", "See the invitation.")
     message.add_attachment(
