@@ -44,7 +44,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import FineRef, Formatting, Script
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -2565,11 +2565,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if address and hyperlink.fragment:
             address = f"{address}#{hyperlink.fragment}"
         if address:
-            if not urlparse(address).scheme:
-                return Path(address)
             try:
+                if not urlparse(address).scheme:
+                    return Path(address)
                 return AnyUrl(address)
-            except ValidationError:
+            except ValueError:
                 _log.warning("Skipping malformed hyperlink address: %r", address)
                 return None
 
