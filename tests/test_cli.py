@@ -2305,3 +2305,116 @@ def test_form_fields_with_doctags_are_rejected_before_reading_inputs(
     )
     assert result.exit_code == 2  # usage error, not the missing-input abort
     assert "--extract-form-fields cannot be combined" in strip_ansi(result.output)
+
+
+def test_export_documents_html_and_split_page_do_not_overwrite(tmp_path):
+    """Asking for both --to html and --to html_split_page must leave two files:
+    both exports used to build <stem>.html, so the split-page view ran second
+    and overwrote the plain HTML output (issue #5339)."""
+    from docling.cli.main import export_documents
+    from docling.datamodel.base_models import ConversionStatus, InputFormat
+    from docling.datamodel.document import (
+        ConversionResult,
+        InputDocument,
+        _DummyBackend,
+    )
+
+    input_path = tmp_path / "input.pdf"
+    input_path.write_bytes(b"%PDF-1.4")
+
+    input_doc = InputDocument(
+        path_or_stream=input_path,
+        format=InputFormat.PDF,
+        backend=_DummyBackend,
+    )
+
+    conv_res = ConversionResult(input=input_doc)
+    conv_res.status = ConversionStatus.SUCCESS
+
+    class DummyDocument:
+        def save_as_html(self, *, filename, image_mode, split_page_view):
+            Path(filename).write_text(f"html split_page_view={split_page_view}")
+
+    conv_res.document = DummyDocument()
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    export_documents(
+        [conv_res],
+        output_dir=output_dir,
+        export_json=False,
+        export_yaml=False,
+        export_html=True,
+        export_html_split_page=True,
+        show_layout=False,
+        export_md=False,
+        export_txt=False,
+        export_doctags=False,
+        export_vtt=False,
+        export_doclang=False,
+        print_timings=False,
+        export_timings=False,
+        image_export_mode=ImageRefMode.PLACEHOLDER,
+    )
+
+    plain = output_dir / "input.html"
+    split = output_dir / "input.split_page.html"
+    assert plain.exists()
+    assert split.exists()
+    assert plain.read_text() == "html split_page_view=False"
+    assert split.read_text() == "html split_page_view=True"
+
+
+def test_export_documents_split_page_only_keeps_plain_html_name(tmp_path):
+    """With html_split_page as the only HTML flavour the output keeps the
+    historical <stem>.html name, so single-format users see no change."""
+    from docling.cli.main import export_documents
+    from docling.datamodel.base_models import ConversionStatus, InputFormat
+    from docling.datamodel.document import (
+        ConversionResult,
+        InputDocument,
+        _DummyBackend,
+    )
+
+    input_path = tmp_path / "input.pdf"
+    input_path.write_bytes(b"%PDF-1.4")
+
+    input_doc = InputDocument(
+        path_or_stream=input_path,
+        format=InputFormat.PDF,
+        backend=_DummyBackend,
+    )
+
+    conv_res = ConversionResult(input=input_doc)
+    conv_res.status = ConversionStatus.SUCCESS
+
+    class DummyDocument:
+        def save_as_html(self, *, filename, image_mode, split_page_view):
+            Path(filename).write_text(f"html split_page_view={split_page_view}")
+
+    conv_res.document = DummyDocument()
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    export_documents(
+        [conv_res],
+        output_dir=output_dir,
+        export_json=False,
+        export_yaml=False,
+        export_html=False,
+        export_html_split_page=True,
+        show_layout=False,
+        export_md=False,
+        export_txt=False,
+        export_doctags=False,
+        export_vtt=False,
+        export_doclang=False,
+        print_timings=False,
+        export_timings=False,
+        image_export_mode=ImageRefMode.PLACEHOLDER,
+    )
+
+    assert (output_dir / "input.html").exists()
+    assert not (output_dir / "input.split_page.html").exists()
