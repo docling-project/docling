@@ -5057,10 +5057,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return
             emitted_partnames.add(partname)
 
-            # python-docx ``Paragraph.text`` skips ``w:sym``, so check for it too
-            par = [
-                p for p in part.paragraphs if p.text.strip() or p._p.xpath(".//w:sym")
-            ]
+            # python-docx ``Paragraph.text`` reads only the runs that are direct
+            # children of the paragraph. It skips ``w:sym`` and the runs inside
+            # a content control, a tracked insertion, a smart tag or a simple
+            # field, and it never sees a block-level content control. The
+            # body reads these too, so look at the XML instead.
+            par = part._element.xpath(".//w:t[normalize-space()] | .//w:sym")
             tables = part.tables
             has_blip = self._has_blip(part._element)
             has_txbx = len(txbx_xpath(part._element)) > 0
