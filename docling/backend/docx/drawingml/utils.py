@@ -9,13 +9,15 @@ import shutil
 import signal
 import subprocess
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Callable, Final, Optional
 
 from PIL import Image, ImageChops
+
+from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
     from docx.document import Document
@@ -428,11 +430,13 @@ def get_pil_from_dml_docx(
         converter(temp_docx, temp_pdf)
 
         # 3) Load PDF as PNG
-        pdf = pypdfium2.PdfDocument(temp_pdf)
-        page = pdf[0]
-        image = crop_whitespace(page.render(scale=2).to_pil())
-        page.close()
-        pdf.close()
+        with (
+            pypdfium2_lock,
+            closing(pypdfium2.PdfDocument(temp_pdf)) as pdf,
+            closing(pdf[0]) as page,
+            closing(page.render(scale=2)) as bitmap,
+        ):
+            image = crop_whitespace(bitmap.to_pil().copy())
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 

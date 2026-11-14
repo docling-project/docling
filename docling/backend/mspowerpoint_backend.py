@@ -8,6 +8,7 @@ import math
 import re
 import shutil
 import warnings
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -71,6 +72,7 @@ from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils._inline_runs import trim_run_edges
+from docling.utils.locks import pypdfium2_lock
 
 _log = logging.getLogger(__name__)
 
@@ -1287,11 +1289,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            with (
+                pypdfium2_lock,
+                closing(pypdfium2.PdfDocument(str(output_path))) as pdf,
+                closing(pdf[0]) as page,
+                closing(page.render(scale=2)) as bitmap,
+            ):
+                pil_image = crop_whitespace(bitmap.to_pil().copy())
             return pil_image
         except Exception as exc:
             _log.debug("EMF/WMF rasterization via LibreOffice failed: %s", exc)
@@ -1939,11 +1943,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for a chart")
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            with (
+                pypdfium2_lock,
+                closing(pypdfium2.PdfDocument(str(output_path))) as pdf,
+                closing(pdf[0]) as page,
+                closing(page.render(scale=2)) as bitmap,
+            ):
+                pil_image = crop_whitespace(bitmap.to_pil().copy())
             return pil_image
         except Exception as exc:
             _log.debug("Chart rendering via LibreOffice failed: %s", exc)
