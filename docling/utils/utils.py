@@ -36,7 +36,16 @@ def create_file_hash(path_or_stream: Union[BytesIO, Path]) -> str:
         with path_or_stream.open("rb") as afile:
             _hash_buf(afile)
     elif isinstance(path_or_stream, BytesIO):
-        _hash_buf(path_or_stream)
+        # The stream can still be sitting where the caller left it, which is the end of the
+        # buffer for anyone who just wrote the document into it. Reading from there hashes
+        # b"" and every such document ends up with the same hash. Hash the whole buffer
+        # instead, and hand the stream back at the position we found it.
+        position = path_or_stream.tell()
+        path_or_stream.seek(0)
+        try:
+            _hash_buf(path_or_stream)
+        finally:
+            path_or_stream.seek(position)
 
     return hasher.hexdigest()
 
