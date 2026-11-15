@@ -9,8 +9,8 @@ no picture to extract and none LibreOffice can make out of the ``.key`` itself.
 What LibreOffice can draw is an Office chart, which is how the Office backends
 render theirs, so the chart is rebuilt from the data read out of the document as
 a DrawingML chart on a page of its own, and rendered along the route those
-backends take: to PDF with LibreOffice, to pixels with pypdfium2, and cropped to
-what was drawn.
+backends take: to PDF with LibreOffice, to pixels with docling-parse, and
+cropped to what was drawn.
 
 The page is a Word document of five small parts, written here rather than with
 python-docx or python-pptx: neither ships with the iWork extra, and the little
@@ -28,7 +28,6 @@ import logging
 import shutil
 import zipfile
 from collections.abc import Callable, Sequence
-from contextlib import closing
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -36,16 +35,10 @@ from xml.sax.saxutils import escape
 
 from PIL import Image
 
-from docling.backend.docx.drawingml.utils import crop_whitespace
+from docling.backend.docx.drawingml.utils import crop_whitespace, render_pdf_page_as_pil
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries, Geometry
-from docling.utils.locks import pypdfium2_lock
 
 _log = logging.getLogger(__name__)
-
-try:  # pragma: no cover - import-time guard
-    import pypdfium2
-except ImportError:  # pragma: no cover - import-time guard
-    pass
 
 DEFAULT_CHART_WIDTH = 480.0
 
@@ -223,13 +216,7 @@ def render_chart(
         if not output_path.exists():
             _log.debug("LibreOffice produced no PDF output for an iWork chart")
             return None
-        with (
-            pypdfium2_lock,
-            closing(pypdfium2.PdfDocument(str(output_path))) as pdf,
-            closing(pdf[0]) as page,
-            closing(page.render(scale=RENDER_SCALE)) as bitmap,
-        ):
-            image = crop_whitespace(bitmap.to_pil().copy())
+        image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=RENDER_SCALE))
         return image
     except Exception as exc:
         _log.debug("iWork chart rendering via LibreOffice failed: %s", exc)

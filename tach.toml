@@ -58,7 +58,7 @@ depends_on = [
 [[modules]]
 path = "docling.backend.docx"
 layer = "core"
-depends_on = ["docling.utils"]
+depends_on = []
 
 [[modules]]
 path = "docling.backend.json"
