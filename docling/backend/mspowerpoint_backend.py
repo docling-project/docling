@@ -1664,14 +1664,22 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 ("bubbleSize", "Bubble size"),
             ):
                 source = series._element.find(qn(f"c:{tag}"))
-                values = (
-                    [
+                if source is None:
+                    values = []
+                elif source.find(qn("c:strRef")) is not None or source.find(
+                    qn("c:strLit")
+                ) is not None:
+                    # A text X cache cannot use pt_v: python-pptx casts it to float.
+                    points = {
+                        point.idx: point.v.text or ""
+                        for point in source.xpath(".//c:pt")
+                    }
+                    values = [points.get(idx, "") for idx in range(source.ptCount_val)]
+                else:
+                    values = [
                         self._cell_text(source.pt_v(idx))
                         for idx in range(source.ptCount_val)
                     ]
-                    if source is not None
-                    else []
-                )
                 columns.append((f"{name} ({title})" if name else title, values))
         return columns
 
