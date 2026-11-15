@@ -213,7 +213,7 @@ item-0 at level 0: unspecified: group _root_
   item-208 at level 1: text: Comparison of performance using  ... th PCA-based dimensionality reduction.
   item-209 at level 1: text: 
     item-210 at level 2: inline: group group
-      item-211 at level 3: text: 2cRMSE: Metallicity 2cRMSE: Spectral Lines (lr)2-3(lr)4-5 
+      item-211 at level 3: text: 2cRMSE: Metallicity 2cRMSE: Spectral Lines 
       item-212 at level 3: formula: k
       item-213 at level 3: text:  SFNet PCA SFNet PCA 2  
       item-214 at level 3: formula: 0.0858 \pm 0.0004

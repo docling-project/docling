@@ -80,6 +80,57 @@ def test_latex_table_cell_drops_source_linebreaks():
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["first second"]
 
 
+def _convert_latex(latex_content: bytes) -> DoclingDocument:
+    stream = BytesIO(latex_content)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="table.tex",
+    )
+    return LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+
+@pytest.mark.parametrize(
+    "rule",
+    [
+        rb"\cline{1-2}",
+        rb"\cmidrule(lr){1-2}",
+        rb"\hline\rule{0pt}{2ex}",
+        rb"\specialrule{1pt}{2pt}{2pt}",
+        rb"\midrule[0.5pt]",
+    ],
+)
+def test_table_rule_arguments_are_not_cell_text(rule: bytes):
+    doc = _convert_latex(
+        b"\\documentclass{article}\\usepackage{booktabs}\\begin{document}"
+        b"\\begin{tabular}{cc}A & B \\\\ "
+        + rule
+        + b" C & D\\end{tabular}\\end{document}"
+    )
+
+    assert len(doc.tables) == 1
+    cells = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert "C" in cells
+    assert "D" in cells
+    joined = " ".join(cells)
+    for leftover in ("1-2", "0pt", "2ex", "1pt", "(lr)", "[0.5pt]"):
+        assert leftover not in joined
+
+
+def test_rule_arguments_are_not_body_text():
+    doc = _convert_latex(
+        b"\\documentclass{article}\\begin{document}"
+        b"Before \\cmidrule(lr){2-3} after\\end{document}"
+    )
+
+    markdown = doc.export_to_markdown()
+    assert "Before" in markdown
+    assert "after" in markdown
+    assert "(lr)" not in markdown
+    assert "2-3" not in markdown
+
+
 def test_latex_table_cells_keep_inline_formulas():
     latex_content = rb"""\documentclass{article}
 \newcommand{\mytree}{\ensuremath{\ell{\mathsf T}k}\,}

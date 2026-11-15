@@ -9,9 +9,35 @@ from typing import Any
 
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import get_default_latex_context_db
-    from pylatexenc.macrospec import EnvironmentSpec, MacroSpec
+    from pylatexenc.macrospec import EnvironmentSpec, MacroSpec, MacroStandardArgsParser
 
     _PYLATEXENC_AVAILABLE = True
+
+    class _CmidruleArgsParser(MacroStandardArgsParser):
+        """Read ``\\cmidrule(trim)[width]{a-b}``.
+
+        The parenthesized trim is not expressible in an argspec. It is consumed
+        here so it does not remain as text in the next cell.
+        """
+
+        def __init__(self) -> None:
+            super().__init__("[{")
+
+        def parse_args(self, w, pos, parsing_state=None):  # type: ignore[no-untyped-def]
+            source = w.s
+            index = pos
+            limit = len(source)
+            while index < limit and source[index] in " \t\r\n":
+                index += 1
+            if index < limit and source[index] == "(":
+                close = source.find(")", index + 1, index + 32)
+                if close != -1:
+                    index = close + 1
+            parsed, arg_pos, arg_len = super().parse_args(
+                w, index, parsing_state=parsing_state
+            )
+            return parsed, pos, arg_pos + arg_len - pos
+
 except ImportError:  # pragma: no cover - import-time guard
     _PYLATEXENC_AVAILABLE = False
 
@@ -26,6 +52,15 @@ def _build_context_db() -> Any:
     db.add_context_category(
         "docling-tables",
         environments=[EnvironmentSpec("longtable", "[{")],
+        macros=[
+            MacroSpec("cline", "{"),
+            MacroSpec("specialrule", "{{{"),
+            MacroSpec("rule", "[{{"),
+            MacroSpec("toprule", "["),
+            MacroSpec("midrule", "["),
+            MacroSpec("bottomrule", "["),
+            MacroSpec("cmidrule", _CmidruleArgsParser()),
+        ],
         prepend=True,
     )
     db.add_context_category(

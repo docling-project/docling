@@ -248,7 +248,7 @@
     <ecel/>
     <nl/>
     <fcel/>
-    0pt2.0exSelf-Attention
+    Self-Attention
     <fcel/>
     <text><formula>O(n^2 \cdot d)</formula></text>
     <fcel/>
@@ -364,8 +364,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <fcel/>
     2cTraining Cost (FLOPs)
     <nl/>
-    <fcel/>
-    2-3 5-6
+    <ecel/>
     <fcel/>
     EN-DE
     <fcel/>
@@ -654,7 +653,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    0pt2.0exDeep-Att + PosUnk Ensemble \citep{DBLP:journals/corr/ZhouCWLX16}
+    Deep-Att + PosUnk Ensemble \citep{DBLP:journals/corr/ZhouCWLX16}
     <ecel/>
     <fcel/>
     40.4
@@ -799,7 +798,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    1pt-1pt0pt 0pt2.2exTransformer (base model)
+    Transformer (base model)
     <fcel/>
     27.3
     <fcel/>
@@ -948,8 +947,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
   <heading level="3">Model Variations</heading>
   <table>
     <caption><content>Variations on the Transformer architecture. Unlisted values are identical to those of the base model.  All metrics are on the English-to-German translation development set, newstest2013.  Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities.</content></caption>
-    <fcel/>
-    0pt2.0ex
+    <ecel/>
     <fcel/>
     <text>2*<formula>N</formula></text>
     <fcel/>
@@ -994,7 +992,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <text><formula>\times10^6</formula></text>
     <nl/>
     <fcel/>
-    0pt2.0ex base
+    base
     <fcel/>
     6
     <fcel/>
@@ -1021,7 +1019,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     65
     <nl/>
     <fcel/>
-    0pt2.0ex 4*(A)
+    4*(A)
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1098,7 +1096,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    0pt2.0ex 2*(B)
+    2*(B)
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1135,7 +1133,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     60
     <nl/>
     <fcel/>
-    0pt2.0ex 7*(C)
+    7*(C)
     <fcel/>
     2
     <ecel/>
@@ -1266,7 +1264,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     90
     <nl/>
     <fcel/>
-    0pt2.0ex 4*(D)
+    4*(D)
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1335,7 +1333,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    0pt2.0ex (E)
+    (E)
     <ecel/>
     <fcel/>
     7cpositional embedding instead of sinusoids
@@ -1353,7 +1351,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    0pt2.0ex big
+    big
     <fcel/>
     6
     <fcel/>
@@ -1439,7 +1437,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    1pt-1pt0pt Transformer (4 layers)
+    Transformer (4 layers)
     <fcel/>
     WSJ only, discriminative
     <fcel/>
@@ -1447,7 +1445,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    1pt-1pt0pt Zhu et al. (2013) \cite{zhu-EtAl:2013:ACL}
+    Zhu et al. (2013) \cite{zhu-EtAl:2013:ACL}
     <fcel/>
     semi-supervised
     <fcel/>
@@ -1481,7 +1479,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     92.1
     <nl/>
     <fcel/>
-    1pt-1pt0pt Transformer (4 layers)
+    Transformer (4 layers)
     <fcel/>
     semi-supervised
     <fcel/>
@@ -1489,7 +1487,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
     <fcel/>
-    1pt-1pt0pt Luong et al. (2015) \cite{multiseq2seq}
+    Luong et al. (2015) \cite{multiseq2seq}
     <fcel/>
     multi-task
     <fcel/>

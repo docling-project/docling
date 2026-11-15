@@ -205,7 +205,7 @@ The third is the path length between long-range dependencies in the network. Lea
 \hline
 Layer Type & Complexity per Layer & Sequential & Maximum Path Length \\ \hline
  &  & Operations &  \\ \hline
-0pt2.0exSelf-Attention & $O(n^2 \cdot d)$ & $O(1)$ & $O(1)$ \\ \hline
+Self-Attention & $O(n^2 \cdot d)$ & $O(1)$ & $O(1)$ \\ \hline
 Recurrent & $O(n \cdot d^2)$ & $O(n)$ & $O(n)$ \\ \hline
 Convolutional & $O(k \cdot n \cdot d^2)$ & $O(1)$ & $O(log_k(n))$ \\ \hline
 Self-Attention (restricted) & $O(r \cdot n \cdot d)$ & $O(1)$ & $O(n/r)$ \\ \hline
@@ -260,16 +260,16 @@ Label Smoothing During training, we employed label smoothing of value $\epsilon_
 \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|}
 \hline
 19 & 2*Model & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & 2cBLEU &  & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & JonasFaceNet2017 & 2cTraining Cost (FLOPs) \\ \hline
-2-3 5-6 & EN-DE & EN-FR &  & EN-DE & EN-FR &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
+ & EN-DE & EN-FR &  & EN-DE & EN-FR &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 ByteNet \textbackslash{}citep\{NalBytenet2017\} & 23.75 &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 Deep-Att + PosUnk \textbackslash{}citep\{DBLP:journals/corr/ZhouCWLX16\} &  & 39.2 &  &  & $1.0\cdot10^{20}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 GNMT + RL \textbackslash{}citep\{wu2016google\} & 24.6 & 39.92 &  & $2.3\cdot10^{19}$ & $1.4\cdot10^{20}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 ConvS2S \textbackslash{}citep\{JonasFaceNet2017\} & 25.16 & 40.46 &  & $9.6\cdot10^{18}$ & $1.5\cdot10^{20}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 MoE \textbackslash{}citep\{shazeer2017outrageously\} & 26.03 & 40.56 &  & $2.0\cdot10^{19}$ & $1.2\cdot10^{20}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
-0pt2.0exDeep-Att + PosUnk Ensemble \textbackslash{}citep\{DBLP:journals/corr/ZhouCWLX16\} &  & 40.4 &  &  & $8.0\cdot10^{20}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
+Deep-Att + PosUnk Ensemble \textbackslash{}citep\{DBLP:journals/corr/ZhouCWLX16\} &  & 40.4 &  &  & $8.0\cdot10^{20}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 GNMT + RL Ensemble \textbackslash{}citep\{wu2016google\} & 26.30 & 41.16 &  & $1.8\cdot10^{20}$ & $1.1\cdot10^{21}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 ConvS2S Ensemble \textbackslash{}citep\{JonasFaceNet2017\} & 26.36 & 41.29 &  & $7.7\cdot10^{19}$ & $1.2\cdot10^{21}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
-1pt-1pt0pt 0pt2.2exTransformer (base model) & 27.3 & 38.1 &  & 2c$3.3\cdot10^{18}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
+Transformer (base model) & 27.3 & 38.1 &  & 2c$3.3\cdot10^{18}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 Transformer (big) & 28.4 & 41.8 &  & 2c$2.3\cdot10^{19}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 \end{tabular}
@@ -293,28 +293,28 @@ We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respe
 \caption{Variations on the Transformer architecture. Unlisted values are identical to those of the base model.  All metrics are on the English-to-German translation development set, newstest2013.  Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities.}
 \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
 \hline
-0pt2.0ex & 2*$N$ & 2*$d_{\text{model}}$ & 2*$d_{\text{ff}}$ & 2*$h$ & 2*$d_k$ & 2*$d_v$ & 2*$P_{drop}$ & 2*$\epsilon_{ls}$ & train & PPL & BLEU & params \\ \hline
+ & 2*$N$ & 2*$d_{\text{model}}$ & 2*$d_{\text{ff}}$ & 2*$h$ & 2*$d_k$ & 2*$d_v$ & 2*$P_{drop}$ & 2*$\epsilon_{ls}$ & train & PPL & BLEU & params \\ \hline
  &  &  &  &  &  &  &  &  & steps & (dev) & (dev) & $\times10^6$ \\ \hline
-0pt2.0ex base & 6 & 512 & 2048 & 8 & 64 & 64 & 0.1 & 0.1 & 100K & 4.92 & 25.8 & 65 \\ \hline
-0pt2.0ex 4*(A) &  &  &  & 1 & 512 & 512 &  &  &  & 5.29 & 24.9 &  \\ \hline
+base & 6 & 512 & 2048 & 8 & 64 & 64 & 0.1 & 0.1 & 100K & 4.92 & 25.8 & 65 \\ \hline
+4*(A) &  &  &  & 1 & 512 & 512 &  &  &  & 5.29 & 24.9 &  \\ \hline
  &  &  &  & 4 & 128 & 128 &  &  &  & 5.00 & 25.5 &  \\ \hline
  &  &  &  & 16 & 32 & 32 &  &  &  & 4.91 & 25.8 &  \\ \hline
  &  &  &  & 32 & 16 & 16 &  &  &  & 5.01 & 25.4 &  \\ \hline
-0pt2.0ex 2*(B) &  &  &  &  & 16 &  &  &  &  & 5.16 & 25.1 & 58 \\ \hline
+2*(B) &  &  &  &  & 16 &  &  &  &  & 5.16 & 25.1 & 58 \\ \hline
  &  &  &  &  & 32 &  &  &  &  & 5.01 & 25.4 & 60 \\ \hline
-0pt2.0ex 7*(C) & 2 &  &  &  &  &  &  &  &  & 6.11 & 23.7 & 36 \\ \hline
+7*(C) & 2 &  &  &  &  &  &  &  &  & 6.11 & 23.7 & 36 \\ \hline
  & 4 &  &  &  &  &  &  &  &  & 5.19 & 25.3 & 50 \\ \hline
  & 8 &  &  &  &  &  &  &  &  & 4.88 & 25.5 & 80 \\ \hline
  &  & 256 &  &  & 32 & 32 &  &  &  & 5.75 & 24.5 & 28 \\ \hline
  &  & 1024 &  &  & 128 & 128 &  &  &  & 4.66 & 26.0 & 168 \\ \hline
  &  &  & 1024 &  &  &  &  &  &  & 5.12 & 25.4 & 53 \\ \hline
  &  &  & 4096 &  &  &  &  &  &  & 4.75 & 26.2 & 90 \\ \hline
-0pt2.0ex 4*(D) &  &  &  &  &  &  & 0.0 &  &  & 5.77 & 24.6 &  \\ \hline
+4*(D) &  &  &  &  &  &  & 0.0 &  &  & 5.77 & 24.6 &  \\ \hline
  &  &  &  &  &  &  & 0.2 &  &  & 4.95 & 25.5 &  \\ \hline
  &  &  &  &  &  &  &  & 0.0 &  & 4.67 & 25.3 &  \\ \hline
  &  &  &  &  &  &  &  & 0.2 &  & 5.47 & 25.7 &  \\ \hline
-0pt2.0ex (E) &  & 7cpositional embedding instead of sinusoids &  & 4.92 & 25.7 &  &  &  &  &  &  &  \\ \hline
-0pt2.0ex big & 6 & 1024 & 4096 & 16 &  &  & 0.3 &  & 300K & 4.33 & 26.4 & 213 \\ \hline
+(E) &  & 7cpositional embedding instead of sinusoids &  & 4.92 & 25.7 &  &  &  &  &  &  &  \\ \hline
+big & 6 & 1024 & 4096 & 16 &  &  & 0.3 &  & 300K & 4.33 & 26.4 & 213 \\ \hline
  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 \end{tabular}
 \end{table}
@@ -336,13 +336,13 @@ Vinyals & Kaiser el al. (2014) \textbackslash{}cite\{KVparse15\} & WSJ only, dis
 Petrov et al. (2006) \textbackslash{}cite\{petrov-EtAl:2006:ACL\} & WSJ only, discriminative & 90.4 &  \\ \hline
 Zhu et al. (2013) \textbackslash{}cite\{zhu-EtAl:2013:ACL\} & WSJ only, discriminative & 90.4 &  \\ \hline
 Dyer et al. (2016) \textbackslash{}cite\{dyer-rnng:16\} & WSJ only, discriminative & 91.7 &  \\ \hline
-1pt-1pt0pt Transformer (4 layers) & WSJ only, discriminative & 91.3 &  \\ \hline
-1pt-1pt0pt Zhu et al. (2013) \textbackslash{}cite\{zhu-EtAl:2013:ACL\} & semi-supervised & 91.3 &  \\ \hline
+Transformer (4 layers) & WSJ only, discriminative & 91.3 &  \\ \hline
+Zhu et al. (2013) \textbackslash{}cite\{zhu-EtAl:2013:ACL\} & semi-supervised & 91.3 &  \\ \hline
 Huang & Harper (2009) \textbackslash{}cite\{huang-harper:2009:EMNLP\} & semi-supervised & 91.3 \\ \hline
 McClosky et al. (2006) \textbackslash{}cite\{mcclosky-etAl:2006:NAACL\} & semi-supervised & 92.1 &  \\ \hline
 Vinyals & Kaiser el al. (2014) \textbackslash{}cite\{KVparse15\} & semi-supervised & 92.1 \\ \hline
-1pt-1pt0pt Transformer (4 layers) & semi-supervised & 92.7 &  \\ \hline
-1pt-1pt0pt Luong et al. (2015) \textbackslash{}cite\{multiseq2seq\} & multi-task & 93.0 &  \\ \hline
+Transformer (4 layers) & semi-supervised & 92.7 &  \\ \hline
+Luong et al. (2015) \textbackslash{}cite\{multiseq2seq\} & multi-task & 93.0 &  \\ \hline
 Dyer et al. (2016) \textbackslash{}cite\{dyer-rnng:16\} & generative & 93.3 &  \\ \hline
  &  &  &  \\ \hline
 \end{tabular}
