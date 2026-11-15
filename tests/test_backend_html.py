@@ -449,6 +449,32 @@ def test_table_rowspan_shifts_later_cells_into_the_table():
     assert "10" in doc.export_to_markdown()
 
 
+def test_table_second_rowspan_shift_keeps_the_later_cell():
+    # North and South hold the first two columns. The next row's pair spans
+    # two columns and two rows, so the cell under that pair is shifted once
+    # more. Width used to stop at four columns and the export dropped it.
+    src = (
+        b'<table><tr><td rowspan="4">North</td><td rowspan="4">South</td></tr>'
+        b'<tr><td rowspan="2" colspan="2">Pair</td></tr>'
+        b"<tr><td>Target</td></tr>"
+        b"<tr><td>East</td><td>West</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    target = next(cell for cell in data.table_cells if cell.text == "Target")
+    assert data.num_cols == 5
+    assert (target.start_col_offset_idx, target.end_col_offset_idx) == (4, 5)
+    assert "Target" in doc.export_to_markdown()
+
+
 def test_table_row_header_rowspan_keeps_the_row_cells():
     # The row-header form of the same shift: the spanning "<th>2025</th>" row
     # holds column 0, so the cells of the data rows start in column 1 and the
