@@ -1666,9 +1666,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 source = series._element.find(qn(f"c:{tag}"))
                 if source is None:
                     values = []
-                elif source.find(qn("c:strRef")) is not None or source.find(
-                    qn("c:strLit")
-                ) is not None:
+                elif (
+                    source.find(qn("c:strRef")) is not None
+                    or source.find(qn("c:strLit")) is not None
+                ):
                     # A text X cache cannot use pt_v: python-pptx casts it to float.
                     points = {
                         point.idx: point.v.text or ""
