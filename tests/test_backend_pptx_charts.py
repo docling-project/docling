@@ -449,3 +449,55 @@ def test_bubble_chart_keeps_coordinates_sizes_and_series(
     markdown = doc.export_to_markdown()
     assert "Mumbai (Bubble size)" in markdown
     assert "31.4" in markdown and "300" in markdown
+
+
+@pytest.mark.parametrize("source_tag", ["strRef", "strLit"])
+def test_bubble_chart_keeps_text_x_values(tmp_path: Path, source_tag: str):
+    """Text-valued bubble X caches must not discard the chart table."""
+    from pptx import Presentation
+    from pptx.chart.data import BubbleChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.oxml.ns import qn
+    from pptx.oxml.xmlchemy import OxmlElement
+    from pptx.util import Inches
+
+    data = BubbleChartData()
+    series = data.add_series("Quarterly")
+    series.add_data_point(300, 31.4, 12)
+    series.add_data_point(280, 25, 13)
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.BUBBLE, Inches(1), Inches(1), Inches(6), Inches(4), data
+    ).chart
+
+    source = chart.element.chart.plotArea.xCharts[0].xpath("./c:ser[1]/c:xVal")[0]
+    string_source = OxmlElement(f"c:{source_tag}")
+    if source_tag == "strRef":
+        formula = OxmlElement("c:f")
+        formula.text = "Sheet1!$A$2:$A$3"
+        string_source.append(formula)
+        cache = OxmlElement("c:strCache")
+    else:
+        cache = string_source
+    count = OxmlElement("c:ptCount")
+    count.set("val", "2")
+    cache.append(count)
+    for idx, text in enumerate(("Q1", "Q2")):
+        point = OxmlElement("c:pt")
+        point.set("idx", str(idx))
+        value = OxmlElement("c:v")
+        value.text = text
+        point.append(value)
+        cache.append(point)
+    if source_tag == "strRef":
+        string_source.append(cache)
+    source.replace(source.find(qn("c:numRef")), string_source)
+
+    path = tmp_path / f"bubble_{source_tag}.pptx"
+    prs.save(path)
+    assert _grid(_only_chart(path)) == [
+        ["", "Quarterly (X)", "Quarterly (Y)", "Quarterly (Bubble size)"],
+        ["", "Q1", "31.4", "12"],
+        ["", "Q2", "25", "13"],
+    ]
