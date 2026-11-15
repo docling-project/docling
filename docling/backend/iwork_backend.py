@@ -55,7 +55,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.items.group import ListGroup
 from docling_core.types.doc.items.text import ListItem, TextItem
 from PIL import Image
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -1059,9 +1059,9 @@ def _uniform(runs: list[Run]) -> bool:
 def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     """Resolve a link's address to a URL or a local path.
 
-    A Pages document can link to a file next to it as well as to a URL, and an
-    address Pydantic will not accept is dropped rather than allowed to fail the
-    whole conversion.
+    A Pages document can link to a file next to it as well as to a URL. An
+    address ``urlparse`` or Pydantic will not accept is dropped rather than
+    allowed to fail the whole conversion.
 
     Args:
         address: The address the document recorded, if any.
@@ -1071,11 +1071,13 @@ def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     """
     if not address:
         return None
-    if not urlparse(address).scheme:
-        return Path(address)
     try:
+        # ``urlparse`` raises ValueError for a bracketed host that is not IPv6,
+        # before Pydantic gets a chance to reject the address.
+        if not urlparse(address).scheme:
+            return Path(address)
         return AnyUrl(address)
-    except ValidationError:
+    except ValueError:
         _log.debug("Skipping malformed Pages hyperlink address: %r", address)
         return None
 

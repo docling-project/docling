@@ -51,7 +51,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -2319,11 +2319,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return None
         if not address:
             return None
-        if not urlparse(address).scheme:
-            return Path(address)
         try:
+            # ``urlparse`` raises ValueError for a bracketed host that is not
+            # IPv6, before Pydantic gets a chance to reject the address.
+            if not urlparse(address).scheme:
+                return Path(address)
             return AnyUrl(address)
-        except ValidationError:
+        except ValueError:
             _log.warning("Skipping malformed hyperlink address: %r", address)
             return None
 
