@@ -134,7 +134,12 @@ def test_numbered_title_keeps_following_content(
     if numbering_source == "paragraph":
         _set_numbering(title._p.get_or_add_pPr(), 1, 0)
     if following_block == "table":
-        source.add_table(rows=1, cols=1).cell(0, 0).text = "Revenue"
+        # The converter represents a populated grid as a table; a single
+        # cell is simplified to text and does not exercise table parenting.
+        table = source.add_table(rows=2, cols=2)
+        for row, values in zip(table.rows, [("Metric", "Value"), ("Revenue", "100")]):
+            for cell, value in zip(row.cells, values):
+                cell.text = value
     source.add_paragraph("Report body.")
 
     doc = _convert_docx(source, tmp_path)
