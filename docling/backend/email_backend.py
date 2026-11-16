@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage, Message
-from email.utils import format_datetime, formataddr
+from email.utils import format_datetime, formataddr, getaddresses, unquote
 from io import BytesIO
 from pathlib import Path
 
@@ -73,6 +73,12 @@ _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 _RECIPIENT_TYPE_PROP_ID = 0x0C15
 _RECIPIENT_TYPE_CC = 2
 _RECIPIENT_TYPE_BCC = 3
+
+# MAPI PidTagSender* properties on the .msg root properties, used to tell an
+# internal Exchange sender (address type "EX", no SMTP address) from a
+# regular one. python-oxmsg exposes them through Message.properties.
+_SENDER_NAME_PROP_ID = 0x0C1A
+_SENDER_SMTP_ADDRESS_PROP_ID = 0x5D01
 
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
@@ -193,12 +199,15 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         self.valid = False
         self.is_msg = False
         self.mail: mailparser.MailParser | None = None
+        # Sender display name for a .msg whose sender has no SMTP address
+        # (see _msg_sender_header); "" for .eml input and SMTP senders.
+        self._msg_sender_fallback = ""
 
         try:
             raw = self._read_bytes()
             self.is_msg = raw.startswith(_MSG_MAGIC)
             if self.is_msg:
-                raw = self._msg_to_rfc822_bytes(raw)
+                raw, self._msg_sender_fallback = self._msg_to_rfc822_bytes(raw)
             self.mail = mailparser.parse_from_bytes(raw)
 
             self.valid = self.mail is not None
@@ -249,26 +258,102 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
-    def _msg_to_rfc822_bytes(data: bytes) -> bytes:
+    def _msg_sender_header(
+        sender: str, sender_name: str | None, smtp_address: str | None
+    ) -> tuple[str | None, str]:
+        """Split an oxmsg sender into a From header value and a name fallback.
+
+        Returns the value to write into the projected ``From`` header (``None``
+        to omit it) and the display name to show when the header does not
+        survive parsing ("" when the sender has an SMTP address).
+
+        A sender inside an Exchange organisation has no SMTP address:
+        python-oxmsg returns the display name with the legacy Exchange DN in
+        the angle brackets, e.g. ``Display Name </O=ORG/OU=.../CN=...>``.
+        That is not a valid addr-spec, so mailparser drops the whole mailbox
+        and the converted document loses its ``From:`` line. A bare display
+        name fares no better: mailparser only keeps mailboxes with an
+        address. For such a sender the header carries the display name alone
+        (quoted when it holds specials) and the fallback lets ``convert()``
+        render the name from the oxmsg properties instead of dropping it.
+        """
+        parsed = getaddresses([sender])
+        if len(parsed) != 1:
+            # Ambiguous input (e.g. several addresses in the From header):
+            # keep the sender exactly as oxmsg gave it.
+            return sender, ""
+        name, address = parsed[0]
+        if "@" in address:
+            # A real SMTP address: keep the sender exactly as oxmsg gave it.
+            return sender, ""
+
+        # No SMTP address in the sender string. Resolve the display name
+        # from the most reliable source: the parsed name when the sender
+        # holds an angle-addr, the bare sender string itself (oxmsg falls
+        # back to the sent-representing name, a bare display name, when no
+        # address is recorded at all), then the PidTagSenderName property.
+        if "<" not in sender and "@" not in sender:
+            name = unquote(sender)
+        if not name:
+            name = sender_name or ""
+        name = EmailDocumentBackend._header_safe(name)
+
+        if smtp_address and "@" in smtp_address:
+            # An SMTP address is recorded even though oxmsg's sender string
+            # shows the legacy DN (it prefers PidTagSenderEmailAddress over
+            # PidTagSenderSmtpAddress). Use it; it parses back as a mailbox.
+            smtp_address = EmailDocumentBackend._header_safe(smtp_address)
+            if name:
+                return (
+                    f"{EmailDocumentBackend._quote_display_name(name)}"
+                    f" <{smtp_address}>",
+                    "",
+                )
+            return smtp_address, ""
+        if not name:
+            return None, ""
+
+        # A bare name does not parse back as a mailbox, so it is returned as
+        # the fallback as well: convert() shows it when mailparser yields no
+        # sender for the projected message.
+        quoted = EmailDocumentBackend._quote_display_name(name)
+        return quoted, quoted
+
+    @staticmethod
+    def _msg_to_rfc822_bytes(data: bytes) -> tuple[bytes, str]:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
         python-oxmsg reads the MAPI message; we assemble a standard
         ``email.message.EmailMessage`` from it so the ``.msg`` path shares the
         exact body, HTML, address, and attachment handling used for ``.eml``
         input.
+
+        Returns the RFC 822 bytes and the sender display name to show when
+        the projected ``From`` header does not survive parsing ("" when the
+        sender has an SMTP address or there is no sender). See
+        :meth:`_msg_sender_header`.
         """
         if not _OXMSG_AVAILABLE:
             raise ImportError(_MSG_INSTALL_HINT) from _OXMSG_IMPORT_ERROR
 
         message = OxMsgMessage.load(data)
         email_message = EmailMessage()
+        sender_fallback = ""
 
         if message.subject:
             email_message["Subject"] = EmailDocumentBackend._header_safe(
                 message.subject
             )
         if message.sender:
-            email_message["From"] = EmailDocumentBackend._header_safe(message.sender)
+            from_value, sender_fallback = EmailDocumentBackend._msg_sender_header(
+                message.sender,
+                sender_name=message.properties.str_prop_value(_SENDER_NAME_PROP_ID),
+                smtp_address=message.properties.str_prop_value(
+                    _SENDER_SMTP_ADDRESS_PROP_ID
+                ),
+            )
+            if from_value:
+                email_message["From"] = EmailDocumentBackend._header_safe(from_value)
 
         # Preserve the To/Cc/Bcc split from the recipient rows so downstream
         # rendering (which shows "To" and "Cc") matches the .eml behavior.
@@ -319,7 +404,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 filename=attachment.file_name,
             )
 
-        return email_message.as_bytes()
+        return email_message.as_bytes(), sender_fallback
 
     def is_valid(self) -> bool:
         return self.valid
@@ -525,7 +610,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(self.mail.subject, str)
             else ""
         )
-        from_text = self._format_addresses(self.mail.from_, fallback="")
+        from_text = self._format_addresses(
+            self.mail.from_, fallback=self._msg_sender_fallback
+        )
         to_text = self._format_addresses(self.mail.to, fallback="")
         cc_text = self._format_addresses(self.mail.cc, fallback="")
         date_text = self._get_date_text()
