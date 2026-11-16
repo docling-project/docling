@@ -283,11 +283,6 @@
     <fcel/>
     <text><formula>O(n/r)</formula></text>
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text>As noted in Table [tab:op_complexities], a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires <formula>O(n)</formula> sequential operations. In terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length <formula>n</formula> is smaller than the representation dimensionality <formula>d</formula>, which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece [wu2016google] and byte-pair [sennrich2015neural] representations. To improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size <formula>r</formula> in the input sequence centered around the respective output position. This would increase the maximum path length to <formula>O(n/r)</formula>. We plan to investigate this approach further in future work.</text>
   <text>A single convolutional layer with kernel width <formula><![CDATA[k < n]]></formula> does not connect all pairs of input and output positions. Doing so requires a stack of <formula>O(n/k)</formula> convolutional layers in the case of contiguous kernels, or <formula>O(log_k(n))</formula> in the case of dilated convolutions [NalBytenet2017], increasing the length of the longest paths between any two positions in the network. Convolutional layers are generally more expensive than recurrent layers, by a factor of <formula>k</formula>. Separable convolutions [xception2016], however, decrease the complexity considerably, to <formula>O(k \cdot n \cdot d + n \cdot d^2)</formula>. Even with <formula>k=n</formula>, however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model.</text>
@@ -894,50 +889,6 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <ecel/>
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text>On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than <formula>2.0</formula> BLEU, establishing a new state-of-the-art BLEU score of <formula>28.4</formula><content>.  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took </content><formula>3.5</formula> days on <formula>8</formula><content> P100 GPUs.  Even our base model surpasses all previously published models and ensembles, at a fraction of the training cost of any of the competitive models.</content></text>
   <text>On the WMT 2014 English-to-French translation task, our big model achieves a BLEU score of <formula>41.0</formula>, outperforming all of the previously published single models, at less than <formula>1/4</formula> the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate <formula>P_{drop}=0.1</formula>, instead of <formula>0.3</formula>.</text>
@@ -1376,20 +1327,6 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <fcel/>
     213
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text><content>To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations].</content></text>
   <text>In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.</text>
@@ -1502,11 +1439,6 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     generative
     <fcel/>
     93.3
-    <ecel/>
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <ecel/>
     <nl/>
   </table>
