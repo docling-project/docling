@@ -180,6 +180,14 @@ _CHARTEX_CHART_PATH: Final = (
     f"/{{{CHARTEX_NAMESPACE}}}chart"
 )
 """Path from a ``p:graphicFrame`` to the ``cx:chart`` of an Office 2016 chart."""
+_PRESENTATIONML_NAMESPACE: Final = (
+    "http://schemas.openxmlformats.org/presentationml/2006/main"
+)
+_SHAPE_TAGS: Final = tuple(
+    f"{{{_PRESENTATIONML_NAMESPACE}}}{name}"
+    for name in ("sp", "grpSp", "graphicFrame", "cxnSp", "pic")
+)
+"""Tags of the elements of a shape tree that python-pptx reads as shapes."""
 
 
 def _shape_parent(element: etree._Element) -> Optional[etree._Element]:
@@ -203,20 +211,30 @@ def _chartex_frame(alternate_content: etree._Element) -> Optional[etree._Element
     return None
 
 
+def _supported_choice(alternate_content: etree._Element) -> Optional[etree._Element]:
+    """Return the ``mc:Choice`` of an ``mc:AlternateContent`` that can be read.
+
+    Returns:
+        The first ``mc:Choice`` that requires only the Office Math or the
+        DrawingML 2010 namespace, or None when there is no such choice.
+    """
+    for choice in alternate_content.iterfind(_MC_CHOICE):
+        required = choice.get("Requires", "").split()
+        if required and all(
+            choice.nsmap.get(prefix) in {_MATH_NAMESPACE, _DRAWING_2010_NAMESPACE}
+            for prefix in required
+        ):
+            return choice
+    return None
+
+
 def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element]:
     """Read text and OMML in order, selecting one markup-compatibility branch."""
     for child in element:
         if child.tag == _MC_ALTERNATE_CONTENT:
-            branch = child.find(f"{{{_MC_NAMESPACE}}}Fallback")
-            for choice in child.findall(f"{{{_MC_NAMESPACE}}}Choice"):
-                required = choice.get("Requires", "").split()
-                if required and all(
-                    choice.nsmap.get(prefix)
-                    in {_MATH_NAMESPACE, _DRAWING_2010_NAMESPACE}
-                    for prefix in required
-                ):
-                    branch = choice
-                    break
+            branch = _supported_choice(child)
+            if branch is None:
+                branch = child.find(f"{{{_MC_NAMESPACE}}}Fallback")
             if branch is not None:
                 yield from _iter_paragraph_elements(branch)
         elif child.tag in {
@@ -2219,7 +2237,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
                 if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
                     for groupedshape in self._iter_shapes_by_position(
-                        self._with_chartex_frames(shape.shapes, shape._element)
+                        self._with_alternate_content_shapes(
+                            shape.shapes, shape._element
+                        )
                     ):
                         handle_shapes(
                             groupedshape, parent_slide, slide_ind, doc, slide_size
@@ -2227,7 +2247,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             # Loop through each shape in the slide
             for shape in self._iter_shapes_by_position(
-                self._with_chartex_frames(slide.shapes, slide._element.cSld.spTree)
+                self._with_alternate_content_shapes(
+                    slide.shapes, slide._element.cSld.spTree
+                )
             ):
                 handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
 
@@ -2262,14 +2284,20 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return doc
 
     @staticmethod
-    def _with_chartex_frames(shapes, container: etree._Element) -> list[BaseShape]:
-        """Return the shapes of a slide or group, with its Office 2016 charts.
+    def _with_alternate_content_shapes(
+        shapes, container: etree._Element
+    ) -> list[BaseShape]:
+        """Return the shapes of a slide or group, with those in ``mc:AlternateContent``.
 
         python-pptx skips the ``mc:AlternateContent`` elements of a shape tree.
         PowerPoint puts each Office 2016 chart, such as a waterfall or treemap,
         in one: the chart frame is in ``mc:Choice``, and ``mc:Fallback`` holds a
         picture of the chart or nothing. Each such chart frame is added as a
-        ``GraphicFrame``. Other ``mc:AlternateContent`` elements stay skipped.
+        ``GraphicFrame``. PowerPoint also puts each shape that holds an equation
+        in one: the shape is in an ``mc:Choice`` that requires ``a14``, and
+        ``mc:Fallback`` holds a copy of it filled with a picture of the
+        equation. The shapes of such a choice are added. Other
+        ``mc:AlternateContent`` elements stay skipped.
 
         Args:
             shapes: The python-pptx shape collection of the slide or group.
@@ -2287,6 +2315,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 frame = _chartex_frame(child)
                 if frame is not None:
                     result.append(GraphicFrame(frame, shapes))
+                elif (choice := _supported_choice(child)) is not None:
+                    result.extend(
+                        shapes._shape_factory(element)
+                        for element in choice.iterchildren(*_SHAPE_TAGS)
+                    )
         return result
 
     @staticmethod
