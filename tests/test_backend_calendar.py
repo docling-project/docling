@@ -9,6 +9,7 @@ import pytest
 from docling_core.types.doc import DocItemLabel, DoclingDocument
 
 from docling.backend.calendar.values import describe_rrule
+from docling.backend.calendar_backend import read_calendar_text
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.document_converter import DocumentConverter
 
@@ -85,6 +86,16 @@ def test_fold_inside_a_utf8_character(converter, other_text):
         for item in result.document.texts
         if item.label == DocItemLabel.SECTION_HEADER
     ]
+
+
+@pytest.mark.parametrize("bom", [b"", b"\xef\xbb\xbf"])
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig", "UTF_8_SIG"])
+def test_fold_inside_a_utf8_character_with_explicit_encoding(bom, encoding):
+    """A fold inside a multi-byte character also works when utf-8-sig is given."""
+    raw = bom + _calendar("BEGIN:VEVENT", "SUMMARY:Café", "END:VEVENT")
+    raw = raw.replace("é".encode(), b"\xc3\r\n \xa9")
+
+    assert "SUMMARY:Café\n" in read_calendar_text(raw, encoding)
 
 
 @pytest.mark.parametrize("newline", ["\r\n", "\n", "\r"])
