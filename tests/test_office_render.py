@@ -127,7 +127,7 @@ def test_office_render_works_while_pdfium_lock_is_held(office_render):
     """
     with pypdfium2_lock:
         image = office_render()
-    assert pypdfium2_lock.locked(), "the lock must stay held during the render"
+        assert pypdfium2_lock.locked(), "the lock must stay held during the render"
     assert image is not None
 
 
