@@ -12,6 +12,7 @@ from email.message import EmailMessage, Message
 from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import unquote
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -73,6 +74,10 @@ _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 _RECIPIENT_TYPE_PROP_ID = 0x0C15
 _RECIPIENT_TYPE_CC = 2
 _RECIPIENT_TYPE_BCC = 3
+
+# MAPI PidTagAttachContentId and PidTagAttachmentHidden.
+_ATTACH_CONTENT_ID_PROP_ID = 0x3712
+_ATTACHMENT_HIDDEN_PROP_ID = 0x7FFE
 
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
@@ -171,6 +176,22 @@ def _merge_calendar_parts(
             shown_parts.append(components)
             merged.extend(kept)
     return shown_parts, merged
+
+
+def _referenced_content_ids(html_body: str | None) -> set[str]:
+    """Read CID resource URLs without treating ordinary body text as a reference."""
+    if not html_body:
+        return set()
+    # Keep the optional HTML dependency out of minimal-install imports.
+    from bs4 import BeautifulSoup
+
+    content_ids: set[str] = set()
+    for tag in BeautifulSoup(html_body, "html.parser").find_all():
+        for attribute in ("src", "href", "background", "data"):
+            value = tag.get(attribute)
+            if isinstance(value, str) and value[:4].lower() == "cid:":
+                content_ids.add(unquote(value[4:]))
+    return content_ids
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
@@ -307,7 +328,23 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         else:
             email_message.set_content("")
 
-        for attachment in message.attachments:
+        attachments = message.attachments
+        referenced_content_ids = (
+            _referenced_content_ids(html_body) if attachments else set()
+        )
+        for attachment in attachments:
+            # python-oxmsg 0.0.2 exposes these MAPI properties only through
+            # properties, not as Attachment attributes. Do not read file_bytes.
+            if any(
+                prop.pid == _ATTACHMENT_HIDDEN_PROP_ID and prop.value is True
+                for prop in attachment.properties
+            ):
+                continue
+            content_id = attachment.properties.str_prop_value(
+                _ATTACH_CONTENT_ID_PROP_ID
+            )
+            if content_id and content_id.strip().strip("<>") in referenced_content_ids:
+                continue
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
             # Only filename and MIME type are needed; pass an empty payload to avoid
