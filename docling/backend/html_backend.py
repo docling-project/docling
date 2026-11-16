@@ -561,6 +561,33 @@ class AnnotatedTextList(list):
         return super_list
 
 
+def _translate_newlines(text: str) -> str:
+    """Translate CR LF and a lone CR to LF."""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _normalize_newlines(soup: BeautifulSoup) -> None:
+    """Translate CR LF and lone CR to LF in text nodes and attribute values.
+
+    The HTML standard translates these line endings when it reads the input
+    stream, before it builds the tree. BeautifulSoup does not, so a document
+    with Windows line endings would otherwise keep `\\r` in preformatted text,
+    table cells, and attribute values such as `alt`.
+    The tree is changed after parsing, because the encoding of the bytes is
+    only known then: UTF-16 and UTF-32 encode a line ending in more than one
+    byte.
+    """
+    for node in soup.find_all(string=True):
+        if "\r" in node:
+            node.replace_with(type(node)(_translate_newlines(str(node))))
+    for tag in soup.find_all(True):
+        for name, value in tag.attrs.items():
+            if isinstance(value, str):
+                tag.attrs[name] = _translate_newlines(value)
+            elif isinstance(value, list):
+                tag.attrs[name] = [_translate_newlines(item) for item in value]
+
+
 class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
@@ -634,6 +661,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
             self.soup = BeautifulSoup(raw, "html.parser")
+            # A document with no CR byte has nothing to translate, so the walk
+            # over the tree is skipped for the common case.
+            if b"\r" in raw:
+                _normalize_newlines(self.soup)
         except DocumentLoadError:
             raise
         except Exception as e:
