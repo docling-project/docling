@@ -290,10 +290,9 @@ Transformers. The [8-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-
 and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoints are also available.
 
 The native port is part of the [`mlx-vlm` 0.7.11 release](https://github.com/Blaizzy/mlx-vlm/releases/tag/v0.7.11).
-To use it, upgrade with `pip install "mlx-vlm>=0.7.11"`. Docling also checks that the installed
-package provides the `mlx_vlm.models.nemotron_parse_v3_5` module. Auto-inline falls back to
-Transformers if either check fails. Explicit MLX selection reports an old version or a missing
-module before it downloads model weights.
+To use it, upgrade with `pip install "mlx-vlm>=0.7.11"`. With an older `mlx-vlm`, auto-inline falls
+back to Transformers, and explicit MLX selection reports the old version before it downloads model
+weights.
 
 [Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.

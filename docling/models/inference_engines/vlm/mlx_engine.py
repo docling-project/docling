@@ -16,7 +16,6 @@ from PIL.Image import Image
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
     check_min_engine_version,
-    engine_module_available,
     extract_generation_stoppers,
     generation_stopper_stop_reason,
     preprocess_image_batch,
@@ -124,14 +123,6 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             VlmEngineType.MLX,
             self.model_config.min_engine_version if self.model_config else None,
         )
-        if self.model_config is not None and not engine_module_available(
-            self.model_config.required_module
-        ):
-            raise RuntimeError(
-                "The installed mlx-vlm does not provide native model module "
-                f"{self.model_config.required_module}. Install a released mlx-vlm "
-                "that includes this module, or select the Transformers engine."
-            )
 
         self.apply_chat_template = apply_chat_template  # type: ignore[assignment]
         self.stream_generate = stream_generate  # type: ignore[assignment]
