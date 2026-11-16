@@ -2,11 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 import numpy
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 from docling_ibm_models.tableformer.data_management.tf_predictor import TFPredictor
+from PIL import Image
 
+from docling.datamodel.base_models import Cluster
 from docling.models.stages.table_structure.table_structure_model import (
+    TableStructureModel,
     _pad_to_tf_page_height,
     _words_and_ocr_cells,
 )
@@ -33,6 +36,53 @@ def test_page_height_image_is_not_padded() -> None:
     image = numpy.zeros((1400, 300, 3), dtype=numpy.uint8)
 
     assert _pad_to_tf_page_height(image) is image
+
+
+class _RecordingPredictor:
+    """Stand in for TFPredictor: keep the page it receives, return an empty table."""
+
+    def __init__(self) -> None:
+        self.page_input: dict = {}
+
+    def multi_table_predict(self, page_input, table_bboxes, do_matching=True):
+        self.page_input = page_input
+        return [
+            {
+                "tf_responses": [],
+                "predict_details": {
+                    "num_rows": 0,
+                    "num_cols": 0,
+                    "prediction": {"rs_seq": []},
+                },
+            }
+        ]
+
+
+def test_image_prediction_gives_tableformer_an_unscaled_crop() -> None:
+    # The call site of the padding: a crop shorter than 1024 px must reach
+    # TFPredictor as a 1024 px page with the crop unchanged at its top-left.
+    crop = numpy.arange(158 * 245 * 3, dtype=numpy.uint8).reshape(158, 245, 3)
+    predictor = _RecordingPredictor()
+    model = object.__new__(TableStructureModel)
+    model.do_cell_matching = False
+    model.scale = 2.0
+    model.tf_predictor = predictor  # type: ignore[assignment]
+    table = Cluster(
+        id=3,
+        label=DocItemLabel.TABLE,
+        bbox=BoundingBox(l=0, t=0, r=245, b=158),
+        confidence=0.8,
+        cells=[],
+    )
+
+    model._do_prediction_on_image_to_table(
+        table_image=Image.fromarray(crop), table_cluster=table, page_no=1
+    )
+
+    image = predictor.page_input["image"]
+    assert image.shape == (1024, 245, 3)
+    assert numpy.array_equal(image[:158], crop)
+    assert (image[158:] == 255).all()
 
 
 def _cell(bbox: BoundingBox, text: str, from_ocr: bool) -> TextCell:
