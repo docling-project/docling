@@ -2472,6 +2472,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             ):
                 node_text = str(node)
                 if node_text.strip("\n\r") == "":
+                    if buffer and _WHITESPACE_RUN.search(node_text):
+                        # The whole text node is whitespace, so it renders as a space
+                        # between the inline runs on either side: `a<em>b</em>\n<em>c</em>`
+                        # must not come out as `abc`. The block edge is still trimmed
+                        # later, so a leading or trailing node is harmless.
+                        buffer.append(
+                            AnnotatedText(
+                                text=" ", source_tag_id=self._get_tag_id(node.parent)
+                            )
+                        )
                     parent_tag = node.parent if isinstance(node.parent, Tag) else None
                     if (
                         parent_tag is not None
