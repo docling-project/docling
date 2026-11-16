@@ -131,6 +131,47 @@ def test_answer_with_unknown_pr_or_verdict_is_rejected() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "classification",
+    [
+        {"severity": "urgent", "application": "bug", "formats": ["pdf"]},
+        {"severity": "high", "application": "fix", "formats": ["pdf"]},
+        {"severity": "high", "application": "bug", "formats": ["pdf", "ocr"]},
+        {"severity": "high", "application": "bug", "formats": "pdf"},
+        {"severity": "high"},
+        ["pdf"],
+    ],
+)
+def test_invalid_classification_preserves_other_verdicts(
+    classification: object, capsys: pytest.CaptureFixture[str]
+) -> None:
+    data = answer(
+        groundtruth={"verdict": "expected", "reason": "Matches the fix."},
+        topics=["tests"],
+    )
+    expected = triage.parse_triage_result(data, {7})
+    assert (
+        triage.parse_triage_result({**data, "classification": classification}, {7})
+        == expected
+    )
+    assert "::warning::Ignoring invalid PR classification:" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"duplicates": [{"pr": 7, "verdict": "unknown"}]}, "duplicate verdict"),
+        ({"ci_safety": {"verdict": "approve", "concerns": []}}, "ci_safety"),
+        ({"groundtruth": {"verdict": "unknown", "reason": ""}}, "groundtruth"),
+    ],
+)
+def test_invalid_classification_does_not_hide_invalid_core_verdicts(
+    change: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        triage.parse_triage_result(answer(classification={}, **change), {7})
+
+
 def test_answer_is_read_from_fenced_final_message() -> None:
     message = "Done.\n```json\n" + json.dumps(answer()) + "\n```"
     result = triage.parse_triage_result(triage.extract_answer(message), {7})
@@ -251,11 +292,141 @@ def test_stored_result_round_trips_through_validation_in_publish() -> None:
         answer(
             groundtruth={"verdict": "expected", "reason": "Matches | [the](fix)."},
             topics=["table structure"],
+            classification={
+                "severity": "high",
+                "application": "bug",
+                "formats": ["pdf"],
+            },
         ),
         {7},
     )
     stored = json.loads(json.dumps(triage.asdict(result)))
     assert triage.parse_triage_result(triage._result_to_answer(stored), {7}) == result
+
+
+@pytest.mark.parametrize("invalid_stage", ["extract", "publish"])
+def test_invalid_classification_preserves_published_triage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_stage: str,
+) -> None:
+    context = make_context(groundtruth_markdown="Reference text changed.")
+    context_path = tmp_path / "context.json"
+    context_path.write_text(json.dumps(triage.asdict(context)), encoding="utf-8")
+    valid = {"severity": "high", "application": "bug", "formats": ["pdf"]}
+    invalid = {**valid, "formats": ["pdf", "ocr"]}
+    data = answer(
+        groundtruth={"verdict": "expected", "reason": "Matches the fix."},
+        topics=["tests"],
+        classification=invalid if invalid_stage == "extract" else valid,
+    )
+    bob_output = tmp_path / "bob-output.json"
+    bob_output.write_text(
+        json.dumps({"status": "success", "last_message": json.dumps(data)}),
+        encoding="utf-8",
+    )
+    result_path = tmp_path / "result.json"
+    triage.extract(bob_output, context_path, result_path)
+    stored = json.loads(result_path.read_text(encoding="utf-8"))
+    if invalid_stage == "extract":
+        assert stored["classification"] is None
+    else:
+        stored["classification"] = invalid
+        result_path.write_text(json.dumps(stored), encoding="utf-8")
+
+    writes: list[tuple[str, str, dict]] = []
+
+    def read(path: str, **_: object) -> object:
+        if path.endswith("/comments?per_page=100"):
+            return []
+        assert path == f"repos/{REPO}/pulls/10"
+        return {
+            "head": {"sha": context.pr.head_sha},
+            "labels": [
+                {"name": triage.LABEL_CI_SAFE},
+                {"name": triage.LABEL_DUPLICATE},
+            ],
+        }
+
+    def write(method: str, path: str, payload=None) -> None:
+        writes.append((method, path, payload))
+
+    monkeypatch.setattr(triage, "gh_api", read)
+    monkeypatch.setattr(triage, "gh_write", write)
+    monkeypatch.setattr(
+        triage,
+        "ensure_classification_labels",
+        lambda _: {"bug", "pdf", "priority:high", "tests"},
+    )
+    triage.publish(REPO, 10, context_path, result_path)
+    assert not any(method == "DELETE" for method, _, _ in writes)
+    assert writes[0] == (
+        "POST",
+        f"repos/{REPO}/issues/10/labels",
+        {"labels": ["tests"]},
+    )
+    assert len(writes) == 2
+    method, path, payload = writes[1]
+    assert (method, path) == ("POST", f"repos/{REPO}/issues/10/comments")
+    assert "The PR fixes x" in payload["body"]
+    assert "CI safety: no concern found" in payload["body"]
+    assert "duplicate: Same fix" in payload["body"]
+    assert "Assessment: **expected**. Matches the fix" in payload["body"]
+
+
+def test_first_pr_triage_publishes_classification_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_context(topic_labels=["bug", "pdf"])
+    context_path = tmp_path / "context.json"
+    context_path.write_text(json.dumps(triage.asdict(context)), encoding="utf-8")
+    result = triage.parse_triage_result(
+        answer(
+            classification={
+                "severity": "high",
+                "application": "bug",
+                "formats": ["pdf"],
+            }
+        ),
+        {7},
+    )
+    result_path = tmp_path / "result.json"
+    result_path.write_text(json.dumps(triage.asdict(result)), encoding="utf-8")
+    comments: list[dict] = []
+    writes: list[tuple[str, str, dict]] = []
+    current = {"head": {"sha": context.pr.head_sha}, "labels": []}
+
+    def read(path: str, **_: object) -> object:
+        if path.endswith("/comments?per_page=100"):
+            return comments
+        assert path == f"repos/{REPO}/pulls/10"
+        return current
+
+    def write(method: str, path: str, payload=None) -> None:
+        writes.append((method, path, payload))
+        if path.endswith("/comments"):
+            comments.append({"id": 5, "user": {"login": triage.BOT_LOGIN}, **payload})
+
+    monkeypatch.setattr(triage, "gh_api", read)
+    monkeypatch.setattr(triage, "gh_write", write)
+    monkeypatch.setattr(
+        triage,
+        "ensure_classification_labels",
+        lambda _: {"bug", "pdf", "priority:high"},
+    )
+    triage.publish(REPO, 10, context_path, result_path)
+    label_writes = [write for write in writes if write[1].endswith("/labels")]
+    assert len(label_writes) == 1
+    assert {"bug", "pdf", "priority:high"} <= set(label_writes[0][2]["labels"])
+    # A maintainer removed the classification labels before another run.
+    current["labels"] = [
+        {"name": triage.LABEL_CI_SAFE},
+        {"name": triage.LABEL_DUPLICATE},
+    ]
+    writes.clear()
+    triage.publish(REPO, 10, context_path, result_path)
+    assert not any(write[1].endswith("/labels") for write in writes)
 
 
 def test_comment_shows_duplicates_collapses_related_and_hides_unrelated() -> None:
