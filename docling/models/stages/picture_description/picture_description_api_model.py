@@ -63,6 +63,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                 url=self.options.url,
                 timeout=self.options.timeout,
                 headers=self.options.headers,
+                http_client_params=self.options.http_client_params,
                 usage_response_key=self.options.usage_response_key,
                 **self.options.params,
             )

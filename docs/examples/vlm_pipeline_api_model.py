@@ -18,6 +18,9 @@
 # Notes
 # - The NEW runtime system unifies API and local inference
 # - For legacy approach, see legacy examples in docs/examples/legacy/
+# - For a private CA, set http_client_params={"verify": "/path/to/ca-bundle.pem"}
+#   on ApiVlmEngineOptions. It accepts requests.Session.post arguments such as
+#   cert, proxies, auth, and cookies. Generation parameters stay in params.
 
 # %%
 

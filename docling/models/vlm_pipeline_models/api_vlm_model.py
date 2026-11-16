@@ -157,6 +157,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     url=self.vlm_options.url,
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
+                    http_client_params=self.vlm_options.http_client_params,
                     generation_stoppers=instantiated_stoppers,
                     **self.params,
                 )
@@ -172,6 +173,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     url=self.vlm_options.url,
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
+                    http_client_params=self.vlm_options.http_client_params,
                     **self.params,
                 )
                 page_tags = api_response.text

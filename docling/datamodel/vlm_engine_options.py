@@ -233,6 +233,15 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
         description="API endpoint URL",
     )
 
+    http_client_params: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Additional requests.Session.post keyword arguments, such as verify "
+            "(CA bundle path or bool), cert, proxies, auth, or cookies. These "
+            "configure HTTP transport and are not sent in the generation payload. "
+            "Dedicated headers, timeout, JSON payload, and streaming settings take precedence."
+        ),
+    )
     headers: Dict[str, str] = Field(
         default_factory=dict, description="HTTP headers for authentication"
     )

@@ -15,6 +15,7 @@ chunked response exercises.
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Iterator
 
@@ -22,13 +23,18 @@ import pytest
 from PIL import Image
 from pydantic import AnyUrl
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import VlmStopReason
+from docling.datamodel.pipeline_options import PictureDescriptionApiOptions
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineInput
+from docling.models.stages.picture_description.picture_description_api_model import (
+    PictureDescriptionApiModel,
+)
 from docling.models.stages.vlm_convert.vlm_convert_model import (
     _prediction_from_engine_output,
 )
@@ -488,3 +494,83 @@ def test_engine_batches_every_input(api, image):
 
     assert len(outputs) == 2
     assert len(api.service.requests_for("POST", r"/v1/chat/completions")) == 2
+
+
+@pytest.mark.parametrize(
+    "caller",
+    [
+        "helper",
+        "helper-streaming",
+        "engine",
+        "engine-streaming",
+        "legacy",
+        "legacy-streaming",
+        "picture",
+    ],
+)
+def test_http_client_params_reach_the_transport(api, endpoint, image, caller):
+    """HTTP settings must affect the request, not become generation parameters."""
+    http_client_params = {"cookies": {"tenant": "acme"}}
+    streaming = caller.endswith("-streaming")
+    api.stream_chunks = ["description"]
+    options_json = json.dumps(
+        {
+            "url": str(endpoint),
+            "http_client_params": http_client_params,
+            "params": {"model": "m"},
+            "prompt": "describe",
+        }
+    )
+
+    if caller.startswith("helper"):
+        request = api_image_request_streaming if streaming else api_image_request
+        result = request(
+            image,
+            "describe",
+            endpoint,
+            http_client_params=http_client_params,
+            model="m",
+        )
+    elif caller.startswith("engine"):
+        options = ApiVlmEngineOptions.model_validate_json(options_json)
+        engine = ApiVlmEngine(enable_remote_services=True, options=options)
+        (result,) = engine.predict_batch(
+            [
+                VlmEngineInput(
+                    image=image,
+                    prompt="describe",
+                    extra_generation_config={
+                        "custom_stopping_criteria": [_ClosingTagStopper]
+                    }
+                    if streaming
+                    else {},
+                )
+            ]
+        )
+    elif caller.startswith("legacy"):
+        options = ApiVlmOptions.model_validate(
+            {**json.loads(options_json), "response_format": ResponseFormat.PLAINTEXT}
+        )
+        if streaming:
+            options.custom_stopping_criteria = [_ClosingTagStopper()]
+        model = ApiVlmModel(
+            enabled=True, enable_remote_services=True, vlm_options=options
+        )
+        (result,) = model.process_images([image], "describe")
+    else:
+        options = PictureDescriptionApiOptions.model_validate_json(options_json)
+        model = PictureDescriptionApiModel(
+            enabled=True,
+            enable_remote_services=True,
+            artifacts_path=None,
+            options=options,
+            accelerator_options=AcceleratorOptions(),
+        )
+        (result,) = model._annotate_images([image])
+
+    assert result.text
+    sent = api.service.requests_for("POST", r"/v1/chat/completions")[-1]
+    assert sent.headers.get("cookie") == "tenant=acme"
+    assert "http_client_params" not in sent.json()
+    assert sent.json()["model"] == "m"
+    assert sent.json().get("stream", False) is streaming

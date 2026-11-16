@@ -168,6 +168,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     image=image,
                     prompt=input_data.prompt,
                     headers=self.options.headers,
+                    http_client_params=self.options.http_client_params,
                     generation_stoppers=custom_stoppers,
                     timeout=self.options.timeout,
                     **api_params,
@@ -183,6 +184,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     image=image,
                     prompt=input_data.prompt,
                     headers=self.options.headers,
+                    http_client_params=self.options.http_client_params,
                     timeout=self.options.timeout,
                     **api_params,
                 )
