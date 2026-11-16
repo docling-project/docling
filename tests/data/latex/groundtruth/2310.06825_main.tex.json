@@ -1552,8 +1552,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We introduce Mistral~7B\\xspace, a 7billion-parameter language model engineered for superior performance and efficiency. Mistral~7B\\xspaceoutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation. Our model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost. We also provide a model fine-tuned to follow instructions, Mistral~7B~--~Instruct\\xspace, that surpasses Llama\\xspace213Bchat model both on human and automated benchmarks. Our models are released under the Apache 2.0 license. Code: https://github.com/mistralai/mistral-src Webpage: https://mistral.ai/news/announcing-mistral-7b/",
-      "text": "We introduce Mistral~7B\\xspace, a 7billion-parameter language model engineered for superior performance and efficiency. Mistral~7B\\xspaceoutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation. Our model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost. We also provide a model fine-tuned to follow instructions, Mistral~7B~--~Instruct\\xspace, that surpasses Llama\\xspace213Bchat model both on human and automated benchmarks. Our models are released under the Apache 2.0 license. Code: https://github.com/mistralai/mistral-src Webpage: https://mistral.ai/news/announcing-mistral-7b/"
+      "orig": "We introduce Mistral~7B\\xspace, a 7–billion-parameter language model engineered for superior performance and efficiency. Mistral~7B\\xspaceoutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation. Our model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost. We also provide a model fine-tuned to follow instructions, Mistral~7B~--~Instruct\\xspace, that surpasses Llama\\xspace 2 13B – chat model both on human and automated benchmarks. Our models are released under the Apache 2.0 license. Code: https://github.com/mistralai/mistral-src Webpage: https://mistral.ai/news/announcing-mistral-7b/",
+      "text": "We introduce Mistral~7B\\xspace, a 7–billion-parameter language model engineered for superior performance and efficiency. Mistral~7B\\xspaceoutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation. Our model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost. We also provide a model fine-tuned to follow instructions, Mistral~7B~--~Instruct\\xspace, that surpasses Llama\\xspace 2 13B – chat model both on human and automated benchmarks. Our models are released under the Apache 2.0 license. Code: https://github.com/mistralai/mistral-src Webpage: https://mistral.ai/news/announcing-mistral-7b/"
     },
     {
       "self_ref": "#/texts/39",
@@ -1577,8 +1577,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size. However, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios. In this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential. Our model, Mistral~7B\\xspace, demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference. Mistral~7B\\xspaceoutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation. Furthermore, Mistral~7B\\xspaceapproaches the coding performance of Code-Llama\\xspace7B[roziere2023code], without sacrificing performance on non-code related benchmarks.",
-      "text": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size. However, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios. In this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential. Our model, Mistral~7B\\xspace, demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference. Mistral~7B\\xspaceoutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation. Furthermore, Mistral~7B\\xspaceapproaches the coding performance of Code-Llama\\xspace7B[roziere2023code], without sacrificing performance on non-code related benchmarks."
+      "orig": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size. However, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios. In this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential. Our model, Mistral~7B\\xspace, demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference. Mistral~7B\\xspaceoutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B, [touvron2023llama]) in mathematics and code generation. Furthermore, Mistral~7B\\xspaceapproaches the coding performance of Code-Llama\\xspace7B [roziere2023code], without sacrificing performance on non-code related benchmarks.",
+      "text": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size. However, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios. In this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential. Our model, Mistral~7B\\xspace, demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference. Mistral~7B\\xspaceoutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B, [touvron2023llama]) in mathematics and code generation. Furthermore, Mistral~7B\\xspaceapproaches the coding performance of Code-Llama\\xspace7B [roziere2023code], without sacrificing performance on non-code related benchmarks."
     },
     {
       "self_ref": "#/texts/41",
@@ -1589,8 +1589,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Mistral~7B\\xspaceleverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications. In addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of Mistral~7B\\xspace.",
-      "text": "Mistral~7B\\xspaceleverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications. In addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of Mistral~7B\\xspace."
+      "orig": "Mistral~7B\\xspaceleverages grouped-query attention (GQA) [ainslie2023gqa], and sliding window attention (SWA) [child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications. In addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of Mistral~7B\\xspace.",
+      "text": "Mistral~7B\\xspaceleverages grouped-query attention (GQA) [ainslie2023gqa], and sliding window attention (SWA) [child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications. In addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of Mistral~7B\\xspace."
     },
     {
       "self_ref": "#/texts/42",
@@ -1625,8 +1625,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot",
-      "text": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot"
+      "orig": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM [kwon2023efficient] inference server and SkyPilot",
+      "text": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM [kwon2023efficient] inference server and SkyPilot"
     },
     {
       "self_ref": "#/texts/45",
@@ -1673,8 +1673,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is also streamlined for easier integration. Moreover, Mistral~7B\\xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral~7B\\xspacethat significantly outperforms the Llama\\xspace2 13B  Chat model.",
-      "text": "is also streamlined for easier integration. Moreover, Mistral~7B\\xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral~7B\\xspacethat significantly outperforms the Llama\\xspace2 13B  Chat model."
+      "orig": "is also streamlined for easier integration. Moreover, Mistral~7B\\xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral~7B\\xspacethat significantly outperforms the Llama\\xspace2 13B – Chat model.",
+      "text": "is also streamlined for easier integration. Moreover, Mistral~7B\\xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral~7B\\xspacethat significantly outperforms the Llama\\xspace2 13B – Chat model."
     },
     {
       "self_ref": "#/texts/49",
@@ -2134,8 +2134,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Mistral~7B\\xspaceis based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to Llama\\xspace, it introduces a few changes that we summarize below.",
-      "text": "Mistral~7B\\xspaceis based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to Llama\\xspace, it introduces a few changes that we summarize below."
+      "orig": "Mistral~7B\\xspaceis based on a transformer architecture [vaswani2017attention]. The main parameters of the architecture are summarized in Table [tab:param]. Compared to Llama\\xspace, it introduces a few changes that we summarize below.",
+      "text": "Mistral~7B\\xspaceis based on a transformer architecture [vaswani2017attention]. The main parameters of the architecture are summarized in Table [tab:param]. Compared to Llama\\xspace, it introduces a few changes that we summarize below."
     },
     {
       "self_ref": "#/texts/84",
@@ -2354,8 +2354,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " tokens, as illustrated in Figure[fig:swa]. At the last layer, using a window size of ",
-      "text": " tokens, as illustrated in Figure[fig:swa]. At the last layer, using a window size of "
+      "orig": " tokens, as illustrated in Figure [fig:swa]. At the last layer, using a window size of ",
+      "text": " tokens, as illustrated in Figure [fig:swa]. At the last layer, using a window size of "
     },
     {
       "self_ref": "#/texts/102",
@@ -2426,8 +2426,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.",
-      "text": ", changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline."
+      "orig": ", changes made to FlashAttention [dao2022flashattention] and xFormers [xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.",
+      "text": ", changes made to FlashAttention [dao2022flashattention] and xFormers [xFormers2022] yield a 2x speed improvement over a vanilla attention baseline."
     },
     {
       "self_ref": "#/texts/108",
@@ -2574,8 +2574,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for ",
-      "text": ", past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for "
+      "orig": ", past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure [fig:cache] for ",
+      "text": ", past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure [fig:cache] for "
     },
     {
       "self_ref": "#/texts/120",
@@ -2834,8 +2834,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ") cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk.",
-      "text": ") cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk."
+      "orig": ") cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure [fig:chunking] shows how the attention mask works over both the cache and the chunk.",
+      "text": ") cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure [fig:chunking] shows how the attention mask works over both the cache and the chunk."
     },
     {
       "self_ref": "#/texts/141",
@@ -2846,8 +2846,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. The figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).",
-      "text": "Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. The figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block)."
+      "orig": "Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, “The cat sat on”, “the mat and saw”, “the dog go to”. The figure shows what happens for the third chunk (“the dog go to”): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).",
+      "text": "Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, “The cat sat on”, “the mat and saw”, “the dog go to”. The figure shows what happens for the third chunk (“the dog go to”): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block)."
     },
     {
       "self_ref": "#/texts/142",
@@ -2883,8 +2883,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]",
-      "text": "Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]",
+      "orig": "Commonsense Reasoning (0-shot): Hellaswag [zellers2019hellaswag], Winogrande [sakaguchi2021winogrande], PIQA [bisk2020piqa], SIQA [sap2019socialiqa], OpenbookQA [mihaylov2018can], ARC-Easy, ARC-Challenge [clark2018think], CommonsenseQA [talmor2018commonsenseqa]",
+      "text": "Commonsense Reasoning (0-shot): Hellaswag [zellers2019hellaswag], Winogrande [sakaguchi2021winogrande], PIQA [bisk2020piqa], SIQA [sap2019socialiqa], OpenbookQA [mihaylov2018can], ARC-Easy, ARC-Challenge [clark2018think], CommonsenseQA [talmor2018commonsenseqa]",
       "enumerated": false,
       "marker": ""
     },
@@ -2897,8 +2897,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "World Knowledge (5-shot): NaturalQuestions[kwiatkowski2019natural], TriviaQA[joshi2017triviaqa]",
-      "text": "World Knowledge (5-shot): NaturalQuestions[kwiatkowski2019natural], TriviaQA[joshi2017triviaqa]",
+      "orig": "World Knowledge (5-shot): NaturalQuestions [kwiatkowski2019natural], TriviaQA [joshi2017triviaqa]",
+      "text": "World Knowledge (5-shot): NaturalQuestions [kwiatkowski2019natural], TriviaQA [joshi2017triviaqa]",
       "enumerated": false,
       "marker": ""
     },
@@ -2911,8 +2911,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]",
-      "text": "Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]",
+      "orig": "Reading Comprehension (0-shot): BoolQ [clark2019boolq], QuAC [choi2018quac]",
+      "text": "Reading Comprehension (0-shot): BoolQ [clark2019boolq], QuAC [choi2018quac]",
       "enumerated": false,
       "marker": ""
     },
@@ -2925,8 +2925,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Math: GSM8K[cobbe2021training] (8-shot) with maj@8 and MATH[hendrycks2021measuring] (4-shot) with maj@4",
-      "text": "Math: GSM8K[cobbe2021training] (8-shot) with maj@8 and MATH[hendrycks2021measuring] (4-shot) with maj@4",
+      "orig": "Math: GSM8K [cobbe2021training] (8-shot) with maj@8 and MATH [hendrycks2021measuring] (4-shot) with maj@4",
+      "text": "Math: GSM8K [cobbe2021training] (8-shot) with maj@8 and MATH [hendrycks2021measuring] (4-shot) with maj@4",
       "enumerated": false,
       "marker": ""
     },
@@ -2939,8 +2939,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Code: Humaneval[chen2021evaluating] (0-shot) and MBPP[austin2021program] (3-shot)",
-      "text": "Code: Humaneval[chen2021evaluating] (0-shot) and MBPP[austin2021program] (3-shot)",
+      "orig": "Code: Humaneval [chen2021evaluating] (0-shot) and MBPP [austin2021program] (3-shot)",
+      "text": "Code: Humaneval [chen2021evaluating] (0-shot) and MBPP [austin2021program] (3-shot)",
       "enumerated": false,
       "marker": ""
     },
@@ -2953,8 +2953,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Popular aggregated results: MMLU[hendrycks2020measuring] (5-shot), BBH[suzgun2022challenging] (3-shot), and AGI Eval[zhong2023agieval] (3-5-shot, English multiple-choice questions only)",
-      "text": "Popular aggregated results: MMLU[hendrycks2020measuring] (5-shot), BBH[suzgun2022challenging] (3-shot), and AGI Eval[zhong2023agieval] (3-5-shot, English multiple-choice questions only)",
+      "orig": "Popular aggregated results: MMLU [hendrycks2020measuring] (5-shot), BBH [suzgun2022challenging] (3-shot), and AGI Eval [zhong2023agieval] (3-5-shot, English multiple-choice questions only)",
+      "text": "Popular aggregated results: MMLU [hendrycks2020measuring] (5-shot), BBH [suzgun2022challenging] (3-shot), and AGI Eval [zhong2023agieval] (3-5-shot, English multiple-choice questions only)",
       "enumerated": false,
       "marker": ""
     },
@@ -2967,8 +2967,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Detailed results for Mistral~7B\\xspace, Llama\\xspace2 7B/13B, and Code-Llama\\xspace7B are reported in Table[tab:results]. Figure[fig:bars] compares the performance of Mistral~7B\\xspacewith Llama\\xspace2 7B/13B, and Llama\\xspace1 34B",
-      "text": "Detailed results for Mistral~7B\\xspace, Llama\\xspace2 7B/13B, and Code-Llama\\xspace7B are reported in Table[tab:results]. Figure[fig:bars] compares the performance of Mistral~7B\\xspacewith Llama\\xspace2 7B/13B, and Llama\\xspace1 34B"
+      "orig": "Detailed results for Mistral~7B\\xspace, Llama\\xspace2 7B/13B, and Code-Llama\\xspace7B are reported in Table [tab:results]. Figure [fig:bars] compares the performance of Mistral~7B\\xspacewith Llama\\xspace2 7B/13B, and Llama\\xspace1 34B",
+      "text": "Detailed results for Mistral~7B\\xspace, Llama\\xspace2 7B/13B, and Code-Llama\\xspace7B are reported in Table [tab:results]. Figure [fig:bars] compares the performance of Mistral~7B\\xspacewith Llama\\xspace2 7B/13B, and Llama\\xspace1 34B"
     },
     {
       "self_ref": "#/texts/151",
@@ -2991,8 +2991,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in different categories. Mistral~7B\\xspacesurpasses Llama\\xspace2 13B across all metrics, and outperforms Llama\\xspace134B on most benchmarks. In particular, Mistral~7B\\xspacedisplays a superior performance in code, mathematics, and reasoning benchmarks.",
-      "text": "in different categories. Mistral~7B\\xspacesurpasses Llama\\xspace2 13B across all metrics, and outperforms Llama\\xspace134B on most benchmarks. In particular, Mistral~7B\\xspacedisplays a superior performance in code, mathematics, and reasoning benchmarks."
+      "orig": "in different categories. Mistral~7B\\xspacesurpasses Llama\\xspace2 13B across all metrics, and outperforms Llama\\xspace 1 34B on most benchmarks. In particular, Mistral~7B\\xspacedisplays a superior performance in code, mathematics, and reasoning benchmarks.",
+      "text": "in different categories. Mistral~7B\\xspacesurpasses Llama\\xspace2 13B across all metrics, and outperforms Llama\\xspace 1 34B on most benchmarks. In particular, Mistral~7B\\xspacedisplays a superior performance in code, mathematics, and reasoning benchmarks."
     },
     {
       "self_ref": "#/texts/153",
@@ -3003,8 +3003,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Size and Efficiency. We computed equivalent model sizes of the Llama\\xspace2 family, aiming to understand Mistral~7B\\xspacemodels' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), Mistral~7B\\xspacemirrored performance that one might expect from a Llama\\xspace2 model with more than 3x its size. On the Knowledge benchmarks, Mistral~7B\\xspace's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store.",
-      "text": "Size and Efficiency. We computed equivalent model sizes of the Llama\\xspace2 family, aiming to understand Mistral~7B\\xspacemodels' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), Mistral~7B\\xspacemirrored performance that one might expect from a Llama\\xspace2 model with more than 3x its size. On the Knowledge benchmarks, Mistral~7B\\xspace's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store."
+      "orig": "Size and Efficiency. We computed “equivalent model sizes” of the Llama\\xspace2 family, aiming to understand Mistral~7B\\xspacemodels' efficiency in the cost-performance spectrum (see Figure [fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), Mistral~7B\\xspacemirrored performance that one might expect from a Llama\\xspace2 model with more than 3x its size. On the Knowledge benchmarks, Mistral~7B\\xspace's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store.",
+      "text": "Size and Efficiency. We computed “equivalent model sizes” of the Llama\\xspace2 family, aiming to understand Mistral~7B\\xspacemodels' efficiency in the cost-performance spectrum (see Figure [fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), Mistral~7B\\xspacemirrored performance that one might expect from a Llama\\xspace2 model with more than 3x its size. On the Knowledge benchmarks, Mistral~7B\\xspace's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store."
     },
     {
       "self_ref": "#/texts/154",
@@ -3075,8 +3075,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Comparison of Chat models. Mistral~7B~--~Instruct\\xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B  Chat models.",
-      "text": "Comparison of Chat models. Mistral~7B~--~Instruct\\xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B  Chat models."
+      "orig": "Comparison of Chat models. Mistral~7B~--~Instruct\\xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B – Chat models.",
+      "text": "Comparison of Chat models. Mistral~7B~--~Instruct\\xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B – Chat models."
     },
     {
       "self_ref": "#/texts/160",
@@ -3100,8 +3100,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "=-1 To evaluate the generalization capabilities of Mistral~7B\\xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral~7B~--~Instruct\\xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table[tab:results_finetuning], we observe that the resulting model, Mistral~7B~--~Instruct\\xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard.",
-      "text": "=-1 To evaluate the generalization capabilities of Mistral~7B\\xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral~7B~--~Instruct\\xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table[tab:results_finetuning], we observe that the resulting model, Mistral~7B~--~Instruct\\xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard."
+      "orig": "=-1 To evaluate the generalization capabilities of Mistral~7B\\xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral~7B~--~Instruct\\xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table [tab:results_finetuning], we observe that the resulting model, Mistral~7B~--~Instruct\\xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B – Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard.",
+      "text": "=-1 To evaluate the generalization capabilities of Mistral~7B\\xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral~7B~--~Instruct\\xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table [tab:results_finetuning], we observe that the resulting model, Mistral~7B~--~Instruct\\xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B – Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard."
     },
     {
       "self_ref": "#/texts/162",
@@ -3112,8 +3112,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion]. As of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.",
-      "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion]. As of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B."
+      "orig": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure [fig:humanevalquestion]. As of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.",
+      "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure [fig:humanevalquestion]. As of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B."
     },
     {
       "self_ref": "#/texts/163",
@@ -3162,8 +3162,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with Llama\\xspace2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails].",
-      "text": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with Llama\\xspace2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails]."
+      "orig": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with Llama\\xspace2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table [tab:guardrails].",
+      "text": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with Llama\\xspace2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table [tab:guardrails]."
     },
     {
       "self_ref": "#/texts/167",
@@ -3354,8 +3354,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral~7B~--~Instruct\\xspace. For reference, Llama\\xspace2 13B  Chat reports official results of 6.65.",
-      "text": "System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral~7B~--~Instruct\\xspace. For reference, Llama\\xspace2 13B  Chat reports official results of 6.65."
+      "orig": "System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral~7B~--~Instruct\\xspace. For reference, Llama\\xspace2 13B – Chat reports official results of 6.65.",
+      "text": "System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral~7B~--~Instruct\\xspace. For reference, Llama\\xspace2 13B – Chat reports official results of 6.65."
     },
     {
       "self_ref": "#/texts/182",
@@ -3378,8 +3378,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both Mistral~7B~--~Instruct\\xspaceand Llama\\xspace2 Chat 13B to the question How to kill a linux process with system prompts activated. We observe that Mistral~7B\\xspaceprovides a correct response while Llama\\xspace2 declines to answer. Note that on this specific question, both models answer correctly when system prompts are deactivated.",
-      "text": "=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both Mistral~7B~--~Instruct\\xspaceand Llama\\xspace2 Chat 13B to the question How to kill a linux process with system prompts activated. We observe that Mistral~7B\\xspaceprovides a correct response while Llama\\xspace2 declines to answer. Note that on this specific question, both models answer correctly when system prompts are deactivated."
+      "orig": "=-1 As an illustration, we provide in Table [tab:guardrails_example] the answers of both Mistral~7B~--~Instruct\\xspaceand Llama\\xspace2 Chat 13B to the question How to kill a linux process with system prompts activated. We observe that Mistral~7B\\xspaceprovides a correct response while Llama\\xspace2 declines to answer. Note that on this specific question, both models answer correctly when system prompts are deactivated.",
+      "text": "=-1 As an illustration, we provide in Table [tab:guardrails_example] the answers of both Mistral~7B~--~Instruct\\xspaceand Llama\\xspace2 Chat 13B to the question How to kill a linux process with system prompts activated. We observe that Mistral~7B\\xspaceprovides a correct response while Llama\\xspace2 declines to answer. Note that on this specific question, both models answer correctly when system prompts are deactivated."
     },
     {
       "self_ref": "#/texts/184",
@@ -3390,8 +3390,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Comparison between Mistral and Llama\\xspacesystem prompts. Mistral provides the right answer whereas Llama\\xspace2 declines to answer to the question How to kill a linux process.",
-      "text": "Comparison between Mistral and Llama\\xspacesystem prompts. Mistral provides the right answer whereas Llama\\xspace2 declines to answer to the question How to kill a linux process."
+      "orig": "Comparison between Mistral and Llama\\xspacesystem prompts. Mistral provides the right answer whereas Llama\\xspace 2 declines to answer to the question How to kill a linux process.",
+      "text": "Comparison between Mistral and Llama\\xspacesystem prompts. Mistral provides the right answer whereas Llama\\xspace 2 declines to answer to the question How to kill a linux process."
     },
     {
       "self_ref": "#/texts/185",
@@ -3501,8 +3501,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B  Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.",
-      "text": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B  Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail."
+      "orig": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace2 13B – Chat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.",
+      "text": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace2 13B – Chat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail."
     },
     {
       "self_ref": "#/texts/194",
@@ -7736,7 +7736,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "c]@l@Llama 2 13B Chat with Llama 2 system prompt",
+            "text": "c]@l@Llama 2 13B – Chat with Llama 2 system prompt",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -7850,7 +7850,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "c]@l@Llama 2 13B Chat with Llama 2 system prompt",
+              "text": "c]@l@Llama 2 13B – Chat with Llama 2 system prompt",
               "column_header": false,
               "row_header": false,
               "row_section": false,
