@@ -1,12 +1,38 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import numpy
 from docling_core.types.doc import BoundingBox
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_ibm_models.tableformer.data_management.tf_predictor import TFPredictor
 
 from docling.models.stages.table_structure.table_structure_model import (
+    _pad_to_tf_page_height,
     _words_and_ocr_cells,
 )
+
+
+def test_table_crop_reaches_tableformer_unscaled() -> None:
+    # TFPredictor.multi_table_predict resizes its page image to a height of
+    # 1024 px, also a smaller one. A table crop that is given as the page must
+    # come out of that resize unchanged: an upscaled crop degrades the structure.
+    crop = numpy.arange(158 * 245 * 3, dtype=numpy.uint8).reshape(158, 245, 3)
+    predictor = object.__new__(TFPredictor)
+
+    _, crop_factor = predictor.resize_img(crop, height=1024)
+    resized, page_factor = predictor.resize_img(
+        _pad_to_tf_page_height(crop), height=1024
+    )
+
+    assert crop_factor > 6
+    assert page_factor == 1.0
+    assert numpy.array_equal(resized[:158, :245], crop)
+
+
+def test_page_height_image_is_not_padded() -> None:
+    image = numpy.zeros((1400, 300, 3), dtype=numpy.uint8)
+
+    assert _pad_to_tf_page_height(image) is image
 
 
 def _cell(bbox: BoundingBox, text: str, from_ocr: bool) -> TextCell:
