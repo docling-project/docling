@@ -189,6 +189,11 @@ layer = "core"
 depends_on = ["docling.backend", "docling.datamodel", "docling.utils"]
 
 [[modules]]
+path = "docling.utils.pdf_char_geometry"
+layer = "core"
+depends_on = ["docling.backend", "docling.utils"]
+
+[[modules]]
 path = "docling.utils"
 layer = "core"
 depends_on = [
@@ -383,6 +388,15 @@ layer = "models"
 depends_on = ["docling.datamodel", "docling.utils"]
 
 [[modules]]
+path = "docling.models.stages.script_position"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.utils",
+  "docling.utils.pdf_char_geometry",
+]
+
+[[modules]]
 path = "docling.models.stages.table_structure"
 layer = "core"
 depends_on = [
@@ -481,15 +495,52 @@ depends_on = [
   "docling.datamodel",
   "docling.datamodel.asr_model_specs",
   "docling.datamodel.pipeline_options_asr_model",
+  "docling.models.utils",
+  "docling.pipeline.asr_conversation",
+  "docling.pipeline.asr_mlx_audio",
   "docling.pipeline.asr_transformers",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]
 
 [[modules]]
+path = "docling.pipeline.asr_conversation"
+layer = "pipeline"
+depends_on = []
+
+[[modules]]
+path = "docling.pipeline.asr_mlx_audio"
+layer = "pipeline"
+depends_on = [
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.models.utils",
+  "docling.pipeline.asr_conversation",
+  "docling.pipeline.asr_granite_plus",
+  "docling.pipeline.asr_windows",
+]
+
+[[modules]]
+path = "docling.pipeline.asr_granite_plus"
+layer = "pipeline"
+depends_on = [
+  "docling.pipeline.asr_conversation",
+  "docling.pipeline.asr_windows",
+]
+
+[[modules]]
+path = "docling.pipeline.asr_windows"
+layer = "pipeline"
+depends_on = []
+
+[[modules]]
 path = "docling.pipeline.asr_transformers"
 layer = "pipeline"
-depends_on = ["docling.datamodel.pipeline_options_asr_model"]
+depends_on = [
+  "docling.pipeline.asr_granite_plus",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.asr_conversation",
+  "docling.pipeline.asr_windows",
+]
 
 [[modules]]
 path = "docling.pipeline.asr_pipeline"
@@ -552,6 +603,7 @@ depends_on = [
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
+  "docling.models.stages.script_position",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]

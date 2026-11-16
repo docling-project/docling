@@ -27,6 +27,7 @@ from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
+    SURYA_OCR_PROMPT,
     UNLIMITED_OCR2_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
@@ -1620,6 +1621,58 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_MINICPM_OCR = StageModelPreset(
+    preset_id="minicpm_ocr",
+    name="MiniCPM-OCR",
+    description="OpenBMB MiniCPM-OCR 1.0 model for document conversion (1.3B parameters)",
+    model_spec=VlmModelSpec(
+        name="MiniCPM-OCR-1.0",
+        default_repo_id="openbmb/MiniCPM-OCR-1.0",
+        revision="c5833cddb363aa62f1cb60ddde48c832e8f1a92c",
+        prompt="Convert this page to markdown.",
+        response_format=ResponseFormat.MARKDOWN,
+        max_new_tokens=4096,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
+        extra_generation_config={"skip_special_tokens": True},
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.API,
+            VlmEngineType.API_OPENAI,
+            VlmEngineType.API_OLLAMA,
+            VlmEngineType.API_LMSTUDIO,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.21.0",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
+                    "extra_processor_kwargs": {"downsample_mode": "4x"},
+                    "extra_generation_config": {"no_repeat_ngram_size": 100},
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 VLM_CONVERT_FALCON_OCR = StageModelPreset(
     preset_id="falcon_ocr",
     name="Falcon-OCR",
@@ -2035,6 +2088,53 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
         },
     ),
     scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# Surya 2.5 writes compact block headers, which the SURYA_HTML parser decodes.
+# The header tokens are not special tokens, so engines keep them with the default
+# skip_special_tokens=True. Upstream reads pages at 192 DPI with greedy decoding
+# and a 12288-token cap. mlx-vlm loads the safetensors of the Hugging Face repo
+# directly. A stock `mlx_vlm convert` rewrites the character-level tokenizer and
+# breaks it, so no converted MLX checkpoint is used.
+VLM_CONVERT_SURYA_OCR2_5 = StageModelPreset(
+    preset_id="surya_ocr2_5",
+    name="Surya-OCR-2.5",
+    description="Surya OCR 2.5 model for document layout parsing with bounding boxes (689M parameters)",
+    model_spec=VlmModelSpec(
+        name="Surya-OCR-2.5-689M",
+        default_repo_id="datalab-to/surya-ocr-2.5",
+        revision="00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+        prompt=SURYA_OCR_PROMPT,
+        response_format=ResponseFormat.SURYA_HTML,
+        max_new_tokens=12288,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
+        engine_overrides={
+            # 0.7.6 is the oldest mlx-vlm release tested with this checkpoint.
+            VlmEngineType.MLX: EngineModelConfig(min_engine_version="0.7.6"),
+            # The Qwen3.5 architecture needs the transformers floor of surya-ocr.
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.12.1",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
+                },
+            ),
+            # 0.25.1 is the vLLM release that upstream tests.
+            VlmEngineType.VLLM: EngineModelConfig(
+                min_engine_version="0.25.1",
+                extra_config={
+                    # Upstream default: the largest page image, the prompt and the
+                    # full-page token cap. The config allows 262144 positions.
+                    "max_model_len": 24576,
+                },
+            ),
+        },
+    ),
+    scale=192 / 72,
+    max_size=3072,
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 

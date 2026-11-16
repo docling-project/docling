@@ -1832,6 +1832,43 @@
       "content_layer": "body",
       "name": "group",
       "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/53",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/517"
+        },
+        {
+          "$ref": "#/texts/518"
+        },
+        {
+          "$ref": "#/texts/519"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/54",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/520"
+        },
+        {
+          "$ref": "#/texts/521"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -1861,6 +1898,15 @@
         },
         {
           "$ref": "#/texts/457"
+        },
+        {
+          "$ref": "#/texts/516"
+        },
+        {
+          "$ref": "#/groups/53"
+        },
+        {
+          "$ref": "#/groups/54"
         }
       ],
       "content_layer": "body",
@@ -1935,8 +1981,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "1.",
-      "text": "1.",
+      "orig": "1. Introduction",
+      "text": "1. Introduction",
       "level": 1
     },
     {
@@ -2018,8 +2064,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.",
-      "text": "2.",
+      "orig": "2. Analysis of the system",
+      "text": "2. Analysis of the system",
       "level": 1
     },
     {
@@ -2041,8 +2087,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.",
-      "text": "2.1.",
+      "orig": "2.1. Basic formulations: Hamiltonian and invariant",
+      "text": "2.1. Basic formulations: Hamiltonian and invariant",
       "level": 2
     },
     {
@@ -2082,8 +2128,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.1.",
-      "text": "2.1.1.",
+      "orig": "2.1.1. Setup of the Hamiltonian",
+      "text": "2.1.1. Setup of the Hamiltonian",
       "level": 3
     },
     {
@@ -2532,8 +2578,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.2.",
-      "text": "2.1.2.",
+      "orig": "2.1.2. Formulation of the invariant operator",
+      "text": "2.1.2. Formulation of the invariant operator",
       "level": 3
     },
     {
@@ -3290,8 +3336,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.3.",
-      "text": "2.1.3.",
+      "orig": "2.1.3. Solving the eigenvalue equation",
+      "text": "2.1.3. Solving the eigenvalue equation",
       "level": 3
     },
     {
@@ -4520,8 +4566,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.2.",
-      "text": "2.2.",
+      "orig": "2.2. The NUFA method",
+      "text": "2.2. The NUFA method",
       "level": 2
     },
     {
@@ -5387,8 +5433,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.3.",
-      "text": "2.3.",
+      "orig": "2.3. Wave functions",
+      "text": "2.3. Wave functions",
       "level": 2
     },
     {
@@ -5497,8 +5543,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.3.1.",
-      "text": "2.3.1.",
+      "orig": "2.3.1. Eigenfunctions of the invariant operator",
+      "text": "2.3.1. Eigenfunctions of the invariant operator",
       "level": 3
     },
     {
@@ -6701,8 +6747,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.3.2.",
-      "text": "2.3.2.",
+      "orig": "2.3.2. Quantum phases and the Schrödinger solutions",
+      "text": "2.3.2. Quantum phases and the Schrödinger solutions",
       "level": 3
     },
     {
@@ -7009,8 +7055,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "3.",
-      "text": "3.",
+      "orig": "3. Conclusion",
+      "text": "3. Conclusion",
       "level": 1
     },
     {
@@ -8696,6 +8742,86 @@
       "text": "ALICE Collaboration, Eur. Phys. J. C. 84, 813 (2024).",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/516",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "© The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan.",
+      "text": "© The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan."
+    },
+    {
+      "self_ref": "#/texts/517",
+      "parent": {
+        "$ref": "#/groups/53"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is an Open Access article distributed under the terms of the Creative Commons Attribution License (",
+      "text": "This is an Open Access article distributed under the terms of the Creative Commons Attribution License ("
+    },
+    {
+      "self_ref": "#/texts/518",
+      "parent": {
+        "$ref": "#/groups/53"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "https://creativecommons.org/licenses/by/4.0/",
+      "text": "https://creativecommons.org/licenses/by/4.0/",
+      "hyperlink": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "self_ref": "#/texts/519",
+      "parent": {
+        "$ref": "#/groups/53"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited.",
+      "text": "), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited."
+    },
+    {
+      "self_ref": "#/texts/520",
+      "parent": {
+        "$ref": "#/groups/54"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Funded by SCOAP",
+      "text": "Funded by SCOAP"
+    },
+    {
+      "self_ref": "#/texts/521",
+      "parent": {
+        "$ref": "#/groups/54"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "3",
+      "text": "3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "super"
+      }
     }
   ],
   "pictures": [],

@@ -108,6 +108,35 @@ def test_page_missing_coordocr_is_skipped_not_crashed():
     doc_backend.unload()
 
 
+def test_page_order_gap_keeps_later_pages_loadable(tmp_path, test_doc_path):
+    """A page div without a usable ORDER is skipped, leaving a gap in the ORDER
+    sequence. The pages after the gap must stay reachable through
+    load_page(0..page_count()-1) instead of raising KeyError.
+    """
+    gapped_path = tmp_path / "order_gap.tar.gz"
+    with (
+        tarfile.open(test_doc_path, "r:gz") as tar_in,
+        tarfile.open(gapped_path, "w:gz") as tar_out,
+    ):
+        for member in tar_in:
+            data = tar_in.extractfile(member).read()
+            if member.name.endswith(".xml"):
+                data = data.replace(b' ORDER="2"', b"")
+                member.size = len(data)
+            tar_out.addfile(member, BytesIO(data))
+
+    doc_backend: MetsGbsDocumentBackend = _get_backend(gapped_path)
+    assert doc_backend.is_valid()
+    assert doc_backend.page_count() == 2
+
+    for page_index in range(doc_backend.page_count()):
+        page_backend: MetsGbsPageBackend = doc_backend.load_page(page_index)
+        assert page_backend.is_valid()
+        page_backend.unload()
+
+    doc_backend.unload()
+
+
 def test_max_file_bytes_limit(test_doc_path):
     """Test that max_file_bytes limit is enforced during extraction."""
 

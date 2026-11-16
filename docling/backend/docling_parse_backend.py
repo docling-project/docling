@@ -203,6 +203,56 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
 
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Image.Image | None:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return None
+
+        page_height = self.get_size().height
+        probe = bbox.to_top_left_origin(page_height)
+        resources = [
+            (
+                resource,
+                resource.rect.to_bounding_box().to_top_left_origin(page_height),
+            )
+            for resource in segmented_page.bitmap_resources
+        ]
+        candidates = [
+            (resource, resource_bbox)
+            for resource, resource_bbox in resources
+            if probe.intersection_over_self(resource_bbox) >= overlap_threshold
+            and resource_bbox.intersection_over_self(probe) >= overlap_threshold
+        ]
+        if len(candidates) != 1:
+            return None
+
+        resource, resource_bbox = candidates[0]
+        # Reject text and vector content painted over the candidate image.
+        if self._result.intersects_with(
+            bbox=resource.rect.to_bounding_box(),
+            chars=True,
+            shapes=True,
+            bitmaps=False,
+        ):
+            return None
+        for other_resource, other_bbox in resources:
+            if other_resource is resource:
+                continue
+            # A second overlapping bitmap makes the native image ambiguous.
+            if max(resource_bbox.l, other_bbox.l) < min(
+                resource_bbox.r, other_bbox.r
+            ) and max(resource_bbox.t, other_bbox.t) < min(
+                resource_bbox.b, other_bbox.b
+            ):
+                return None
+
+        image_ref = resource.image
+        if image_ref is None or image_ref.pil_image is None:
+            return None
+        return image_ref.pil_image.copy()
+
     def has_content_in(
         self,
         *,

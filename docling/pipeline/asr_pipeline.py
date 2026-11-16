@@ -19,6 +19,7 @@ from docling.pipeline.asr_transcriber import (
     _AsrTranscriber,
     _ConversationItem,
     _ConversationWord,
+    _MlxAudioModel,
     _MlxWhisperModel,
     _NativeWhisperModel,
     _process_conversation,

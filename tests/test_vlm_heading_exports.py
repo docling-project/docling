@@ -33,6 +33,7 @@ from docling.utils.lightonocr_utils import parse_lightonocr_markdown
 from docling.utils.nemotron_parse_utils import parse_nemotron_parse_v2
 from docling.utils.nemotron_parse_v3_5_utils import parse_nemotron_parse_v3_5
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
+from docling.utils.surya_utils import parse_surya_html
 from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
 
 _SIZE = Size(width=600, height=800)
@@ -40,6 +41,7 @@ _SIZE = Size(width=600, height=800)
 _Block = tuple[bool, int | None]
 _FORMATS = {
     "chandra": ResponseFormat.CHANDRA_HTML,
+    "surya": ResponseFormat.SURYA_HTML,
     "dots": ResponseFormat.DOTS_JSON,
     "nemotron_v2": ResponseFormat.NEMOTRON_PARSE_V2,
     "nemotron_v3_5": ResponseFormat.NEMOTRON_PARSE_V3_5,
@@ -68,6 +70,10 @@ def _response(parser: str, blocks: list[_Block]) -> str:
                 f'<div data-bbox="100 {y} 900 {y + 40}" data-label="{label}">'
                 f"{body}</div>"
             )
+        elif parser == "surya":
+            label = "Title" if is_title else "Section-Header"
+            body = f"<h{depth}>H{index}</h{depth}>" if depth is not None else text
+            parts.append(f"<|{label}|><|100|><|{y}|><|900|><|{y + 40}|>{body}")
         elif parser == "dots":
             category = "Title" if is_title else "Section-header"
             parts.append(
@@ -126,6 +132,8 @@ def _parse(parser: str, blocks: list[_Block], page_no: int = 1) -> DoclingDocume
     content = _response(parser, blocks)
     if parser == "chandra":
         return parse_chandra_html(content, _SIZE, page_no=page_no)
+    if parser == "surya":
+        return parse_surya_html(content, _SIZE, page_no=page_no)
     if parser == "dots":
         return parse_dots_json(content, _SIZE, page_no=page_no)
     if parser == "nemotron_v2":

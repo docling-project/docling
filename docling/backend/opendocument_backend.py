@@ -993,10 +993,13 @@ def _odf_cell_text(cell: Any) -> str:
     if _odf_cell_has_rich_content(cell):
         return _strip_odf_image_reference_text(child_text, cell.get_images())
 
-    if cell.value is not None:
-        return str(cell.value)
+    # The text:p content is the text the application displays (a rounded
+    # number, a percentage, a currency or date format). The typed value is
+    # only a fallback for a cell that stores no text.
     if child_text:
         return child_text
+    if cell.value is not None:
+        return str(cell.value)
     if cell.children:
         return ""
 
@@ -1011,8 +1014,17 @@ def _odf_cell_has_content(cell: Any) -> bool:
     return _odf_cell_text(cell) != "" or _odf_cell_has_images(cell)
 
 
-def _odf_cell_is_rich(cell: Any) -> bool:
-    return _odf_cell_has_rich_content(cell)
+def _odf_cell_has_styled_run(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return any(
+        run.formatting is not None or run.hyperlink is not None
+        for child in cell.children
+        if isinstance(child, Paragraph)
+        for run in _odf_text_runs(child, odf_obj)
+    )
+
+
+def _odf_cell_is_rich(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return _odf_cell_has_rich_content(cell) or _odf_cell_has_styled_run(cell, odf_obj)
 
 
 def _image_ref_from_odf_image(
@@ -1622,7 +1634,7 @@ def _add_table_from_odf(
                 "row_header": False,
             }
 
-            if _odf_cell_is_rich(cell):
+            if _odf_cell_is_rich(cell, odf_obj):
                 group = doc.add_group(
                     label=GroupLabel.UNSPECIFIED,
                     name=f"rich_cell_group_{len(doc.tables) - 1}_{adjusted_col}_{adjusted_row}",
@@ -1657,6 +1669,7 @@ def _table_region_has_rich_cell(
     max_row: int,
     min_col: int,
     max_col: int,
+    odf_obj: OdfDocument | None,
 ) -> bool:
     for row_idx, row in enumerate(table.traverse()):
         if row_idx < min_row or row_idx > max_row:
@@ -1664,7 +1677,9 @@ def _table_region_has_rich_cell(
         for col_idx, cell in enumerate(row.traverse()):
             if col_idx < min_col or col_idx > max_col:
                 continue
-            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(cell):
+            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(
+                cell, odf_obj
+            ):
                 return True
     return False
 
@@ -2409,7 +2424,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             min_row, max_row, min_col, max_col = data_table["bounds"]
             table_data = data_table["data"]
             has_rich_content = _table_region_has_rich_cell(
-                table, min_row, max_row, min_col, max_col
+                table, min_row, max_row, min_col, max_col, self.odf_obj
             )
 
             # Check if this is a singleton (1x1 table)
@@ -2636,28 +2651,36 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
     @staticmethod
     def _find_page_size(doc: DoclingDocument, page_no: int) -> tuple[float, float]:
-        """Calculate page size based on the bounding boxes of all items on the page."""
-        left: float = -1.0
-        top: float = -1.0
-        right: float = -1.0
-        bottom: float = -1.0
+        """Compute page dimensions from item bounding boxes.
 
-        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+        Width and height are the largest ``r`` and ``b`` bbox values on the
+        page, in every content layer. Bboxes count cells from ``(0, 0)``, so
+        the extent is the maximum edge.
+
+        Args:
+            doc: Document containing converted page items.
+            page_no: 1-based page number to measure.
+
+        Returns:
+            The (width, height) of the page in cell-index units.
+        """
+        width: float = 0.0
+        height: float = 0.0
+
+        for item, _ in doc.iterate_items(
+            traverse_pictures=True,
+            page_no=page_no,
+            included_content_layers=set(ContentLayer),
+        ):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                if provenance.bbox is None:
+                if provenance.page_no != page_no:
                     continue
-                bbox = provenance.bbox
-                left = min(left, bbox.l) if left != -1 else bbox.l
-                right = max(right, bbox.r) if right != -1 else bbox.r
-                top = min(top, bbox.t) if top != -1 else bbox.t
-                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+                width = max(width, provenance.bbox.r)
+                height = max(height, provenance.bbox.b)
 
-        # Return dimensions, defaulting to (0, 0) if no items found
-        if left == -1 or right == -1:
-            return (0.0, 0.0)
-        return (right - left, bottom - top)
+        return (width, height)
 
     @staticmethod
     def _get_sheet_content_layer(table: OdfTable) -> ContentLayer | None:

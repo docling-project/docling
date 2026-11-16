@@ -354,6 +354,15 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
 
             self.page_map[page_no] = page_files
 
+        # A div without a usable ORDER is skipped above, so the ORDER sequence
+        # can have gaps, while load_page() addresses pages by position
+        # 0..page_count()-1. Re-index the pages contiguously in scan order so
+        # every parsed page stays reachable.
+        self.page_map = {
+            index: files
+            for index, (_, files) in enumerate(sorted(self.page_map.items()))
+        }
+
     def _validate_mets_xml(self, xml_string: bytes) -> etree._Element | None:
         # Security: disable entity resolution
         parser = etree.XMLParser(

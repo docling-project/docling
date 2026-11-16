@@ -481,11 +481,14 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 for cell in cells[1:]:
                     vertical_threshold = row_height * vertical_threshold_factor
+                    bbox = cell.rect.to_bounding_box()
                     if (
-                        abs(cell.rect.to_bounding_box().t - row_top)
-                        <= vertical_threshold
-                        and abs(cell.rect.to_bounding_box().b - row_bottom)
-                        <= vertical_threshold
+                        abs(bbox.t - row_top) <= vertical_threshold
+                        and abs(bbox.b - row_bottom) <= vertical_threshold
+                    ) or (
+                        # PDFium boxes a punctuation run tightly on the baseline,
+                        # so its edges miss the row's, though it sits inside it.
+                        bbox.t >= row_top and bbox.b <= row_bottom
                     ):
                         current_row.append(cell)
                         row_top = min(row_top, cell.rect.to_bounding_box().t)
@@ -644,6 +647,67 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         for cropbox in self._object_rects(pdfium_c.FPDF_PAGEOBJ_IMAGE):
             if cropbox.area() > AREA_THRESHOLD:
                 yield cropbox.scaled(scale=scale)
+
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Image.Image | None:
+        page_size = self.get_size()
+        probe = bbox.to_top_left_origin(page_height=page_size.height)
+
+        with pypdfium2_lock:
+            page = self._require_page()
+            image_objects = []
+            for obj in page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
+                obj_bbox = BoundingBox.from_tuple(
+                    _rect_to_display_frame(
+                        obj.get_bounds(),
+                        page.get_rotation(),
+                        page_size,
+                        page.get_bbox()[:2],
+                    ),
+                    origin=CoordOrigin.BOTTOMLEFT,
+                ).to_top_left_origin(page_height=page_size.height)
+                image_objects.append((obj_bbox, obj))
+
+            candidates = [
+                (obj_bbox, obj)
+                for obj_bbox, obj in image_objects
+                if probe.intersection_over_self(obj_bbox) >= overlap_threshold
+                and obj_bbox.intersection_over_self(probe) >= overlap_threshold
+            ]
+            if len(candidates) != 1:
+                return None
+
+            candidate_bbox, image_object = candidates[0]
+            # Reject any overlapping page object that could alter the image.
+            for obj in page.get_objects():
+                obj_bbox = BoundingBox.from_tuple(
+                    _rect_to_display_frame(
+                        obj.get_bounds(),
+                        page.get_rotation(),
+                        page_size,
+                        page.get_bbox()[:2],
+                    ),
+                    origin=CoordOrigin.BOTTOMLEFT,
+                ).to_top_left_origin(page_height=page_size.height)
+                if max(candidate_bbox.l, obj_bbox.l) < min(
+                    candidate_bbox.r, obj_bbox.r
+                ) and max(candidate_bbox.t, obj_bbox.t) < min(
+                    candidate_bbox.b, obj_bbox.b
+                ):
+                    if (
+                        obj.type != pdfium_c.FPDF_PAGEOBJ_IMAGE
+                        or obj.get_bounds() != image_object.get_bounds()
+                    ):
+                        return None
+
+            bitmap = image_object.get_bitmap(render=True, scale_to_original=True)
+            try:
+                image = bitmap.to_pil().copy()
+            finally:
+                bitmap.close()
+
+        return image
 
     def has_content_in(
         self,

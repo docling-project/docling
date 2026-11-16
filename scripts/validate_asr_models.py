@@ -43,14 +43,15 @@ def _convert(args: argparse.Namespace) -> None:
     from docling.datamodel.base_models import ConversionStatus, InputFormat
     from docling.datamodel.pipeline_options import AsrPipelineOptions
     from docling.datamodel.pipeline_options_asr_model import (
+        InlineAsrMlxAudioOptions,
         InlineAsrTransformersOptions,
     )
     from docling.document_converter import AudioFormatOption, DocumentConverter
     from docling.pipeline.asr_pipeline import AsrPipeline
 
     model = AsrModelType(args.model[0])
-    options = _resolve_asr_options(model).model_copy(deep=True)
-    if isinstance(options, InlineAsrTransformersOptions):
+    options = _resolve_asr_options(model, args.device).model_copy(deep=True)
+    if isinstance(options, (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions)):
         options.language = args.language
         if args.revision is not None:
             options.revision = args.revision
@@ -176,7 +177,8 @@ def main() -> int:
         "--language", default="en", help="Source language of the shared fragment."
     )
     parser.add_argument(
-        "--revision", help="Override the revision for selected Transformers models."
+        "--revision",
+        help="Override the revision for selected Transformers and mlx-audio models.",
     )
     parser.add_argument(
         "--artifacts-path",

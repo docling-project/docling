@@ -170,6 +170,15 @@ def test_threaded_pipeline_page_range():
     assert [p.page_no for p in result.pages] == [2, 3, 4]
 
 
+def test_threaded_pipeline_keeps_backend_for_embedded_picture_images():
+    converter = _make_threaded_converter(use_embedded_picture_images=True)
+    converter.initialize_pipeline(InputFormat.PDF)
+    pipeline = converter._get_pipeline(InputFormat.PDF)
+
+    assert pipeline is not None
+    assert pipeline.keep_backend is True
+
+
 def test_threaded_pipeline_drops_page_backends_when_kept_for_enrichment():
     """Enrichment options set keep_backend; the returned result must still not
     hold the native page backends after the conversion finishes."""

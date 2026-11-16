@@ -33,18 +33,24 @@ _FOLD_SAMPLE = "\r\n \t"
 _CALENDAR_ROOTS = frozenset({"VCALENDAR", "VEVENT", "VTODO", "VJOURNAL", "VFREEBUSY"})
 
 
-def _read_calendar_text(path_or_stream: BytesIO | Path, encoding: str | None) -> str:
-    """Decode the file with its folded lines joined.
+def read_calendar_text(raw: bytes, encoding: str | None) -> str:
+    """Decode iCalendar content with its folded lines joined.
 
     Folds are removed from the bytes first, because RFC 5545 lets a fold fall
     inside a multi-byte UTF-8 character. That only works when line breaks and
     spaces are single ASCII bytes, so UTF-16/32 input is decoded first.
+
+    Args:
+        raw: The iCalendar content.
+        encoding: The encoding to use, or ``None`` to detect it as
+            ``decode_text`` does.
+
+    Returns:
+        The decoded text, ready for ``parse_components``.
+
+    Raises:
+        DocumentLoadError: If the content cannot be decoded.
     """
-    raw = (
-        path_or_stream.getvalue()
-        if isinstance(path_or_stream, BytesIO)
-        else path_or_stream.read_bytes()
-    )
     ascii_compatible = not raw.startswith(_WIDE_BOMS)
     if encoding is not None:
         try:
@@ -54,6 +60,19 @@ def _read_calendar_text(path_or_stream: BytesIO | Path, encoding: str | None) ->
     if ascii_compatible:
         return decode_text(BytesIO(unfold_bytes(raw)), encoding)
     return unfold_text(decode_text(BytesIO(raw), encoding))
+
+
+def holds_calendar(components: list[Component]) -> bool:
+    """Return whether parsed content holds a calendar or a calendar entry.
+
+    Args:
+        components: The top-level components from ``parse_components``.
+
+    Returns:
+        True if a top-level component is a VCALENDAR, VEVENT, VTODO, VJOURNAL
+        or VFREEBUSY.
+    """
+    return any(c.name in _CALENDAR_ROOTS for c in components)
 
 
 class CalendarDocumentBackend(DeclarativeDocumentBackend):
@@ -82,8 +101,13 @@ class CalendarDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
 
         try:
+            raw = (
+                path_or_stream.getvalue()
+                if isinstance(path_or_stream, BytesIO)
+                else path_or_stream.read_bytes()
+            )
             self.components = parse_components(
-                _read_calendar_text(path_or_stream, options.encoding)
+                read_calendar_text(raw, options.encoding)
             )
         except DocumentLoadError:
             raise
@@ -91,7 +115,7 @@ class CalendarDocumentBackend(DeclarativeDocumentBackend):
             raise DocumentLoadError(
                 f"CalendarDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
-        if not any(c.name in _CALENDAR_ROOTS for c in self.components):
+        if not holds_calendar(self.components):
             raise DocumentLoadError(
                 "The document holds no calendar component (BEGIN:VCALENDAR or "
                 "BEGIN:VEVENT, VTODO, VJOURNAL, VFREEBUSY)."

@@ -22,9 +22,6 @@
       },
       {
         "$ref": "#/texts/1"
-      },
-      {
-        "$ref": "#/texts/28"
       }
     ],
     "content_layer": "body",
@@ -750,7 +747,7 @@
     {
       "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/0"
       },
       "children": [],
       "content_layer": "body",
@@ -780,7 +777,11 @@
       "parent": {
         "$ref": "#/groups/16"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/28"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [],

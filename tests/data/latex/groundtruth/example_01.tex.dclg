@@ -15,7 +15,7 @@
     <ldiv/>
     Second item in unordered list
   </list>
-  <list>
+  <list class="ordered">
     <ldiv/>
     First item in ordered list
     <ldiv/>
