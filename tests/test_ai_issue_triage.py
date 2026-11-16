@@ -102,6 +102,29 @@ def test_unclassified_issue_receives_priority_application_and_format(
     )
 
 
+def test_run_without_labels_leaves_issue_open_for_retriage(
+    tmp_path: Path,
+    api,
+    issue: dict[str, Any],
+) -> None:
+    comments, writes = api
+    issue["labels"] = []
+    assert triage.prepare(REPO, 42, tmp_path)
+    result = tmp_path / "result.json"
+    result.write_text(
+        '{"severity": null, "application": null, "formats": []}', encoding="utf-8"
+    )
+    triage.publish(REPO, 42, tmp_path / "context.json", result)
+    assert writes == []
+    assert comments == []
+    # The reporter adds details. The next event classifies the issue.
+    issue["body"] = "Text is missing on page 2 of every scanned PDF."
+    assert triage.prepare(REPO, 42, tmp_path)
+    triage.publish(REPO, 42, tmp_path / "context.json", result_file(tmp_path))
+    assert writes[0][2] == {"labels": ["enhancement", "priority:high", "pdf"]}
+    assert len(comments) == 1
+
+
 @pytest.mark.parametrize(
     "change", [{"body": "Updated report"}, {"state": "closed"}, {"pull_request": {}}]
 )

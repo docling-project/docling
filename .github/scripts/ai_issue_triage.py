@@ -131,17 +131,17 @@ def publish(repo: str, number: int, context_path: Path, result_path: Path) -> No
         {label["name"] for label in issue["labels"]},
         ensure_classification_labels(repo),
     )
-    if labels:
-        gh_write("POST", f"repos/{repo}/issues/{number}/labels", {"labels": labels})
+    if not labels:
+        # Do not mark the issue as classified. A later edit that adds details,
+        # or `/ai triage`, can then classify it again.
+        print("No classification labels added. The issue stays unclassified.")
+        return
+    gh_write("POST", f"repos/{repo}/issues/{number}/labels", {"labels": labels})
     names = ", ".join(f"`{label}`" for label in labels)
     body = (
         f"{COMMENT_MARKER}\n"
-        + (
-            f"Classification labels added: {names}."
-            if labels
-            else "No classification labels added."
-        )
-        + "\n\nThese labels are advisory. Maintainers can correct them. "
+        f"Classification labels added: {names}."
+        "\n\nThese labels are advisory. Maintainers can correct them. "
         "The workflow preserves these corrections."
     )
     gh_write("POST", f"repos/{repo}/issues/{number}/comments", {"body": body})
