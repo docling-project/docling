@@ -115,7 +115,7 @@ class OcrMode(str, Enum):
     # Layout detections only. No PDF information is needed/used.
     LAYOUT_REGIONS = "layout_regions"
 
-    # Eliminate those clusters that contain exclusively text PDF cells
+    # PDF bitmap regions plus clusters not covered exclusively by native text.
     PDF_AWARE_LAYOUT_REGIONS = "pdf_aware_layout_regions"
 
     # Currently DEFAULT is wired to run PDF_AWARE_LAYOUT_REGIONS

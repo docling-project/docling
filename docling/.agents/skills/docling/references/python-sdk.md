@@ -90,6 +90,13 @@ service client, and not supported by the DocTags export.
 
 ### Choosing an OCR engine
 
+The default OCR mode includes PDF bitmap regions, even outside layout detections,
+and layout regions that need OCR. This preserves scanned text when layout
+detection misses a short paragraph. Native text keeps priority during merging.
+`OcrMode.PDF_AWARE_LAYOUT_REGIONS` uses the same selection.
+Use `OcrMode.LAYOUT_REGIONS` for layout detections only, or
+`OcrMode.FULL_PAGE` to OCR the entire page and replace its text layer.
+
 ```python
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,

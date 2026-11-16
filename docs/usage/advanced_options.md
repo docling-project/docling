@@ -1,3 +1,15 @@
+## OCR region coverage
+
+The default OCR mode, `OcrMode.DEFAULT`, uses PDF-aware region selection.
+It sends PDF bitmap regions to OCR, including text outside layout detections.
+It also sends layout regions that need OCR. A full-page scan therefore reaches
+OCR even if layout detection misses a short paragraph. Overlapping regions are
+combined before OCR. Native text keeps priority when OCR results are merged.
+
+`OcrMode.PDF_AWARE_LAYOUT_REGIONS` uses the same selection.
+`OcrMode.LAYOUT_REGIONS` uses only layout detections.
+`OcrMode.FULL_PAGE` sends the entire page to OCR and replaces its text layer.
+
 ## Model prefetching and offline usage
 
 By default, models are downloaded automatically upon first usage. If you would prefer
