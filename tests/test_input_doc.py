@@ -676,6 +676,58 @@ def test_guess_format_ixbrl_markers(tmp_path, name, content, expected):
     assert dci._guess_format(stream) == expected
 
 
+_JATS_FRONT = b"<front><journal-meta/><article-meta/></front>"
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        # Europe PMC serves JATS without a DOCTYPE.
+        (b'<?xml version="1.0"?><article article-type="x">' + _JATS_FRONT, True),
+        (
+            b'<?xml version="1.0"?>\n<!-- c --><article>\n<?properties open_access?>\n'
+            + _JATS_FRONT,
+            True,
+        ),
+        # NLM DTDs that JATS replaced, still used in the PubMed Central archive.
+        (
+            b'<?xml version="1.0"?><!DOCTYPE article PUBLIC "-//NLM//DTD Journal '
+            b'Publishing DTD v2.3 20070202//EN" "journalpublishing.dtd"><article>'
+            + _JATS_FRONT,
+            True,
+        ),
+        (
+            b'<?xml version="1.0"?><!DOCTYPE article PUBLIC "-//NLM//DTD Journal '
+            b'Archiving and Interchange DTD v3.0 20080202//EN" "archivearticle3.dtd">'
+            b"<article>" + _JATS_FRONT,
+            True,
+        ),
+        # DocBook also has an <article> root, but no <front>.
+        (
+            b'<?xml version="1.0"?><article xmlns="http://docbook.org/ns/docbook">'
+            b"<info><title>T</title></info></article>",
+            False,
+        ),
+        # A DOCTYPE that names another DTD is not overridden by the root element.
+        (
+            b'<?xml version="1.0"?><!DOCTYPE article SYSTEM "other.dtd"><article>'
+            + _JATS_FRONT,
+            False,
+        ),
+    ],
+)
+def test_guess_format_jats_without_jats_doctype(tmp_path, content, expected):
+    """A JATS article is recognized without a DOCTYPE or with an NLM DTD."""
+    expected_format = InputFormat.XML_JATS if expected else None
+    doc_path = tmp_path / "article.xml"
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) == expected_format
+    stream = DocumentStream(name="article.xml", stream=BytesIO(content))
+    assert dci._guess_format(stream) == expected_format
+
+
 _IXBRL_REPORT = (
     b'<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="'
     + _IXBRL_NS

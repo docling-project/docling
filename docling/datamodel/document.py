@@ -659,6 +659,23 @@ smaller limit silently drops a document whose first format marker -- an
 ``<html>`` root, an XML declaration, a LaTeX preamble -- sits past it.
 """
 
+_JATS_DOCTYPE_MARKERS = ("journalpublishing", "archivearticle", "jats-archive")
+"""Lower-case markers of the article DTDs of JATS and of its NLM predecessors.
+
+JATS names its DTD files ``JATS-journalpublishing1.dtd`` and
+``JATS-archivearticle1.dtd``; the NLM Journal Publishing and Archiving DTDs
+2.x and 3.x, which much of the PubMed Central archive still uses, name them
+``journalpublishing3.dtd`` and ``archivearticle3.dtd``.
+"""
+
+_JATS_ROOT_RE = re.compile(
+    r"<article\b[^>]*>\s*<front\b[^>]*>\s*<(?:journal-meta|article-meta)\b"
+)
+"""Start of a JATS article: an ``<article>`` root whose ``<front>`` opens with metadata.
+
+DocBook also has an ``<article>`` root, but never a ``<front>`` child.
+"""
+
 _ODF_MIMETYPE_MAX_BYTES = 256
 """Longest ``mimetype`` member that ZIP detection accepts as OpenDocument.
 
@@ -1144,6 +1161,19 @@ class _DocumentConversionInput(BaseModel):
         return re.match(r"<\s*doclang\b", content_str, re.IGNORECASE) is not None
 
     @staticmethod
+    def _has_jats_root_element(content_str: str) -> bool:
+        """Return whether XML content starts with the root of a JATS article.
+
+        Europe PMC and some publishers serve JATS articles without a DOCTYPE, so
+        the root element and its first children are the only markers left.
+        Comments and processing instructions, such as PubMed Central's
+        ``<?properties open_access?>``, can appear between them.
+        """
+        content_str = re.sub(r"<!--(.*?)-->", "", content_str, flags=re.DOTALL)
+        content_str = re.sub(r"<\?[^>]*\?>", "", content_str).lstrip()
+        return _JATS_ROOT_RE.match(content_str) is not None
+
+    @staticmethod
     def _guess_from_content(
         content: bytes,
         mime: str,
@@ -1180,11 +1210,16 @@ class _DocumentConversionInput(BaseModel):
                 ):
                     input_format = InputFormat.XML_USPTO
 
-                elif InputFormat.XML_JATS in formats and (
-                    "JATS-journalpublishing" in xml_doctype
-                    or "JATS-archive" in xml_doctype
+                elif InputFormat.XML_JATS in formats and any(
+                    marker in xml_doctype.lower() for marker in _JATS_DOCTYPE_MARKERS
                 ):
                     input_format = InputFormat.XML_JATS
+
+            elif (
+                InputFormat.XML_JATS in formats
+                and _DocumentConversionInput._has_jats_root_element(content_str)
+            ):
+                input_format = InputFormat.XML_JATS
 
             if (
                 input_format is None
