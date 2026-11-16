@@ -465,7 +465,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     ) -> None:
         if not _PPTX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _PPTX_IMPORT_ERROR
-        if in_doc.format == InputFormat.PPT:
+        # Legacy .ppt files are converted to .pptx via LibreOffice first.
+        self._from_legacy_ppt: bool = in_doc.format == InputFormat.PPT
+        if self._from_legacy_ppt:
             path_or_stream = convert_to_modern_format(path_or_stream, "ppt", "pptx")
         if options is None:
             options = MsPowerpointBackendOptions()
@@ -1401,8 +1403,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             tcells = []
             # PowerPoint's "Header Row" and "First Column" table style options
             # (a:tblPr firstRow / firstCol) say which cells are headers.
-            header_row = table.first_row
-            header_col = table.first_col
+            # The .pptx that LibreOffice makes from a legacy .ppt does not keep
+            # these options, so tables from a .ppt keep their first row as the
+            # header row.
+            if self._from_legacy_ppt:
+                header_row, header_col = True, False
+            else:
+                header_row = table.first_row
+                header_col = table.first_col
             # Access the XML element for the shape that contains the table
             table_xml = shape._element
 
