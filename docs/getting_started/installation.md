@@ -65,6 +65,17 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     poetry add docling
     ```
 
+## Databricks Serverless
+
+Databricks can set `OPENSSL_FORCE_FIPS_MODE=0`. Some OpenCV wheels interpret
+any value as a request to enable FIPS mode. This can abort the Python process
+when Docling loads its native dependencies, even when OCR is disabled.
+
+On import, Docling removes this variable only if its value is exactly `0`.
+Other values, including the explicit FIPS request `1`, stay unchanged.
+Import Docling before OpenCV or other libraries that load OpenCV. This workaround
+does not provide FIPS support for native dependencies.
+
 ## Available extras
 
 The `docling` package is designed to offer a working solution for the Docling default options.
