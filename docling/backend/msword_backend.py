@@ -255,8 +255,10 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
 
 _RUN_TEXT_XPATH: Final[str] = (
     "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+    " | w:ruby/w:rubyBase/w:r/w:t"
 )
-"""Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+"""Run children that hold text: python-docx ``Run.text`` plus ``w:sym`` and the
+base text of a ``w:ruby`` (Phonetic Guide in Word), without its reading aid."""
 
 _SYMBOL_FONT: Final[str] = "symbol"
 
