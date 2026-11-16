@@ -516,7 +516,13 @@ class TextHelperMixin:
                         if text:
                             arg_parts.append(text)
                     else:
-                        text = arg.latex_verbatim().strip("{} ")
+                        # A characters argument (\verb's content) is kept as is: its own
+                        # braces and spaces are part of the text.
+                        text = (
+                            arg.chars
+                            if isinstance(arg, LatexCharsNode)
+                            else arg.latex_verbatim().strip("{} ")
+                        )
                         if text:
                             arg_parts.append(text)
         return (" ".join(arg_parts), consumed)
