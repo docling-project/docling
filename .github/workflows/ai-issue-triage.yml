@@ -15,7 +15,14 @@ on:
         type: number
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || inputs.issue }}
+  # Comments that do not start triage must not replace a pending run.
+  group: >-
+    ${{ github.workflow }}-${{ github.event.issue.number || inputs.issue }}-${{
+    (github.event_name == 'issues' || github.event_name == 'workflow_dispatch' ||
+    (!github.event.issue.pull_request &&
+    startsWith(github.event.comment.body, '/ai triage') &&
+    contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
+    && 'issue' || github.run_id }}
   cancel-in-progress: false
 
 permissions: {}

@@ -232,7 +232,7 @@ GROUNDTRUTH_VERDICTS = frozenset({"expected", "unexpected", "unclear"})
 
 
 def parse_triage_result(data: Any, allowed_prs: set[int]) -> TriageResult:
-    """Validate the model answer. Unknown values are errors, not defaults."""
+    """Validate core verdicts and discard an invalid optional classification."""
     if not isinstance(data, dict):
         raise ValueError("answer is not a JSON object")
     duplicates: list[DuplicateVerdict] = []
@@ -266,6 +266,13 @@ def parse_triage_result(data: Any, allowed_prs: set[int]) -> TriageResult:
         groundtruth_verdict = groundtruth["verdict"]
         groundtruth_reason = _model_text(groundtruth, "reason")
 
+    classification: Classification | None = None
+    if data.get("classification") is not None:
+        try:
+            classification = parse_classification(data["classification"])
+        except ValueError as exc:
+            print(f"::warning::Ignoring invalid PR classification: {exc}")
+
     return TriageResult(
         summary=_model_text(data, "summary"),
         duplicates=duplicates,
@@ -274,11 +281,7 @@ def parse_triage_result(data: Any, allowed_prs: set[int]) -> TriageResult:
         groundtruth_verdict=groundtruth_verdict,
         groundtruth_reason=groundtruth_reason,
         topics=parse_model_topics(data.get("topics")),
-        classification=(
-            parse_classification(data["classification"])
-            if data.get("classification") is not None
-            else None
-        ),
+        classification=classification,
     )
 
 

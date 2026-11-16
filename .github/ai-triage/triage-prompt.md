@@ -48,9 +48,14 @@ Do these five tasks:
    Use an empty list when the found labels are enough.
 
 5. Classification. Read @.github/ai-triage/classification-rules.md.
-   Classify the impact of the problem fixed by this PR. Use the format names
-   in task 4, from `asciidoc` through `xml`, for `formats`. Include `pdf`
-   for PDF parsing changes. The application label `chore` is also allowed.
+   Classify the impact of the problem fixed by this PR. For `formats`, use
+   only these names: `asciidoc`, `audio`, `boxnote`, `calendar`, `csv`,
+   `doclang`, `docx`, `email`, `epub`, `html`, `image`, `iwork`, `jats`,
+   `latex`, `markdown`, `odf`, `pdf`, `pdf parsing`, `plain text`, `pptx`,
+   `uspto`, `vtt`, `xbrl`, `xlsx`, `xml`.
+   Labels such as `asr`, `ocr`, and `layout` belong in `topics`.
+   Include `pdf` for PDF parsing changes. Use an empty list when no format
+   is directly affected. The application label `chore` is also allowed.
 
 Write all text in ASD-STE100 Simplified Technical English: short sentences,
 active voice. Do not repeat the PR description. Write code names in
