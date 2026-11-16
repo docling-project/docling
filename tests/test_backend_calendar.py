@@ -250,6 +250,29 @@ def test_format_duration_uses_weeks_only_for_whole_weeks(duration, expected):
     assert format_duration(delta) == expected
 
 
+@pytest.mark.parametrize(
+    ("component", "title"),
+    [
+        ("VFREEBUSY", "Free/busy"),
+        ("VEVENT", "Untitled event"),
+    ],
+)
+def test_end_without_start_is_retained(converter, component, title):
+    raw = _calendar(
+        "PRODID:-//Repro//EN",
+        f"BEGIN:{component}",
+        "UID:busy@example.com",
+        "DTSTAMP:20261115T120000Z",
+        "DTEND:20261116T180000Z",
+        f"END:{component}",
+    )
+
+    result = _convert(converter, raw)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert _texts(result.document) == [title, "End: 2026-11-16 18:00 UTC"]
+
+
 def test_alarms(converter):
     raw = _calendar(
         "BEGIN:VTODO",
