@@ -2663,7 +2663,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                     if _is_shown(run)
                 ]
-                text = "".join(t for run in runs for t in run._r.xpath("./w:t/text()"))
+                text = "".join(_get_run_text(run) for run in runs)
                 if len(text) == 0:
                     continue
 
