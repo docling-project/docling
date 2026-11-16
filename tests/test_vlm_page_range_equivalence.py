@@ -65,7 +65,7 @@ def test_complete_page_ranges_equal_whole_vlm_conversion(monkeypatch, response_f
             ),
         }
     )
-    source = Path(__file__).parent / "data/pdf/sources/2206.01062.pdf"
+    source = Path(__file__).parent / "data/pdf/sources/multi_page.pdf"
     whole = converter.convert(source)
     assert whole.status == ConversionStatus.SUCCESS
     page_count = whole.input.page_count
