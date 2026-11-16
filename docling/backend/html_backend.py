@@ -3657,9 +3657,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 for i, annotated_text in enumerate(annotated_texts):
                     # In preformatted text, each <br> is a newline. No strip: the block
                     # edges are trimmed above and every interior space is significant.
-                    text_orig = re.sub(
-                        rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
-                    )
+                    text_orig = annotated_text.text.replace(_BR_SENTINEL, "\n")
                     if not text_orig:
                         continue
                     if _BR_SENTINEL in annotated_text.text and not text_orig.strip():

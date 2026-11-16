@@ -1486,6 +1486,10 @@ def test_code_language_hint_prefers_prefixed_class():
         ),
         ("<pre><code>x = 'a  b'</code> <code>y</code></pre>", "x = 'a  b' y"),
         ("<pre>first<br>second</pre>", "first\nsecond"),
+        (
+            "<pre>def f():<br>    if ok:<br>        run()</pre>",
+            "def f():\n    if ok:\n        run()",
+        ),
         ("<pre>before<!-- hidden -->after</pre>", "beforeafter"),
         ("<pre>before<?hidden instruction?>after</pre>", "beforeafter"),
         ("<pre>before<!DOCTYPE hidden>after</pre>", "beforeafter"),
