@@ -21,7 +21,7 @@ from docling_core.types.doc import DoclingDocument, GraphCellLabel, GraphLinkLab
 
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import XBRLBackendOptions
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.document_converter import DocumentConverter, XBRLFormatOption
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
@@ -133,13 +133,14 @@ def _fact_rows(doc: DoclingDocument) -> list[tuple[str, str, list[str]]]:
     ]
 
 
-def test_ixbrl_report_matches_xbrl_instance_of_same_filing():
-    """The iXBRL report and the XBRL instance of one filing convert alike.
+def test_ixbrl_report_keeps_html_text_and_facts_of_xbrl_instance():
+    """The iXBRL report converts as its HTML text plus the facts of the filing.
 
     `mlac-20251231.htm` is the inline XBRL report of the filing whose XBRL
-    instance is `sources/mlac-20251231.xml`. The text is the same, and the facts
-    are the same. Only the values that need an inline transformation that Arelle
-    does not implement (`ixt-sec:numwordsen`, "one") differ.
+    instance is `sources/mlac-20251231.xml`. The facts are the same. Only the
+    values that need an inline transformation that Arelle does not implement
+    (`ixt-sec:numwordsen`, "one") differ. The text that is not tagged as a fact,
+    such as the risk factors, is only in the iXBRL report.
     """
     data_dir = Path(__file__).parent / "data" / "xbrl"
     taxonomy = data_dir / "sources" / "mlac-taxonomy"
@@ -151,10 +152,8 @@ def test_ixbrl_report_matches_xbrl_instance_of_same_filing():
         data_dir / "ixbrl" / "mlac-20251231.htm", taxonomy
     )
 
-    assert ixbrl_doc.export_to_markdown(
-        compact_tables=True
-    ) == xbrl_doc.export_to_markdown(compact_tables=True)
-    assert len(ixbrl_doc.tables) == len(xbrl_doc.tables) == 23
+    assert "Item 1A. Risk Factors" in ixbrl_doc.export_to_markdown()
+    assert "Item 1A. Risk Factors" not in xbrl_doc.export_to_markdown()
 
     xbrl_rows = _fact_rows(xbrl_doc)
     ixbrl_rows = _fact_rows(ixbrl_doc)
@@ -194,8 +193,23 @@ def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_pa
     with caplog.at_level("WARNING", logger="docling.backend.xml.xbrl_backend"):
         doc = _convert_with_taxonomy(data_dir / "ixbrl" / "mlac-20251231.htm", tmp_path)
 
-    assert len(doc.tables) == 0
+    assert not doc.key_value_items
+    assert "Item 1A. Risk Factors" in doc.export_to_markdown()
     assert "480 of 480 facts could not be linked to a concept" in caplog.text
+
+
+def test_ixbrl_report_converts_as_html_without_fetch_options(caplog):
+    """With the default options, the taxonomy cannot load, and the HTML text stays."""
+    report = Path(__file__).parent / "data" / "xbrl" / "ixbrl" / "mlac-20251231.htm"
+
+    with caplog.at_level("WARNING", logger="docling.backend.xml.xbrl_backend"):
+        result = DocumentConverter().convert(report)
+
+    assert result.input.format == InputFormat.XML_XBRL
+    assert result.status == ConversionStatus.SUCCESS
+    assert not result.document.key_value_items
+    assert "Item 1A. Risk Factors" in result.document.export_to_markdown()
+    assert "converted as HTML, without its XBRL facts" in caplog.text
 
 
 def test_xbrl_divide_unit_keeps_denominator(documents):
