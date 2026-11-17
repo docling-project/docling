@@ -267,6 +267,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         caption_data: list[str] = []
         last_list_item: ListItem | None = None
         list_continuation = False
+        item_text_open = False
         # The marker kind of the list group at each level ("." for ordered,
         # "*" or "-" for bullets), for the list being parsed. Reset when a new
         # list starts, so a level that holds a section header is never mistaken
@@ -302,11 +303,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         parents=parents,
                     )
                 )
+                # A comment is markup and does not end the text of a list item.
+                item_text_open = item_text_open and isinstance(block, _CommentBlock)
                 continue
 
             line = block
             stripped_line = line.strip()
-            if in_delimited_table and self._continue_table(table_data, line):
+            # A line right below a list item is more of its text, not a paragraph.
+            item_text_open = item_text_open and self._wrap_item(last_list_item, line)
+            if item_text_open or (
+                in_delimited_table and self._continue_table(table_data, line)
+            ):
                 continue
 
             in_list, last_list_item, list_continuation = self._close_list_if_needed(
@@ -321,11 +328,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
             # "[[some-id]]") are metadata that applies to the block that
             # follows; they are never body content, so skip them.
-            if (
-                re.match(r"^\[\[.+\]\]$", stripped_line)
-                or re.match(r"^\[[^\[\]]+\]$", stripped_line)
-                or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
-            ):
+            if self._is_block_metadata(stripped_line):
                 start_match = _LIST_START_ATTR_RE.match(stripped_line)
                 pending_list_start = (
                     int(start_match.group(1)) if start_match else pending_list_start
@@ -442,6 +445,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     parent=list_parent,
                 )
                 list_continuation = False
+                item_text_open = True
 
             elif in_list and stripped_line == "+":
                 list_continuation = True
@@ -871,6 +875,34 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parents[level] = None
             level -= 1
         return False, None, False
+
+    @staticmethod
+    def _is_block_metadata(stripped_line: str) -> bool:
+        """Check for a block anchor, block attributes or an attribute entry."""
+        return bool(
+            re.match(r"^\[\[.+\]\]$", stripped_line)
+            or re.match(r"^\[[^\[\]]+\]$", stripped_line)
+            or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
+        )
+
+    @classmethod
+    def _wrap_item(cls, item: ListItem | None, line: str) -> bool:
+        """Add a line right below a list item to its text, if it is more of it."""
+        stripped_line = line.strip()
+        if (
+            item is None
+            or stripped_line in {"", "+"}
+            or cls._is_block_metadata(stripped_line)
+            or cls._is_list_item(line)
+            or cls._is_title(line)
+            or cls._is_section_header(line)
+            or cls._is_table_line(line)
+            or cls._is_picture(line)
+            or cls._is_caption(line)
+        ):
+            return False
+        item.text = item.orig = cls._join_lines([item.text, stripped_line])
+        return True
 
     @classmethod
     def _match_list_kind(
