@@ -1382,6 +1382,42 @@ def test_heading_inside_list_keeps_content_in_body():
         assert all(t.content_layer == ContentLayer.BODY for t in doc.texts)
 
 
+@pytest.mark.parametrize(
+    "heading",
+    [
+        '<h1 style="display: none">Hidden</h1>',
+        '<h2 style="visibility: hidden">Hidden</h2>',
+        '<h3 aria-hidden="true">Hidden</h3>',
+        '<div style="display: none"><h1>Hidden</h1></div>',
+        '<section aria-hidden="true"><div><h2>Hidden</h2></div></section>',
+    ],
+)
+def test_hidden_heading_does_not_hide_visible_body(heading: str):
+    doc = _convert_html(
+        f"<html><body><p>Before.</p>{heading}<p>After.</p></body></html>".encode()
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Before.", ContentLayer.BODY),
+        ("After.", ContentLayer.BODY),
+    ]
+    assert doc.export_to_markdown() == "Before.\n\nAfter."
+
+
+def test_hidden_body_keeps_furniture_before_first_heading():
+    """The walk does not check <body> itself, so neither does the heading search."""
+    doc = _convert_html(
+        b'<html><body aria-hidden="true"><p>Nav</p><h1>Title</h1><p>Text</p>'
+        b"</body></html>"
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Nav", ContentLayer.FURNITURE),
+        ("Title", ContentLayer.BODY),
+        ("Text", ContentLayer.BODY),
+    ]
+
+
 def test_heading_as_list_child_ends_furniture():
     """A heading that is a direct child of <ul> (or in a <div> there) or in a
     <menu> item is emitted as a heading, so the body starts there."""

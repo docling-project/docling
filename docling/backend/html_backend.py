@@ -1091,13 +1091,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             q.append(NavigableString(close_mark))
 
         # Furniture before the first heading rule, except for headers in tables and lists
+        self._render_visibility_cache.clear()
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Skip headers that become cell or list item text: they never switch the
-        # layer back to body
+        # Skip headers that become cell or list item text, or that the walk skips
+        # as hidden: they never switch the layer back to body. The walk does not
+        # check `content` itself or its ancestors, so stop there.
         clean_headers = [
-            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+            h
+            for h in all_headers
+            if not self._is_header_in_cell_or_item(h)
+            and not any(
+                self._is_suppressed_tag(tag)
+                for tag in takewhile(lambda t: t is not content, (h, *h.parents))
+            )
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -1110,7 +1118,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         # reset context
         self.ctx = _Context()
-        self._render_visibility_cache.clear()
         self._captioned_figure_ids.clear()
         self._walk(content, doc)
         return doc
