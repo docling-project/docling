@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import DocItemLabel, DoclingDocument
 
-from docling.backend.calendar.values import describe_rrule
+from docling.backend.calendar.values import (
+    describe_rrule,
+    format_duration,
+    parse_duration,
+)
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.document_converter import DocumentConverter
 
@@ -225,6 +229,25 @@ def test_event_times(converter, lines, expected):
 )
 def test_describe_rrule(rule, expected):
     assert describe_rrule(rule) == expected
+
+
+@pytest.mark.parametrize(
+    ("duration", "expected"),
+    [
+        ("P1W", "1 week"),
+        ("P14D", "2 weeks"),
+        ("P10D", "10 days"),
+        # Weeks are used only when nothing is left over.
+        ("P7DT30M", "7 days 30 minutes"),
+        ("P7DT5H", "7 days 5 hours"),
+        ("P14DT1H", "14 days 1 hour"),
+    ],
+)
+def test_format_duration_uses_weeks_only_for_whole_weeks(duration, expected):
+    delta = parse_duration(duration)
+
+    assert delta is not None
+    assert format_duration(delta) == expected
 
 
 def test_alarms(converter):
