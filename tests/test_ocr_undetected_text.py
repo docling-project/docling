@@ -3,9 +3,12 @@
 
 """Scanned text outside layout detections must still reach OCR."""
 
+import ctypes
 from collections.abc import Iterable
 from pathlib import Path
 
+import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
 import pytest
 from docling_core.types.doc import BoundingBox, DocItemLabel
 from PIL import Image, ImageDraw
@@ -99,5 +102,95 @@ def test_undetected_scanned_line_reaches_ocr(
         assert not any(
             missing_line.intersection_over_self(rect) > 0 for rect in layout_rects
         )
+    finally:
+        doc_backend.unload()
+
+
+def _native_text_with_bitmap_pdf(path: Path, bitmap_size: int) -> Path:
+    """Create a PDF with visible native text and a background or small image."""
+    image = Image.new("RGB", (bitmap_size, bitmap_size), "white")
+    ImageDraw.Draw(image).text((5, 5), "Logo", fill="black")
+    pdf = pdfium.PdfDocument.new()
+    try:
+        pdf_page = pdf.new_page(300, 300)
+        picture = pdfium.PdfImage.new(pdf)
+        picture.set_bitmap(pdfium.PdfBitmap.from_pil(image))
+        picture.set_matrix(pdfium.PdfMatrix().scale(bitmap_size, bitmap_size))
+        pdf_page.insert_obj(picture)
+
+        font = pdfium_c.FPDFText_LoadStandardFont(pdf.raw, b"Helvetica")
+        native_text = pdfium_c.FPDFPageObj_CreateTextObj(pdf.raw, font, 12.0)
+        text_bytes = "Native PDF heading\0".encode("utf-16-le")
+        pdfium_c.FPDFText_SetText(
+            native_text,
+            ctypes.cast(
+                ctypes.c_char_p(text_bytes), ctypes.POINTER(pdfium_c.FPDF_WCHAR)
+            ),
+        )
+        pdfium_c.FPDFPageObj_Transform(native_text, 1, 0, 0, 1, 20, 250)
+        pdfium_c.FPDFPage_InsertObject(pdf_page.raw, native_text)
+        pdf_page.gen_content()
+        pdf.save(path)
+    finally:
+        pdf.close()
+    return path
+
+
+@pytest.mark.parametrize(
+    "backend_cls",
+    [PyPdfiumDocumentBackend, ThreadedDoclingParseDocumentBackend],
+    ids=["pypdfium2", "threaded"],
+)
+@pytest.mark.parametrize("bitmap_size", [300, 40], ids=["background", "decoration"])
+@pytest.mark.parametrize("detected", [True, False], ids=["layout", "empty-layout"])
+def test_native_text_page_does_not_ocr_unselected_bitmaps(
+    backend_cls, bitmap_size: int, detected: bool, tmp_path: Path
+) -> None:
+    source = _native_text_with_bitmap_pdf(
+        tmp_path / "native_with_bitmap.pdf", bitmap_size
+    )
+    doc_backend = InputDocument(
+        path_or_stream=source,
+        format=InputFormat.PDF,
+        backend=backend_cls,
+    )._backend
+    try:
+        backend = (
+            next(iter(doc_backend.iter_pages()))
+            if backend_cls is ThreadedDoclingParseDocumentBackend
+            else doc_backend.load_page(0)
+        )
+        page = Page(page_no=1, size=backend.get_size())
+        page._backend = backend
+        assert list(backend.get_text_cells())
+        assert list(backend.get_bitmap_rects())
+        page.predictions.layout = LayoutPrediction(
+            clusters=[
+                Cluster(
+                    id=0,
+                    label=DocItemLabel.TEXT,
+                    bbox=BoundingBox(l=15, t=25, r=230, b=65),
+                    confidence=0.9,
+                )
+            ]
+            if detected
+            else []
+        )
+        model = _OcrRectsOnlyModel(
+            enabled=True,
+            artifacts_path=None,
+            options=OcrOptions(lang=["en"], mode=OcrMode.DEFAULT),
+            accelerator_options=AcceleratorOptions(),
+        )
+
+        rects = model.get_ocr_rects(page)
+
+        # Only a layout-selected region may reach OCR. Bitmap presence alone
+        # must not convert a small decoration or an entire page into an OCR crop.
+        assert all(
+            rect.area() < page.size.width * page.size.height * 0.5 for rect in rects
+        )
+        if not detected or bitmap_size == 40:
+            assert rects == []
     finally:
         doc_backend.unload()

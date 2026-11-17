@@ -395,8 +395,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         r"""
         Compute OCR rects from PDF bitmap regions and layout clusters.
 
-        1. Start from the layout clusters and the PDF bitmap regions. Bitmap
-           regions must reach OCR even when layout detection misses their text.
+        1. On raster-only pages, include PDF bitmap regions even when layout
+           detection misses their text. Pages with visible native text keep
+           layout-guided selection to avoid OCR-ing backgrounds and decorations.
         2. Keep the clusters that need OCR:
            - Clusters overlapping a bitmap (their text may be rasterised).
            - Clusters without any visible programmatic text (their text may be
@@ -418,7 +419,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
            a thicker shape needs text over a fair share of its area, since one
            native caption inside a chart says nothing about the labels drawn as
            paths in it.
-        3. Deduplicate the bitmap regions and remaining cluster bboxes.
+        3. Deduplicate the selected bitmap regions and remaining cluster bboxes.
         """
         if page.predictions.layout is None:
             return []
@@ -439,9 +440,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
 
-        # Text cell geometry, read at most once. The spatial-index path needs it for
-        # every cluster; the native-query path only for clusters that carry both text
-        # and shapes, so it is read lazily there.
+        # Text cell geometry, read at most once. It is needed to distinguish a
+        # raster-only scan from a PDF with a visible native text layer; the
+        # spatial-index path also uses it for every cluster.
         text_boxes: list[BoundingBox] | None = None
         text_index: BoundingBoxSpatialIndex | None = None
         non_text_index: BoundingBoxSpatialIndex | None = None
@@ -458,8 +459,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # the overwhelming majority of text clusters never need it.
         shape_boxes: list[BoundingBox] | None = None
 
-        # Include bitmap content even when layout detection misses its text.
-        ocr_rects: list[BoundingBox] = list(bitmap_rects)
+        # A page-wide background image and small decorative images must not
+        # trigger extra OCR on a page that already has visible native text.
+        # Keep the original layout-guided selection for those mixed pages.
+        if bitmap_rects and text_boxes is None:
+            text_boxes, text_index = self._text_geometry(page)
+        ocr_rects: list[BoundingBox] = [] if text_boxes else list(bitmap_rects)
         for cluster in page.predictions.layout.clusters:
             cluster_bbox = cluster.bbox
 
@@ -525,7 +530,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     ocr_rects.append(cluster_bbox)
                     break
 
-        # Deduplicate bitmap regions together with the surviving cluster bboxes.
+        # Deduplicate the selected bitmap regions and surviving cluster bboxes.
         _, ocr_rects = self._deduplicate_rects(
             page.size, ocr_rects, dilation_size=BaseOcrModel.DEFAULT_DILATION_SIZE
         )

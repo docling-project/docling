@@ -1,9 +1,12 @@
 ## OCR region coverage
 
 The default OCR mode, `OcrMode.DEFAULT`, uses PDF-aware region selection.
-It sends PDF bitmap regions to OCR, including text outside layout detections.
-It also sends layout regions that need OCR. A full-page scan therefore reaches
-OCR even if layout detection misses a short paragraph. Overlapping regions are
+On pages without visible native text, it sends PDF bitmap regions to OCR,
+including text outside layout detections. A scanned page therefore reaches OCR
+even if layout detection misses a short paragraph. On pages with visible native
+text, bitmap regions alone do not trigger OCR: layout regions still determine
+which content needs OCR. This avoids processing full-page background images and
+decorative bitmaps solely because they are present. Overlapping regions are
 combined before OCR. Native text keeps priority when OCR results are merged.
 
 `OcrMode.PDF_AWARE_LAYOUT_REGIONS` uses the same selection.
