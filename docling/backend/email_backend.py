@@ -296,8 +296,25 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(message.sent_date, datetime):
             email_message["Date"] = format_datetime(message.sent_date)
 
-        plain_body = message.body
-        html_body = message.html_body
+        try:
+            plain_body = message.body
+        except UnicodeDecodeError:
+            # python-oxmsg <=0.0.2 decodes 8-bit body bytes with the internet
+            # code page, which fails when the bytes use the message code page.
+            # https://github.com/scanny/python-oxmsg/issues/5
+            plain_body = None
+            _log.warning(
+                "Could not decode .msg plain-text body (non-Unicode string "
+                "properties decoded with the wrong code page)"
+            )
+        try:
+            html_body = message.html_body
+        except UnicodeDecodeError:
+            html_body = None
+            _log.warning(
+                "Could not decode .msg HTML body (non-Unicode string "
+                "properties decoded with the wrong code page)"
+            )
         if plain_body:
             email_message.set_content(plain_body)
             if html_body:

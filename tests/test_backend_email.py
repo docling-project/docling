@@ -1102,6 +1102,44 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
     assert "Real content that should appear." in doc.export_to_markdown()
 
 
+def test_msg_loads_when_body_raises_unicode_decode_error():
+    """A .msg with 8-bit (non-Unicode) string properties must not crash.
+
+    python-oxmsg <=0.0.2 decodes the body with the internet code page even
+    when the bytes use the message code page, raising UnicodeDecodeError.
+    The backend should still load and convert the remaining metadata.
+    See https://github.com/scanny/python-oxmsg/issues/5.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    body_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "utf-8", b"\xe9", 0, 1, "invalid continuation byte"
+        )
+    )
+    with patch.object(OxMsgMessage, "body", body_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(rfc822),
+        format=InputFormat.EMAIL,
+        filename="non_unicode.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(rfc822))
+
+    assert backend.is_valid()
+    doc = backend.convert()
+    markdown = doc.export_to_markdown()
+
+    assert "Simple Email" in markdown
+    assert "From:" in markdown
+
+
 def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     from oxmsg import Message as OxMsgMessage
 
