@@ -216,6 +216,8 @@ pipeline_options.picture_description_options = PictureDescriptionApiOptions(
 )
 ```
 
+Requests that fail with a connection error or an HTTP 429, 500, 502, 503 or 504 response are retried up to 5 times. Set `max_retries` to change this, for example `max_retries=0` to fail on the first error.
+
 End-to-end code snippets for cloud providers are available in the examples section:
 
 - [IBM watsonx.ai](../examples/pictures_description_api.py)
