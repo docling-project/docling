@@ -3012,3 +3012,31 @@ def test_inline_quotation_gets_its_quotation_marks():
         "|----------|"
     )
     assert "She said “stop” and left." in [t.orig for t in doc.texts]
+
+
+def test_inline_quotation_marks_follow_the_language():
+    # The default style sheet uses `quotes: auto`, so the marks come from the
+    # language of the element. The nearest `lang` attribute applies, and an
+    # unknown language gets English marks.
+    html = (
+        '<html lang="de"><body>'
+        "<p>Er sagte <q>Hallo <q>du</q></q>.</p>"
+        '<p lang="fr-CA">Il a dit <q>salut</q>.</p>'
+        '<p lang="ja"><q>はい</q></p>'
+        '<p lang="xx"><q>unknown</q></p>'
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert [t.orig for t in doc.texts] == [
+        "Er sagte „Hallo ‚du‘“.",  # noqa: RUF001
+        "Il a dit «salut».",
+        "「はい」",
+        "“unknown”",
+    ]

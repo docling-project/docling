@@ -126,9 +126,46 @@ def _warn_headers_without_origin() -> None:
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
 
-# The quotation marks that the default style sheet of a browser gives <q>:
-# double for the outer quotation, single for a quotation nested in it.
-_Q_QUOTATION_MARKS: Final = (("\u201c", "\u201d"), ("\u2018", "\u2019"))
+# The quotation marks that the default style sheet of a browser gives <q>
+# (`quotes: auto`), from the CLDR data of the language: the outer pair, then
+# the pair for a quotation nested in it. The key is the primary language subtag.
+_QuotationMarks = tuple[tuple[str, str], tuple[str, str]]
+_Q_QUOTATION_MARKS_EN: Final[_QuotationMarks] = (
+    ("\u201c", "\u201d"),
+    ("\u2018", "\u2019"),
+)
+_Q_QUOTATION_MARKS_BY_LANG: Final[dict[str, _QuotationMarks]] = {
+    "cs": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "de": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "el": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "en": _Q_QUOTATION_MARKS_EN,
+    "es": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "fr": (("\u00ab", "\u00bb"), ("\u00ab", "\u00bb")),
+    "it": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "ja": (("\u300c", "\u300d"), ("\u300e", "\u300f")),
+    "nl": (("\u2018", "\u2019"), ("\u201c", "\u201d")),
+    "pl": (("\u201e", "\u201d"), ("\u00ab", "\u00bb")),
+    "pt": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+    "ru": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "sv": (("\u201d", "\u201d"), ("\u2019", "\u2019")),
+    "uk": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "zh": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+}
+
+
+def _q_quotation_marks(q: Tag) -> _QuotationMarks:
+    """Return the quotation marks for the language of a <q> element.
+
+    The language comes from the nearest `lang` (or `xml:lang`, for XHTML)
+    attribute on the element or an ancestor. An unknown or missing language
+    gets English marks.
+    """
+    for element in (q, *q.parents):
+        lang = element.get("lang", element.get("xml:lang"))
+        if lang is not None:
+            primary = str(lang).strip().lower().split("-")[0]
+            return _Q_QUOTATION_MARKS_BY_LANG.get(primary, _Q_QUOTATION_MARKS_EN)
+    return _Q_QUOTATION_MARKS_EN
 
 
 def _resolve_line_breaks(text: str) -> str:
@@ -1046,8 +1083,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # A browser renders the quotation marks of <q> from CSS (open-quote and
         # close-quote), so the markup does not hold them. Add them as text.
         for q in content("q"):
-            depth = min(len(q.find_parents("q")), len(_Q_QUOTATION_MARKS) - 1)
-            open_mark, close_mark = _Q_QUOTATION_MARKS[depth]
+            marks = _q_quotation_marks(q)
+            depth = min(len(q.find_parents("q")), len(marks) - 1)
+            open_mark, close_mark = marks[depth]
             q.insert(0, NavigableString(open_mark))
             q.append(NavigableString(close_mark))
 
