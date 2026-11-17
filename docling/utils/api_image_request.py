@@ -32,12 +32,12 @@ _RETRY_BACKOFF_FACTOR = 0.1
 _RETRY_STATUS_FORCELIST = (429, 500, 502, 503, 504)
 
 
-def _make_retry_session() -> requests.Session:
+def _make_retry_session(total: int = _RETRY_TOTAL) -> requests.Session:
     retry_strategy = Retry(
-        total=_RETRY_TOTAL,
-        connect=_RETRY_TOTAL,
+        total=total,
+        connect=total,
         read=0,
-        status=_RETRY_TOTAL,
+        status=total,
         allowed_methods={"POST"},
         backoff_factor=_RETRY_BACKOFF_FACTOR,
         status_forcelist=_RETRY_STATUS_FORCELIST,
@@ -204,6 +204,7 @@ def api_image_request(
     *,
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
+    max_retries: int = _RETRY_TOTAL,
     **params,
 ) -> ApiImageRequestResult:
     img_io = BytesIO()
@@ -247,7 +248,7 @@ def api_image_request(
 
             headers = headers or {}
 
-            with _make_retry_session() as session:
+            with _make_retry_session(max_retries) as session:
                 r = session.post(
                     str(url),
                     headers=headers,
@@ -308,6 +309,7 @@ def api_image_request_streaming(
     generation_stoppers: list[GenerationStopper] = [],
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
+    max_retries: int = _RETRY_TOTAL,
     **params,
 ) -> ApiImageStreamingRequestResult:
     """
@@ -365,7 +367,7 @@ def api_image_request_streaming(
                 hdrs["X-Temperature"] = str(params["temperature"])
 
             # Stream the HTTP response
-            with _make_retry_session() as session:
+            with _make_retry_session(max_retries) as session:
                 with session.post(
                     str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
                 ) as r:
