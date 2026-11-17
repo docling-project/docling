@@ -60,7 +60,6 @@ def test_inline_html_breaks_in_paragraph_heading_and_list(tag: str) -> None:
             "First<br>[second](https://example.com/docs)",
             "First  \n[second](https://example.com/docs)",
         ),
-        ("First<br><br>second", "First\n\nsecond"),
     ],
 )
 def test_inline_html_breaks_preserve_inline_boundaries(
@@ -72,6 +71,15 @@ def test_inline_html_breaks_preserve_inline_boundaries(
         .document
     )
     assert doc.export_to_markdown() == expected
+
+
+def test_consecutive_inline_html_breaks_stay_in_one_text_item() -> None:
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.MD])
+        .convert_string("First<br><br>second", format=InputFormat.MD)
+        .document
+    )
+    assert [item.text for item in doc.texts] == ["First\n\nsecond"]
 
 
 @pytest.mark.parametrize(
