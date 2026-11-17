@@ -255,6 +255,18 @@ def test_continued_caption_is_dropped_and_footnote_moved(tmp_path: Path):
     assert "continued" not in reloaded.export_to_markdown()
 
 
+@pytest.mark.parametrize(
+    "caption", ["Table 1 (continued)", "Table 1 (cont.)", "Table 1 (contd.)", "Vervolg"]
+)
+def test_continued_caption_variants_are_recognised(caption: str):
+    doc = DoclingDocument(name="continued-variants")
+    _add_table(doc, 1, [_HEADER, ["1", "a", "b"]], header_rows=1)
+    second = _add_table(doc, 2, [["2", "c", "d"]])
+    _attach(doc, second, DocItemLabel.CAPTION, caption)
+
+    assert [d.merged for d in _merge(doc)] == [True]
+
+
 def _drop_provenance(doc: DoclingDocument, second: TableItem) -> None:
     second.prov = []
 

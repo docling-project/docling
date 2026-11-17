@@ -46,7 +46,7 @@ _log = logging.getLogger(__name__)
 
 # Captions that mark a fragment as the continuation of an earlier table.
 _CONTINUED_CAPTION = re.compile(
-    r"\b(continued|cont\.|contd\.?|vervolg|fortsetzung|suite|continuación|continuação)\b",
+    r"\b(continued|cont\.|contd\.?|vervolg|fortsetzung|suite|continuación|continuação)(?!\w)",
     re.IGNORECASE,
 )
 
