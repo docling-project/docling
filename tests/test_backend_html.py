@@ -1063,6 +1063,29 @@ def test_ordered_list_item_marker_from_list_style_string(items: str, expected: s
             '<ol type="a" style="list-style-type: upper-roman"><li>x</li></ol>',
             ["I."],
         ),
+        # Of several declarations, an `!important` one wins, else the last one
+        (
+            '<ol type="a" style="list-style-type: upper-roman!important">'
+            "<li>x</li><li>y</li></ol>",
+            ["I.", "II."],
+        ),
+        (
+            '<ol style="list-style-type: lower-roman ! IMPORTANT;'
+            ' list-style-type: upper-alpha"><li>x</li></ol>',
+            ["i."],
+        ),
+        (
+            '<ol style="list-style: upper-alpha !important;'
+            ' list-style-type: lower-roman !important"><li>x</li></ol>',
+            ["i."],
+        ),
+        (
+            '<ol style="list-style-type: lower-roman; list-style: upper-alpha">'
+            "<li>x</li></ol>",
+            ["A."],
+        ),
+        # A custom property is not a `list-style-type` declaration
+        ('<ol style="--list-style-type: upper-roman"><li>x</li></ol>', [""]),
         # A reversed list counts down, by default from its number of items
         ("<ol reversed><li>x</li><li>y</li><li>z</li></ol>", ["3.", "2.", "1."]),
         ('<ol reversed start="10" type="a"><li>x</li><li>y</li></ol>', ["j.", "i."]),
