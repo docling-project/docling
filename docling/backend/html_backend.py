@@ -289,8 +289,9 @@ _LIST_STYLE_TYPES: Final = {
     "upper-roman": "I",
 }
 _LIST_STYLE_KEYWORD_RE: Final = re.compile(
-    r"list-style(?:-type)?\s*:\s*(?P<value>[^;]*)", re.IGNORECASE
+    r"(?:^|;)\s*list-style(?:-type)?\s*:(?P<value>[^;]*)", re.IGNORECASE
 )
+_CSS_IMPORTANT_RE: Final = re.compile(r"!\s*important\s*$", re.IGNORECASE)
 _ROMAN_NUMERALS: Final = (
     (1000, "m"),
     (900, "cm"),
@@ -3415,18 +3416,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """Return the kind of marker of the items of an `<ol>`, one of `_OL_TYPES`.
 
         A `list-style-type` keyword in the inline style wins over the `type`
-        attribute, as in browsers. Other keywords and stylesheets are ignored.
+        attribute, as in browsers. Of several declarations, an `!important` one
+        wins, else the last one. Other keywords and stylesheets are ignored.
         """
         style = tag.get("style")
-        matches = (
-            list(_LIST_STYLE_KEYWORD_RE.finditer(style))
-            if isinstance(style, str)
-            else []
-        )
-        if matches:
-            for keyword in matches[-1].group("value").lower().split():
-                if keyword in _LIST_STYLE_TYPES:
-                    return _LIST_STYLE_TYPES[keyword]
+        value: Optional[str] = None
+        important = False
+        for match in _LIST_STYLE_KEYWORD_RE.finditer(
+            style if isinstance(style, str) else ""
+        ):
+            declared, is_important = _CSS_IMPORTANT_RE.subn("", match.group("value"))
+            if is_important or not important:
+                value, important = declared, bool(is_important)
+        for keyword in (value or "").lower().split():
+            if keyword in _LIST_STYLE_TYPES:
+                return _LIST_STYLE_TYPES[keyword]
         type_attr = tag.get("type")
         return (
             type_attr if isinstance(type_attr, str) and type_attr in _OL_TYPES else "1"
