@@ -568,8 +568,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
         options: Optional[HTMLBackendOptions] = None,
-        *,
-        _decode_local_image_urls: bool = True,
     ):
         if not _BS4_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
@@ -583,7 +581,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             str(options.source_uri) if options.source_uri is not None else None
         )
         self.base_path = configured_base_path
-        self._decode_local_image_urls: bool = _decode_local_image_urls
         self._mhtml_resources: dict[str, bytes] | None = None
         self._image_loader = ImageResourceLoader(
             enable_local_fetch=options.enable_local_fetch,
@@ -1993,7 +1990,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
                 return archive_location
         return self._image_loader.resolve_relative_path(
-            loc, self.base_path, decode_url_path=decode_url_path
+            loc,
+            self.base_path,
+            decode_url_path=decode_url_path and self._mhtml_resources is None,
         )
 
     @staticmethod
@@ -5400,12 +5399,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         img_ref: Optional[ImageRef] = None
         if cast(HTMLBackendOptions, self.options).fetch_images and src_loc:
             try:
-                src_loc = self._resolve_relative_path(
-                    src_loc,
-                    decode_url_path=(
-                        self._decode_local_image_urls and self._mhtml_resources is None
-                    ),
-                )
+                src_loc = self._resolve_relative_path(src_loc, decode_url_path=True)
             except ValueError as e:
                 # The source is not loaded, but the picture is kept, as for an
                 # image file that cannot be read.
