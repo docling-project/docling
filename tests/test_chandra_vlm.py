@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import (
     CodeItem,
+    CodeLanguageLabel,
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
@@ -490,6 +491,21 @@ def test_chandra_inline_math_formatting_and_code_whitespace():
         == "https://example.org/"
     )
     assert doc.texts[-1].level == 2
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        '<pre><code class="language-python">x = 1</code></pre>',
+        '<pre class="hljs language-python">x = 1</pre>',
+        '<pre class="language-python hljs">x = 1</pre>',
+    ],
+)
+def test_chandra_code_language_from_highlighter_classes(html):
+    # "x = 1" has no content marker, so only the class can name the language.
+    doc = _parse_fragment(html)
+    (code,) = [t for t in doc.texts if isinstance(t, CodeItem)]
+    assert code.code_language == CodeLanguageLabel.PYTHON
 
 
 def test_chandra_nested_math_does_not_inherit_table_bbox():
