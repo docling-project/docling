@@ -3060,3 +3060,63 @@ def test_single_char_spans_do_not_compact_across_a_boundary():
     )
     doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
     assert doc.export_to_markdown() == "Hi to"
+
+
+def test_inline_quotation_gets_its_quotation_marks():
+    # A browser shows the quotation marks of <q> from its default style sheet
+    # (open-quote and close-quote), so they are not in the markup. A nested <q>
+    # gets single quotation marks.
+    html = (
+        b"<html><body>"
+        b"<h2>The <q>best</q> part</h2>"
+        b"<p>She said <q>stop</q> and left.</p>"
+        b"<p><q>He wrote <q>no</q> twice</q></p>"
+        b"<ul><li><b>Note:</b> <q>maybe</q></li></ul>"
+        b"<table><tr><td><q>cell</q></td></tr></table>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert doc.export_to_markdown() == (
+        '## The "best" part\n\n'
+        'She said "stop" and left.\n\n'
+        "\"He wrote 'no' twice\"\n\n"
+        '- **Note:** "maybe"\n\n'
+        '| "cell"   |\n'
+        "|----------|"
+    )
+    assert "She said “stop” and left." in [t.orig for t in doc.texts]
+
+
+def test_inline_quotation_marks_follow_the_language():
+    # The default style sheet uses `quotes: auto`, so the marks come from the
+    # language of the element. The nearest `lang` attribute applies, and an
+    # unknown language gets English marks.
+    html = (
+        '<html lang="de"><body>'
+        "<p>Er sagte <q>Hallo <q>du</q></q>.</p>"
+        '<p lang="fr-CA">Il a dit <q>salut</q>.</p>'
+        '<p lang="ja"><q>はい</q></p>'
+        '<p lang="xx"><q>unknown</q></p>'
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert [t.orig for t in doc.texts] == [
+        "Er sagte „Hallo ‚du‘“.",  # noqa: RUF001
+        "Il a dit «salut».",
+        "「はい」",
+        "“unknown”",
+    ]
