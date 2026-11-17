@@ -435,8 +435,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 )
 
                 list_parent = self._get_current_parent(parents)
-                last_list_item = doc.add_list_item(
-                    item["text"],
+                last_list_item = self._add_list_item(
+                    doc=doc,
+                    text=item["text"],
                     enumerated=item["numbered"],
                     marker=self._list_item_marker(item, list_parent, next_list_numbers),
                     parent=list_parent,
@@ -998,10 +999,67 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 formatting=Formatting(bold=True) if bold else None,
             )
             return []
-        # Mixed formatting and links need one item per run, kept together in an
-        # inline group like the Markdown backend does.
-        # Runs keep their boundary whitespace (docling-core joins them with ""); a
-        # code run's edge whitespace moves out into a plain run of its own.
+        AsciiDocBackend._add_inline_group(doc=doc, runs=runs, parent=parent)
+        return []
+
+    @staticmethod
+    def _add_list_item(
+        *,
+        doc: DoclingDocument,
+        text: str,
+        enumerated: bool,
+        marker: str | None,
+        parent: NodeItem | None,
+    ) -> ListItem:
+        """Add a list item, parsing its links and inline marks like a paragraph.
+
+        Text with a single formatting and link is the text of the item itself.
+        Mixed runs go into an inline group under an item without text, as in
+        the Markdown backend.
+        """
+        runs = AsciiDocBackend._parse_inline(text)
+        styles = {
+            (run.bold, run.italic, run.code, run.hyperlink)
+            for run in runs
+            if run.text.strip()
+        }
+        if len(styles) <= 1:
+            bold, italic, code, target = (
+                styles.pop() if styles else (False, False, False, None)
+            )
+            if not code:
+                return doc.add_list_item(
+                    "".join(run.text for run in runs).strip(),
+                    enumerated=enumerated,
+                    marker=marker,
+                    parent=parent,
+                    formatting=(
+                        Formatting(bold=bold, italic=italic) if bold or italic else None
+                    ),
+                    hyperlink=(
+                        _LINK_TARGET.validate_python(target) if target else None
+                    ),
+                )
+        list_item = doc.add_list_item(
+            "", enumerated=enumerated, marker=marker, parent=parent
+        )
+        AsciiDocBackend._add_inline_group(doc=doc, runs=runs, parent=list_item)
+        return list_item
+
+    @staticmethod
+    def _add_inline_group(
+        *,
+        doc: DoclingDocument,
+        runs: list[_InlineRun],
+        parent: NodeItem | None,
+    ) -> None:
+        """Add one item per run, kept together in an inline group.
+
+        Mixed formatting and links need one item per run, like the Markdown
+        backend does. Runs keep their boundary whitespace (docling-core joins
+        them with ""); a code run's edge whitespace moves out into a plain run
+        of its own.
+        """
         spaced: list[_InlineRun] = []
         for run in runs:
             core = run.text.strip()
@@ -1036,7 +1094,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     ),
                     hyperlink=hyperlink,
                 )
-        return []
 
     @staticmethod
     def _parse_inline(
