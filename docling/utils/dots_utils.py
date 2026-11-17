@@ -134,22 +134,30 @@ def _clean_json(raw: str) -> str:
     """Best-effort cleanup of potentially truncated JSON arrays.
 
     1. Strip leading text before the first ``[``.
-    2. If the array does not end with ``]``, find the last ``}`` and append ``]``.
-    3. Return ``"[]"`` if no valid JSON structure found.
+    2. Read the array one element at a time. If it is cut, keep the complete
+       elements and close the array after the last one.
+    3. Return ``"[]"`` if no element is complete.
+
+    The last ``}`` or ``]`` of a cut reply can be inside the string of the cut
+    element, such as the LaTeX ``\\frac{a}{b}`` or a citation ``[12]``, so only
+    the JSON decoder can tell where the last complete element ends.
     """
     idx = raw.find("[")
     if idx == -1:
         return "[]"
     raw = raw[idx:]
 
-    stripped = raw.rstrip()
-    if not stripped.endswith("]"):
-        last_brace = stripped.rfind("}")
-        if last_brace == -1:
-            return "[]"
-        raw = stripped[: last_brace + 1] + "]"
-
-    return raw
+    decoder = json.JSONDecoder()
+    end = pos = 1
+    while True:
+        while pos < len(raw) and (raw[pos].isspace() or raw[pos] == ","):
+            pos += 1
+        try:
+            _, pos = decoder.raw_decode(raw, pos)
+        except json.JSONDecodeError:
+            # The closing `]` or the cut: no further element to keep.
+            return raw[:end] + "]"
+        end = pos
 
 
 def parse_dots_json(
