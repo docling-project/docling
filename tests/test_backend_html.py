@@ -1326,6 +1326,20 @@ def test_hidden_heading_does_not_hide_visible_body(heading: str):
     assert doc.export_to_markdown() == "Before.\n\nAfter."
 
 
+def test_hidden_body_keeps_furniture_before_first_heading():
+    """The walk does not check <body> itself, so neither does the heading search."""
+    doc = _convert_html(
+        b'<html><body aria-hidden="true"><p>Nav</p><h1>Title</h1><p>Text</p>'
+        b"</body></html>"
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Nav", ContentLayer.FURNITURE),
+        ("Title", ContentLayer.BODY),
+        ("Text", ContentLayer.BODY),
+    ]
+
+
 def test_heading_as_list_child_ends_furniture():
     """A heading that is a direct child of <ul> (or in a <div> there) or in a
     <menu> item is emitted as a heading, so the body starts there."""
