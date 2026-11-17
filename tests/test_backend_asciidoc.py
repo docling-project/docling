@@ -572,6 +572,30 @@ code
     ]
 
 
+@pytest.mark.parametrize("delimiter", ["====", "****", "____", "--", "++++"])
+def test_delimited_block_ends_the_text_of_a_list_item(delimiter: str) -> None:
+    # The opening delimiter of a block is not passed on as a line, so the text
+    # of the block was read as more of the item text, and so was the text of
+    # a paragraph right above a block.
+    source = f"""* apple
+{delimiter}
+Block text
+{delimiter}
+
+A paragraph
+{delimiter}
+More block text
+{delimiter}
+""".encode()
+    doc = _convert_adoc(source)
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == ["apple"]
+    assert "Block text" not in list_items[0].text
+    body_texts = [item.text for item in doc.texts if not isinstance(item, ListItem)]
+    assert "A paragraph" in body_texts
+    assert "A paragraph More block text" not in body_texts
+
+
 def test_text_after_a_nested_list_is_not_part_of_the_list() -> None:
     # Ending a list used to close only its innermost level, so the paragraph
     # after a nested list was added to the outer list group, and so was the

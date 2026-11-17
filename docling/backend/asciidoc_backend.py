@@ -673,11 +673,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             if stripped in cls._CONTENT_BLOCK_DELIMITERS:
                 if cls._has_matching_closer(lines, i, stripped):
                     open_content_blocks.append(stripped)
-                else:
-                    # Stray delimiter (no closer): break the paragraph, do not
-                    # render as text. The line must be consumed either way;
-                    # leaving `i` on it loops over the same line forever.
-                    yield ""
+                # A delimiter, with or without a closer, ends the paragraph or
+                # list item text above it and is not text itself. The line must
+                # be consumed either way; leaving `i` on it loops forever.
+                yield ""
                 i += 1
                 continue
 
