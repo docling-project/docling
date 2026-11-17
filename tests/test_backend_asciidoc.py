@@ -1123,6 +1123,18 @@ def test_inline_marks_and_links_in_list_items() -> None:
     )
 
 
+def test_inline_marks_in_ordered_and_nested_list_items() -> None:
+    doc = _convert_adoc(
+        b". *Bold only*\n.. nested with https://example.com[Docs]\n. plain 2 * 3\n"
+    )
+
+    assert doc.export_to_markdown() == (
+        "1. **Bold only**\n"
+        "    1. nested with [Docs](https://example.com/)\n"
+        "2. plain 2 * 3"
+    )
+
+
 @pytest.mark.parametrize(
     "target",
     [
