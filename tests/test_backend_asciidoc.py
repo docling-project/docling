@@ -358,6 +358,30 @@ def test_trailing_plus_is_a_hard_line_break() -> None:
     ]
 
 
+def test_trailing_plus_in_a_verbatim_paragraph_stays_code() -> None:
+    # An indented paragraph is a literal paragraph, and "[source,java]" styles
+    # the paragraph below it: both keep their lines as written, so a trailing
+    # "+" is the code's operator, not a hard line break.
+    src = (
+        b"Build it:\n\n   \n"
+        b'  String msg = "Hello, " +\n'
+        b"      name;\n\n"
+        b"[source,java]\n"
+        b'String greeting = "Hi " +\n'
+        b"    user;\n"
+    )
+    doc = _convert_adoc(src)
+    code_items = [item for item in doc.texts if item.label == DocItemLabel.CODE]
+    assert [item.text for item in code_items] == [
+        'String msg = "Hello, " +\n    name;',
+        'String greeting = "Hi " +\n    user;',
+    ]
+    assert code_items[1].code_language == CodeLanguageLabel.JAVA
+    assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == [
+        "Build it:"
+    ]
+
+
 def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
     # "[cols=...]", "[[id]]" and admonition names like "[NOTE]" are block
     # metadata for whatever follows; they used to leak into the document body
