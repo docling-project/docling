@@ -719,6 +719,17 @@ class EmailBackendOptions(BaseBackendOptions):
             "is never embedded. Opt-in (default False)."
         ),
     )
+    parse_calendar_invitations: bool = Field(
+        True,
+        description=(
+            "Whether to convert the calendar parts of the email, such as meeting "
+            "invitations, cancellations and attached .ics files, into their "
+            "events with time, location, organizer and attendees. They are "
+            "added under a 'Calendar' heading after the body. An event that "
+            "the email carries twice, as an inline part and as an attachment, "
+            "is added once."
+        ),
+    )
 
 
 class XBRLBackendOptions(BaseBackendOptions):

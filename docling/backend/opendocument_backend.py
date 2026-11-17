@@ -2651,28 +2651,36 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
     @staticmethod
     def _find_page_size(doc: DoclingDocument, page_no: int) -> tuple[float, float]:
-        """Calculate page size based on the bounding boxes of all items on the page."""
-        left: float = -1.0
-        top: float = -1.0
-        right: float = -1.0
-        bottom: float = -1.0
+        """Compute page dimensions from item bounding boxes.
 
-        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+        Width and height are the largest ``r`` and ``b`` bbox values on the
+        page, in every content layer. Bboxes count cells from ``(0, 0)``, so
+        the extent is the maximum edge.
+
+        Args:
+            doc: Document containing converted page items.
+            page_no: 1-based page number to measure.
+
+        Returns:
+            The (width, height) of the page in cell-index units.
+        """
+        width: float = 0.0
+        height: float = 0.0
+
+        for item, _ in doc.iterate_items(
+            traverse_pictures=True,
+            page_no=page_no,
+            included_content_layers=set(ContentLayer),
+        ):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                if provenance.bbox is None:
+                if provenance.page_no != page_no:
                     continue
-                bbox = provenance.bbox
-                left = min(left, bbox.l) if left != -1 else bbox.l
-                right = max(right, bbox.r) if right != -1 else bbox.r
-                top = min(top, bbox.t) if top != -1 else bbox.t
-                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+                width = max(width, provenance.bbox.r)
+                height = max(height, provenance.bbox.b)
 
-        # Return dimensions, defaulting to (0, 0) if no items found
-        if left == -1 or right == -1:
-            return (0.0, 0.0)
-        return (right - left, bottom - top)
+        return (width, height)
 
     @staticmethod
     def _get_sheet_content_layer(table: OdfTable) -> ContentLayer | None:

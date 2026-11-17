@@ -14,16 +14,9 @@ from __future__ import annotations
 import fnmatch
 import re
 
-# Existing repository labels that describe what a PR changes. Process labels
+# Labels that describe what a PR changes. Process labels
 # (priority, triage, duplicate, wontfix, ...) are intentionally not here.
-TOPIC_LABELS: tuple[str, ...] = (
-    "bug",
-    "enhancement",
-    "documentation",
-    "performance",
-    "tests",
-    "dependency mgmt",
-    "error-handling",
+FORMAT_LABELS: tuple[str, ...] = (
     "asciidoc",
     "audio",
     "boxnote",
@@ -49,6 +42,17 @@ TOPIC_LABELS: tuple[str, ...] = (
     "xbrl",
     "xlsx",
     "xml",
+)
+TOPIC_LABELS: tuple[str, ...] = (
+    "bug",
+    "enhancement",
+    "chore",
+    "documentation",
+    "performance",
+    "tests",
+    "dependency mgmt",
+    "error-handling",
+    *FORMAT_LABELS,
     "asr",
     "ocr",
     "vlm-pipeline",
@@ -72,6 +76,12 @@ TYPE_LABELS = {
     "feat": "enhancement",
     "docs": "documentation",
     "perf": "performance",
+    "chore": "chore",
+    "ci": "chore",
+    "build": "chore",
+    "refactor": "chore",
+    "style": "chore",
+    "test": "chore",
 }
 SCOPE_LABELS = {
     "asciidoc": "asciidoc",

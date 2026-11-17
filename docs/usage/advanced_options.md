@@ -492,6 +492,17 @@ The picture itself is empty unless you set `render_chart_images=True` in
 `MsPowerpointBackendOptions` or `MsExcelBackendOptions`. That draws each chart
 with LibreOffice.
 
+The chart types that Office 2016 added (waterfall, treemap, sunburst, funnel,
+Pareto, histogram, and box and whisker) also become classified pictures on a
+PowerPoint slide. Their data is the data that the chart is drawn from, as the
+file stores it. Each level of a treemap or sunburst gets a category column, outer
+level first. A histogram has no categories, so its data has only the value
+column. Office calculates histogram bins, quartiles and Pareto percentages each
+time it draws the chart, and the file does not store them, so they are not in
+the data. The picture shows the image that PowerPoint stores for these charts,
+when the file has one. LibreOffice does not draw them, so `render_chart_images`
+has no effect on them.
+
 ### Apple iWork options
 
 Pages (`.pages`), Numbers (`.numbers`) and Keynote (`.key`) share their
@@ -700,6 +711,14 @@ location such as `file:///path/to/article.nxml` instead.
 
 Missing or damaged images produce a warning. The figure, its caption, and the
 rest of the article remain in the converted document. SVG figures are skipped.
+
+### Fetch HTML images from local files
+
+Set `fetch_images=True` and `enable_local_fetch=True` on `HTMLBackendOptions`.
+For stream inputs, set `source_uri` to the HTML file path or its `file://` URI.
+Relative image URLs are decoded once: `figure%20one.png` refers to `figure one.png`.
+The URL query and fragment are not part of the filename. Files outside the
+source document's directory are still blocked by the directory-confinement check.
 
 ### Fetch HTML images from remote hosts
 

@@ -591,6 +591,39 @@ def test_jats_footnote_group_keeps_external_link_target():
     assert "https://example.org/data" in doc.export_to_markdown()
 
 
+def test_jats_section_heading_keeps_title_next_to_label():
+    doc = convert_jats_body(
+        """
+        <sec><label>1.</label><title>Introduction</title><p>Intro text.</p>
+          <sec><label>1.1.</label><title>Background</title><p>Background text.</p></sec>
+        </sec>
+        <sec><title>Methods</title><p>Methods text.</p></sec>
+        <sec><label>3.</label><p>Unnamed section text.</p></sec>
+        <sec><label>4.</label><title/><p>Empty title text.</p></sec>
+"""
+    )
+
+    md = doc.export_to_markdown()
+    assert "## 1. Introduction\n\nIntro text." in md
+    assert "### 1.1. Background\n\nBackground text." in md
+    assert "## Methods\n\nMethods text." in md
+    assert "## 3.\n\nUnnamed section text." in md
+    assert "## 4.\n\nEmpty title text." in md
+
+
+def test_jats_abstract_section_heading_keeps_title_next_to_label():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Labelled Abstract Test</article-title></title-group>
+      <abstract>
+        <sec><label>1.</label><title>Background</title><p>Background text.</p></sec>
+      </abstract>
+"""
+    )
+
+    assert "### 1. Background\n\nBackground text." in doc.export_to_markdown()
+
+
 def test_jats_nested_lists_are_preserved():
     doc = convert_jats_body(
         """

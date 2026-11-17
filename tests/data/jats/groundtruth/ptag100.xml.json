@@ -1981,8 +1981,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "1.",
-      "text": "1.",
+      "orig": "1. Introduction",
+      "text": "1. Introduction",
       "level": 1
     },
     {
@@ -2064,8 +2064,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.",
-      "text": "2.",
+      "orig": "2. Analysis of the system",
+      "text": "2. Analysis of the system",
       "level": 1
     },
     {
@@ -2087,8 +2087,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.",
-      "text": "2.1.",
+      "orig": "2.1. Basic formulations: Hamiltonian and invariant",
+      "text": "2.1. Basic formulations: Hamiltonian and invariant",
       "level": 2
     },
     {
@@ -2128,8 +2128,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.1.",
-      "text": "2.1.1.",
+      "orig": "2.1.1. Setup of the Hamiltonian",
+      "text": "2.1.1. Setup of the Hamiltonian",
       "level": 3
     },
     {
@@ -2578,8 +2578,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.2.",
-      "text": "2.1.2.",
+      "orig": "2.1.2. Formulation of the invariant operator",
+      "text": "2.1.2. Formulation of the invariant operator",
       "level": 3
     },
     {
@@ -3336,8 +3336,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.1.3.",
-      "text": "2.1.3.",
+      "orig": "2.1.3. Solving the eigenvalue equation",
+      "text": "2.1.3. Solving the eigenvalue equation",
       "level": 3
     },
     {
@@ -4566,8 +4566,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.2.",
-      "text": "2.2.",
+      "orig": "2.2. The NUFA method",
+      "text": "2.2. The NUFA method",
       "level": 2
     },
     {
@@ -5433,8 +5433,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.3.",
-      "text": "2.3.",
+      "orig": "2.3. Wave functions",
+      "text": "2.3. Wave functions",
       "level": 2
     },
     {
@@ -5543,8 +5543,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.3.1.",
-      "text": "2.3.1.",
+      "orig": "2.3.1. Eigenfunctions of the invariant operator",
+      "text": "2.3.1. Eigenfunctions of the invariant operator",
       "level": 3
     },
     {
@@ -6747,8 +6747,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "2.3.2.",
-      "text": "2.3.2.",
+      "orig": "2.3.2. Quantum phases and the Schrödinger solutions",
+      "text": "2.3.2. Quantum phases and the Schrödinger solutions",
       "level": 3
     },
     {
@@ -7055,8 +7055,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "3.",
-      "text": "3.",
+      "orig": "3. Conclusion",
+      "text": "3. Conclusion",
       "level": 1
     },
     {

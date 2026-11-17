@@ -2110,6 +2110,42 @@ def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
     ]
 
 
+@pytest.mark.parametrize("hidden", [False, True], ids=["visible", "hidden"])
+def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
+    """Offset ODS tables preserve their full extent on visible and hidden sheets."""
+    ods = OdfDocument("spreadsheet")
+    ods.body.clear()
+
+    sheet = Table("Sheet")
+    if hidden:
+        sheet.set_attribute("table:display", "false")
+    sheet.set_value("B2", "a")
+    sheet.set_value("C2", "b")
+    sheet.set_value("B3", "1")
+    sheet.set_value("C3", "2")
+    ods.body.append(sheet)
+
+    buf = BytesIO()
+    ods.save(buf)
+    buf.seek(0)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.ODS])
+    doc = converter.convert(DocumentStream(name="offset.ods", stream=buf)).document
+
+    assert doc.pages[1].size.width == 3.0
+    assert doc.pages[1].size.height == 3.0
+
+    reloaded = DoclingDocument.model_validate_json(doc.model_dump_json())
+    tables = [
+        item
+        for item, _ in reloaded.iterate_items(included_content_layers=set(ContentLayer))
+        if isinstance(item, TableItem)
+    ]
+    assert len(tables) == 1
+    bbox = tables[0].prov[0].bbox
+    assert (bbox.l, bbox.t, bbox.r, bbox.b) == (1.0, 1.0, 3.0, 3.0)
+
+
 def _build_odt_with_external_image_href(path: Path, href: str) -> Path:
     """Build a minimal ODT whose only draw:image points at *href* (not embedded)."""
     content_xml = (

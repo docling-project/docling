@@ -1013,6 +1013,26 @@ def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
     ]
 
 
+def test_table_cell_text_reads_symbols_like_a_paragraph(tmp_path):
+    """A table cell reads ``w:sym`` and Symbol font text like a body paragraph."""
+    document = Document()
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 1).text = "sym"
+    table.cell(1, 1).text = "font"
+    sym_paragraph = table.cell(0, 0).paragraphs[0]
+    sym_paragraph.add_run("20")
+    _append_sym(sym_paragraph, "Symbol", "F0B0")
+    table.cell(1, 0).paragraphs[0].add_run("a").font.name = "Symbol"
+    document.add_paragraph("20")
+    _append_sym(document.paragraphs[-1], "Symbol", "F0B0")
+
+    doc = _convert_built(document, tmp_path)
+
+    cells = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cells[0::2] == ["20\N{DEGREE SIGN}", "\N{GREEK SMALL LETTER ALPHA}"]
+    assert doc.texts[0].text == "20\N{DEGREE SIGN}"
+
+
 def _table_with_grid_before(
     tmp_path,
     *,
@@ -1863,6 +1883,42 @@ def test_invisible_spacer_logic():
     )  # coloured
 
 
+@pytest.mark.parametrize(
+    "address, fragment, expected",
+    [
+        (
+            "https://example.org/guide",
+            "installation",
+            "https://example.org/guide#installation",
+        ),
+        ("manual.docx", "Installation", "manual.docx#Installation"),
+        (
+            "https://example.org/guide#installation",
+            "",
+            "https://example.org/guide#installation",
+        ),
+    ],
+)
+def test_hyperlink_preserves_external_fragment(
+    tmp_path: Path, address: str, fragment: str, expected: str
+):
+    source = Document()
+    paragraph = source.add_paragraph()
+    rel_id = source.part.relate_to(address, RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(paragraph._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), rel_id)
+    hyperlink.set(qn("w:anchor"), fragment)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "Install"
+
+    doc = _convert_built(source, tmp_path)
+
+    assert [(item.text, str(item.hyperlink)) for item in doc.texts] == [
+        ("Install", expected)
+    ]
+    assert doc.export_to_markdown() == f"[Install]({expected})"
+
+
 def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     """A single malformed hyperlink address (e.g. containing a space) must not
     raise a pydantic ValidationError that aborts the whole DOCX conversion.
@@ -2683,7 +2739,9 @@ _PLAIN_FOOTNOTE_BODY = (
 )
 
 
-def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
+def _docx_with_notes(
+    footnote_body: str = _PLAIN_FOOTNOTE_BODY, footnote_rels: str = ""
+):
     """Build a minimal DOCX with a real footnote and endnote, each preceded by
     Word's own separator/continuationSeparator placeholders (present in every
     Word-authored document, holding no user content).
@@ -2697,6 +2755,7 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
         footnote_body: The XML of the footnote body. Override it to place the
             footnote text inside markup that ``python-docx`` does not descend
             into.
+        footnote_rels: ``Relationship`` elements of the footnotes part.
     """
     import zipfile
     from io import BytesIO
@@ -2720,8 +2779,9 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
         entries = {name: src.read(name) for name in src.namelist()}
 
     w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    r_ns = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
     footnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:footnotes xmlns:w="{w_ns}">
+<w:footnotes xmlns:w="{w_ns}" xmlns:r="{r_ns}">
   <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
   <w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>
   <w:footnote w:id="2">{footnote_body}</w:footnote>
@@ -2734,6 +2794,11 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
 </w:endnotes>"""
     entries["word/footnotes.xml"] = footnotes_xml.encode("utf-8")
     entries["word/endnotes.xml"] = endnotes_xml.encode("utf-8")
+    if footnote_rels:
+        entries["word/_rels/footnotes.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+            f'relationships">{footnote_rels}</Relationships>'
+        ).encode()
 
     ct_key = "[Content_Types].xml"
     content_types = entries[ct_key].decode("utf-8")
@@ -2870,6 +2935,43 @@ def test_hidden_footnote_paragraph_is_left_out():
         if item.label == DocItemLabel.FOOTNOTE
     ]
     assert footnote_items == ["Shown note.", "An endnote body."]
+
+
+def test_footnote_hyperlink_keeps_its_target():
+    """A hyperlink in a footnote keeps the target from the footnotes part.
+
+    Regression test: note paragraphs were read against the document part's
+    relationships and joined into plain text, so the link target was lost.
+    """
+    note_body = (
+        "<w:p><w:r><w:t xml:space='preserve'>See </w:t></w:r>"
+        "<w:hyperlink r:id='rIdNote1'><w:r><w:t>the source</w:t></w:r>"
+        "</w:hyperlink></w:p><w:p><w:r><w:t>Second line.</w:t></w:r></w:p>"
+    )
+    note_rels = (
+        f'<Relationship Id="rIdNote1" Type="{RT.HYPERLINK}" '
+        'Target="https://example.org/note" TargetMode="External"/>'
+    )
+    stream = DocumentStream(
+        name="notes.docx",
+        stream=_docx_with_notes(footnote_body=note_body, footnote_rels=note_rels),
+    )
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.DOCX])
+        .convert(stream, raises_on_error=True)
+        .document
+    )
+
+    linked = [
+        (item.text, str(item.hyperlink))
+        for item in doc.texts
+        if item.label == DocItemLabel.FOOTNOTE and item.hyperlink is not None
+    ]
+    assert linked == [("the source", "https://example.org/note")]
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert "See [the source](https://example.org/note) Second line." in markdown
 
 
 _MC_BODY_BLOCK = """
@@ -3095,6 +3197,34 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
     assert formulas == ["x=1", "x=1"]
     cell_texts = [cell.text for cell in doc.tables[0].data.table_cells]
     assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
+
+
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        ("d", r"\left(x\right)"),
+        ("acc", r"\hat{x}"),
+        ("bar", r"\overline{x}"),
+        ("groupChr", r"\underbrace{x}"),
+    ],
+)
+def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expected):
+    """An OMML element without its optional properties child uses the defaults."""
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:{tag}><m:e><m:r><m:t>x</m:t></m:r></m:e></m:{tag}></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / f"equation_without_{tag}_properties.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
 
 
 def test_symbol_font_case_and_whitespace_resilience(tmp_path):
