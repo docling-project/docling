@@ -14,9 +14,13 @@ import builtins
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
+import pytest
+
 from docling.utils.speaker_diarization import (
     DiarizationResult,
     SpeakerSegment,
+    _estimate_num_speakers,
     assign_speakers,
     diarize,
 )
@@ -118,6 +122,46 @@ def test_assign_speakers_keeps_earlier_speaker_on_tied_overlap() -> None:
 
     # Both overlaps are 1.0s; assignment uses strict > so the first winner stays.
     assert items[0].speaker == "SPEAKER_00"
+
+
+# --------------------------------------------------------------------------- #
+# _estimate_num_speakers
+# --------------------------------------------------------------------------- #
+
+
+def _clustered_embeddings(
+    n_speakers: int, noise: float, windows: int = 20
+) -> np.ndarray:
+    rng = np.random.default_rng(0)
+    centers = rng.normal(size=(n_speakers, 256))
+    emb = np.repeat(
+        centers / np.linalg.norm(centers, axis=1, keepdims=True), windows, 0
+    )
+    emb = emb + noise * rng.normal(size=emb.shape)
+    return emb / np.linalg.norm(emb, axis=1, keepdims=True)
+
+
+def test_estimate_num_speakers_returns_one_for_single_speaker() -> None:
+    pytest.importorskip("sklearn")
+
+    assert _estimate_num_speakers(_clustered_embeddings(1, 0.01)) == 1
+
+
+def test_estimate_num_speakers_separates_two_speakers() -> None:
+    pytest.importorskip("sklearn")
+
+    assert _estimate_num_speakers(_clustered_embeddings(2, 0.05)) == 2
+
+
+def test_estimate_num_speakers_keeps_noisy_two_speakers() -> None:
+    # Noisy windows (as near speaker turns) push silhouette below 0.1, but the
+    # cluster centroids are still clearly different voices.
+    sklearn_metrics = pytest.importorskip("sklearn.metrics")
+    embeddings = _clustered_embeddings(2, 0.15, windows=40)
+    true_labels = np.repeat([0, 1], 40)
+    assert sklearn_metrics.silhouette_score(embeddings, true_labels) < 0.1
+
+    assert _estimate_num_speakers(embeddings) == 2
 
 
 # --------------------------------------------------------------------------- #
