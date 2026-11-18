@@ -164,6 +164,28 @@ class _OdfTextRun:
 
 _ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
+# An ODF length (ODF 1.3 part 3, 18.3.18): a signed number and a unit.
+_ODF_LENGTH_RE = re.compile(r"(-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+))(cm|mm|in|pt|pc|px)")
+# Points per unit as CSS defines them and LibreOffice reads them: a point is 1/72
+# inch, an inch is exactly 2.54 cm, a pica is 12 points, a pixel is 1/96 inch.
+_ODF_POINTS_PER_UNIT = {
+    "cm": 72 / 2.54,
+    "mm": 72 / 25.4,
+    "in": 72.0,
+    "pt": 1.0,
+    "pc": 12.0,
+    "px": 0.75,
+}
+
+
+def _odf_length_to_pt(value: str | bool | None) -> float | None:
+    """Convert an ODF length such as ``"28cm"`` to points; None if it cannot be read."""
+    match = _ODF_LENGTH_RE.fullmatch(value) if isinstance(value, str) else None
+    if match is None:
+        return None
+    return float(match.group(1)) * _ODF_POINTS_PER_UNIT[match.group(2)]
+
+
 # Shapes of a notes page that show the slide or a field, not the speaker notes:
 # the slide thumbnail, and the slide number, date, header and footer fields.
 _ODP_NOTES_PAGE_FIELD_CLASSES = frozenset(
@@ -2031,6 +2053,55 @@ class OdtDocumentBackend(_OdfBaseBackend):
         )
 
 
+def _item_counts(doc: DoclingDocument) -> tuple[int, int, int]:
+    """Return how many texts, tables and pictures ``doc`` holds."""
+    return (len(doc.texts), len(doc.tables), len(doc.pictures))
+
+
+def _add_provenance(
+    doc: DoclingDocument,
+    counts: tuple[int, int, int],
+    page_no: int,
+    bbox: BoundingBox,
+) -> None:
+    """Give the items added since ``counts`` was taken a page and a box."""
+    texts, tables, pictures = counts
+    for text in doc.texts[texts:]:
+        text.prov = [
+            ProvenanceItem(
+                page_no=page_no, charspan=(0, len(text.text)), bbox=bbox.model_copy()
+            )
+        ]
+    for item in [*doc.tables[tables:], *doc.pictures[pictures:]]:
+        item.prov = [
+            ProvenanceItem(page_no=page_no, charspan=(0, 0), bbox=bbox.model_copy())
+        ]
+
+
+def _slide_box(size: Size) -> BoundingBox:
+    """Return the box of the whole slide, from its top-left corner."""
+    return BoundingBox(
+        l=0.0, t=0.0, r=size.width, b=size.height, coord_origin=CoordOrigin.TOPLEFT
+    )
+
+
+def _shape_box(element: Element) -> BoundingBox | None:
+    """Return the box of a shape in points, or None if it has no position.
+
+    The box comes from ``svg:x``, ``svg:y``, ``svg:width`` and ``svg:height``.
+    ``draw:transform`` (rotation, skew, translation) is not applied.
+    """
+    x, y, width, height = (
+        _odf_length_to_pt(element.get_attribute(f"svg:{name}"))
+        for name in ("x", "y", "width", "height")
+    )
+    if x is None or y is None or width is None or height is None:
+        return None
+    return BoundingBox(
+        l=x, t=y, r=x + width, b=y + height, coord_origin=CoordOrigin.TOPLEFT
+    )
+
+
 class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     """Backend for OpenDocument Presentation (``.odp``) files."""
 
@@ -2070,21 +2141,69 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             if not start_page <= slide_idx + 1 <= end_page:
                 continue
             slide_name = page.name or f"slide-{slide_idx + 1}"
+            page_no = slide_idx + 1
+            size = self._slide_size(page)
+            if size is not None:
+                doc.add_page(page_no=page_no, size=size)
             slide_group = doc.add_group(
                 name=f"slide-{slide_idx}",
                 label=GroupLabel.CHAPTER,
                 parent=None,
             )
             if not self._slide_has_visible_title(page):
+                title_prov = (
+                    ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, len(slide_name)),
+                        bbox=_slide_box(size),
+                    )
+                    if size is not None
+                    else None
+                )
                 doc.add_text(
                     label=DocItemLabel.TITLE,
                     parent=slide_group,
                     text=slide_name,
+                    prov=title_prov,
                 )
-            self._walk_slide(page, parent=slide_group, doc=doc)
+            self._walk_slide(
+                page, parent=slide_group, doc=doc, page_no=page_no, size=size
+            )
             if self._is_slide_hidden(page):
                 self._hide_slide(doc, slide_group)
         return doc
+
+    def _slide_size(self, page: DrawPage) -> Size | None:
+        """Return the slide size in points, from the page layout of its master page.
+
+        ``draw:master-page-name`` is required on a slide; one without it, or
+        naming a master page that does not exist, uses the first master page.
+        None if no size can be read.
+        """
+        name = page.get_attribute("draw:master-page-name")
+        master = (
+            self.odf_obj.get_style("master-page", name)
+            if isinstance(name, str)
+            else None
+        )
+        if master is None:
+            master = next(iter(self.odf_obj.get_styles("master-page")), None)
+        layout_name = master.get_attribute("style:page-layout-name") if master else None
+        layout = (
+            self.odf_obj.get_style("page-layout", layout_name)
+            if isinstance(layout_name, str)
+            else None
+        )
+        properties = (
+            layout.get_element("style:page-layout-properties") if layout else None
+        )
+        if properties is None:
+            return None
+        width = _odf_length_to_pt(properties.get_attribute("fo:page-width"))
+        height = _odf_length_to_pt(properties.get_attribute("fo:page-height"))
+        if width is None or height is None or width <= 0 or height <= 0:
+            return None
+        return Size(width=width, height=height)
 
     @staticmethod
     def _hide_slide(doc: DoclingDocument, slide_group: NodeItem) -> None:
@@ -2123,13 +2242,37 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         )
 
     def _walk_slide(
-        self, page: DrawPage, parent: NodeItem, doc: DoclingDocument
+        self,
+        page: DrawPage,
+        parent: NodeItem,
+        doc: DoclingDocument,
+        page_no: int,
+        size: Size | None,
     ) -> None:
+        """Add the shapes of a slide to the document.
+
+        When the slide size is known, each item gets the slide's page and the
+        box of the shape it came from, or the whole slide if the shape has no
+        position; speaker notes get an empty box, as in the PowerPoint backend.
+
+        Args:
+            page: The slide.
+            parent: The group of the slide.
+            doc: The document to add the items to.
+            page_no: The page number of the slide.
+            size: The slide size in points, or None if it cannot be read; then
+                the items get no provenance.
+        """
         seen_text_content = False
         for element in page.children:
             tag = getattr(element, "tag", None)
+            created = _item_counts(doc)
             if tag == "presentation:notes":
                 self._walk_slide_notes(element, parent=parent, doc=doc)
+                if size is not None:
+                    _add_provenance(
+                        doc, created, page_no, BoundingBox(l=0, t=0, r=0, b=0)
+                    )
                 continue
             if tag == "anim:par":
                 continue
@@ -2153,6 +2296,9 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     doc=doc,
                     is_title=is_title,
                 )
+            if size is not None:
+                box = _shape_box(element) or _slide_box(size)
+                _add_provenance(doc, created, page_no, box)
 
     def _walk_slide_notes(
         self, notes: Element, parent: NodeItem, doc: DoclingDocument

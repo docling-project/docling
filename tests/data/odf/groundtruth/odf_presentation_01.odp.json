@@ -1215,7 +1215,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 119.99,
+            "t": 50.74,
+            "r": 839.99,
+            "b": 124.16,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
       "orig": "Test Table Slide",
       "text": "Test Table Slide"
     },
@@ -1227,7 +1242,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 119.99,
+            "t": 427.86,
+            "r": 839.99,
+            "b": 463.66,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
       "orig": "With footnote",
       "text": "With footnote"
     },
@@ -1239,7 +1269,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
       "orig": "Class1",
       "text": "Class1",
       "enumerated": false,
@@ -1253,7 +1298,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
       "orig": "Class2",
       "text": "Class2",
       "enumerated": false,
@@ -1267,7 +1327,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            15
+          ]
+        }
+      ],
       "orig": "A merged with B",
       "text": "A merged with B",
       "enumerated": false,
@@ -1281,7 +1356,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
       "orig": "C",
       "text": "C",
       "enumerated": false,
@@ -1295,7 +1385,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
       "orig": "A",
       "text": "A",
       "enumerated": false,
@@ -1309,7 +1414,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
       "orig": "B",
       "text": "B",
       "enumerated": false,
@@ -1323,7 +1443,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
       "orig": "C",
       "text": "C",
       "enumerated": false,
@@ -1337,7 +1472,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "R1",
       "text": "R1",
       "enumerated": false,
@@ -1351,7 +1501,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1365,7 +1530,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1379,7 +1559,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1393,7 +1588,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1407,7 +1617,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1421,7 +1646,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "R2",
       "text": "R2",
       "enumerated": false,
@@ -1435,7 +1675,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1449,7 +1704,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1463,7 +1733,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "R3",
       "text": "R3",
       "enumerated": false,
@@ -1477,7 +1762,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1491,7 +1791,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1505,7 +1820,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1519,7 +1849,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1533,7 +1878,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "R4",
       "text": "R4",
       "enumerated": false,
@@ -1547,7 +1907,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1561,7 +1936,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1575,7 +1965,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1589,7 +1994,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1603,7 +2023,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1617,7 +2052,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1631,7 +2081,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1645,7 +2110,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1659,7 +2139,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1673,7 +2168,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1687,7 +2197,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
       "orig": "True",
       "text": "True",
       "enumerated": false,
@@ -1701,7 +2226,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "False",
       "text": "False",
       "enumerated": false,
@@ -1715,7 +2255,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 65.99,
+            "t": 28.74,
+            "r": 893.99,
+            "b": 133.11,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
       "orig": "Second slide title",
       "text": "Second slide title"
     },
@@ -1727,7 +2282,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 65.99,
+            "t": 143.74,
+            "r": 351.33,
+            "b": 311.98,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            22
+          ]
+        }
+      ],
       "orig": "Let’s introduce a list",
       "text": "Let’s introduce a list",
       "enumerated": true,
@@ -1741,7 +2311,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 65.99,
+            "t": 143.74,
+            "r": 351.33,
+            "b": 311.98,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
       "orig": "With foo",
       "text": "With foo",
       "enumerated": false,
@@ -1755,7 +2340,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 65.99,
+            "t": 143.74,
+            "r": 351.33,
+            "b": 311.98,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            3
+          ]
+        }
+      ],
       "orig": "Bar",
       "text": "Bar",
       "enumerated": false,
@@ -1769,7 +2369,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 65.99,
+            "t": 143.74,
+            "r": 351.33,
+            "b": 311.98,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            14
+          ]
+        }
+      ],
       "orig": "And baz things",
       "text": "And baz things",
       "enumerated": false,
@@ -1783,7 +2398,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 486.65,
+            "t": 105.82,
+            "r": 807.62,
+            "b": 411.17,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
       "orig": "A rectangle shape with this text inside.",
       "text": "A rectangle shape with this text inside."
     },
@@ -1795,7 +2425,22 @@
       "children": [],
       "content_layer": "notes",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 0.0,
+            "b": 0.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            31
+          ]
+        }
+      ],
       "orig": "Some notes on the second slide.",
       "text": "Some notes on the second slide."
     },
@@ -1807,7 +2452,22 @@
       "children": [],
       "content_layer": "body",
       "label": "title",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 960.01,
+            "b": 540.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
       "orig": "Slide3",
       "text": "Slide3"
     },
@@ -1819,7 +2479,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 190.83,
+            "t": 191.71,
+            "r": 363.34,
+            "b": 264.42,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
       "orig": "List item4",
       "text": "List item4",
       "enumerated": true,
@@ -1833,7 +2508,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 190.83,
+            "t": 191.71,
+            "r": 363.34,
+            "b": 264.42,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
       "orig": "List item5",
       "text": "List item5",
       "enumerated": true,
@@ -1847,7 +2537,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 190.83,
+            "t": 191.71,
+            "r": 363.34,
+            "b": 264.42,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
       "orig": "List item6",
       "text": "List item6",
       "enumerated": true,
@@ -1861,7 +2566,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 350.67,
+            "t": 193.52,
+            "r": 447.68,
+            "b": 288.03,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "I1",
       "text": "I1",
       "enumerated": false,
@@ -1875,7 +2595,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 350.67,
+            "t": 193.52,
+            "r": 447.68,
+            "b": 288.03,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "I2",
       "text": "I2",
       "enumerated": false,
@@ -1889,7 +2624,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 350.67,
+            "t": 193.52,
+            "r": 447.68,
+            "b": 288.03,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "I3",
       "text": "I3",
       "enumerated": false,
@@ -1903,7 +2653,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 350.67,
+            "t": 193.52,
+            "r": 447.68,
+            "b": 288.03,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "I4",
       "text": "I4",
       "enumerated": false,
@@ -1917,7 +2682,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 443.71,
+            "t": 193.52,
+            "r": 577.7,
+            "b": 266.23,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
       "orig": "Some info:",
       "text": "Some info:"
     },
@@ -1929,7 +2709,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 443.71,
+            "t": 193.52,
+            "r": 577.7,
+            "b": 266.23,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
       "orig": "Item A",
       "text": "Item A",
       "enumerated": false,
@@ -1943,7 +2738,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 443.71,
+            "t": 193.52,
+            "r": 577.7,
+            "b": 266.23,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
       "orig": "Item B",
       "text": "Item B",
       "enumerated": false,
@@ -1957,7 +2767,22 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 593.01,
+            "t": 193.66,
+            "r": 726.52,
+            "b": 288.17,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
       "orig": "Maybe a list?",
       "text": "Maybe a list?"
     },
@@ -1969,7 +2794,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 593.01,
+            "t": 193.66,
+            "r": 726.52,
+            "b": 288.17,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "List1",
       "text": "List1",
       "enumerated": true,
@@ -1983,7 +2823,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 593.01,
+            "t": 193.66,
+            "r": 726.52,
+            "b": 288.17,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "List2",
       "text": "List2",
       "enumerated": true,
@@ -1997,7 +2852,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 593.01,
+            "t": 193.66,
+            "r": 726.52,
+            "b": 288.17,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
       "orig": "List3",
       "text": "List3",
       "enumerated": true,
@@ -2011,7 +2881,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 740.49,
+            "t": 191.71,
+            "r": 792.14,
+            "b": 264.42,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "l1",
       "text": "l1",
       "enumerated": false,
@@ -2025,7 +2910,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 740.49,
+            "t": 191.71,
+            "r": 792.14,
+            "b": 264.42,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "l2",
       "text": "l2",
       "enumerated": false,
@@ -2039,7 +2939,22 @@
       "children": [],
       "content_layer": "body",
       "label": "list_item",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 740.49,
+            "t": 191.71,
+            "r": 792.14,
+            "b": 264.42,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
       "orig": "l3",
       "text": "l3",
       "enumerated": false,
@@ -2053,7 +2968,22 @@
       "children": [],
       "content_layer": "notes",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 0.0,
+            "b": 0.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            31
+          ]
+        }
+      ],
       "orig": "Final notes on the third slide.",
       "text": "Final notes on the third slide."
     },
@@ -2065,7 +2995,22 @@
       "children": [],
       "content_layer": "notes",
       "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 0.0,
+            "b": 0.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            21
+          ]
+        }
+      ],
       "orig": "Second line of notes.",
       "text": "Second line of notes."
     }
@@ -2183,7 +3128,22 @@
       ],
       "content_layer": "body",
       "label": "table",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.99,
+            "t": 153.21,
+            "r": 799.97,
+            "b": 490.88,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -3855,5 +4815,27 @@
   ],
   "key_value_items": [],
   "form_items": [],
-  "pages": {}
+  "pages": {
+    "1": {
+      "size": {
+        "width": 960.01,
+        "height": 540.0
+      },
+      "page_no": 1
+    },
+    "2": {
+      "size": {
+        "width": 960.01,
+        "height": 540.0
+      },
+      "page_no": 2
+    },
+    "3": {
+      "size": {
+        "width": 960.01,
+        "height": 540.0
+      },
+      "page_no": 3
+    }
+  }
 }
