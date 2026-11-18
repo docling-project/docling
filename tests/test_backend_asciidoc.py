@@ -985,6 +985,18 @@ Not linked: word:https://example.com.
     assert "link:" not in md
 
 
+def test_malformed_link_target_keeps_text_without_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://api.example.com:{port}/v1[API]\n"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [(item.text, item.hyperlink) for item in doc.texts] == [("API", None)]
+
+
 @pytest.mark.parametrize(
     "source, expected_text",
     [
