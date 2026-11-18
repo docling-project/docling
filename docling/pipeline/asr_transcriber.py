@@ -18,6 +18,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    TrackItem,
     TrackSource,
 )
 from pydantic import BaseModel, Field
@@ -108,6 +109,7 @@ def _process_conversation(
     conv_res.document = DoclingDocument(
         name=conv_res.input.file.stem or "audio.wav", origin=origin
     )
+    track: TrackItem | None = None
 
     for citem in conversation:
         # Fix zero-duration segments (end_time <= start_time) with non-empty text
@@ -130,16 +132,19 @@ def _process_conversation(
             and citem.text.strip()
         ):
             try:
-                track: TrackSource = TrackSource(
+                source = TrackSource(
                     start_time=citem.start_time,
                     end_time=citem.end_time,
                     voice=citem.speaker,
                 )
+                if track is None:
+                    track = conv_res.document.add_track()
                 _ = conv_res.document.add_text(
                     label=DocItemLabel.TEXT,
                     text=citem.text,
                     content_layer=ContentLayer.BODY,
-                    source=track,
+                    source=source,
+                    parent=track,
                 )
             except Exception as e:
                 _log.warning(

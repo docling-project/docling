@@ -1142,6 +1142,17 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    keep_media: Annotated[
+        bool,
+        typer.Option(
+            "--keep-media/--no-keep-media",
+            help=(
+                "Reference audio and video inputs from their transcript, so that "
+                "--to dclx stores them in the archive. The document then holds the "
+                "input's local path."
+            ),
+        ),
+    ] = False,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -1782,6 +1793,12 @@ def convert(  # noqa: C901
                         # Keep the file in place: these backends resolve images
                         # and included files relative to the document.
                         input_doc_paths.append(local_path)
+                    elif keep_media and any(
+                        _name_matches_format(str(local_path), input_format)
+                        for input_format in (InputFormat.AUDIO, InputFormat.VIDEO)
+                    ):
+                        # Keep the file in place: the transcript references it.
+                        input_doc_paths.append(local_path)
                     else:
                         resolved_source = resolve_source_to_path(
                             source=src, headers=parsed_headers, workdir=Path(tempdir)
@@ -2214,6 +2231,7 @@ def convert(  # noqa: C901
             ),
             allow_external_plugins=allow_external_plugins,
             enable_remote_services=enable_remote_services,
+            keep_media=keep_media,
             # artifacts_path = artifacts_path
         )
 
