@@ -2290,6 +2290,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
                             grid[row_idx + r][col_idx + c] = text
 
+                is_col_header, is_row_header = self._get_cell_header_flags(
+                    html_cell, col_header, row_header
+                )
                 if rich_table_cell:
                     rich_cell = RichTableCell(
                         text=text,
@@ -2300,9 +2303,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
@@ -2317,9 +2319,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
@@ -3529,6 +3530,32 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return ""
         match = _LIST_STYLE_STRING_RE.search(style)
         return match.group("marker").strip() if match else ""
+
+    @staticmethod
+    def _get_cell_header_flags(
+        html_cell: Tag, col_header: bool, row_header: bool
+    ) -> tuple[bool, bool]:
+        """Return the `column_header` and `row_header` flags of a table cell.
+
+        The `scope` attribute of a `<th>` names the cells that it is a header
+        for (HTML Standard, the th element): `col` and `colgroup` make it a
+        column header, `row` and `rowgroup` a row header. Without a valid
+        `scope`, the flags come from the cells of the row: `col_header` is set
+        when the row has no `<td>`, `row_header` when the row only has `<th>`
+        cells that span more than one row.
+        """
+        if html_cell.name == "th":
+            scope = html_cell.get("scope")
+            if isinstance(scope, str):
+                scope = scope.lower()
+                if scope in ("col", "colgroup"):
+                    return True, False
+                if scope in ("row", "rowgroup"):
+                    return False, True
+        return (
+            col_header and not row_header,
+            row_header or ((not col_header) and html_cell.name == "th"),
+        )
 
     @staticmethod
     def _unwrap_table_sections(tag: Tag) -> None:
