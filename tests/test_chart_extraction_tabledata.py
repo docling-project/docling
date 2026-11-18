@@ -319,7 +319,7 @@ def test_legacy_chart_preset_uses_its_csv_prompt_and_parser() -> None:
 
 
 def test_chart_crop_uses_configured_scale() -> None:
-    """Without a stored picture image, charts are cropped at the option scale."""
+    """Without a stored picture image, charts are cropped at the preset scale."""
     buf = BytesIO()
     Image.new("RGB", (200, 100), "white").save(buf, format="PNG")
     buf.seek(0)
@@ -347,9 +347,7 @@ def test_chart_crop_uses_configured_scale() -> None:
     model = ChartExtractionVlmEngineModel(
         enabled=False,
         artifacts_path=None,
-        options=ChartExtractionVlmEngineOptions.from_preset(
-            "granite_vision_v4", scale=3.0
-        ),
+        options=ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4"),
         accelerator_options=AcceleratorOptions(),
     )
     model.enabled = True
@@ -357,5 +355,5 @@ def test_chart_crop_uses_configured_scale() -> None:
     element = model.prepare_element(conv_res, picture)
 
     assert element is not None
-    # 100 x 50 pt chart at scale 3
-    assert element.image.size == (300, 150)
+    # 100 x 50 pt chart at the default scale 4
+    assert element.image.size == (400, 200)
