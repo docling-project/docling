@@ -89,4 +89,3 @@
 | Converted to 110VDC | Converted to 110VDC | Converted to 110VDC | Converted to 110VDC | Converted to 110VDC |
 | - | - | - | - | - |
 | Arc test (type test) | Arc test (type test) | Arc test (type test) | Arc test (type test) | Arc test (type test) |
-|  |  |  |  |  |
