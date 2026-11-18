@@ -249,7 +249,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
-    def _recover_msg_body(data: bytes, message: "OxMsgMessage") -> str | None:
+    def _recover_msg_body(data: bytes, message: OxMsgMessage) -> str | None:
         """Read the plain-text body from the OLE stream with the message codepage.
 
         When ``message.body`` fails (wrong codec or unknown codec), this reads
