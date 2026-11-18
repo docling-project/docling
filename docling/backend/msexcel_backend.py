@@ -348,22 +348,55 @@ _NS_RICH_DATA: Final = "http://schemas.microsoft.com/office/spreadsheetml/2017/r
 _NS_RICH_VALUE_REL: Final = (
     "http://schemas.microsoft.com/office/spreadsheetml/2022/richvaluerel"
 )
+_NS_WEB_IMAGE: Final = (
+    "http://schemas.microsoft.com/office/spreadsheetml/2020/richdatawebimage"
+)
 _RICH_DATA_NAMESPACES: Final = {
     "m": _NS_MAIN,
     "rd": _NS_RICH_DATA,
     "rvrel": _NS_RICH_VALUE_REL,
+    "wi": _NS_WEB_IMAGE,
 }
 _R_ID: Final = f"{{{_NS_REL}}}id"
 
-# Workbook parts that hold the images placed in cells, by the last segment of
-# their relationship type: the namespace part differs between Excel versions.
+# Workbook parts that every kind of image in a cell needs, by the last segment
+# of their relationship type: the namespace part differs between Excel versions.
 _RICH_DATA_PARTS: Final = frozenset(
-    {"sheetMetadata", "rdRichValue", "rdRichValueStructure", "richValueRel"}
+    {"sheetMetadata", "rdRichValue", "rdRichValueStructure"}
 )
 
 
+class _RichImageKind(NamedTuple):
+    """Describes where a rich value structure stores its images.
+
+    Attributes:
+        part: The last segment of the relationship type of the part with the images.
+        position_key: The rich value key with the position of the image in the part.
+        entry_path: The path to the entries of the part.
+        id_path: The path from an entry to the node with the relationship id.
+    """
+
+    part: str
+    position_key: str
+    entry_path: str
+    id_path: str
+
+
+# "Place in Cell" images use the first structure and images from the `IMAGE()`
+# function use the second. A workbook has the part of at least one of them.
+_RICH_IMAGE_KINDS: Final = {
+    "_localImage": _RichImageKind(
+        "richValueRel", "_rvRel:LocalImageIdentifier", "rvrel:rel", "."
+    ),
+    "_webimage": _RichImageKind(
+        "rdRichValueWebImage", "WebImageIdentifier", "wi:webImageSrd", "wi:blip"
+    ),
+}
+_RICH_IMAGE_PARTS: Final = frozenset(kind.part for kind in _RICH_IMAGE_KINDS.values())
+
+
 class ExcelCellImage(NamedTuple):
-    """Represents an image placed in a cell ("Place in Cell" in Excel).
+    """Represents an image placed in a cell ("Place in Cell" or `IMAGE()` in Excel).
 
     Attributes:
         target: The archive member of the image, e.g. ``xl/media/image1.png``.
@@ -384,7 +417,9 @@ def _read_xml(zip_file: ZipFile, member: str, max_bytes: int) -> etree._Element:
 def _rich_data_parts(
     workbook_rels: RelationshipList | dict[str, Relationship],
 ) -> dict[str, str] | None:
-    """Return the rich-data parts of a workbook, or None if any is missing.
+    """Return the rich-data parts of a workbook, or None if it cannot hold images.
+
+    All of `_RICH_DATA_PARTS` and at least one of `_RICH_IMAGE_PARTS` must exist.
 
     Args:
         workbook_rels: openpyxl's relationships of the workbook part. At
@@ -398,8 +433,46 @@ def _rich_data_parts(
         name: rel.target
         for rel in relationships
         if (name := rel.Type.rsplit("/", 1)[-1]) in _RICH_DATA_PARTS
+        or name in _RICH_IMAGE_PARTS
     }
-    return parts if parts.keys() == _RICH_DATA_PARTS else None
+    if _RICH_DATA_PARTS <= parts.keys() and _RICH_IMAGE_PARTS & parts.keys():
+        return parts
+    return None
+
+
+def _image_rels(zip_file: ZipFile, part: str) -> dict[str, str]:
+    """Return the image members that a rich-data part refers to, by relationship id."""
+    rels_path = get_rels_path(part)
+    if rels_path not in zip_file.NameToInfo:
+        return {}
+    return {
+        rel.Id: rel.target
+        for rel in get_dependents(zip_file, rels_path)
+        if rel.Type == IMAGE_NS and rel.Id is not None
+    }
+
+
+def _rich_image_targets(
+    zip_file: ZipFile, parts: dict[str, str], kind: _RichImageKind, max_bytes: int
+) -> dict[int, str]:
+    """Return the image members of one kind of image, by the position in its part.
+
+    An entry without an image, such as a web image without a blip, still has a
+    position.
+    """
+    part = parts.get(kind.part)
+    if part is None:
+        return {}
+    rels = _image_rels(zip_file, part)
+    entries = _read_xml(zip_file, part, max_bytes).iterfind(
+        kind.entry_path, _RICH_DATA_NAMESPACES
+    )
+    return {
+        position: target
+        for position, entry in enumerate(entries)
+        if (node := entry.find(kind.id_path, _RICH_DATA_NAMESPACES)) is not None
+        and (target := rels.get(node.get(_R_ID) or "")) is not None
+    }
 
 
 def _rich_value_images(
@@ -415,8 +488,14 @@ def _rich_value_images(
                    -> rdrichvalue rv -> rdrichvaluestructure "_localImage"
                    -> richValueRel rel -> image member
 
-    Only rich values with the ``_localImage`` structure are images. Other rich
-    values, such as linked data types, are not returned.
+    An image from the ``IMAGE()`` function has the ``_webimage`` structure. Excel
+    stores the downloaded image in the file::
+
+        rdrichvalue rv -> rdrichvaluestructure "_webimage"
+                       -> rdRichValueWebImage webImageSrd blip -> image member
+
+    Only rich values with these structures are images. Other rich values, such
+    as linked data types, are not returned.
 
     Args:
         zip_file: The open XLSX archive.
@@ -447,20 +526,10 @@ def _rich_value_images(
             zip_file, parts["rdRichValueStructure"], max_bytes
         ).iterfind("rd:s", ns)
     ]
-    rel_ids = [
-        node.get(_R_ID)
-        for node in _read_xml(zip_file, parts["richValueRel"], max_bytes).iterfind(
-            "rvrel:rel", ns
-        )
-    ]
-    image_targets: dict[str, str] = {}
-    rel_list_rels = get_rels_path(parts["richValueRel"])
-    if rel_list_rels in zip_file.NameToInfo:
-        image_targets = {
-            rel.Id: rel.target
-            for rel in get_dependents(zip_file, rel_list_rels)
-            if rel.Type == IMAGE_NS and rel.Id is not None
-        }
+    image_targets = {
+        kind: _rich_image_targets(zip_file, parts, kind, max_bytes)
+        for kind in _RICH_IMAGE_KINDS.values()
+    }
 
     images: dict[int, ExcelCellImage] = {}
     rich_values = _read_xml(zip_file, parts["rdRichValue"], max_bytes)
@@ -469,13 +538,11 @@ def _rich_value_images(
         if not 0 <= structure < len(structures):
             continue
         structure_type, keys = structures[structure]
-        if structure_type != "_localImage":
+        kind = _RICH_IMAGE_KINDS.get(structure_type or "")
+        if kind is None:
             continue
         fields = dict(zip(keys, (v.text or "" for v in node.iterfind("rd:v", ns))))
-        rel_index = int(fields.get("_rvRel:LocalImageIdentifier", "-1"))
-        if not 0 <= rel_index < len(rel_ids):
-            continue
-        target = image_targets.get(rel_ids[rel_index] or "")
+        target = image_targets[kind].get(int(fields.get(kind.position_key, "-1")))
         if target is not None:
             images[index] = ExcelCellImage(target, fields.get("Text") or None)
 
@@ -2099,7 +2166,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return ZipFile(self.path_or_stream, "r")
 
     def _read_rich_value_images(self, reader: ExcelReader) -> None:
-        """Read the index of the images placed in cells ("Place in Cell").
+        """Read the index of the images placed in cells ("Place in Cell" or ``IMAGE()``).
 
         Excel 365 stores such an image as a rich value in ``xl/richData``,
         which openpyxl does not read: the cell value is only the ``#VALUE!``
@@ -2175,22 +2242,22 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return cell_images
 
     def _read_cell_image(self, zip_file: ZipFile, target: str) -> ImageRef | None:
-        """Read and decode an image placed in a cell."""
+        """Read and decode an image placed in a cell. A failure loses only this image."""
         try:
             image_bytes = read_member(zip_file, target, self._MAX_IMAGE_BYTES)
-        except (ArchiveLimitError, KeyError) as exc:
+            try:
+                pil_image: PILImage.Image | None = normalize_image_for_png(
+                    PILImage.open(BytesIO(image_bytes))
+                )
+            except (UnidentifiedImageError, OSError, ValueError):
+                pil_image = self._convert_emf_to_pil(image_bytes)
+            if pil_image is None:
+                _log.warning("Could not decode the image %s in a cell", target)
+                return None
+            return ImageRef.from_pil(image=pil_image, dpi=72)
+        except Exception as exc:
             _log.warning("Skipping image %s in a cell: %s", target, exc)
             return None
-        try:
-            pil_image: PILImage.Image | None = normalize_image_for_png(
-                PILImage.open(BytesIO(image_bytes))
-            )
-        except (UnidentifiedImageError, OSError, ValueError):
-            pil_image = self._convert_emf_to_pil(image_bytes)
-        if pil_image is None:
-            _log.warning("Could not decode the image %s in a cell", target)
-            return None
-        return ImageRef.from_pil(image=pil_image, dpi=72)
 
     def _add_cell_image(
         self,

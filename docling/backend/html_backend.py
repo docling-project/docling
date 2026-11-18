@@ -86,6 +86,7 @@ _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.dammit import EncodingDetector
     from bs4.element import PreformattedString
 
     _BS4_AVAILABLE = True
@@ -125,6 +126,71 @@ def _warn_headers_without_origin() -> None:
 # Sentinel character for explicit line breaks from <br> tags
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
+
+# The quotation marks that the default style sheet of a browser gives <q>
+# (`quotes: auto`), from the CLDR data of the language: the outer pair, then
+# the pair for a quotation nested in it. The key is the primary language subtag.
+_QuotationMarks = tuple[tuple[str, str], tuple[str, str]]
+_Q_QUOTATION_MARKS_EN: Final[_QuotationMarks] = (
+    ("\u201c", "\u201d"),
+    ("\u2018", "\u2019"),
+)
+_Q_QUOTATION_MARKS_BY_LANG: Final[dict[str, _QuotationMarks]] = {
+    "cs": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "de": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "el": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "en": _Q_QUOTATION_MARKS_EN,
+    "es": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "fr": (("\u00ab", "\u00bb"), ("\u00ab", "\u00bb")),
+    "it": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "ja": (("\u300c", "\u300d"), ("\u300e", "\u300f")),
+    "nl": (("\u2018", "\u2019"), ("\u201c", "\u201d")),
+    "pl": (("\u201e", "\u201d"), ("\u00ab", "\u00bb")),
+    "pt": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+    "ru": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "sv": (("\u201d", "\u201d"), ("\u2019", "\u2019")),
+    "uk": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "zh": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+}
+
+
+def _q_quotation_marks(q: Tag) -> _QuotationMarks:
+    """Return the quotation marks for the language of a <q> element.
+
+    The language comes from the nearest `lang` (or `xml:lang`, for XHTML)
+    attribute on the element or an ancestor. An unknown or missing language
+    gets English marks.
+    """
+    for element in (q, *q.parents):
+        lang = element.get("lang", element.get("xml:lang"))
+        if lang is not None:
+            primary = str(lang).strip().lower().split("-")[0]
+            return _Q_QUOTATION_MARKS_BY_LANG.get(primary, _Q_QUOTATION_MARKS_EN)
+    return _Q_QUOTATION_MARKS_EN
+
+
+def _parse_html(markup: bytes) -> BeautifulSoup:
+    """Parse HTML, reading bytes that declare no encoding as UTF-8 when they are UTF-8.
+
+    When the bytes declare no encoding (no ``<meta charset>``), BeautifulSoup asks
+    a statistical detector first and tries UTF-8 last. On short text the detector
+    can pick another encoding, so valid UTF-8 comes out as garbled text. UTF-8 is
+    the likely encoding of such a page. Bytes that are not valid UTF-8 still go to
+    the detector. So do bytes with a NUL byte, such as UTF-16 text, which can be
+    valid UTF-8 only by accident.
+    """
+    encoding: Optional[str] = None
+    if (
+        b"\x00" not in markup
+        and EncodingDetector.find_declared_encoding(markup, is_html=True) is None
+    ):
+        try:
+            markup.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+        else:
+            encoding = "utf-8"
+    return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
 
 
 def _resolve_line_breaks(text: str) -> str:
@@ -615,6 +681,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._tag_name_by_docling_id_cache: dict[str, str] = {}
         self._generated_html_id_counter: int = 0
         self._render_visibility_cache: dict[int, bool] = {}
+        self._captioned_figure_ids: set[int] = set()
 
         try:
             raw = (
@@ -633,7 +700,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._mhtml_resources = resources
                 self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
-            self.soup = BeautifulSoup(raw, "html.parser")
+            self.soup = _parse_html(raw)
         except DocumentLoadError:
             raise
         except Exception as e:
@@ -1039,14 +1106,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString(_BR_SENTINEL))
 
+        # A browser renders the quotation marks of <q> from CSS (open-quote and
+        # close-quote), so the markup does not hold them. Add them as text.
+        for q in content("q"):
+            marks = _q_quotation_marks(q)
+            depth = min(len(q.find_parents("q")), len(marks) - 1)
+            open_mark, close_mark = marks[depth]
+            q.insert(0, NavigableString(open_mark))
+            q.append(NavigableString(close_mark))
+
         # Furniture before the first heading rule, except for headers in tables and lists
+        self._render_visibility_cache.clear()
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Skip headers that become cell or list item text: they never switch the
-        # layer back to body
+        # Skip headers that become cell or list item text, or that the walk skips
+        # as hidden: they never switch the layer back to body. The walk does not
+        # check `content` itself or its ancestors, so stop there.
         clean_headers = [
-            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+            h
+            for h in all_headers
+            if not self._is_header_in_cell_or_item(h)
+            and not any(
+                self._is_suppressed_tag(tag)
+                for tag in takewhile(lambda t: t is not content, (h, *h.parents))
+            )
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -1059,7 +1143,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         # reset context
         self.ctx = _Context()
-        self._render_visibility_cache.clear()
+        self._captioned_figure_ids.clear()
         self._walk(content, doc)
         return doc
 
@@ -1975,7 +2059,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for n in reversed(new_nodes):
                 parent.insert(idx, n)
 
-    def _resolve_relative_path(self, loc: str) -> str:
+    def _resolve_relative_path(self, loc: str, *, decode_url_path: bool = False) -> str:
         if self._mhtml_resources is not None:
             archive_location = loc.strip()
             if archive_location.lower().startswith("cid:"):
@@ -1989,7 +2073,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return archive_location
             if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
                 return archive_location
-        return self._image_loader.resolve_relative_path(loc, self.base_path)
+        return self._image_loader.resolve_relative_path(
+            loc,
+            self.base_path,
+            decode_url_path=decode_url_path and self._mhtml_resources is None,
+        )
 
     @staticmethod
     def group_cell_elements(
@@ -2202,6 +2290,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
                             grid[row_idx + r][col_idx + c] = text
 
+                is_col_header, is_row_header = self._get_cell_header_flags(
+                    html_cell, col_header, row_header
+                )
                 if rich_table_cell:
                     rich_cell = RichTableCell(
                         text=text,
@@ -2212,9 +2303,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
@@ -2229,9 +2319,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
@@ -3443,6 +3532,32 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return match.group("marker").strip() if match else ""
 
     @staticmethod
+    def _get_cell_header_flags(
+        html_cell: Tag, col_header: bool, row_header: bool
+    ) -> tuple[bool, bool]:
+        """Return the `column_header` and `row_header` flags of a table cell.
+
+        The `scope` attribute of a `<th>` names the cells that it is a header
+        for (HTML Standard, the th element): `col` and `colgroup` make it a
+        column header, `row` and `rowgroup` a row header. Without a valid
+        `scope`, the flags come from the cells of the row: `col_header` is set
+        when the row has no `<td>`, `row_header` when the row only has `<th>`
+        cells that span more than one row.
+        """
+        if html_cell.name == "th":
+            scope = html_cell.get("scope")
+            if isinstance(scope, str):
+                scope = scope.lower()
+                if scope in ("col", "colgroup"):
+                    return True, False
+                if scope in ("row", "rowgroup"):
+                    return False, True
+        return (
+            col_header and not row_header,
+            row_header or ((not col_header) and html_cell.name == "th"),
+        )
+
+    @staticmethod
     def _unwrap_table_sections(tag: Tag) -> None:
         """Lift the rows of a table's row groups into the table itself.
 
@@ -3496,7 +3611,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             # 3. If no image was produced, manually handle the <figcaption>
             # and link it to the first item (e.g., a table).
-            if not any_image_produced:
+            if not any_image_produced and id(tag) not in self._captioned_figure_ids:
                 caption_tag = tag.find("figcaption", recursive=False)
                 if isinstance(caption_tag, Tag):
                     # Emit the caption as a standalone item under the current parent
@@ -3657,9 +3772,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 for i, annotated_text in enumerate(annotated_texts):
                     # In preformatted text, each <br> is a newline. No strip: the block
                     # edges are trimmed above and every interior space is significant.
-                    text_orig = re.sub(
-                        rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
-                    )
+                    text_orig = annotated_text.text.replace(_BR_SENTINEL, "\n")
                     if not text_orig:
                         continue
                     if _BR_SENTINEL in annotated_text.text and not text_orig.strip():
@@ -5380,13 +5493,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
             caption_prov_tag = img_tag
 
-        if isinstance(figure, Tag):
+        # The first image that produces a picture claims the <figcaption>, so a
+        # figure with several images keeps exactly one caption. Images that are
+        # not rendered (for example a hidden first image) claim nothing.
+        if isinstance(figure, Tag) and id(figure) not in self._captioned_figure_ids:
             caption_tag = figure.find("figcaption", recursive=False)
             if isinstance(caption_tag, Tag):
                 caption = self._extract_text_and_hyperlink_recursively(
                     caption_tag, find_parent_annotation=True
                 )
                 caption_prov_tag = caption_tag
+                self._captioned_figure_ids.add(id(figure))
         if not caption and img_tag.get("alt"):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
@@ -5395,7 +5512,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         img_ref: Optional[ImageRef] = None
         if cast(HTMLBackendOptions, self.options).fetch_images and src_loc:
             try:
-                src_loc = self._resolve_relative_path(src_loc)
+                src_loc = self._resolve_relative_path(src_loc, decode_url_path=True)
             except ValueError as e:
                 # The source is not loaded, but the picture is kept, as for an
                 # image file that cannot be read.

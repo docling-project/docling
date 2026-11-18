@@ -57,6 +57,13 @@ _ITEM_TEXT_LABELS = frozenset(
 )
 
 
+# A {...} group, allowing one level of nested braces.
+_BRACED_GROUP = r"\{(?:[^{}]|\{[^{}]*\})*\}"
+# A [...] optional argument whose braced values may contain brackets,
+# as in [caption={A [b] c}].
+_OPTIONAL_ARGUMENT = rf"\[(?:[^\[\]{{}}]|{_BRACED_GROUP})*\]"
+
+
 def iter_child_nodelists(node: Any) -> Iterator[list]:
     """Yield the node lists of ``node`` and of its group arguments."""
     if isinstance(node, (LatexGroupNode, LatexEnvironmentNode, LatexMathNode)):
@@ -456,7 +463,13 @@ class TextHelperMixin:
         return None
 
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
-        pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
+        name = re.escape(env_name)
+        # minted takes the code's language as a mandatory {argument}.
+        language = _BRACED_GROUP if env_name == "minted" else ""
+        pattern = (
+            rf"\\begin\{{{name}\}}(?:{_OPTIONAL_ARGUMENT})?{language}"
+            rf"(.*?)\\end\{{{name}\}}"
+        )
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
             return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
@@ -516,7 +529,13 @@ class TextHelperMixin:
                         if text:
                             arg_parts.append(text)
                     else:
-                        text = arg.latex_verbatim().strip("{} ")
+                        # A characters argument (\verb's content) is kept as is: its own
+                        # braces and spaces are part of the text.
+                        text = (
+                            arg.chars
+                            if isinstance(arg, LatexCharsNode)
+                            else arg.latex_verbatim().strip("{} ")
+                        )
                         if text:
                             arg_parts.append(text)
         return (" ".join(arg_parts), consumed)

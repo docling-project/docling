@@ -487,3 +487,54 @@ def test_xbrl_file_reference_needs_local_fetch(no_taxonomy_packages, tmp_path):
     )
 
     assert "enable_local_fetch=True" in message
+
+
+def _offline_web_cache(cache_dir: Path):
+    from arelle.Cntlr import Cntlr  # type: ignore
+
+    from docling.backend.xml.xbrl_web_cache import FetchPolicyWebCache
+
+    web_cache = FetchPolicyWebCache(
+        Cntlr(),
+        enable_local_fetch=False,
+        enable_remote_fetch=False,
+        local_roots=[],
+    )
+    web_cache.cacheDir = str(cache_dir)
+    return web_cache
+
+
+@pytest.mark.parametrize(
+    ("url", "base"),
+    [
+        ("http://example.com/../../../outside.xsd", None),
+        ("http://../../outside.xsd", None),
+        ("http://example.com/%2e%2e/%2e%2e/%2e%2e/outside.xsd", None),
+        ("http://example.com/..%5c..%5c..%5coutside.xsd", None),
+        ("https://user@../../outside.xsd", None),
+        ("../../../../outside.xsd", "http://example.com/a.xsd"),
+    ],
+)
+def test_xbrl_web_cache_keeps_files_inside_cache_dir(tmp_path, url, base):
+    outside = tmp_path / "outside.xsd"
+    outside.write_text('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>')
+    web_cache = _offline_web_cache(tmp_path / "cache")
+
+    assert web_cache.getfilename(url, base) is None
+    assert len(web_cache.refused) == 1
+    assert "not allowed in the web cache" in web_cache.refused[0]
+    assert sorted(tmp_path.iterdir()) == [outside]
+
+
+def test_xbrl_web_cache_maps_url_inside_cache_dir(tmp_path):
+    cache_dir = tmp_path / "cache"
+    web_cache = _offline_web_cache(cache_dir)
+
+    filename = web_cache.getfilename(
+        "../common/types.xsd", "https://example.com/taxonomy/2024/entry.xsd"
+    )
+
+    assert filename == str(
+        cache_dir / "https" / "example.com" / "taxonomy" / "common" / "types.xsd"
+    )
+    assert web_cache.refused == []

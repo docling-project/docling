@@ -720,12 +720,16 @@ def _convert_epub_with_one_image(
         ("../Images/map.png?v=1", "Images/map.png"),
         ("../Images/map.png#top", "Images/map.png"),
         ("../Images/map%231.png", "Images/map#1.png"),
+        ("../Images/map%2520one.png", "Images/map%20one.png"),
     ],
 )
 def test_epub_image_source_ignores_query_and_fragment(
     tmp_path: Path, src: str, archive_image: str
 ):
-    """A query or fragment is not part of the file name; an escaped "#" is."""
+    """A query or fragment is not part of the file name; an escaped "#" is.
+
+    The src is decoded once: an escaped "%" stays in the file name.
+    """
     doc = _convert_epub_with_one_image(tmp_path, src, [archive_image])
 
     assert len(doc.pictures) == 1

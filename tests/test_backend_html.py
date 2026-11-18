@@ -5,6 +5,7 @@ import base64
 import os
 import threading
 import time
+from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
@@ -17,6 +18,7 @@ from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
     GroupLabel,
+    ImageRefMode,
     PictureItem,
     RichTableCell,
 )
@@ -485,6 +487,76 @@ def test_table_row_header_rowspan_keeps_the_row_cells():
     assert "$134" in doc.export_to_markdown()
 
 
+# The "two headers" table of the W3C WAI tables tutorial: an empty corner cell,
+# a header row of days and a header column of times.
+_SCOPE_HEAD_ROW = (
+    b'<tr><td></td><th scope="col">Monday</th><th scope="col">Tuesday</th></tr>'
+)
+_SCOPE_BODY_ROWS = (
+    b'<tr><th scope="row">09:00 - 11:00</th><td>Closed</td><td>Open</td></tr>'
+    b'<tr><th scope="row">11:00 - 13:00</th><td>Open</td><td>Closed</td></tr>'
+)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        _SCOPE_HEAD_ROW + _SCOPE_BODY_ROWS,
+        b"<thead>"
+        + _SCOPE_HEAD_ROW
+        + b"</thead><tbody>"
+        + _SCOPE_BODY_ROWS
+        + b"</tbody>",
+        (_SCOPE_HEAD_ROW + _SCOPE_BODY_ROWS)
+        .replace(b'"col"', b'"COLGROUP"')
+        .replace(b'"row"', b'"RowGroup"'),
+        (_SCOPE_HEAD_ROW + _SCOPE_BODY_ROWS).replace(b">Monday<", b"><b>Monday</b><"),
+    ],
+    ids=["scope", "scope_in_thead", "group_scope_any_case", "rich_header_cell"],
+)
+def test_table_th_scope_sets_the_header_flags(body):
+    """The scope attribute of a <th> names the cells that it is a header for
+    (HTML Standard, the th element). It was ignored: the empty <td> corner
+    cell made Monday and Tuesday row headers, so the dataframe export had no
+    column names and kept the days as its first data row.
+    """
+    doc = _convert_html(b"<table>" + body + b"</table>")
+
+    table = doc.tables[0]
+    cells = {cell.text: cell for cell in table.data.table_cells}
+    for day in ("Monday", "Tuesday"):
+        assert (cells[day].column_header, cells[day].row_header) == (True, False)
+    for slot in ("09:00 - 11:00", "11:00 - 13:00"):
+        assert (cells[slot].column_header, cells[slot].row_header) == (False, True)
+    if b"<b>" in body:
+        # The rich cell path sets the same flags.
+        assert isinstance(cells["Monday"], RichTableCell)
+    else:
+        df = table.export_to_dataframe(doc=doc)
+        assert list(df.columns) == ["", "Monday", "Tuesday"]
+        assert df.iloc[0].tolist() == ["09:00 - 11:00", "Closed", "Open"]
+
+
+def test_table_th_without_scope_keeps_the_row_based_flags():
+    # Without scope, a <th> in a row of only <th> cells is a column header and
+    # a <th> in a row that has a <td> is a row header, as before.
+    doc = _convert_html(
+        b"<table><tr><th>Day</th><th>Hours</th></tr>"
+        b"<tr><th>Monday</th><td>09:00 - 17:00</td></tr></table>"
+    )
+
+    flags = {
+        cell.text: (cell.column_header, cell.row_header)
+        for cell in doc.tables[0].data.table_cells
+    }
+    assert flags == {
+        "Day": (True, False),
+        "Hours": (True, False),
+        "Monday": (False, True),
+        "09:00 - 17:00": (False, False),
+    }
+
+
 _THEAD = b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
 _TFOOT = b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
 
@@ -765,6 +837,82 @@ def test_text_directly_inside_figure_is_kept(figure: str, expected: list[str]):
     assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == (
         ["cap"] if "figcaption" in figure else []
     )
+
+
+@pytest.mark.parametrize(
+    "figure",
+    [
+        '<figure><img src="a.png"/><img src="b.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><img src="a.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><img src="a.png" style="display:none"/><img src="b.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><img src="a.png" aria-hidden="true"/><img src="b.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><figcaption><img src="icon.png"/>cap</figcaption><img src="b.png"/></figure>',
+        '<figure><p><img src="a.png"/><img src="b.png"/></p><figcaption>cap</figcaption></figure>',
+    ],
+)
+def test_figure_keeps_one_caption(figure: str):
+    html = f"<html><body><h1>Title</h1>{figure}</body></html>".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == ["cap"]
+
+
+def test_figure_later_image_falls_back_to_its_alt_text():
+    html = (
+        b"<html><body><h1>Title</h1>"
+        b'<figure><img src="a.png" alt="panel A"/><img src="b.png" alt="panel B"/>'
+        b"<figcaption>cap</figcaption></figure></body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == [
+        "cap",
+        "panel B",
+    ]
+    assert [c.resolve(doc).text for c in doc.pictures[0].captions] == ["cap"]
+
+
+def test_figure_caption_claim_is_reset_between_conversions():
+    # A backend can convert more than once. Every run must claim the figure
+    # captions again, because the claimed figure identities are per-run state.
+    html = (
+        b"<html><body><h1>Title</h1>"
+        b'<figure><img src="a.png" alt="first"/><img src="b.png" alt="second"/>'
+        b"<figcaption>one</figcaption></figure>"
+        b'<figure><img src="c.png" alt="third"/><figcaption>two</figcaption></figure>'
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+
+    runs: list[list[str]] = []
+    for _ in range(2):
+        doc = backend.convert()
+        runs.append([picture.caption_text(doc) for picture in doc.pictures])
+
+    assert runs == [["one", "second", "two"], ["one", "second", "two"]]
 
 
 def test_ordered_lists():
@@ -1304,6 +1452,42 @@ def test_heading_inside_list_keeps_content_in_body():
         assert all(t.content_layer == ContentLayer.BODY for t in doc.texts)
 
 
+@pytest.mark.parametrize(
+    "heading",
+    [
+        '<h1 style="display: none">Hidden</h1>',
+        '<h2 style="visibility: hidden">Hidden</h2>',
+        '<h3 aria-hidden="true">Hidden</h3>',
+        '<div style="display: none"><h1>Hidden</h1></div>',
+        '<section aria-hidden="true"><div><h2>Hidden</h2></div></section>',
+    ],
+)
+def test_hidden_heading_does_not_hide_visible_body(heading: str):
+    doc = _convert_html(
+        f"<html><body><p>Before.</p>{heading}<p>After.</p></body></html>".encode()
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Before.", ContentLayer.BODY),
+        ("After.", ContentLayer.BODY),
+    ]
+    assert doc.export_to_markdown() == "Before.\n\nAfter."
+
+
+def test_hidden_body_keeps_furniture_before_first_heading():
+    """The walk does not check <body> itself, so neither does the heading search."""
+    doc = _convert_html(
+        b'<html><body aria-hidden="true"><p>Nav</p><h1>Title</h1><p>Text</p>'
+        b"</body></html>"
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Nav", ContentLayer.FURNITURE),
+        ("Title", ContentLayer.BODY),
+        ("Text", ContentLayer.BODY),
+    ]
+
+
 def test_heading_as_list_child_ends_furniture():
     """A heading that is a direct child of <ul> (or in a <div> there) or in a
     <menu> item is emitted as a heading, so the body starts there."""
@@ -1486,6 +1670,10 @@ def test_code_language_hint_prefers_prefixed_class():
         ),
         ("<pre><code>x = 'a  b'</code> <code>y</code></pre>", "x = 'a  b' y"),
         ("<pre>first<br>second</pre>", "first\nsecond"),
+        (
+            "<pre>def f():<br>    if ok:<br>        run()</pre>",
+            "def f():\n    if ok:\n        run()",
+        ),
         ("<pre>before<!-- hidden -->after</pre>", "beforeafter"),
         ("<pre>before<?hidden instruction?>after</pre>", "beforeafter"),
         ("<pre>before<!DOCTYPE hidden>after</pre>", "beforeafter"),
@@ -1677,6 +1865,121 @@ def test_local_file_uri_source_resolves_images(tmp_path: Path):
     ]
     assert len(pictures) == 1
     assert pictures[0].get_image(doc) is not None
+
+
+@pytest.mark.parametrize(
+    ("filename", "file_uri"),
+    [
+        ("figure one.png", False),
+        ("图 片.png", True),
+        ("figure%20one.png", False),
+        ("figure#one.png", True),
+    ],
+)
+def test_percent_escaped_local_image(tmp_path: Path, filename: str, file_uri: bool):
+    Image.new("RGB", (7, 5), (0, 255, 0)).save(tmp_path / filename)
+    source = tmp_path / "page.html"
+    source.write_text(
+        f'<p>Before.</p><img src="{quote(filename)}?v=1#preview" alt="Green figure">'
+        "<p>After.</p>",
+        encoding="utf-8",
+    )
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            fetch_images=True,
+            enable_local_fetch=True,
+            source_uri=source.as_uri() if file_uri else source,
+        )
+    )
+
+    doc = converter.convert(source).document
+
+    assert len(doc.pictures) == 1
+    image = doc.pictures[0].get_image(doc)
+    assert image is not None and image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+    assert [item.text for item in doc.texts] == ["Before.", "Green figure", "After."]
+    markdown = doc.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
+    assert markdown.index("Before.") < markdown.index("data:image/png;base64,")
+    assert markdown.index("data:image/png;base64,") < markdown.index("After.")
+
+
+@pytest.mark.parametrize("src", ["%2e%2e/outside.png", "%2F%2Fimages.test/outside.png"])
+def test_percent_escaped_local_image_keeps_confinement(tmp_path: Path, src: str):
+    directory = tmp_path / "article"
+    directory.mkdir()
+    Image.new("RGB", (7, 5)).save(tmp_path / "outside.png")
+    source = directory / "page.html"
+    source.write_text(f'<p>Before.</p><img src="{src}"><p>After.</p>', encoding="utf-8")
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            fetch_images=True, enable_local_fetch=True, source_uri=source
+        )
+    )
+
+    with pytest.warns(
+        UserWarning, match="Path traversal blocked|Absolute paths are not allowed"
+    ):
+        doc = converter.convert(source).document
+
+    assert len(doc.pictures) == 1 and doc.pictures[0].image is None
+    assert [item.text for item in doc.texts] == ["Before.", "After."]
+
+
+@pytest.mark.parametrize(
+    ("fetch_images", "enable_local_fetch"), [(False, True), (True, False)]
+)
+def test_percent_escaped_local_image_fetch_disabled(
+    tmp_path: Path, fetch_images: bool, enable_local_fetch: bool
+):
+    Image.new("RGB", (7, 5)).save(tmp_path / "figure one.png")
+    source = tmp_path / "page.html"
+    source.write_text('<img src="figure%20one.png">', encoding="utf-8")
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            fetch_images=fetch_images,
+            enable_local_fetch=enable_local_fetch,
+            source_uri=source,
+        )
+    )
+
+    with (
+        pytest.warns(UserWarning, match="enable_local_fetch")
+        if fetch_images
+        else nullcontext()
+    ):
+        doc = converter.convert(source).document
+
+    assert len(doc.pictures) == 1 and doc.pictures[0].image is None
+
+
+@pytest.mark.parametrize("absolute_url", [False, True])
+def test_percent_escaped_remote_image_keeps_url(
+    monkeypatch, tmp_path: Path, absolute_url: bool
+):
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/figure%20one.png": PNG_1X1}
+        src = "figure%20one.png?key=a%20b"
+        base = server.url("images.test", "/page.html")
+        if absolute_url:
+            src = server.url("images.test", "/" + src)
+            base = tmp_path / "page.html"
+        converter = _create_html_converter(
+            HTMLBackendOptions(
+                fetch_images=True, enable_remote_fetch=True, source_uri=base
+            )
+        )
+        doc = converter.convert(
+            DocumentStream(
+                name="page.html", stream=BytesIO(f'<img src="{src}">'.encode())
+            )
+        ).document
+
+        assert len(doc.pictures) == 1 and doc.pictures[0].image is not None
+        assert [request.path for request in server.requests] == [
+            "/figure%20one.png?key=a%20b"
+        ]
 
 
 def test_cmyk_picture_is_kept(tmp_path: Path):
@@ -2980,3 +3283,63 @@ def test_single_char_spans_do_not_compact_across_a_boundary():
     )
     doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
     assert doc.export_to_markdown() == "Hi to"
+
+
+def test_inline_quotation_gets_its_quotation_marks():
+    # A browser shows the quotation marks of <q> from its default style sheet
+    # (open-quote and close-quote), so they are not in the markup. A nested <q>
+    # gets single quotation marks.
+    html = (
+        b"<html><body>"
+        b"<h2>The <q>best</q> part</h2>"
+        b"<p>She said <q>stop</q> and left.</p>"
+        b"<p><q>He wrote <q>no</q> twice</q></p>"
+        b"<ul><li><b>Note:</b> <q>maybe</q></li></ul>"
+        b"<table><tr><td><q>cell</q></td></tr></table>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert doc.export_to_markdown() == (
+        '## The "best" part\n\n'
+        'She said "stop" and left.\n\n'
+        "\"He wrote 'no' twice\"\n\n"
+        '- **Note:** "maybe"\n\n'
+        '| "cell"   |\n'
+        "|----------|"
+    )
+    assert "She said “stop” and left." in [t.orig for t in doc.texts]
+
+
+def test_inline_quotation_marks_follow_the_language():
+    # The default style sheet uses `quotes: auto`, so the marks come from the
+    # language of the element. The nearest `lang` attribute applies, and an
+    # unknown language gets English marks.
+    html = (
+        '<html lang="de"><body>'
+        "<p>Er sagte <q>Hallo <q>du</q></q>.</p>"
+        '<p lang="fr-CA">Il a dit <q>salut</q>.</p>'
+        '<p lang="ja"><q>はい</q></p>'
+        '<p lang="xx"><q>unknown</q></p>'
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert [t.orig for t in doc.texts] == [
+        "Er sagte „Hallo ‚du‘“.",  # noqa: RUF001
+        "Il a dit «salut».",
+        "「はい」",
+        "“unknown”",
+    ]
