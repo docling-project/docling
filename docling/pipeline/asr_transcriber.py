@@ -18,6 +18,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    MediaRef,
     TrackItem,
     TrackSource,
 )
@@ -93,6 +94,27 @@ _AUDIO_SUFFIX_TO_MIMETYPE = {
 def _audio_mimetype(filename: str) -> str:
     suffix = Path(filename).suffix.lower()
     return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/x-wav")
+
+
+def _keep_media(conv_res: ConversionResult) -> None:
+    """Reference the input file as the recording of the first track."""
+    if not conv_res.document or not conv_res.document.tracks:
+        return
+    assert conv_res.input._backend is not None
+    path = conv_res.input._backend.path_or_stream
+    if not isinstance(path, Path):
+        _log.warning("Media not kept: only file inputs are supported.")
+        return
+    try:
+        media = MediaRef.from_file(path)
+    except ValueError as exc:
+        _log.warning(f"Media not kept: {exc}")
+        return
+    track = conv_res.document.tracks[0]
+    if media.mimetype.startswith("video/"):
+        track.video = media
+    else:
+        track.audio = media
 
 
 def _process_conversation(

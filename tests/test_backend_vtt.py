@@ -6,7 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument, GroupItem, TextItem
+from docling_core.types.doc import DoclingDocument, GroupItem, TextItem, TrackItem
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, _DocumentConversionInput
@@ -63,7 +63,7 @@ def _process_vtt_doc(doc: DoclingDocument) -> str:
             and item.source[0].kind == "track"
         ):
             parent = item.parent.resolve(doc)
-            if parent and isinstance(parent, GroupItem):
+            if parent and isinstance(parent, (GroupItem, TrackItem)):
                 text += " "
             text += item.text
 

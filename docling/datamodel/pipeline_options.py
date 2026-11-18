@@ -1901,6 +1901,16 @@ class VideoPipelineOptions(PipelineOptions):
         InlineAsrOptions | ApiAsrOptions,
         Field(description="ASR model configuration for the video audio track."),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the video of the track, so that e.g. a "
+                "DocLang archive stores it. The document then holds the input's local "
+                "path. Only file inputs are supported; for a stream, no media is kept."
+            )
+        ),
+    ] = False
 
     frame_sampling_mode: Annotated[
         VideoFrameSamplingMode,

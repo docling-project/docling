@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-from pathlib import Path
 
-from docling_core.types.doc import DoclingDocument, MediaRef
+from docling_core.types.doc import DoclingDocument
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
@@ -20,6 +19,7 @@ from docling.pipeline.asr_transcriber import (
     _AsrTranscriber,
     _ConversationItem,
     _ConversationWord,
+    _keep_media,
     _MlxAudioModel,
     _MlxWhisperModel,
     _NativeWhisperModel,
@@ -73,28 +73,8 @@ class AsrPipeline(BasePipeline):
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._model.run(conv_res=conv_res)
         if self.pipeline_options.keep_media:
-            self._keep_media(conv_res)
+            _keep_media(conv_res)
         return conv_res
-
-    def _keep_media(self, conv_res: ConversionResult) -> None:
-        """Reference the input file as the recording of the transcript track."""
-        if not conv_res.document or not conv_res.document.tracks:
-            return
-        assert conv_res.input._backend is not None
-        path = conv_res.input._backend.path_or_stream
-        if not isinstance(path, Path):
-            _log.warning("Media not kept: only file inputs are supported.")
-            return
-        try:
-            media = MediaRef.from_file(path)
-        except ValueError as exc:
-            _log.warning(f"Media not kept: {exc}")
-            return
-        track = conv_res.document.tracks[0]
-        if media.mimetype.startswith("video/"):
-            track.video = media
-        else:
-            track.audio = media
 
     @classmethod
     def is_backend_supported(cls, backend: AbstractDocumentBackend):

@@ -188,6 +188,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
 
         if vtt.title:
             doc.add_title(vtt.title, content_layer=ContentLayer.BODY)
+        track = doc.add_track() if vtt.cue_blocks else None
         for block in vtt.cue_blocks:
             cue_text = []
             parents = []
@@ -202,10 +203,13 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                         text=item.text,
                         formatting=item.formatting,
                         item=item,
+                        parent=track,
                     )
                 else:
                     group = doc.add_inline_group(
-                        "WebVTT cue span", content_layer=ContentLayer.BODY
+                        "WebVTT cue span",
+                        content_layer=ContentLayer.BODY,
+                        parent=track,
                     )
                     for item in par.items:
                         _add_text_item(
