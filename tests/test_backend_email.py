@@ -1127,3 +1127,84 @@ def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     for payload in meaningful:
         assert payload not in rfc822
         assert b64encode(payload) not in flat
+
+
+_TABLE_EMAIL = (
+    b"From: Alice <alice@example.com>\r\n"
+    b"To: Bob <bob@example.com>\r\n"
+    b"Subject: Table\r\n"
+    b"MIME-Version: 1.0\r\n"
+    b'Content-Type: multipart/alternative; boundary="b"\r\n'
+    b"\r\n"
+    b"--b\r\n"
+    b'Content-Type: text/plain; charset="utf-8"\r\n'
+    b"\r\n"
+    b"Name\r\n\r\nValue\r\n\r\nSteel\r\n\r\n7850\r\n"
+    b"--b\r\n"
+    b'Content-Type: text/html; charset="utf-8"\r\n'
+    b"\r\n"
+    b"<table><tr><th>Name</th><th>Value</th></tr>"
+    b"<tr><td>Steel</td><td>7850</td></tr></table>\r\n"
+    b"--b--\r\n"
+)
+
+
+def _convert_raw_email(raw: bytes, options: EmailBackendOptions | None = None):
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw),
+        format=InputFormat.EMAIL,
+        filename="table.eml",
+        backend=EmailDocumentBackend,
+    )
+    return EmailDocumentBackend(
+        in_doc=in_doc, path_or_stream=BytesIO(raw), options=options
+    ).convert()
+
+
+def test_email_uses_the_plain_body_by_default():
+    markdown = _convert_raw_email(_TABLE_EMAIL).export_to_markdown()
+
+    assert "Steel\n\n7850" in markdown
+    assert "| Steel" not in markdown
+
+
+def test_email_uses_the_html_body_when_prefer_html_is_set():
+    markdown = _convert_raw_email(
+        _TABLE_EMAIL, EmailBackendOptions(prefer_html=True)
+    ).export_to_markdown()
+
+    assert "| Steel  |    7850 |" in markdown
+
+
+def test_email_prefer_html_falls_back_to_the_plain_body():
+    raw = _TABLE_EMAIL.split(b"--b\r\nContent-Type: text/html")[0] + b"--b--\r\n"
+
+    markdown = _convert_raw_email(
+        raw, EmailBackendOptions(prefer_html=True)
+    ).export_to_markdown()
+
+    assert "Steel\n\n7850" in markdown
+
+
+def test_msg_reads_the_html_body_from_the_rtf_body():
+    # Outlook stored the HTML of this message only in PidTagRtfCompressed.
+    in_path = Path("tests/data/email/sources/msg_html_in_rtf.msg")
+    in_doc = InputDocument(
+        path_or_stream=in_path, format=InputFormat.EMAIL, backend=EmailDocumentBackend
+    )
+
+    default = EmailDocumentBackend(in_doc=in_doc, path_or_stream=in_path)
+    assert default.mail is not None
+    assert default.mail.text_html
+    assert (
+        "Matériau\n\nMasse volumique (kg/m³)" in default.convert().export_to_markdown()
+    )
+
+    preferred = EmailDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=in_path,
+        options=EmailBackendOptions(prefer_html=True),
+    )
+    markdown = preferred.convert().export_to_markdown()
+    assert "| **Matériau**" in markdown
+    assert "| Béton          | 2 300                         | 1,6" in markdown
