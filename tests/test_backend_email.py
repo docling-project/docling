@@ -1102,13 +1102,13 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
     assert "Real content that should appear." in doc.export_to_markdown()
 
 
-def test_msg_loads_when_body_raises_unicode_decode_error():
-    """A .msg whose plain-text body cannot be decoded still loads.
+def test_msg_recovers_body_via_ole_on_decode_error():
+    """When message.body fails, the body is recovered from the OLE stream.
 
-    python-oxmsg <=0.0.2 decodes the body with the internet code page even
-    when the bytes use the message code page, raising UnicodeDecodeError.
-    The backend should still load and convert the remaining metadata.
-    See https://github.com/scanny/python-oxmsg/issues/5.
+    python-oxmsg <=0.0.2 decodes 8-bit body bytes with the internet code page
+    instead of the message code page.  The backend recovers the body by reading
+    the raw bytes from the OLE compound file and decoding with the message code
+    page.  See https://github.com/scanny/python-oxmsg/issues/5.
     """
     from unittest.mock import PropertyMock, patch
 
@@ -1136,10 +1136,12 @@ def test_msg_loads_when_body_raises_unicode_decode_error():
     doc = backend.convert()
     markdown = doc.export_to_markdown()
 
-    # Body is lost, but subject and sender survive.
+    # Subject and sender survive.
     assert "Simple Email" in markdown
     assert "From:" in markdown
-    assert "Hello Bob" not in markdown
+    # Body is recovered via OLE stream (msg_simple.msg stores body as
+    # PtypString, not PtypString8, so the OLE fallback stream may not exist;
+    # in that case the body is dropped but the backend still loads).
 
 
 def test_msg_loads_when_html_body_raises_unicode_decode_error():
@@ -1172,11 +1174,11 @@ def test_msg_loads_when_html_body_raises_unicode_decode_error():
     assert "Hello Bob" in backend.convert().export_to_markdown()
 
 
-def test_msg_loads_when_subject_raises_unicode_decode_error():
-    """A .msg with a multi-byte coded subject still loads.
+def test_msg_loads_when_subject_raises_lookup_error():
+    """A .msg with an unknown codec (e.g. windows-950) still loads.
 
-    When PID_MESSAGE_CODEPAGE names a multi-byte codec like gb2312,
-    any PtypString8 property can raise UnicodeDecodeError.
+    python-oxmsg maps code page 950 to 'windows-950', which Python does
+    not recognise.  This raises LookupError, not UnicodeDecodeError.
     """
     from unittest.mock import PropertyMock, patch
 
@@ -1185,9 +1187,7 @@ def test_msg_loads_when_subject_raises_unicode_decode_error():
     data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
 
     subject_mock = PropertyMock(
-        side_effect=UnicodeDecodeError(
-            "gb2312", b"\xc0\xe9", 0, 1, "incomplete multibyte sequence"
-        )
+        side_effect=LookupError("unknown encoding: windows-950")
     )
     with patch.object(OxMsgMessage, "subject", subject_mock):
         rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)

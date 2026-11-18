@@ -249,6 +249,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
+    def _recover_msg_body(data: bytes, message: "OxMsgMessage") -> str | None:
+        """Read the plain-text body from the OLE stream with the message codepage.
+
+        When ``message.body`` fails (wrong codec or unknown codec), this reads
+        the raw ``PtypString8`` bytes from the OLE compound file and decodes
+        them with the message code page.  Returns ``None`` if the stream does
+        not exist or cannot be decoded.
+        """
+        try:
+            import olefile
+            from oxmsg.domain.constants import PID_BODY, PTYP_STRING8
+            from oxmsg.domain.encodings import encoding_from_codepage
+
+            codepage = message.properties.int_prop_value(0x3FFD)  # PID_MESSAGE_CODEPAGE
+            if codepage is None:
+                return None
+            encoding = encoding_from_codepage(codepage)
+            stream_name = f"__substg1.0_{PID_BODY:04X}{PTYP_STRING8:04X}"
+            with olefile.OleFileIO(data) as ole:
+                if not ole.exists(stream_name):
+                    return None
+                raw = ole.openstream(stream_name).read()
+            return raw.decode(encoding, errors="replace")
+        except Exception:
+            return None
+
+    @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
@@ -257,14 +284,15 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         exact body, HTML, address, and attachment handling used for ``.eml``
         input.
 
-        Every string property access is guarded against ``UnicodeDecodeError``.
-        python-oxmsg <=0.0.2 can pick the wrong codec for 8-bit properties:
-        the body uses the internet code page instead of the message code page
+        Every string property access is guarded against
+        ``UnicodeDecodeError`` (wrong codec) and ``LookupError`` (unknown
+        codec, e.g. ``windows-950``).  python-oxmsg <=0.0.2 can pick the
+        wrong codec for 8-bit body properties
         (`python-oxmsg#5 <https://github.com/scanny/python-oxmsg/issues/5>`_),
-        and any ``PtypString8`` property fails when the message code page is a
-        multi-byte codec (e.g. gb2312, Shift-JIS) and the bytes are invalid
-        under it.  The guards let the backend load whatever it can rather than
-        failing with ``DocumentLoadError``.
+        and some code-page-to-codec mappings produce names Python does not
+        recognise.  When the body cannot be decoded through python-oxmsg, the
+        raw bytes are read from the OLE stream and decoded with the message
+        code page.
         """
         if not _OXMSG_AVAILABLE:
             raise ImportError(_MSG_INSTALL_HINT) from _OXMSG_IMPORT_ERROR
@@ -274,7 +302,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             subject = message.subject or ""
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, LookupError):
             subject = ""
             _log.warning("Could not decode .msg subject")
         if subject:
@@ -282,7 +310,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             sender = message.sender or ""
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, LookupError):
             sender = ""
             _log.warning("Could not decode .msg sender")
         if sender:
@@ -296,7 +324,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 formatted = formataddr(
                     (recipient.name or "", recipient.email_address or "")
                 )
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, LookupError):
                 _log.warning("Could not decode .msg recipient; skipping")
                 continue
             if not formatted:
@@ -320,20 +348,21 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             plain_body = message.body
-        except UnicodeDecodeError:
-            plain_body = None
-            _log.warning(
-                "Could not decode .msg plain-text body (non-Unicode string "
-                "properties decoded with the wrong code page)"
-            )
+        except (UnicodeDecodeError, LookupError):
+            # Recover via OLE stream with the message code page.
+            plain_body = EmailDocumentBackend._recover_msg_body(data, message)
+            if plain_body:
+                _log.warning(
+                    "Recovered .msg body via message code page "
+                    "(python-oxmsg used the wrong codec)"
+                )
+            else:
+                _log.warning("Could not decode .msg plain-text body")
         try:
             html_body = message.html_body
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, LookupError):
             html_body = None
-            _log.warning(
-                "Could not decode .msg HTML body (non-Unicode string "
-                "properties decoded with the wrong code page)"
-            )
+            _log.warning("Could not decode .msg HTML body")
         if plain_body:
             email_message.set_content(plain_body)
             if html_body:
@@ -348,7 +377,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             maintype, _, subtype = mime_type.partition("/")
             try:
                 filename = attachment.file_name
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, LookupError):
                 filename = None
                 _log.warning("Could not decode .msg attachment filename")
             email_message.add_attachment(
