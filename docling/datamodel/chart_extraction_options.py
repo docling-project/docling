@@ -102,7 +102,7 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
         description=("Generate Python code that recreates the chart."),
     )
     scale: float = Field(
-        default=4.0,
+        default=2.0,
         gt=0,
         description=(
             "Render scale for the chart crops sent to the model (1.0 = 72 dpi). "
