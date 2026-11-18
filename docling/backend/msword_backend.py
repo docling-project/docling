@@ -1499,10 +1499,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 pics = self._handle_pictures(drawing_blip, doc)
                 added_elements.extend(pics)
                 # Check for Text after the Image
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
             # Check for VML images (legacy format, e.g., embedded Visio drawings)
@@ -1510,10 +1507,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 vml_pics = self._handle_vml_pictures(vml_images, doc)
                 added_elements.extend(vml_pics)
                 # Check for Text after the VML Image
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te2 = self._handle_text_elements(element, doc)
                     added_elements.extend(te2)
             # Check for DrawingML elements
@@ -1552,10 +1546,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         self._handle_drawingml(doc=doc, drawingml_els=other_els)
 
                 # Always process text in paragraph
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
                     added_elements.extend(te)
             # Check for Text
@@ -1567,6 +1558,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
 
         return doc, added_elements
+
+    @staticmethod
+    def _has_paragraph_text(element: BaseOxmlElement) -> bool:
+        """Include symbols and native equations when checking for paragraph text."""
+        if element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None:
+            return True
+        # A text box has its own paragraphs, which are walked separately.
+        return any(
+            next(node.iterancestors(qn("w:p")), None) is element
+            for node in element.iter(qn("w:sym"), f"{OMML_NS}oMath")
+        )
 
     def _walk_optional_container(
         self, container: BaseOxmlElement | None, doc: DoclingDocument
