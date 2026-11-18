@@ -191,6 +191,16 @@ class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure model using Granite Vision (VLM-based)."""
 
     kind: ClassVar[str] = "granite_vision_table"
+    scale: Annotated[
+        float,
+        Field(
+            gt=0,
+            description=(
+                "Render scale for the table crops sent to the model (1.0 = 72 dpi). "
+                "Small table text needs a higher scale to be read correctly."
+            ),
+        ),
+    ] = 2.0
 
 
 class OcrOptions(BaseOptions):
