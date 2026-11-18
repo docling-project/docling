@@ -183,7 +183,9 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
             raise RuntimeError("Engine not initialized. Call initialize() first.")
 
         images = [item.image.convert("RGB") for item in input_batch]
-        inputs = self._processor(images=images, return_tensors="pt").to(self._device)
+        inputs = self._processor(images=images, return_tensors="pt").to(
+            self._device, self._model.dtype
+        )
 
         with torch.inference_mode():
             outputs = self._model(**inputs)  # type: ignore[operator]
@@ -201,8 +203,8 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
             batch_outputs.append(
                 self._build_output(
                     input_item=input_item,
-                    labels=labels,
-                    scores=scores,
+                    labels=labels.tolist(),
+                    scores=scores.tolist(),
                 )
             )
 

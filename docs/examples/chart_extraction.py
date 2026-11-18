@@ -22,7 +22,8 @@
 # Notes
 # - Setting `do_chart_extraction=True` automatically enables picture classification.
 # - Supported chart types: bar chart, pie chart, line chart.
-# - The default preset uses the local Transformers runtime (granite_vision_v4).
+# - The default preset selects MLX on compatible Apple Silicon systems and
+#   otherwise uses Transformers (granite_vision_v4).
 #   Pass --lmstudio to use the GGUF model served by LM Studio instead.
 
 # %%

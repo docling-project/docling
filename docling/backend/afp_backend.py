@@ -67,6 +67,9 @@ _UNSUPPORTED_CONTENT = {
 
 _TRN_TYPES = {0xDA, 0xDB}
 _BEGIN_LINE_TYPES = {0xD8, 0xD9}
+# Absolute Move Baseline. Producers such as Apache FOP place every line with
+# AMB instead of Begin Line, so a move to a new baseline ends the line too.
+_ABSOLUTE_MOVE_BASELINE_TYPES = {0xD2, 0xD3}
 
 
 class AfpParseError(DocumentLoadError):
@@ -159,10 +162,14 @@ def _iter_structured_fields(content: bytes) -> Iterator[_StructuredField]:
 
 
 def _extract_ptoca_text(data: bytes, encoding: str) -> str:
-    """Extract TRN character strings and BLN line boundaries from PTOCA data."""
+    """Extract TRN character strings and line boundaries from PTOCA data.
+
+    A line ends at BLN, or at an AMB to a baseline other than the current one.
+    """
     chunks: list[str] = []
     offset = 0
     chained = False
+    baseline: int | None = None
 
     while offset < len(data):
         if chained:
@@ -195,9 +202,16 @@ def _extract_ptoca_text(data: bytes, encoding: str) -> str:
         function_type = data[length_offset + 1]
         chained = bool(function_type & 0x01)
         parameters = data[length_offset + 2 : end]
+        new_line = function_type in _BEGIN_LINE_TYPES
         if function_type in _TRN_TYPES:
             chunks.append(parameters.decode(encoding, errors="replace"))
-        elif function_type in _BEGIN_LINE_TYPES and chunks and chunks[-1] != "\n":
+        elif new_line:
+            baseline = None
+        elif function_type in _ABSOLUTE_MOVE_BASELINE_TYPES and len(parameters) >= 2:
+            position = int.from_bytes(parameters[:2], "big", signed=True)
+            new_line = position != baseline
+            baseline = position
+        if new_line and chunks and chunks[-1] != "\n":
             chunks.append("\n")
 
         offset = end

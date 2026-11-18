@@ -55,10 +55,11 @@ class TectonicEngine(RenderEngine):
     )
     _LATEX_GRAPHICS_EXTENSIONS = (".pdf", ".png", ".jpg", ".jpeg", ".eps", ".svg")
 
-    # Best-effort pre-check for untrusted sources: skip rendering when the
-    # source names an absolute or parent-directory path for an input or
-    # graphics file, or uses the TeX primitives that open arbitrary files. It
-    # cannot see names built by macros or every way TeX can open files.
+    # Defense-in-depth pre-check: skip rendering when the source names an
+    # absolute or parent-directory path for an input or graphics file, or uses
+    # the TeX primitives that open arbitrary files. It is not a security
+    # boundary: it cannot see names built by macros or every way TeX can open
+    # files. The backend runs this engine only for input marked as trusted.
     _PATH_ARGUMENT_PATTERN = re.compile(
         r"\\(?P<command>input|include|includegraphics|InputIfFileExists|graphicspath)"
         r"(?![A-Za-z])\*?(?:\s*\[[^\]]*\])?\s*\{*\s*(?P<path>[^{}\s]*)"

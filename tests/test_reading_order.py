@@ -6,6 +6,7 @@ import logging
 import os
 import random
 import sys
+import time
 from typing import Dict, List
 
 import pytest
@@ -553,6 +554,47 @@ def test_caption_between_two_pictures_binds_to_the_nearer_one():
     assert result == {2: [1]}
 
 
+def _predicted_cids(elements: List[PageElement]) -> List[int]:
+    return [
+        e.cid
+        for e in ReadingOrderPredictor().predict_reading_order(page_elements=elements)
+    ]
+
+
+def test_heads_separated_by_full_width_text_are_read_top_down():
+    # Issue #4433, page 4 of OJ L 2025/492. The short "HAS ADOPTED" line cuts the
+    # list off from the centred "CHAPTER I", and the centred "Definitions" never
+    # reaches the short intro line below it, so both start chains of their own.
+    # Ordered by left edge alone, the intro line and its list came before
+    # CHAPTER I, although the body text between the two spans both.
+    # As on the page, more centred headings follow CHAPTER I before the body
+    # text, so only the spanning text can order the two heads.
+    elements = [
+        _box(0, DocItemLabel.LIST_ITEM, 561.8, 570.1, l=67.4, r=482.7),
+        _box(1, DocItemLabel.TEXT, 521.4, 528.8, l=67.4, r=194.5),
+        _box(2, DocItemLabel.SECTION_HEADER, 480.9, 488.4, l=278.0, r=317.3),
+        _box(3, DocItemLabel.SECTION_HEADER, 405.6, 414.2, l=285.4, r=309.8),
+        _box(4, DocItemLabel.TEXT, 322.0, 387.9, l=67.4, r=529.9),
+        _box(5, DocItemLabel.SECTION_HEADER, 263.5, 272.1, l=274.6, r=320.7),
+        _box(6, DocItemLabel.TEXT, 237.4, 245.8, l=67.4, r=202.0),
+        _box(7, DocItemLabel.LIST_ITEM, 190.4, 219.7, l=67.4, r=529.9),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5, 6, 7]
+
+
+def test_heads_in_side_by_side_columns_keep_column_order():
+    # The right column starts higher, and its text sits between the two heads,
+    # but only spans the right one: the left column is still read first.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 700.0, 720.0, l=320.0, r=560.0),
+        _box(1, DocItemLabel.TEXT, 450.0, 680.0, l=320.0, r=560.0),
+        _box(2, DocItemLabel.TEXT, 100.0, 400.0, l=50.0, r=290.0),
+    ]
+
+    assert _predicted_cids(elements) == [2, 0, 1]
+
+
 """
 def test_readingorder_multipage():
 
@@ -886,6 +928,42 @@ def test_horizontal_dilation_preserves_columns_at_graph_branches() -> None:
     assert [element.cid for element in result] == [0, 1, 2, 3, 4, 30]
 
 
+def test_horizontal_dilation_skips_a_widening_that_overlaps_a_neighbour() -> None:
+    # A centred title (0) is the only element above the right column (4). The
+    # left column opens with a heading (1), and 4 starts above the first left
+    # paragraph (2). Widened to the title, 4 overlaps 2. If the dilation keeps
+    # the widened box, 4 reaches over the left column and becomes a parent of
+    # 3, so 4 is read between the two left paragraphs.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 740.0, 760.0, l=240.0, r=360.0),
+        _box(1, DocItemLabel.SECTION_HEADER, 705.0, 720.0, l=60.0, r=220.0),
+        _box(2, DocItemLabel.TEXT, 600.0, 690.0, l=40.0, r=290.0),
+        _box(3, DocItemLabel.TEXT, 500.0, 590.0, l=40.0, r=290.0),
+        _box(4, DocItemLabel.TEXT, 640.0, 730.0, l=310.0, r=560.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4]
+
+
+def test_horizontal_dilation_skips_a_widening_to_a_wide_caption_below() -> None:
+    # A caption (5) below the left column is wider than the column and reaches
+    # into the right one. The right column ends with an indented block (4) that
+    # stops short of the caption, so 1 is the only element directly above 5.
+    # Widened to the caption, 1 overlaps 3. If the dilation keeps the widened
+    # box, 1 reaches under the right column and 2 becomes a parent of it, so 2
+    # is read between the two left paragraphs.
+    elements = [
+        _box(0, DocItemLabel.TEXT, 600.0, 700.0, l=40.0, r=290.0),
+        _box(1, DocItemLabel.TEXT, 480.0, 590.0, l=40.0, r=290.0),
+        _box(2, DocItemLabel.TEXT, 620.0, 700.0, l=310.0, r=560.0),
+        _box(3, DocItemLabel.TEXT, 540.0, 610.0, l=310.0, r=560.0),
+        _box(4, DocItemLabel.TEXT, 450.0, 530.0, l=350.0, r=560.0),
+        _box(5, DocItemLabel.CAPTION, 420.0, 440.0, l=40.0, r=340.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5]
+
+
 def test_graphics_continue_left_to_right_only_across_an_empty_gap() -> None:
     from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,
@@ -1156,3 +1234,92 @@ def test_upward_walk_stops_on_up_map_cycle() -> None:
     top = ReadingOrderPredictor()._depth_first_search_upwards(0, [False, False], state)
 
     assert top == 1
+
+
+def _thin_rects(count: int, seed: int = 0) -> list[BoundingBox]:
+    """Many tiny thin rectangles, like seats on a venue plan.
+
+    Each is thin enough to become a separator candidate but far too short
+    to ever be accepted, mirroring docling-project/docling#4632.
+    """
+    rng = random.Random(seed)
+    boxes = []
+    for _ in range(count):
+        w = rng.uniform(8, 30)
+        h = rng.uniform(1.0, 3.0)
+        x = rng.uniform(0, _DUMMY_PAGE_SIZE.width - w)
+        y = rng.uniform(150, 650)
+        boxes.append(
+            BoundingBox(
+                l=x,
+                r=x + w,
+                b=y,
+                t=y + h,
+                coord_origin=CoordOrigin.BOTTOMLEFT,
+            )
+        )
+    return boxes
+
+
+def test_build_page_separators_skips_degenerate_candidate_counts() -> None:
+    # https://github.com/docling-project/docling/issues/4632 — a page whose
+    # vector geometry yields tens of thousands of tiny candidates sent the
+    # quadratic candidate merge into an unbounded run. Above the candidate
+    # cap the page is skipped quickly instead.
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    boxes = _thin_rects(6000)
+
+    start = time.monotonic()
+    separators = build_page_separators(
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        page_elements=elements,
+        shape_lines=None,
+        shape_bounding_boxes=boxes,
+    )
+    elapsed = time.monotonic() - start
+
+    assert separators == []
+    assert elapsed < 10
+
+
+def test_build_page_separators_aborts_on_exhausted_time_budget() -> None:
+    # A budget that is already exhausted must skip separator extraction
+    # immediately instead of spending more time on an optional refinement.
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    rule = _hline(40, 560, 400)
+
+    for time_limit_s in (0.0, -5.0):
+        separators = build_page_separators(
+            page_no=0,
+            page_size=_DUMMY_PAGE_SIZE,
+            page_elements=elements,
+            shape_lines=[rule],
+            shape_bounding_boxes=None,
+            time_limit_s=time_limit_s,
+        )
+        assert separators == []
+
+
+def test_build_page_separators_merges_fragments_below_candidate_cap() -> None:
+    # Short fragments must still merge into long rules when the candidate
+    # count stays below the degenerate-geometry cap.
+    elements = [_text(0, 700, 760, 40, 560), _text(1, 40, 100, 40, 560)]
+    lines = []
+    for row in range(5):
+        y = 200 + row * 100
+        x = 40.0
+        while x < 560:
+            lines.append(_hline(x, x + 6, y))
+            x += 6.1
+
+    separators = build_page_separators(
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        page_elements=elements,
+        shape_lines=lines,
+        shape_bounding_boxes=None,
+    )
+
+    assert len(separators) == 5
+    assert all(s.orientation == "horizontal" for s in separators)

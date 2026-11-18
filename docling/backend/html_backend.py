@@ -56,13 +56,14 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
     MAX_COLSPAN,
@@ -79,11 +80,13 @@ from docling.utils.code_language import (
     detect_code_language,
     normalize_code_language,
 )
+from docling.utils.image_utils import check_image_pixels
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.dammit import EncodingDetector
     from bs4.element import PreformattedString
 
     _BS4_AVAILABLE = True
@@ -123,6 +126,86 @@ def _warn_headers_without_origin() -> None:
 # Sentinel character for explicit line breaks from <br> tags
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
+
+# The quotation marks that the default style sheet of a browser gives <q>
+# (`quotes: auto`), from the CLDR data of the language: the outer pair, then
+# the pair for a quotation nested in it. The key is the primary language subtag.
+_QuotationMarks = tuple[tuple[str, str], tuple[str, str]]
+_Q_QUOTATION_MARKS_EN: Final[_QuotationMarks] = (
+    ("\u201c", "\u201d"),
+    ("\u2018", "\u2019"),
+)
+_Q_QUOTATION_MARKS_BY_LANG: Final[dict[str, _QuotationMarks]] = {
+    "cs": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "de": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "el": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "en": _Q_QUOTATION_MARKS_EN,
+    "es": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "fr": (("\u00ab", "\u00bb"), ("\u00ab", "\u00bb")),
+    "it": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "ja": (("\u300c", "\u300d"), ("\u300e", "\u300f")),
+    "nl": (("\u2018", "\u2019"), ("\u201c", "\u201d")),
+    "pl": (("\u201e", "\u201d"), ("\u00ab", "\u00bb")),
+    "pt": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+    "ru": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "sv": (("\u201d", "\u201d"), ("\u2019", "\u2019")),
+    "uk": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "zh": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+}
+
+
+def _q_quotation_marks(q: Tag) -> _QuotationMarks:
+    """Return the quotation marks for the language of a <q> element.
+
+    The language comes from the nearest `lang` (or `xml:lang`, for XHTML)
+    attribute on the element or an ancestor. An unknown or missing language
+    gets English marks.
+    """
+    for element in (q, *q.parents):
+        lang = element.get("lang", element.get("xml:lang"))
+        if lang is not None:
+            primary = str(lang).strip().lower().split("-")[0]
+            return _Q_QUOTATION_MARKS_BY_LANG.get(primary, _Q_QUOTATION_MARKS_EN)
+    return _Q_QUOTATION_MARKS_EN
+
+
+def _parse_html(markup: bytes) -> BeautifulSoup:
+    """Parse HTML, reading bytes that declare no encoding as UTF-8 when they are UTF-8.
+
+    When the bytes declare no encoding (no ``<meta charset>``), BeautifulSoup asks
+    a statistical detector first and tries UTF-8 last. On short text the detector
+    can pick another encoding, so valid UTF-8 comes out as garbled text. UTF-8 is
+    the likely encoding of such a page. Bytes that are not valid UTF-8 still go to
+    the detector. So do bytes with a NUL byte, such as UTF-16 text, which can be
+    valid UTF-8 only by accident.
+    """
+    encoding: Optional[str] = None
+    if (
+        b"\x00" not in markup
+        and EncodingDetector.find_declared_encoding(markup, is_html=True) is None
+    ):
+        try:
+            markup.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+        else:
+            encoding = "utf-8"
+    return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
+
+
+def _resolve_line_breaks(text: str) -> str:
+    """Replace the sentinels of <br> tags with a line break.
+
+    For text that is one paragraph (heading, caption, list item): consecutive <br>
+    tags give one line break. Never trims: it also runs on single inline runs, whose
+    edge whitespace is the run boundary. Callers trim the block edges themselves.
+    """
+    return re.sub(rf" *{_BR_SENTINEL}[ {_BR_SENTINEL}]*", "\n", text)
+
+
+# Any run of whitespace in normal HTML flow renders as a single space. The sentinel is not
+# whitespace, so an explicit <br> survives the collapse.
+_WHITESPACE_RUN: Final = re.compile(r"\s+")
 
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
@@ -193,6 +276,9 @@ _PARA_BREAKERS = {
     "td",
 }
 
+# Same names as a list, the form bs4 documents for matching several tag names.
+_PARA_BREAKER_NAMES: Final = sorted(_PARA_BREAKERS)
+
 # Elements whose end tag may be omitted, mapped to (ancestors that a new
 # element implicitly closes, ancestors that stop the search).
 _IMPLIED_END_TAGS: Final = {
@@ -203,6 +289,9 @@ _IMPLIED_END_TAGS: Final = {
     "th": ({"td", "th"}, {"tr", "table"}),
     "tr": ({"tr", "td", "th"}, {"table", "thead", "tbody", "tfoot"}),
 }
+
+# HTML table row-group elements that wrap <tr> children.
+_TABLE_SECTION_TAGS: Final = frozenset({"thead", "tbody", "tfoot"})
 
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
@@ -231,6 +320,39 @@ _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
+# A CSS string value of `list-style-type` replaces the rendered bullet or number
+# of a list item, e.g. `<li style="list-style-type: '3. ';">`.
+_LIST_STYLE_STRING_RE: Final = re.compile(
+    r"list-style-type\s*:\s*(?P<quote>['\"])(?P<marker>.*?)(?P=quote)", re.IGNORECASE
+)
+# The `start` attribute of an `<ol>`, by the HTML rules for parsing integers:
+# leading ASCII whitespace, an optional plus sign, and ASCII digits.
+_OL_START_RE: Final = re.compile(r"[ \t\n\f\r]*\+?(?P<digits>[0-9]+)")
+_OL_START_MAX: Final = 2**31 - 1
+
+
+def _parse_ol_start(value: str) -> Optional[int]:
+    """Parse the `start` attribute of an `<ol>`.
+
+    The value follows the HTML rules for parsing integers: only ASCII digits are
+    accepted and any text after the digits is ignored, e.g. `"3."` gives 3.
+    Negative numbers are not supported as list markers.
+
+    Args:
+        value: The value of the `start` attribute.
+
+    Returns:
+        The start number, or `None` if the value is not a valid start number or
+        exceeds the 32-bit integer range, as in browsers.
+    """
+    match = _OL_START_RE.match(value)
+    if match is None:
+        return None
+    digits = match.group("digits").lstrip("0")
+    if len(digits) > len(str(_OL_START_MAX)):
+        return None
+    start = int(digits or "0")
+    return start if start <= _OL_START_MAX else None
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -340,30 +462,24 @@ class AnnotatedText(BaseModel):
 
 class AnnotatedTextList(list):
     def to_single_text_element(self) -> AnnotatedText:
-        current_h = None
         current_text = ""
-        current_f = None
         current_code = False
         current_source_tag_id = None
+        # The single element can only keep a formatting or a hyperlink that
+        # applies to all of its text, e.g. not the link of one word in a heading.
+        text_runs = [at for at in self if at.text.strip()]
+        current_f = text_runs[0].formatting if text_runs else None
+        if any(at.formatting != current_f for at in text_runs):
+            current_f = None
+        current_h = text_runs[0].hyperlink if text_runs else None
+        if any(at.hyperlink != current_h for at in text_runs):
+            current_h = None
         for at in self:
             t = at.text
-            h = at.hyperlink
-            f = at.formatting
             c = at.code
             s = at.source_tag_id
-            current_text += t.strip() + " "
-            if f is not None and current_f is None:
-                current_f = f
-            elif f is not None and current_f is not None and f != current_f:
-                _log.warning(
-                    f"Clashing formatting: '{f}' and '{current_f}'! Chose '{current_f}'"
-                )
-            if h is not None and current_h is None:
-                current_h = h
-            elif h is not None and current_h is not None and h != current_h:
-                _log.warning(
-                    f"Clashing hyperlinks: '{h}' and '{current_h}'! Chose '{current_h}'"
-                )
+            # Boundary whitespace is already in the run text: concatenate it as it is.
+            current_text += t
             if s is not None and current_source_tag_id is None:
                 current_source_tag_id = s
             elif (
@@ -379,7 +495,7 @@ class AnnotatedTextList(list):
             current_code = c if c else current_code
 
         return AnnotatedText(
-            text=current_text.strip(),
+            text=_resolve_line_breaks(current_text).strip(),
             hyperlink=current_h,
             formatting=current_f,
             code=current_code,
@@ -395,7 +511,6 @@ class AnnotatedTextList(list):
         formatting = self[0].formatting
         code = self[0].code
         source_tag_id = self[0].source_tag_id
-        last_elm = text
         for i in range(1, len(self)):
             if (
                 hyperlink == self[i].hyperlink
@@ -403,11 +518,9 @@ class AnnotatedTextList(list):
                 and code == self[i].code
                 and source_tag_id == self[i].source_tag_id
             ):
-                sep = " "
-                if not self[i].text.strip() or not last_elm.strip():
-                    sep = ""
-                text += sep + self[i].text
-                last_elm = self[i].text
+                # Same-format neighbours merge faithfully: any whitespace between them is
+                # already in the run text, so a separator here would duplicate it.
+                text += self[i].text
             else:
                 simplified.append(
                     AnnotatedText(
@@ -419,7 +532,6 @@ class AnnotatedTextList(list):
                     )
                 )
                 text = self[i].text
-                last_elm = text
                 hyperlink = self[i].hyperlink
                 formatting = self[i].formatting
                 code = self[i].code
@@ -435,6 +547,47 @@ class AnnotatedTextList(list):
                 )
             )
         return simplified
+
+    def normalize_whitespace(self) -> AnnotatedTextList:
+        """Collapse boundary whitespace across runs and trim the block edge.
+
+        Whitespace at a run boundary collapses to exactly one space. That covers the
+        whitespace in either run and in a whitespace-only run between them. The left run
+        carries the space, so it sits outside the right run's formatting. The block's
+        outer edges are trimmed once, here, so no downstream emitter needs to strip
+        anything. Do not use it for preformatted content, where every space and newline is
+        significant.
+
+        Returns:
+            A new list with the normalized runs.
+        """
+        kept: AnnotatedTextList = AnnotatedTextList()
+        space_pending = False
+        for at in self:
+            if not at.text:
+                continue
+            core = at.text.strip()
+            if not core:
+                # A whitespace-only run contributes a boundary, nothing else.
+                space_pending = True
+                continue
+            if (space_pending or at.text[:1].isspace()) and kept:
+                # A code run is wrapped in `` ` `` downstream, and the serializers hoist
+                # whitespace out of emphasis but not out of a code delimiter. Keep the boundary
+                # space outside both delimiters.
+                if not kept[-1].code:
+                    kept[-1] = kept[-1].model_copy(update={"text": kept[-1].text + " "})
+                elif not at.code:
+                    core = " " + core
+                else:
+                    # Both sides are code: either delimiter would swallow it (`a`` b`), so the
+                    # boundary becomes an unformatted run of its own between them.
+                    kept.append(AnnotatedText(text=" ", source_tag_id=at.source_tag_id))
+            # A trailing space is only significant if something follows; the loop ending here
+            # leaves it dropped, which is the block-edge trim.
+            space_pending = at.text[-1:].isspace()
+            kept.append(at.model_copy(update={"text": core}))
+        return kept
 
     def split_by_newline(self) -> list[Self]:
         """Split text elements on multiple consecutive line breaks (from <br> tags).
@@ -500,6 +653,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             enable_remote_fetch=options.enable_remote_fetch,
             max_image_data_base64_bytes=options.max_image_data_base64_bytes,
             max_remote_image_bytes=options.max_remote_image_bytes,
+            max_image_pixels=options.max_image_pixels,
             max_redirects=options.max_redirects,
             headers=options.headers,
             header_origins=self._get_header_origins(options, configured_base_path),
@@ -527,6 +681,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._tag_name_by_docling_id_cache: dict[str, str] = {}
         self._generated_html_id_counter: int = 0
         self._render_visibility_cache: dict[int, bool] = {}
+        self._captioned_figure_ids: set[int] = set()
 
         try:
             raw = (
@@ -545,7 +700,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._mhtml_resources = resources
                 self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
-            self.soup = BeautifulSoup(raw, "html.parser")
+            self.soup = _parse_html(raw)
         except DocumentLoadError:
             raise
         except Exception as e:
@@ -916,8 +1071,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 orig=title_text,
                 content_layer=ContentLayer.FURNITURE,
             )
-        # remove script and style tags
-        for tag in self.soup(["script", "noscript", "style"]):
+        # remove the tags whose content is never rendered: script and style hold
+        # metadata, noscript only applies when scripting is disabled, and the
+        # content of a template is an inert fragment until a script clones it. A
+        # template that declares a shadow root with `shadowrootmode` is the
+        # exception: the parser attaches its content to the host element and
+        # browsers render it. Any other value leaves the template inert, and the
+        # old `shadowroot` attribute is inert in current browsers.
+        for tag in self.soup(["script", "noscript", "style", "template"]):
+            if tag.decomposed:
+                # A template earlier in the list already removed this tag.
+                continue
+            if tag.name == "template" and str(
+                tag.get("shadowrootmode", "")
+            ).lower() in {
+                "open",
+                "closed",
+            }:
+                continue
             tag.decompose()
         # remove any hidden tag
         for tag in self.soup(hidden=True):
@@ -935,14 +1106,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString(_BR_SENTINEL))
 
+        # A browser renders the quotation marks of <q> from CSS (open-quote and
+        # close-quote), so the markup does not hold them. Add them as text.
+        for q in content("q"):
+            marks = _q_quotation_marks(q)
+            depth = min(len(q.find_parents("q")), len(marks) - 1)
+            open_mark, close_mark = marks[depth]
+            q.insert(0, NavigableString(open_mark))
+            q.append(NavigableString(close_mark))
+
         # Furniture before the first heading rule, except for headers in tables and lists
+        self._render_visibility_cache.clear()
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Skip headers that become cell or list item text: they never switch the
-        # layer back to body
+        # Skip headers that become cell or list item text, or that the walk skips
+        # as hidden: they never switch the layer back to body. The walk does not
+        # check `content` itself or its ancestors, so stop there.
         clean_headers = [
-            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+            h
+            for h in all_headers
+            if not self._is_header_in_cell_or_item(h)
+            and not any(
+                self._is_suppressed_tag(tag)
+                for tag in takewhile(lambda t: t is not content, (h, *h.parents))
+            )
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -955,7 +1143,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         # reset context
         self.ctx = _Context()
-        self._render_visibility_cache.clear()
+        self._captioned_figure_ids.clear()
         self._walk(content, doc)
         return doc
 
@@ -1088,7 +1276,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""
-        return self._raw_html_bytes.decode("utf-8", errors="replace")
+        # A browser reads the bytes with the encoding the document declares
+        # (``<meta charset>`` or an HTTP header), so the stream we hand to
+        # ``page.set_content`` has to be decoded the same way. Reuse the
+        # encoding BeautifulSoup already detected for these bytes instead of
+        # assuming UTF-8, which garbles every non-ASCII character of a legacy
+        # encoded stream.
+        encoding = (
+            self.soup.original_encoding if self.soup is not None else None
+        ) or "utf-8"
+        return self._raw_html_bytes.decode(encoding, errors="replace")
 
     def _inject_base_tag(self, html_text: str, base_url: Optional[str]) -> str:
         if not base_url:
@@ -1660,24 +1857,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _compact_adjacent_single_char_parts(
         self, parts: AnnotatedTextList
     ) -> list[tuple[AnnotatedText, list[str]]]:
+        def single_char(part: AnnotatedText) -> Optional[str]:
+            """Return the lone character of *part*, or None if it cannot be compacted.
+
+            A run carrying edge whitespace is a word boundary in rendered span soup, so
+            compacting across it would glue words together. Only bare characters qualify.
+            """
+            cleaned = HTMLDocumentBackend._clean_unicode(part.text)
+            return cleaned if len(cleaned) == 1 and not cleaned.isspace() else None
+
         compacted: list[tuple[AnnotatedText, list[str]]] = []
         idx = 0
         while idx < len(parts):
             current = parts[idx]
-            current_text = HTMLDocumentBackend._clean_unicode(current.text.strip())
+            current_text = single_char(current)
 
-            if len(current_text) == 1 and current.source_tag_id is not None:
+            if current_text is not None and current.source_tag_id is not None:
                 run_chars: list[str] = []
                 run_source_ids: list[str] = []
                 prev_source_id: Optional[str] = None
                 run_end = idx
                 while run_end < len(parts):
                     candidate = parts[run_end]
-                    candidate_text = HTMLDocumentBackend._clean_unicode(
-                        candidate.text.strip()
-                    )
+                    candidate_text = single_char(candidate)
                     if (
-                        len(candidate_text) != 1
+                        candidate_text is None
                         or candidate.hyperlink != current.hyperlink
                         or candidate.formatting != current.formatting
                         or candidate.code != current.code
@@ -1804,7 +2008,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     new_nodes.remove(current_p)
             current_p = None
 
-        paragraphs = soup.select(f"p:has({','.join(tag for tag in _PARA_BREAKERS)})")
+        paragraphs = [
+            p
+            for p in soup.find_all("p")
+            if isinstance(p, Tag) and p.find(_PARA_BREAKER_NAMES) is not None
+        ]
 
         for p in paragraphs:
             parent = p.parent
@@ -1851,7 +2059,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for n in reversed(new_nodes):
                 parent.insert(idx, n)
 
-    def _resolve_relative_path(self, loc: str) -> str:
+    def _resolve_relative_path(self, loc: str, *, decode_url_path: bool = False) -> str:
         if self._mhtml_resources is not None:
             archive_location = loc.strip()
             if archive_location.lower().startswith("cid:"):
@@ -1865,7 +2073,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return archive_location
             if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
                 return archive_location
-        return self._image_loader.resolve_relative_path(loc, self.base_path)
+        return self._image_loader.resolve_relative_path(
+            loc,
+            self.base_path,
+            decode_url_path=decode_url_path and self._mhtml_resources is None,
+        )
 
     @staticmethod
     def group_cell_elements(
@@ -1913,7 +2125,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         A table cell can hold rich content and be parsed with a Docling RichTableCell.
         However, this requires walking through the content elements and creating
         Docling node items. If the cell holds only plain text, the parsing is simpler
-        and using a TableCell is prefered.
+        and using a TableCell is preferred.
 
         Args:
             table_cell: The HTML tag representing a table cell.
@@ -1925,6 +2137,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         children = table_cell.find_all(recursive=True)  # all descendants of type Tag
         has_input = any(child.name == "input" for child in children)
+        has_image = any(child.name == "img" for child in children)
         has_custom_checkbox = any(
             self._is_custom_checkbox_tag(child) for child in children
         )
@@ -1951,9 +2164,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             ]
             is_rich = len(content) > 1
         else:
+            # Normalized, or the inter-tag whitespace of `<td>\n<p>x</p>\n</td>` counts as two
+            # extra runs and the cell is misclassified as rich.
             annotations = self._extract_text_and_hyperlink_recursively(
                 table_cell, find_parent_annotation=True
-            )
+            ).normalize_whitespace()
             if not annotations:
                 is_rich = bool(
                     item for item in children if item.name in {"img", "input"}
@@ -1965,6 +2180,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     or bool(anno.hyperlink)
                     or anno.code
                     or has_input
+                    or has_image
                     or has_custom_checkbox
                 )
 
@@ -1978,8 +2194,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         num_rows: int,
         num_cols: int,
     ) -> Optional[TableData]:
-        for t in cast(list[Tag], element.find_all(["thead", "tbody"], recursive=False)):
-            t.unwrap()
+        self._unwrap_table_sections(element)
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
@@ -2075,6 +2290,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
                             grid[row_idx + r][col_idx + c] = text
 
+                is_col_header, is_row_header = self._get_cell_header_flags(
+                    html_cell, col_header, row_header
+                )
                 if rich_table_cell:
                     rich_cell = RichTableCell(
                         text=text,
@@ -2085,9 +2303,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
@@ -2102,9 +2319,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
@@ -2157,6 +2373,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return
 
             for annotated_text_list in parts:
+                # One normalization per block: resolves boundaries across runs and trims the
+                # block edge, so nothing below strips individual runs.
+                annotated_text_list = annotated_text_list.normalize_whitespace()
                 compacted_parts = self._compact_adjacent_single_char_parts(
                     annotated_text_list
                 )
@@ -2169,8 +2388,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     annotated_text_list, doc, force=force_inline_group
                 ) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_parts:
-                        if seg := annotated_text.text.strip():
-                            seg_clean = HTMLDocumentBackend._clean_unicode(seg)
+                        # Keep whitespace-only runs: normalization already trimmed the block
+                        # edges, so one that survives is a significant boundary (it carries the
+                        # space between two adjacent code spans).
+                        if annotated_text.text:
+                            seg_clean = HTMLDocumentBackend._clean_unicode(
+                                annotated_text.text
+                            )
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -2180,7 +2404,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code2 = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
-                                    orig=seg,
+                                    orig=annotated_text.text,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2198,7 +2422,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
-                                    orig=seg,
+                                    orig=annotated_text.text,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2411,12 +2635,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return AnnotatedTextList()
 
             if keep_newlines:
-                text: str = item.strip()
+                # Preformatted content: every space and newline is significant, so take it
+                # verbatim.
+                text: str = str(item)
             else:
-                # For normal content, collapse newlines to spaces (HTML spec behavior)
-                # but preserve the sentinel character for explicit <br> tags
-                text = item.replace("\n", " ").replace("\r", " ")
-                text = " ".join(text.split())
+                # For normal content, collapse runs of whitespace to a single space (HTML spec
+                # behavior) but preserve the sentinel character for explicit <br> tags.
+                # Collapse only, never trim: the edge whitespace of a run is the run boundary,
+                # which tells `H<sub>2</sub>O` from `x<sup>2</sup> + y`.
+                text = _WHITESPACE_RUN.sub(" ", item)
 
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
@@ -2455,6 +2682,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
+        # Indexes in `result` where a block child starts or ends: a word boundary.
+        block_edges: set[int] = set()
         if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
@@ -2473,10 +2702,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Recursively get the child's text content
-                    result.extend(
-                        self._extract_text_and_hyperlink_recursively(
-                            child, ignore_list, keep_newlines=keep_newlines
+                    child_result = self._extract_text_and_hyperlink_recursively(
+                        child, ignore_list, keep_newlines=keep_newlines
+                    )
+                    if isinstance(child, Tag) and child.name in _PARA_BREAKERS:
+                        block_edges.update(
+                            (len(result), len(result) + len(child_result))
                         )
+                    result.extend(child_result)
+        if not keep_newlines:
+            # `<li>a<p>para</p>` is "a para": keep the boundary unless the source already
+            # has whitespace there (normalize_whitespace() moves it out of code runs).
+            for i in sorted(block_edges):
+                if (
+                    0 < i < len(result)
+                    and not result[i - 1].text[-1:].isspace()
+                    and not result[i].text[:1].isspace()
+                ):
+                    result[i - 1] = result[i - 1].model_copy(
+                        update={"text": result[i - 1].text + " "}
                     )
         return result
 
@@ -2708,7 +2952,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         annotated_text_list = self._extract_text_and_hyperlink_recursively(
             tag, find_parent_annotation=True
         )
-        annotated_text = annotated_text_list.to_single_text_element()
+        annotated_text = (
+            annotated_text_list.normalize_whitespace().to_single_text_element()
+        )
         text_clean = HTMLDocumentBackend._clean_unicode(annotated_text.text)
         prov = self._make_text_prov(
             text=text_clean,
@@ -2863,10 +3109,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         parts = self._extract_text_and_hyperlink_recursively(
             tag, ignore_list=True, find_parent_annotation=True
         )
-        min_parts = parts.simplify_text_elements()
-        item_text = re.sub(
-            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-        ).strip()
+        min_parts = parts.simplify_text_elements().normalize_whitespace()
+        item_text = _resolve_line_breaks("".join([el.text for el in min_parts])).strip()
 
         if not item_text:
             return None
@@ -2887,8 +3131,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             with self._use_inline_group(min_parts, doc):
                 compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
-                for annotated_text, source_tag_ids in compacted_parts:
-                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                # Already normalized as one block above -- no per-run strip. A <br> is not
+                # whitespace there, so it can still sit at an edge of the item: trim it.
+                text_parts = [
+                    _resolve_line_breaks(annotated_text.text)
+                    for annotated_text, _ in compacted_parts
+                ]
+                non_blank = [i for i, text in enumerate(text_parts) if text.strip()]
+                first, last = non_blank[0], non_blank[-1]
+                text_parts[first] = text_parts[first].lstrip()
+                text_parts[last] = text_parts[last].rstrip()
+                for i, (annotated_text, source_tag_ids) in enumerate(compacted_parts):
+                    text_part = text_parts[i]
+                    # A run that only held <br> tags stays as a "\n" run between its
+                    # neighbours, so they do not merge (`**Bold***italic*`).
+                    if not text_part or not first <= i <= last:
+                        continue
                     clean_text = HTMLDocumentBackend._clean_unicode(text_part)
 
                     # Apply extra formatting if provided
@@ -2933,7 +3191,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             # Simple content - single text element
             annotated_text = min_parts[0]
-            text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+            text = _resolve_line_breaks(
+                re.sub(r"\s+|\n+", " ", annotated_text.text)
+            ).strip()
             clean_text = HTMLDocumentBackend._clean_unicode(text)
             prov = self._make_text_prov(
                 text=clean_text,
@@ -3009,8 +3269,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             name = "description list"
         elif is_ordered:
             start_attr = tag.get("start")
-            if isinstance(start_attr, str) and start_attr.isnumeric():
-                start = int(start_attr)
+            if isinstance(start_attr, str):
+                start = _parse_ol_start(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
@@ -3160,8 +3420,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         start + list_item_counter if start is not None else None
                     )
 
-                # 1) determine the marker using the counter
-                marker: str = (
+                # 1) determine the marker: an explicit marker set on the item
+                # wins, otherwise use the counter
+                marker: str = self._get_list_style_marker(li) or (
                     f"{start + list_item_counter}."
                     if is_ordered and start is not None
                     else ""
@@ -3257,9 +3518,61 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return added_refs
 
     @staticmethod
-    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
-        for t in cast(list[Tag], tag.find_all(["thead", "tbody"], recursive=False)):
+    def _get_list_style_marker(li: Tag) -> str:
+        """Return the marker that an inline string `list-style-type` sets on `li`.
+
+        Docling's HTML export writes the original marker of a list item this way,
+        so reading it back keeps markers such as `3.` when the HTML is converted
+        again (the Markdown backend does this for files with HTML blocks).
+        """
+        style = li.get("style")
+        if not isinstance(style, str):
+            return ""
+        match = _LIST_STYLE_STRING_RE.search(style)
+        return match.group("marker").strip() if match else ""
+
+    @staticmethod
+    def _get_cell_header_flags(
+        html_cell: Tag, col_header: bool, row_header: bool
+    ) -> tuple[bool, bool]:
+        """Return the `column_header` and `row_header` flags of a table cell.
+
+        The `scope` attribute of a `<th>` names the cells that it is a header
+        for (HTML Standard, the th element): `col` and `colgroup` make it a
+        column header, `row` and `rowgroup` a row header. Without a valid
+        `scope`, the flags come from the cells of the row: `col_header` is set
+        when the row has no `<td>`, `row_header` when the row only has `<th>`
+        cells that span more than one row.
+        """
+        if html_cell.name == "th":
+            scope = html_cell.get("scope")
+            if isinstance(scope, str):
+                scope = scope.lower()
+                if scope in ("col", "colgroup"):
+                    return True, False
+                if scope in ("row", "rowgroup"):
+                    return False, True
+        return (
+            col_header and not row_header,
+            row_header or ((not col_header) and html_cell.name == "th"),
+        )
+
+    @staticmethod
+    def _unwrap_table_sections(tag: Tag) -> None:
+        """Lift the rows of a table's row groups into the table itself.
+
+        The HTML table model places tfoot rows after all other row groups,
+        wherever the tfoot element appears in the source (HTML 4 required it
+        before tbody), so tfoot elements move to the end before unwrapping.
+        """
+        for t in cast(list[Tag], tag.find_all("tfoot", recursive=False)):
+            tag.append(t.extract())
+        for t in cast(list[Tag], tag.find_all(_TABLE_SECTION_TAGS, recursive=False)):
             t.unwrap()
+
+    @staticmethod
+    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
+        HTMLDocumentBackend._unwrap_table_sections(tag)
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
         row_cell_spans: list[list[tuple[int, int]]] = []
@@ -3298,7 +3611,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             # 3. If no image was produced, manually handle the <figcaption>
             # and link it to the first item (e.g., a table).
-            if not any_image_produced:
+            if not any_image_produced and id(tag) not in self._captioned_figure_ids:
                 caption_tag = tag.find("figcaption", recursive=False)
                 if isinstance(caption_tag, Tag):
                     # Emit the caption as a standalone item under the current parent
@@ -3323,11 +3636,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             annotated_texts: AnnotatedTextList = text_list.simplify_text_elements()
             for part in annotated_texts.split_by_newline():
+                part = part.normalize_whitespace()
                 compacted_part = self._compact_adjacent_single_char_parts(part)
                 with self._use_inline_group(part, doc) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_part:
-                        if seg := annotated_text.text.strip():
-                            seg_clean = HTMLDocumentBackend._clean_unicode(seg)
+                        # See above: a surviving whitespace-only run is a significant boundary.
+                        if annotated_text.text:
+                            seg_clean = HTMLDocumentBackend._clean_unicode(
+                                annotated_text.text
+                            )
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -3337,7 +3654,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
-                                    orig=seg,
+                                    orig=annotated_text.text,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -3355,7 +3672,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
-                                    orig=seg,
+                                    orig=annotated_text.text,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -3434,11 +3751,41 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_list = self._extract_text_and_hyperlink_recursively(
                 tag, find_parent_annotation=True, keep_newlines=True
             )
-            annotated_texts = text_list.simplify_text_elements()
+            # This backend maps <pre> to code, so the code mark of inner <code> tags
+            # adds nothing here; clear it so that it does not split the block into runs.
+            annotated_texts = AnnotatedTextList(
+                part.model_copy(update={"code": False}) for part in text_list
+            ).simplify_text_elements()
+            # Preformatted content: every interior space is significant, so only the block
+            # edges are trimmed (HTML drops the newline right after `<pre>`).
+            if annotated_texts:
+                head = annotated_texts[0]
+                annotated_texts[0] = head.model_copy(
+                    update={"text": head.text.lstrip("\n")}
+                )
+                tail = annotated_texts[-1]
+                annotated_texts[-1] = tail.model_copy(
+                    update={"text": tail.text.rstrip()}
+                )
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
-                for annotated_text in annotated_texts:
-                    text_orig = annotated_text.text.strip()
+                for i, annotated_text in enumerate(annotated_texts):
+                    # In preformatted text, each <br> is a newline. No strip: the block
+                    # edges are trimmed above and every interior space is significant.
+                    text_orig = annotated_text.text.replace(_BR_SENTINEL, "\n")
+                    if not text_orig:
+                        continue
+                    if _BR_SENTINEL in annotated_text.text and not text_orig.strip():
+                        # The run only held <br> tags. Between two runs it is a line break,
+                        # as a plain run: whitespace never goes inside a code run.
+                        if 0 < i < len(annotated_texts) - 1:
+                            doc.add_text(
+                                parent=self.parents[self.level],
+                                label=DocItemLabel.TEXT,
+                                text="\n",
+                                content_layer=self.content_layer,
+                            )
+                        continue
                     text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
                         text=text_clean,
@@ -3861,7 +4208,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> str:
         def _extract(node: PageElement) -> list[str]:
             if isinstance(node, NavigableString):
-                return [str(node)]
+                return [str(node).replace(_BR_SENTINEL, "\n")]
             if isinstance(node, Tag):
                 if id(node) in excluded_obj_ids:
                     return []
@@ -5104,7 +5451,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         cap_list = self._extract_text_and_hyperlink_recursively(
             caption_tag, find_parent_annotation=True
         )
-        cap_anno = cap_list.to_single_text_element()
+        cap_anno = cap_list.normalize_whitespace().to_single_text_element()
         if not cap_anno.text or not cap_anno.text.strip():
             return None
 
@@ -5146,24 +5493,45 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
             caption_prov_tag = img_tag
 
-        if isinstance(figure, Tag):
+        # The first image that produces a picture claims the <figcaption>, so a
+        # figure with several images keeps exactly one caption. Images that are
+        # not rendered (for example a hidden first image) claim nothing.
+        if isinstance(figure, Tag) and id(figure) not in self._captioned_figure_ids:
             caption_tag = figure.find("figcaption", recursive=False)
             if isinstance(caption_tag, Tag):
                 caption = self._extract_text_and_hyperlink_recursively(
                     caption_tag, find_parent_annotation=True
                 )
                 caption_prov_tag = caption_tag
+                self._captioned_figure_ids.add(id(figure))
         if not caption and img_tag.get("alt"):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
 
-        caption_anno_text = caption.to_single_text_element()
+        src_loc: str = self._get_attr_as_string(img_tag, "src")
+        img_ref: Optional[ImageRef] = None
+        if cast(HTMLBackendOptions, self.options).fetch_images and src_loc:
+            try:
+                src_loc = self._resolve_relative_path(src_loc, decode_url_path=True)
+            except ValueError as e:
+                # The source is not loaded, but the picture is kept, as for an
+                # image file that cannot be read.
+                warnings.warn(f"Could not process an image from {src_loc}: {e}")
+            else:
+                img_ref = self._create_image_ref(src_loc)
 
-        caption_item: Optional[TextItem] = None
+        docling_pic = doc.add_picture(
+            image=img_ref,
+            parent=parent,
+            content_layer=self.content_layer,
+            prov=self._make_prov(text="", tag=img_tag),
+        )
+
+        # Add the caption as a child of its picture, as the PDF pipeline does,
+        # so that it stays with the picture in its section or table cell.
+        caption_anno_text = caption.normalize_whitespace().to_single_text_element()
         if caption_anno_text.text:
-            text_clean = HTMLDocumentBackend._clean_unicode(
-                caption_anno_text.text.strip()
-            )
+            text_clean = HTMLDocumentBackend._clean_unicode(caption_anno_text.text)
             prov = self._make_prov(
                 text=text_clean,
                 tag=caption_prov_tag or img_tag,
@@ -5177,37 +5545,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
                 prov=prov,
+                parent=docling_pic,
             )
+            docling_pic.captions.append(caption_item.get_ref())
 
-        src_loc: str = self._get_attr_as_string(img_tag, "src")
-        pic_prov = self._make_prov(text="", tag=img_tag)
-        if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
-            # Do not fetch the image, just add a placeholder
-            placeholder: PictureItem = doc.add_picture(
-                caption=caption_item,
-                parent=parent,
-                content_layer=self.content_layer,
-                prov=pic_prov,
-            )
-            return placeholder.get_ref()
-
-        img_ref: Optional[ImageRef] = None
-        try:
-            src_loc = self._resolve_relative_path(src_loc)
-        except ValueError as e:
-            # The source is not loaded, but the picture is kept, as for an
-            # image file that cannot be read.
-            warnings.warn(f"Could not process an image from {src_loc}: {e}")
-        else:
-            img_ref = self._create_image_ref(src_loc)
-
-        docling_pic = doc.add_picture(
-            image=img_ref,
-            caption=caption_item,
-            parent=parent,
-            content_layer=self.content_layer,
-            prov=pic_prov,
-        )
         return docling_pic.get_ref()
 
     def _emit_input(self, input_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
@@ -5287,11 +5628,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return None
                 try:
                     image = Image.open(BytesIO(image_data))
+                    check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
+                    # A camera stores an orientation tag rather than rotated
+                    # pixels, and a browser shows the image turned by it.
+                    image = ImageOps.exif_transpose(image)
+                    # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+                    dpi = int(image.info.get("dpi", (72,))[0]) or 72
                     return ImageRef.from_pil(
-                        image, dpi=int(image.info.get("dpi", (72,))[0])
+                        normalize_image_for_png(image),
+                        dpi=dpi,
                     )
-                except (UnidentifiedImageError, OSError, TypeError, ValueError) as exc:
+                except (
+                    Image.DecompressionBombError,
+                    UnidentifiedImageError,
+                    OSError,
+                    TypeError,
+                    ValueError,
+                ) as exc:
                     warnings.warn(
                         f"Could not process an embedded MHTML image from {src_url}: "
                         f"{exc}"

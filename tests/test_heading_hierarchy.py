@@ -9,6 +9,7 @@ import pytest
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
+    DocItemLabel,
     DoclingDocument,
     ProvenanceItem,
 )
@@ -22,6 +23,7 @@ from docling_core.types.doc.page import (
     SegmentedPdfPage,
 )
 
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
@@ -169,12 +171,85 @@ def test_keyword_part_and_article():
     assert _parse_marker("Article 1 - Scope").family == "article"
     assert _parse_marker("Section 2").family == "article"
     assert _parse_marker("§ 1.2 Liability").family == "article"
+    assert _parse_marker("Part One.").family == "part"
+    assert _parse_marker("CHAPTER ONE").family == "chapter"
+    assert _parse_marker("ARTICLE FIRST").family == "article"
+    assert _parse_marker("Rule 12(b) Motions").family == "article"
+    assert _parse_marker("Appendix A1").family == "article"
+    assert _parse_marker("APPENDIX").family == "article"
+    assert _parse_marker("Annex: Glossary").family == "article"
+    assert _parse_marker("Appendix \u2013 Data Tables").family == "article"
+
+
+def test_keyword_followed_by_a_word_is_not_a_marker():
+    """A keyword used as an ordinary word must not outrank the real numbering."""
+    assert _parse_marker("Rule Definition") is None
+    assert _parse_marker("Part-Year Method") is None
+    assert _parse_marker("Title Insurance") is None
+    assert _parse_marker("Book Review") is None
+    assert _parse_marker("Chapter Summary") is None
+    assert _parse_marker("Section Overview") is None
+    assert _parse_marker("Schedule of Fees") is None
+
+    levels = _levels(["1. Overview", "Rule Definition", "2. Rules", "2.1 Syntax"])
+    assert levels == {0: 1, 2: 1, 3: 2}
+
+
+def test_keyword_division_and_subdivision():
+    assert _parse_marker("DIVISION I").family == "division"
+    assert _parse_marker("DIVISION A").family == "division"
+    assert _parse_marker("Division 1").family == "division"
+    assert _parse_marker("Division 1 Offences and Penalties").family == "division"
+    assert _parse_marker("SUBDIVISION A").family == "subdivision"
+    assert _parse_marker("Subdivision a").family == "subdivision"
+    # Enumerators may be terminated by separator punctuation, not only whitespace.
+    assert _parse_marker("Division I, General").family == "division"
+    assert _parse_marker("Division A; Scope").family == "division"
+
+    # Division/subdivision outrank article subsections in the default order.
+    levels = _levels(["Division 1 General", "Article 3 Powers"])
+    assert levels == {0: 1, 1: 2}
+
+    # Stripping the leading marker stays in sync for bookmark matching.
+    assert _strip_marker("Division I Powers").strip() == "Powers"
+
+
+def test_chapter_outranks_division_in_default_order():
+    # In codes that use both (e.g. Australian Commonwealth acts), a Chapter contains
+    # Divisions, so chapter must rank above division/subdivision in the default order.
+    levels = _levels(["Chapter 1 A", "Division 1 B", "Subdivision A C"])
+    assert levels == {0: 1, 1: 2, 2: 3}
+
+
+def test_statute_citation_is_not_a_chapter():
+    # Statute citations are not chapters; numbered, Roman and lettered chapters still match.
+    assert _parse_marker("Chapter A-15") is None
+    assert _parse_marker("Chapter B-9") is None
+    assert _parse_marker("Chapter P-6.5") is None
+    assert _parse_marker("Chapter 1").family == "chapter"
+    assert _parse_marker("Chapter 2D").family == "chapter"
+    assert _parse_marker("Chapter I").family == "chapter"
+    assert _parse_marker("Chapter A").family == "chapter"
+    assert _parse_marker("Chapter 1-A").family == "chapter"
+
+    # A citation alone adds no level: Divisions stay directly under the Part.
+    levels = _levels(["Part 1 X", "Chapter A-15", "Division 1 Y"])
+    assert levels == {0: 1, 2: 2}
 
 
 def test_non_marker_text_is_ignored():
     assert _parse_marker("Summary") is None
     assert _parse_marker("Introduction to the topic") is None
     assert _parse_marker("ABSTRACT") is None
+    assert _parse_marker("Division of Property") is None
+    assert _parse_marker("Division of weeks of benefits") is None
+    assert _parse_marker("Division du cong\u00e9") is None
+    assert _parse_marker("Subdivision of land") is None
+    assert _parse_marker("Division Civil Remedies") is None
+    assert _parse_marker("Division d'appel") is None
+    assert _parse_marker("Division l'emploi") is None
+    assert _parse_marker("Division s'applique") is None
+    assert _parse_marker("Division d\u2019appel") is None
     assert _parse_marker("2024 Annual Financial Report") is None
     assert _parse_marker("2024-2025 Budget") is None
     assert _parse_marker("2024\u201325 Outlook") is None
@@ -223,6 +298,16 @@ def test_custom_numbering_scheme_order():
     # Override so Arabic outranks Roman.
     levels = _levels(
         ["I. A", "1. B"],
+        numbering_schemes=["arabic", "roman_u"],
+    )
+    assert levels == {0: 2, 1: 1}
+
+
+def test_omitted_scheme_family_ranks_lowest():
+    # A custom order that omits "division": the heading still parses (family "division")
+    # but, absent from the order, it ranks below any listed family instead of above it.
+    levels = _levels(
+        ["Division 1 Offences", "1. Scope"],
         numbering_schemes=["arabic", "roman_u"],
     )
     assert levels == {0: 2, 1: 1}
@@ -544,3 +629,57 @@ def test_font_names_without_styling_rank_by_size_only():
     )
 
     assert levels == [1, 2, 2]
+
+
+def _finished_page(cells, clusters) -> Page:
+    page = Page(page_no=1, parsed_page=_segmented_page(cells))
+    page.predictions.layout = LayoutPrediction(
+        clusters=[
+            Cluster(id=i, label=label, bbox=_bbox(*box))
+            for i, (label, box) in enumerate(clusters)
+        ]
+    )
+    return page
+
+
+def test_retain_parsed_lines_keeps_only_heading_and_list_item_lines():
+    page = _finished_page(
+        [
+            _cell("1. Overview", 100, 50, 300, 70, font_name="Helvetica-Bold"),
+            _cell("Body text that the style signal never reads.", 100, 80, 500, 92),
+            _cell("(a) a list item", 120, 100, 300, 112),
+        ],
+        [
+            (DocItemLabel.SECTION_HEADER, (100, 50, 300, 70)),
+            (DocItemLabel.TEXT, (100, 80, 500, 92)),
+            (DocItemLabel.LIST_ITEM, (120, 100, 300, 112)),
+        ],
+    )
+    model = HeadingHierarchyModel(options=HeadingHierarchyOptions(enabled=True))
+
+    retained = model.retain_parsed_lines(page)
+
+    assert retained is not None
+    assert [cell.text for cell in retained.textline_cells] == [
+        "1. Overview",
+        "(a) a list item",
+    ]
+    assert retained.textline_cells[0].font_name == "Helvetica-Bold"
+    assert retained.dimension == page.parsed_page.dimension
+    assert retained.word_cells == []
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        HeadingHierarchyOptions(enabled=False),
+        HeadingHierarchyOptions(enabled=True, use_style=False),
+    ],
+)
+def test_retain_parsed_lines_keeps_nothing_without_the_style_signal(options):
+    page = _finished_page(
+        [_cell("1. Overview", 100, 50, 300, 70)],
+        [(DocItemLabel.SECTION_HEADER, (100, 50, 300, 70))],
+    )
+
+    assert HeadingHierarchyModel(options=options).retain_parsed_lines(page) is None

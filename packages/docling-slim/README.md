@@ -93,6 +93,8 @@ pip install docling-slim[service-client]
 | `format-xml-xbrl` | XBRL financial reports | Financial documents |
 | `format-html-render` | HTML rendering with Playwright | Dynamic web content |
 | `format-audio` | Audio transcription (Whisper) | .wav, .mp3 files |
+| `feat-asr-transformers` | Audio transcription with Transformers models | Granite Speech, Parakeet, Nemotron |
+| `feat-asr-mlx-audio` | Audio transcription with mlx-audio, without torch | Apple Silicon only; needs macOS 14 or later |
 
 ### OCR Engines
 
@@ -112,6 +114,7 @@ pip install docling-slim[service-client]
 | `models-remote` | Remote model serving (Triton) | Production deployments |
 | `models-onnxruntime` | ONNX Runtime acceleration | Optimized inference |
 | `models-vlm-inline` | Vision Language Models | Image understanding, inline processing |
+| `models-asr-inline` | All inline ASR engines (Whisper, Transformers, mlx-audio) | Speech recognition; needs macOS 14 or later on Apple Silicon |
 
 ### Other features
 

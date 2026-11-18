@@ -540,6 +540,39 @@ def test_legacy_page_furniture_stays_out_of_the_body(tmp_path: Path):
     assert recovered["A footnote body"] == DocItemLabel.FOOTNOTE
 
 
+def test_sub_list_belongs_to_the_item_above_it(tmp_path: Path):
+    """A deeper item opens a sub-list under the list item above it, not directly
+    under the outer list group, as in the other backends."""
+    namespace = "http://developer.apple.com/namespaces/sf"
+    bullet = '<sf:list-label-typeinfo><sf:text-label sf:type="bullet" sf:format="*"/></sf:list-label-typeinfo>'
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:stylesheet>
+        <sf:liststyle sf:ident="ls-bullet">
+          <sf:list-label-typeinfo sf:type="none"/>{bullet}{bullet}{bullet}
+        </sf:liststyle>
+      </sf:stylesheet>
+      <sf:text-storage><sf:text-body>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="1">outer one</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="2">inner a</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="3">inner a.1</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="2">inner b</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="1">outer two</sf:p>
+      </sf:text-body></sf:text-storage>
+    </sf:document>""".encode()
+
+    source = _write_pages(tmp_path / "nested.pages", {"index.xml": xml})
+    doc = _backend(source).convert()
+    items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+
+    outer = items["outer one"].parent
+    assert items["outer two"].parent == outer
+    inner = items["inner a"].parent.resolve(doc)
+    assert inner.parent == items["outer one"].get_ref()
+    assert items["inner b"].parent == inner.get_ref()
+    assert items["inner a.1"].parent.resolve(doc).parent == items["inner a"].get_ref()
+
+
 def test_modern_table_is_extracted_from_the_tile_storage():
     """A Pages 5+ table places its cells through per-row offsets into a packed
     buffer, each referencing a shared string by key. Reading the tile is what
@@ -914,6 +947,52 @@ def test_legacy_image_is_read_from_the_container_member(tmp_path: Path):
 
     order = [item.cref for item in doc.body.children]
     assert order.index(doc.pictures[0].self_ref) == 1
+
+
+def _transparent_png() -> bytes:
+    """A PNG with one opaque blue pixel on a transparent background."""
+    image = PILImage.new("RGBA", (4, 4), (0, 0, 0, 0))
+    image.putpixel((0, 0), (0, 0, 255, 255))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _with_legacy_image(target: Path, png: bytes) -> Path:
+    """Write an iWork '09 Pages container whose body holds just one image."""
+    namespace = "http://developer.apple.com/namespaces/sf"
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:text-storage>
+        <sf:text-body>
+          <sf:media>
+            <sf:content><sf:image-media><sf:filtered-image><sf:unfiltered>
+              <sf:data sf:path="logo.png"/>
+            </sf:unfiltered></sf:filtered-image></sf:image-media></sf:content>
+          </sf:media>
+        </sf:text-body>
+      </sf:text-storage>
+    </sf:document>""".encode()
+    return _write_pages(target, {"index.xml": xml, "logo.png": png})
+
+
+@pytest.mark.parametrize(
+    "build",
+    [_with_image_anchored, _with_legacy_image],
+    ids=["pages-5", "pages-09"],
+)
+def test_transparent_image_keeps_its_transparency(tmp_path: Path, build):
+    """A picture is stored as PNG, so its transparency is kept as in the other
+    backends. Dropping the alpha channel exposed the colour stored under the
+    transparent pixels, which is usually black."""
+    doc = _backend(build(tmp_path / "logo.pages", _transparent_png())).convert()
+
+    assert len(doc.pictures) == 1
+    picture = doc.pictures[0].image
+    assert picture is not None
+    assert picture.pil_image.mode == "RGBA"
+    assert picture.pil_image.getpixel((3, 3)) == (0, 0, 0, 0)
+    assert picture.pil_image.getpixel((0, 0)) == (0, 0, 255, 255)
 
 
 def test_table_is_placed_where_the_document_anchors_it():

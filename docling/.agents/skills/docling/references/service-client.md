@@ -49,12 +49,22 @@ DOCLING_SERVICE_URL=https://your-docling-service.example.com
 DOCLING_SERVICE_API_KEY=your-api-key    # omit if the service is unauthenticated
 ```
 
+Result artifacts (presigned URLs) are downloaded only from public addresses.
+If the artifact storage is on a private network (e.g. MinIO on `localhost` or
+in the same cluster), list its origin:
+
+```python
+client = DoclingServiceClient(
+    url=..., artifact_url_allowlist=["http://minio.storage.svc.cluster.local:9000"]
+)
+```
+
 ## Convert one document
 
 ```python
 from docling.service_client import DoclingServiceClient
 
-client = DoclingServiceClient(url=..., api_key=...)   # or rely on env / .env
+client = DoclingServiceClient(url=..., api_key=...)  # or rely on env / .env
 result = client.convert(source="path/to/report.pdf")  # local path or http(s) URL
 print(result.document.export_to_markdown())
 ```
@@ -67,7 +77,7 @@ from docling.datamodel.service.options import ConvertDocumentsOptions
 
 result = client.convert(
     source="report.pdf",
-    options=ConvertDocumentsOptions(...),   # per-request pipeline overrides
+    options=ConvertDocumentsOptions(...),  # per-request pipeline overrides
 )
 ```
 

@@ -5,7 +5,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from doclang import validate
+from docling_core.transforms.serializer.doclang import (
+    DocLangDocSerializer,
+    DocLangParams,
+)
+from docling_core.transforms.serializer.latex import LaTeXParams
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 from docling_core.types.doc.document import PictureMeta
 
 from docling.backend.latex_backend import LatexDocumentBackend
@@ -16,6 +22,11 @@ from docling.document_converter import DocumentConverter
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
+from .latex_serializer import (
+    SourceDocLangSerializer,
+    SourceLaTeXDocSerializer,
+    SourceLaTeXInlineSerializer,
+)
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
@@ -44,7 +55,9 @@ def _make_tikz_backend(
     return LatexDocumentBackend(
         in_doc=in_doc,
         path_or_stream=BytesIO(latex_content),
-        options=LatexBackendOptions(tikz_engine="tectonic"),
+        options=LatexBackendOptions(
+            tikz_engine="tectonic", tikz_engine_trusted_input=True
+        ),
     )
 
 
@@ -117,6 +130,32 @@ def test_latex_includegraphics():
         # Verify caption was created
         assert len(picture.captions) >= 1
         assert "test_image.png" in picture.captions[0].resolve(doc).text
+
+
+def test_latex_includegraphics_cmyk_jpeg(tmp_path: Path):
+    """A CMYK JPEG figure keeps its image; PNG cannot store CMYK."""
+    from PIL import Image as PILImage
+
+    PILImage.new("CMYK", (100, 50), (0, 255, 255, 0)).save(tmp_path / "fig.jpg")
+    tex_file = tmp_path / "test.tex"
+    tex_file.write_bytes(
+        b"\\documentclass{article}\n\\begin{document}\n"
+        b"\\includegraphics{fig.jpg}\n\\end{document}\n"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=tex_file,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=tex_file).convert()
+
+    assert len(doc.pictures) == 1
+    image = doc.pictures[0].get_image(doc)
+    assert image is not None
+    assert image.mode == "RGB"
+    assert image.getpixel((50, 25)) == (255, 0, 0)
 
 
 def test_latex_includegraphics_missing_image():
@@ -197,11 +236,165 @@ def test_latex_figure_with_caption():
     figure_groups = [g for g in doc.groups if g.name == "figure"]
     assert len(figure_groups) >= 1
 
-    # Should have picture and caption
-    assert len(doc.pictures) >= 1
-    captions = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
-    # includegraphics creates one caption, and \caption macro creates another
-    assert len(captions) >= 1
+    assert len(doc.pictures) == 1
+    assert [ref.resolve(doc).text for ref in doc.pictures[0].captions] == [
+        "This is a test figure caption"
+    ]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        r"\caption{A $x$ caption}",
+        r"\caption[Short]{A $x$ caption}",
+        r"\caption*{A $x$ caption}",
+    ],
+)
+@pytest.mark.parametrize("caption_first", [False, True])
+def test_latex_figure_caption_keeps_inline_formula(
+    command: str, caption_first: bool, tmp_path: Path
+):
+    figure_content = (
+        f"{command}\n\\includegraphics{{plot.png}}"
+        if caption_first
+        else f"\\includegraphics{{plot.png}}\n{command}"
+    )
+    latex_content = (
+        "\\documentclass{article}\n\\begin{document}\n"
+        f"\\begin{{figure}}\n{figure_content}\n\\end{{figure}}\n"
+        "\\end{document}"
+    ).encode()
+    stream = BytesIO(latex_content)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="caption.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    assert len(doc.pictures) == 1
+    assert len(doc.pictures[0].captions) == 1
+    caption = doc.pictures[0].captions[0].resolve(doc)
+    assert caption.label == DocItemLabel.CAPTION
+    assert caption.text == ""
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=caption)
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
+
+    public_dclg = doc.export_to_doclang()
+    assert "<caption>" in public_dclg
+    assert (
+        "<formula>x</formula>"
+        in public_dclg.split("<caption>", 1)[1].split("</caption>", 1)[0]
+    )
+    valid_dclg = (
+        DocLangDocSerializer(
+            doc=doc,
+            params=DocLangParams(
+                layers={
+                    ContentLayer.BODY,
+                    ContentLayer.FURNITURE,
+                    ContentLayer.BACKGROUND,
+                }
+            ),
+        )
+        .serialize()
+        .text
+    )
+    public_path = tmp_path / "public-caption.dclg"
+    public_path.write_text(valid_dclg, encoding="utf-8")
+    validate(public_path, allow_empty_namespace=True, xsd_only=True)
+
+    figcaption = (
+        doc.export_to_html().split("<figcaption>", 1)[1].split("</figcaption>", 1)[0]
+    )
+    assert "A" in figcaption
+    assert '<annotation encoding="TeX">x</annotation>' in figcaption
+
+    dclg = (
+        SourceDocLangSerializer(
+            doc=doc,
+            params=DocLangParams(
+                layers={
+                    ContentLayer.BODY,
+                    ContentLayer.FURNITURE,
+                    ContentLayer.BACKGROUND,
+                }
+            ),
+        )
+        .serialize()
+        .text
+    )
+    assert "<caption>" in dclg
+    assert "<formula>x</formula>" in dclg
+    assert "Short" not in dclg
+    path = tmp_path / "caption.dclg"
+    path.write_text(dclg, encoding="utf-8")
+    validate(path, allow_empty_namespace=True, xsd_only=True)
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(include_annotations=False, enable_chart_tables=False),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    assert r"\caption{A $x$ caption}" in parsed
+
+
+def test_latex_captionof_keeps_inline_formula():
+    source = (
+        rb"\documentclass{article}\begin{document}"
+        rb"\captionof{table}{Result $x$}"
+        rb"\end{document}"
+    )
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="captionof.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=captions[0])
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
+
+
+def test_latex_label_inside_caption_does_not_split_it():
+    source = (
+        rb"\documentclass{article}\begin{document}"
+        rb"\begin{figure}\includegraphics{plot.png}"
+        rb"\caption{Result\label{fig:result} of $x$}"
+        rb"\end{figure}\end{document}"
+    )
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="caption-label.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream)
+    doc = backend.convert()
+
+    assert backend.labels["fig:result"]
+    assert len(doc.pictures[0].captions) == 1
+    caption = doc.pictures[0].captions[0].resolve(doc)
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=caption)
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
 
 
 def test_latex_tikzpicture_atomic_capture():
@@ -502,7 +695,9 @@ def test_latex_tikzpicture_file_backed_render_receives_source_root(
     backend = LatexDocumentBackend(
         in_doc=in_doc,
         path_or_stream=tex_file,
-        options=LatexBackendOptions(tikz_engine="tectonic"),
+        options=LatexBackendOptions(
+            tikz_engine="tectonic", tikz_engine_trusted_input=True
+        ),
     )
     doc = backend.convert()
 
@@ -543,3 +738,63 @@ def test_latex_tikz_validate_depth_guard_and_arg_recursion():
 
     node = DummyNode(nodeargd=DummyArgData([DummyArg([])]), nodelist=[])
     assert backend._validate_tikz_nodelist([node], depth=0) is True
+
+
+@pytest.mark.parametrize("allow_shell_escape", [False, True])
+def test_latex_tikzpicture_tectonic_requires_trusted_input(
+    monkeypatch, caplog, allow_shell_escape
+):
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tikzpicture}
+    \draw (0,0) -- (1,1);
+    \end{tikzpicture}
+    \begin{tikzpicture}
+    \draw (0,0) circle (1);
+    \end{tikzpicture}
+    \end{document}
+    """
+    from docling.backend.latex.engines import tectonic
+
+    def fail_init(self, *args, **kwargs):
+        raise AssertionError("TectonicEngine must not be created")
+
+    def fail_run(*args, **kwargs):
+        raise AssertionError("Tectonic must not be run")
+
+    monkeypatch.setattr(tectonic.TectonicEngine, "__init__", fail_init)
+    monkeypatch.setattr(tectonic.subprocess, "run", fail_run)
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(latex_content),
+        options=LatexBackendOptions(
+            tikz_engine="tectonic",
+            tikz_engine_allow_shell_escape=allow_shell_escape,
+        ),
+    )
+    with caplog.at_level("WARNING"):
+        doc = backend.convert()
+
+    assert len(doc.pictures) == 2
+    for picture in doc.pictures:
+        assert picture.image is None
+        assert picture.meta is not None
+        assert picture.meta.code is not None
+        assert "\\begin{tikzpicture}" in picture.meta.code.text
+        assert picture.meta.code.language.name == "TIKZ"
+
+    warnings = [
+        record
+        for record in caplog.records
+        if "tikz_engine_trusted_input=True" in record.getMessage()
+    ]
+    assert len(warnings) == 1
+    assert "not marked as trusted" in warnings[0].getMessage()

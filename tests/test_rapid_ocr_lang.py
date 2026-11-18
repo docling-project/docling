@@ -18,6 +18,7 @@ from docling.exceptions import (
 )
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
+    _installed_ppocrv6_codes,
     _parse_rapidocr_model_spec,
     _ppocr_supported_languages,
     _rapidocr_vocabulary,
@@ -109,6 +110,22 @@ def test_resolve_populates_the_whole_spec() -> None:
     assert spec.user_lang == "iso:zh"
     assert spec.rapidocr_code == "ch"
     assert spec.ppocr_version == OCRVersion.PPOCRV6
+
+
+def test_resolve_does_not_need_the_removed_ppocrv6_constant(monkeypatch) -> None:
+    """rapidocr 3.10.0 removed `PP_OCRV6_LANGS`; resolution must not import it."""
+    from rapidocr.utils import model_resolver
+    from rapidocr.utils.typings import OCRVersion
+
+    monkeypatch.delattr(model_resolver, "PP_OCRV6_LANGS", raising=False)
+    _installed_ppocrv6_codes.cache_clear()
+    _rapidocr_vocabulary.cache_clear()
+    try:
+        assert _resolved("iso:zh", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
+        assert _resolved("iso:th", "onnxruntime") == (OCRVersion.PPOCRV5, "th")
+    finally:
+        _installed_ppocrv6_codes.cache_clear()
+        _rapidocr_vocabulary.cache_clear()
 
 
 def test_resolve_defaults_to_ppocrv6_chinese() -> None:

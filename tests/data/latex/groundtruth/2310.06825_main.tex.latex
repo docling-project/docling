@@ -1,0 +1,260 @@
+\documentclass{article}
+\usepackage[preprint]{neurips_2023}
+\usepackage[numbers]{natbib}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[colorlinks,
+    colorlinks=true, 
+    linkcolor=blue, 
+    filecolor=blue, 
+    citecolor=blue,       
+    urlcolor=blue]{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{enumitem}
+\usepackage{wrapfig}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage[normalem]{ulem}
+\usepackage{xspace}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage[normalem]{ulem}
+\newcommand{\todo}[1]{{\color{red}[\textbf{G}:#1]}}
+\newcommand{\gui}[1]{{\color{blue}[\textbf{G}:#1]}}
+\def\llama{Llama\xspace}
+\def\mistral{Mistral~7B\xspace}
+\def\mistralV{Mistral~7B~v0.1\xspace}
+\def\mistralchat{Mistral~7B~--~Instruct\xspace}
+\def\mistralchatV{Mistral~7B~v0.1~--~Instruct\xspace}
+\newcommand{\bt}{\textasciigrave}
+
+\begin{document}
+
+\title{Mistral\textasciitilde{}7B\textbackslash{}xspace}
+
+Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, Devendra Singh Chaplot, Diego de las Casas, Florian Bressand, Gianna Lengyel, Guillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne Lachaux, Pierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang, Timothée Lacroix, William El Sayed
+
+\begin{figure}[h]
+% image
+\caption{Image: images/header.jpeg}
+\end{figure}
+
+\section{Abstract}
+
+We introduce Mistral\textasciitilde{}7B\textbackslash{}xspace, a 7billion-parameter language model engineered for superior performance and efficiency. Mistral\textasciitilde{}7B\textbackslash{}xspaceoutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation. Our model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost. We also provide a model fine-tuned to follow instructions, Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspace, that surpasses Llama\textbackslash{}xspace213Bchat model both on human and automated benchmarks. Our models are released under the Apache 2.0 license. Code: https://github.com/mistralai/mistral-src Webpage: https://mistral.ai/news/announcing-mistral-7b/
+
+\section{Introduction}
+
+=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size. However, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios. In this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential. Our model, Mistral\textasciitilde{}7B\textbackslash{}xspace, demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference. Mistral\textasciitilde{}7B\textbackslash{}xspaceoutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation. Furthermore, Mistral\textasciitilde{}7B\textbackslash{}xspaceapproaches the coding performance of Code-Llama\textbackslash{}xspace7B[roziere2023code], without sacrificing performance on non-code related benchmarks.
+
+Mistral\textasciitilde{}7B\textbackslash{}xspaceleverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications. In addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of Mistral\textasciitilde{}7B\textbackslash{}xspace.
+
+Mistral\textasciitilde{}7B\textbackslash{}xspaceis released under the Apache 2.0 license. This release is accompanied by a reference implementation
+
+https://github.com/mistralai/mistral-src
+
+facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot
+
+https://github.com/skypilot-org/skypilot
+
+. Integration with Hugging Face
+
+https://huggingface.co/mistralai
+
+is also streamlined for easier integration. Moreover, Mistral\textasciitilde{}7B\textbackslash{}xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral\textasciitilde{}7B\textbackslash{}xspacethat significantly outperforms the Llama\textbackslash{}xspace2 13B  Chat model.
+
+=-1 Mistral\textasciitilde{}7B\textbackslash{}xspacetakes a significant step in balancing the goals of getting high performance while keeping large language models efficient. Through our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications.
+
+\section{Architectural details}
+
+\begin{figure}[h]
+% image
+\caption{Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \times W$ tokens.}
+\end{figure}
+
+r0.275
+
+\begin{table}[h]
+\begin{tabular}{|l|l|}
+\hline
+Parameter & Value \\ \hline
+dim & $4096$ \\ \hline
+n\_layers & $32$ \\ \hline
+head\_dim & $128$ \\ \hline
+hidden\_dim & $14336$ \\ \hline
+n\_heads & $32$ \\ \hline
+n\_kv\_heads & $8$ \\ \hline
+window\_size & $4096$ \\ \hline
+context\_len & $8192$ \\ \hline
+vocab\_size & $32000$ \\ \hline
+ &  \\ \hline
+\end{tabular}
+\end{table}
+
+Model architecture.
+
+Mistral\textasciitilde{}7B\textbackslash{}xspaceis based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to Llama\textbackslash{}xspace, it introduces a few changes that we summarize below.
+
+=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$. The hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$. Recursively, $h_i$ can access tokens from the input layer at a distance of up to $W \times k$ tokens, as illustrated in Figure[fig:swa]. At the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens. In practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.
+
+=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache. The cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for $W=3$. On a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.
+
+[][c]
+
+\begin{figure}[h]
+% image
+\caption{Rolling buffer cache. The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten. The hidden state corresponding to the latest generated tokens are colored in orange.}
+\end{figure}
+
+=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk.
+
+\begin{figure}[h]
+% image
+\caption{Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. The figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).}
+\end{figure}
+
+\section{Results}
+
+We compare Mistral\textasciitilde{}7B\textbackslash{}xspaceto Llama\textbackslash{}xspace, and re-run all benchmarks with our own evaluation pipeline for fair comparison. We measure performance on a wide variety of tasks categorized as follow:
+
+\begin{itemize}
+\item Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]
+\item World Knowledge (5-shot): NaturalQuestions[kwiatkowski2019natural], TriviaQA[joshi2017triviaqa]
+\item Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]
+\item Math: GSM8K[cobbe2021training] (8-shot) with maj@8 and MATH[hendrycks2021measuring] (4-shot) with maj@4
+\item Code: Humaneval[chen2021evaluating] (0-shot) and MBPP[austin2021program] (3-shot)
+\item Popular aggregated results: MMLU[hendrycks2020measuring] (5-shot), BBH[suzgun2022challenging] (3-shot), and AGI Eval[zhong2023agieval] (3-5-shot, English multiple-choice questions only)
+\end{itemize}
+
+Detailed results for Mistral\textasciitilde{}7B\textbackslash{}xspace, Llama\textbackslash{}xspace2 7B/13B, and Code-Llama\textbackslash{}xspace7B are reported in Table[tab:results]. Figure[fig:bars] compares the performance of Mistral\textasciitilde{}7B\textbackslash{}xspacewith Llama\textbackslash{}xspace2 7B/13B, and Llama\textbackslash{}xspace1 34B
+
+Since Llama\textbackslash{}xspace2 34B was not open-sourced, we report results for Llama\textbackslash{}xspace1 34B.
+
+in different categories. Mistral\textasciitilde{}7B\textbackslash{}xspacesurpasses Llama\textbackslash{}xspace2 13B across all metrics, and outperforms Llama\textbackslash{}xspace134B on most benchmarks. In particular, Mistral\textasciitilde{}7B\textbackslash{}xspacedisplays a superior performance in code, mathematics, and reasoning benchmarks.
+
+Size and Efficiency. We computed equivalent model sizes of the Llama\textbackslash{}xspace2 family, aiming to understand Mistral\textasciitilde{}7B\textbackslash{}xspacemodels' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), Mistral\textasciitilde{}7B\textbackslash{}xspacemirrored performance that one might expect from a Llama\textbackslash{}xspace2 model with more than 3x its size. On the Knowledge benchmarks, Mistral\textasciitilde{}7B\textbackslash{}xspace's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store.
+
+Evaluation Differences. On some benchmarks, there are some differences between our evaluation protocol and the one reported in the Llama\textbackslash{}xspace2 paper: 1) on MBPP, we use the hand-verified subset 2) on TriviaQA, we do not provide Wikipedia contexts.
+
+\begin{figure}[h]
+% image
+\caption{Performance of Mistral\textasciitilde{}7B\textbackslash{}xspaceand different Llama\textbackslash{}xspacemodels on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. Mistral\textasciitilde{}7B\textbackslash{}xspacesignificantly outperforms Llama\textbackslash{}xspace2 7B and Llama\textbackslash{}xspace2 13B on all benchmarks. It is also vastly superior to Llama\textbackslash{}xspace1 34B in mathematics, code generation, and reasoning benchmarks.}
+\end{figure}
+
+\begin{table}[h]
+\caption{Comparison of Mistral\textasciitilde{}7B\textbackslash{}xspacewith Llama\textbackslash{}xspace. Mistral\textasciitilde{}7B\textbackslash{}xspaceoutperforms Llama\textbackslash{}xspace2 13B on all metrics, and approaches the code performance of Code-Llama\textbackslash{}xspace7B without sacrificing performance on non-code benchmarks.}
+\begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+\hline
+Model & Modality & MMLU & HellaSwag & WinoG & PIQA & Arc-e & Arc-c & NQ & TriviaQA & HumanEval & MBPP & MATH & GSM8K \\ \hline
+LLaMA 2 7B & Pretrained & 44.4\% & 77.1\% & 69.5\% & 77.9\% & 68.7\% & 43.2\% & 24.7\% & 63.8\% & 11.6\% & 26.1\% & 3.9\% & 16.0\% \\ \hline
+LLaMA 2 13B & Pretrained & 55.6\% & 80.7\% & 72.9\% & 80.8\% & 75.2\% & 48.8\% & 29.0\% & 69.6\% & 18.9\% & 35.4\% & 6.0\% & 34.3\% \\ \hline
+Code-Llama\textbackslash{}xspace7B & Finetuned & 36.9\% & 62.9\% & 62.3\% & 72.8\% & 59.4\% & 34.5\% & 11.0\% & 34.9\% & 31.1\% & 52.5\% & 5.2\% & 20.8\% \\ \hline
+Mistral\textasciitilde{}7B\textbackslash{}xspace & Pretrained & 60.1\% & 81.3\% & 75.3\% & 83.0\% & 80.0\% & 55.5\% & 28.8\% & 69.9\% & 30.5\% & 47.5\% & 13.1\% & 52.2\% \\ \hline
+ &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+% image
+\caption{Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for Mistral\textasciitilde{}7B\textbackslash{}xspaceand Llama\textbackslash{}xspace2 (7B/13B/70B). Mistral\textasciitilde{}7B\textbackslash{}xspacelargely outperforms Llama\textbackslash{}xspace2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress).}
+\end{figure}
+
+r0.48
+
+\begin{table}[h]
+\begin{tabular}{|l|l|l|}
+\hline
+Model & c]@c@Chatbot Arena ELO Rating & MT Bench \\ \hline
+WizardLM 13B v1.2 & 1047 & 7.2 \\ \hline
+Mistral 7B Instruct & 1031 & 6.84 +/- 0.07 \\ \hline
+Llama 2 13B Chat & 1012 & 6.65 \\ \hline
+Vicuna 13B & 1041 & 6.57 \\ \hline
+Llama 2 7B Chat & 985 & 6.27 \\ \hline
+Vicuna 7B & 997 & 6.17 \\ \hline
+Alpaca 13B & 914 & 4.53 \\ \hline
+ &  &  \\ \hline
+\end{tabular}
+\end{table}
+
+Comparison of Chat models. Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B  Chat models.
+
+\section{Instruction Finetuning}
+
+=-1 To evaluate the generalization capabilities of Mistral\textasciitilde{}7B\textbackslash{}xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table[tab:results\_finetuning], we observe that the resulting model, Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard.
+
+In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion]. As of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.
+
+\section{Adding guardrails for front-facing applications}
+
+=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications. In this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models. Additionally, we showcase the ability of Mistral\textasciitilde{}7B\textbackslash{}xspaceto perform fine-grained content moderation, which can be useful to enforce quality content in applications.
+
+\subsection{System prompt to enforce guardrails}
+
+We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with Llama\textbackslash{}xspace2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails].
+
+0.98 Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity.
+
+r0.38
+
+\begin{table}[h]
+\begin{tabular}{|l|l|}
+\hline
+Guardrails & MT Bench \\ \hline
+No system prompt & 6.84 $\pm$ 0.07 \\ \hline
+Llama\textbackslash{}xspace2 system prompt & 6.38 $\pm$ 0.07 \\ \hline
+Mistral system prompt & 6.58 $\pm$ 0.05 \\ \hline
+ &  \\ \hline
+\end{tabular}
+\end{table}
+
+System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspace. For reference, Llama\textbackslash{}xspace2 13B  Chat reports official results of 6.65.
+
+=-1 We use a set of 175 unsafe prompts for evaluating safety. With the recommended system prompt, the model properly declines to answer 100\% of the harmful questions.
+
+=-1 As an illustration, we provide in Table[tab:guardrails\_example] the answers of both Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspaceand Llama\textbackslash{}xspace2 Chat 13B to the question How to kill a linux process with system prompts activated. We observe that Mistral\textasciitilde{}7B\textbackslash{}xspaceprovides a correct response while Llama\textbackslash{}xspace2 declines to answer. Note that on this specific question, both models answer correctly when system prompts are deactivated.
+
+\begin{table}[h]
+\caption{Comparison between Mistral and Llama\textbackslash{}xspacesystem prompts. Mistral provides the right answer whereas Llama\textbackslash{}xspace2 declines to answer to the question How to kill a linux process.}
+\begin{tabular}{|l|l|}
+\hline
+Model & Answer \\ \hline
+c]@l@Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspace with Mistral system prompt & c]@l@To kill a Linux process, you can use the \textbackslash{}textasciigravekill\textbackslash{}textasciigravecommand followed by the process ID (PID) of the process you want to terminate. For example, to kill process with PID 1234, you would run the command \textbackslash{}textasciigravekill 1234\textbackslash{}textasciigrave. It's important to note that killing a process can have unintended consequences, so it's generally a good idea to only kill processes that you are certain you want to terminate. Additionally, it's generally a good idea to use the \textbackslash{}textasciigravekill\textbackslash{}textasciigravecommand with caution, as it can be used to terminate critical system processes that are necessary for the operation of the system. \\ \hline
+c]@l@Llama 2 13B Chat with Llama 2 system prompt & c]@l@As a helpful and respectful assistant, I cannot provide information on how to kill a Linux process. It is not appropriate or ethical to intentionally harm or terminate processes, as it can cause damage to the system and potentially result in data loss. Additionally, it is important to respect the autonomy and security of other users' processes, as they may be critical to their work or personal activities. Instead, I suggest that you explore other options to address any issues or concerns you may have. \\ \hline
+ &  \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Content moderation with self-reflection}
+
+=-1 Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspacecan be used as a content moderator: the model itself is able to accurately classify a user prompt or its generated answer as being either acceptable or falling into one of the following categories: Illegal activities such as terrorism, child abuse or fraud; Hateful, harassing or violent content such as discrimination, self-harm or bullying; Unqualified advice for instance in legal, medical or financial domains.
+
+=-1 To do so, we designed a self-reflection prompt that makes Mistral\textasciitilde{}7B\textbackslash{}xspaceclassify a prompt or a generated answer. We evaluated self-reflection on our manually curated and balanced dataset of adversarial and standard prompts and got a precision of 99.4\% for a recall of 95.6\% (considering acceptable prompts as positives).
+
+=-1 The use cases are vast, from moderating comments on social media or forums to brand monitoring on the internet. In particular, the end user is able to select afterwards which categories to effectively filter based on their particular use-case.
+
+\section{Conclusion}
+
+Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in [hoffmann2022compute]); the problem is rather 3 dimensional (model capabilities, training cost, inference cost), and much remains to be explored to obtain the best performance with the smallest possible model.
+
+\section{Acknowledgements}
+
+=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere.
+
+\begin{figure}[h]
+% image
+\caption{Human evaluation of Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspacevs Llama\textbackslash{}xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\textbackslash{}xspace2 13B  Chat recommends a general physics book, while Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.}
+\end{figure}
+
+ref
+
+\end{document}

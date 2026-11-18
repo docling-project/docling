@@ -30,7 +30,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import VideoPipelineOptions
-from docling.pipeline.asr_transcriber import _ConversationItem
+from docling.pipeline.asr_transcriber import _ConversationItem, _merge_into_sentences
 from docling.utils.speaker_diarization import DiarizationResult, SpeakerSegment
 from docling.utils.video_frame_sampling import (
     FfmpegRunner,
@@ -498,3 +498,21 @@ def test_process_video_runs_diarization_when_enabled(
     assert conv_res.document is not None
     assert conv_res.document.texts[0].text == "hello"
     assert conv_res.document.texts[0].source[0].voice == "SPEAKER_00"
+
+
+def test_merge_into_sentences_splits_on_full_width_punctuation() -> None:
+    items = [
+        _ConversationItem(text="こんにちは。", start_time=0.0, end_time=1.0),
+        _ConversationItem(text="元気ですか？", start_time=1.0, end_time=2.0),  # noqa: RUF001
+        _ConversationItem(text="我很好", start_time=2.0, end_time=3.0),
+        _ConversationItem(text="谢谢！", start_time=3.0, end_time=4.0),  # noqa: RUF001
+    ]
+
+    merged = _merge_into_sentences(items)
+
+    assert [m.text for m in merged] == ["こんにちは。", "元気ですか？", "我很好 谢谢！"]  # noqa: RUF001
+    assert [(m.start_time, m.end_time) for m in merged] == [
+        (0.0, 1.0),
+        (1.0, 2.0),
+        (2.0, 4.0),
+    ]

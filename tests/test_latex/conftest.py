@@ -20,6 +20,45 @@ GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--large-scale",
+        action="store_true",
+        help="Run the opt-in arXiv LaTeX corpus test.",
+    )
+    parser.addoption(
+        "--max-items",
+        type=int,
+        default=None,
+        help="Stop the arXiv LaTeX corpus test after this many source files.",
+    )
+    parser.addoption(
+        "--write-success",
+        action="store_true",
+        help="Save successful arXiv LaTeX sources and DocLang output.",
+    )
+    parser.addoption(
+        "--recheck-failures",
+        action="store_true",
+        help="Convert again the arXiv LaTeX files that failed in an earlier run.",
+    )
+    parser.addoption(
+        "--corpus-shard",
+        action="append",
+        type=int,
+        default=None,
+        help="Read only this shard (0-79) of the arXiv LaTeX corpus. Repeat it to "
+        "read more shards.",
+    )
+    parser.addoption(
+        "--corpus-dir",
+        type=Path,
+        default=None,
+        help="Write the arXiv LaTeX corpus manifest, report, and saved files to "
+        "this folder instead of the repository root.",
+    )
+
+
 @pytest.fixture(scope="module")
 def latex_paths() -> list[Path]:
     """Find all LaTeX files in the test data directory."""

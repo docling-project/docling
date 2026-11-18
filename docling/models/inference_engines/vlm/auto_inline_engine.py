@@ -191,8 +191,8 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 f"repo_id={model_config.repo_id}, extra_config={model_config.extra_config}"
             )
 
-        # Propagate trust_remote_code from model_spec to engine options
-        trust_remote = (
+        # Propagate the user's opt-in or the model_spec default to engine options
+        trust_remote = self.options.trust_remote_code or (
             self.model_spec.trust_remote_code if self.model_spec is not None else False
         )
 

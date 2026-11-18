@@ -46,6 +46,19 @@ print(result.document.export_to_markdown())
 
 `source` accepts an HTTP/HTTPS URL string, a local `pathlib.Path`, or a `DocumentStream`; for multiple inputs use `convert_all(source=[...])` to stream multiple conversion results. The `options` are the same [conversion options](#conversion-options-common) shown below. See the [examples](../../examples/index.md) for more recipes.
 
+### Artifact storage on a private network
+
+By default, the client downloads the result artifacts (presigned URLs) only from public addresses. It refuses an artifact URL on a private, loopback or link-local address, so a misconfigured or compromised service cannot point the client at your internal network. If your artifact storage is on a private network, for example MinIO in the same Kubernetes cluster or on `localhost`, list its origin in `artifact_url_allowlist`:
+
+```python
+client = DoclingServiceClient(
+    url="http://docling-serve.svc.cluster.local:5001",
+    artifact_url_allowlist=["http://minio.storage.svc.cluster.local:9000"],
+)
+```
+
+Each entry is an origin: scheme, host and optional port (the default port of the scheme applies when you omit it). The client checks every redirect hop, so a redirect from an allowlisted origin to another private host is still refused.
+
 ## Conversion options (common)
 
 Pass these in the JSON body under `options`. This is the common subset — the **authoritative, full schema is the live OpenAPI docs at `/docs`** on any running server.

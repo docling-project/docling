@@ -18,12 +18,18 @@ images using the Tectonic engine.
 
 - `tikz_engine`
   Set to `"tectonic"` to enable optional TikZ rendering.
+- `tikz_engine_trusted_input`
+  Defaults to `False`. Tectonic renders TikZ diagrams only when this option is
+  `True`. Set it only when you trust the LaTeX input, because Tectonic can read
+  and write files outside its working directory. When it is `False`, Docling
+  logs a warning and keeps each diagram as TikZ code.
 - `tikz_engine_timeout`
   Sets the timeout, in seconds, for rendering a single TikZ diagram.
 - `tikz_engine_allow_shell_escape`
   Defaults to `False`. Enable this only for trusted input that needs
   `\write18`: it passes `-Z shell-escape` to Tectonic and skips the source
-  pre-check described below.
+  pre-check described below. It has no effect unless
+  `tikz_engine_trusted_input` is `True`.
 
 These are Python options; the `docling` CLI does not expose TikZ rendering.
 
@@ -35,7 +41,10 @@ from docling.document_converter import DocumentConverter, LatexFormatOption
 converter = DocumentConverter(
     format_options={
         InputFormat.LATEX: LatexFormatOption(
-            backend_options=LatexBackendOptions(tikz_engine="tectonic")
+            backend_options=LatexBackendOptions(
+                tikz_engine="tectonic",
+                tikz_engine_trusted_input=True,
+            )
         )
     }
 )
@@ -49,25 +58,29 @@ relative to the document's directory. Without shell escape:
 
 - Tectonic runs with `--untrusted --only-cached`: shell escape is off and
   missing bundle files are not downloaded.
-- Before compiling, Docling does a best-effort check of the diagram, its
+- Before compiling, Docling does a defense-in-depth check of the diagram, its
   preamble and every staged file: rendering is skipped when `\input`,
   `\include`, `\includegraphics`, `\InputIfFileExists` or `\graphicspath`
   name an absolute, `~`, drive-letter or `..` path, or when the source uses
   `\openin`, `\openout`, `\XeTeXpicfile` or `\XeTeXpdffile`.
 
-!!! note
-    The pre-check only reads the source text and does not cover every way TeX
-    can access files. When rendering untrusted LaTeX with Tectonic, run the
-    conversion in an isolated environment, for example a container without
-    host mounts or network access.
+!!! warning
+    The pre-check only reads the source text and is not a security boundary:
+    it does not cover every way TeX can access files. Tectonic can read and
+    write files that the conversion process can access, and the rendered image
+    can show the content of files that were read. For this reason, rendering
+    requires `tikz_engine_trusted_input=True`. If you must render LaTeX that
+    you do not fully trust, run the conversion in an isolated environment, for
+    example a container without host mounts or network access.
 
 ### Fallback behavior
 
 - When Tectonic compilation succeeds, the TikZ diagram is rasterized and stored
   as an image.
-- When the pre-check skips a diagram, or compilation fails, times out,
-  produces no PDF, or rasterization fails, Docling preserves the original TikZ
-  source as fallback code metadata instead of dropping the figure.
+- When `tikz_engine_trusted_input` is `False`, the pre-check skips a diagram,
+  or compilation fails, times out, produces no PDF, or rasterization fails,
+  Docling preserves the original TikZ source as fallback code metadata instead
+  of dropping the figure.
 
 
 ::: docling.datamodel.pipeline_options
