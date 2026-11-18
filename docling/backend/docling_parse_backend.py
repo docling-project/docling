@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 import warnings
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
+from threading import Thread
+from time import sleep
 from typing import TYPE_CHECKING, Optional, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
@@ -61,6 +64,8 @@ _INSTALL_HINT = (
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
+
+_log = logging.getLogger(__name__)
 
 # PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
 # natively when answering `intersects_with()`, so the cell-level view has to match it.
@@ -341,6 +346,20 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         return None
 
 
+def _finish_parser_unload(
+    parser: DoclingThreadedPdfParser,
+    doc_key: str,
+    completed: Callable[[], bool] | None = None,
+) -> None:
+    while parser.has_tasks():
+        parser.get_task()
+    # The last page may be discarded before its worker finishes retiring.
+    # Wait for worker exit before the GIL-held native unload joins threads.
+    while completed is not None and not completed():
+        sleep(0.01)
+    parser.unload(doc_key)
+
+
 class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
     supports_random_page_access = False
 
@@ -451,21 +470,50 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         )
 
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
+        if self._closed:
+            return
         self._iterating = True
-        for result in self.parser.iterate_results():
-            yield ThreadedDoclingParsePageBackend(result, rendered=self._render_pages)
-        self._iterating = False
+        try:
+            for result in self.parser.iterate_results():
+                if self._closed:
+                    return
+                yield ThreadedDoclingParsePageBackend(
+                    result, rendered=self._render_pages
+                )
+        finally:
+            self._iterating = False
+
+    def cancel(self) -> None:
+        # Older supported docling-parse releases have no cancellation API.
+        # Native cancellation is also safe after the document has been unloaded.
+        cancel = getattr(self.parser, "cancel", None)
+        if cancel is not None:
+            cancel(self.doc_key)
 
     def unload(self) -> None:
         if self._closed:
             return
         self._closed = True
-        # The parser cannot unload while an iteration is active. Drain the raw
-        # tasks rather than creating page backends for work a consumer abandoned.
-        while self.parser.has_tasks():
-            self.parser.get_task()
-        self._iterating = False
-        self.parser.unload(self.doc_key)
+        self.cancel()
+        completed = getattr(self.parser, "all_scheduled_work_completed", None)
+        if completed is None:
+            _finish_parser_unload(self.parser, self.doc_key)
+        elif completed():
+            self.parser.unload(self.doc_key)
+        else:
+            # Each backend owns one parser. The cleanup thread keeps it alive
+            # until pages already claimed at cancellation have finished.
+            cleanup = Thread(
+                target=_finish_parser_unload,
+                args=(self.parser, self.doc_key, completed),
+                name="DoclingParseCleanup",
+                daemon=True,
+            )
+            try:
+                cleanup.start()
+            except RuntimeError:
+                _log.warning("Could not start parser cleanup thread", exc_info=True)
+                _finish_parser_unload(self.parser, self.doc_key, completed)
         super().unload()
 
 

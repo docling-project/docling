@@ -98,6 +98,7 @@ class _StreamingBackend(PdfDocumentBackend):
         self._page_nos = page_nos
         self._tracker = tracker
         self._failed_page_nos = failed_page_nos or set()
+        self.cancelled = False
 
     def is_valid(self) -> bool:
         return True
@@ -113,6 +114,9 @@ class _StreamingBackend(PdfDocumentBackend):
             yield _PageBackend(
                 page_no, self._tracker, valid=page_no not in self._failed_page_nos
             )
+
+    def cancel(self) -> None:
+        self.cancelled = True
 
     def unload(self) -> None:
         return None
@@ -380,7 +384,7 @@ def test_vlm_preserves_successes_around_a_failed_page(monkeypatch) -> None:
 def test_vlm_timeout_stops_iteration_and_releases_live_pages(monkeypatch) -> None:
     monkeypatch.setattr(settings.perf, "page_batch_size", 2)
 
-    conv_res, tracker, _backend = _run_pipeline(
+    conv_res, tracker, backend = _run_pipeline(
         page_nos=[9, 5, 7, 6, 8],
         force_backend_text=False,
         generate_page_images=False,
@@ -392,6 +396,7 @@ def test_vlm_timeout_stops_iteration_and_releases_live_pages(monkeypatch) -> Non
     assert len(conv_res.errors) == 1
     assert conv_res.errors[0].category == FailureCategory.TIMEOUT
     assert conv_res.status == ConversionStatus.PARTIAL_SUCCESS
+    assert backend.cancelled
     assert tracker.live == 0
 
 

@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
+from threading import Event
 from typing import Any
 
 import pypdfium2 as pdfium
@@ -312,6 +314,63 @@ def test_threaded_backend_open_ended_page_range_is_clipped_to_document(
     assert parser.load_calls == [(2, sys.maxsize)]
 
     in_doc._backend.unload()
+
+
+def test_threaded_backend_unloads_after_cancel_without_waiting_on_claimed_page(
+    test_doc_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cancelled = Event()
+    waiting_for_page = Event()
+    finish_page = Event()
+    worker_finished = Event()
+    unloaded = Event()
+
+    class BlockingParser(_FakeThreadedParser):
+        def cancel(self, doc_key: str) -> int:
+            assert doc_key == "doc-key"
+            cancelled.set()
+            return 4
+
+        def has_tasks(self) -> bool:
+            assert cancelled.is_set()
+            return not finish_page.is_set()
+
+        def get_task(self) -> None:
+            waiting_for_page.set()
+            assert finish_page.wait(timeout=5)
+
+        def all_scheduled_work_completed(self) -> bool:
+            return worker_finished.is_set()
+
+        def unload(self, doc_key: str) -> bool:
+            assert doc_key == "doc-key"
+            assert self.all_scheduled_work_completed()
+            unloaded.set()
+            return True
+
+    monkeypatch.setattr(
+        docling_parse_backend_module, "DoclingThreadedPdfParser", BlockingParser
+    )
+    stream = BytesIO(test_doc_path.read_bytes())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        filename=test_doc_path.name,
+    )
+    backend = in_doc._backend
+    assert isinstance(backend, ThreadedDoclingParseDocumentBackend)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        try:
+            executor.submit(backend.unload).result(timeout=3)
+            assert stream.closed
+            assert waiting_for_page.wait(timeout=3)
+            assert not unloaded.is_set()
+        finally:
+            finish_page.set()
+            worker_finished.set()
+
+    assert unloaded.wait(timeout=3)
 
 
 def test_threaded_backend_rewinds_stream_before_deriving_document_key(

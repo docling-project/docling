@@ -1013,6 +1013,9 @@ Things to know:
   `EnrichmentProgress`.
 - Failed pages, and pages cut by `document_timeout`, are reported with
   `success=False`, so `completed_pages` always reaches `total_pages`.
+- With a cancellation-capable `docling-parse` release, PDF timeouts also discard
+  queued parser pages. Pages already running in native code can finish in the
+  background, and the backend releases their resources when they finish.
 - Exceptions raised by the callback are logged and ignored.
 - For a single document all events come from the thread that called
   `convert`. With `settings.perf.doc_batch_concurrency > 1` several documents
