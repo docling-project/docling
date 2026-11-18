@@ -436,6 +436,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     cast(Any, messages),
                     tokenize=False,
                     add_generation_prompt=True,
+                    **input_data.chat_template_kwargs,
                 )
             elif prompt_style == TransformersPromptStyle.RAW:
                 formatted_prompt = input_data.prompt

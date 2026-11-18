@@ -70,7 +70,11 @@ def _build_options(**model_spec_overrides) -> PictureDescriptionVlmEngineOptions
 def test_engine_picture_description_falls_back_to_model_spec_defaults(
     create_dummy_model,
 ) -> None:
-    options = _build_options(temperature=0.1, max_new_tokens=300)
+    options = _build_options(
+        temperature=0.1,
+        max_new_tokens=300,
+        chat_template_kwargs={"enable_thinking": False},
+    )
     model = create_dummy_model(options)
 
     list(model._annotate_images([Image.new("RGB", (8, 8), "white")]))
@@ -78,6 +82,7 @@ def test_engine_picture_description_falls_back_to_model_spec_defaults(
     sent_input = model.engine.received_inputs[0]
     assert sent_input.max_new_tokens == 300
     assert sent_input.temperature == 0.1
+    assert sent_input.chat_template_kwargs == {"enable_thinking": False}
 
 
 def test_engine_picture_description_forwards_generation_config(

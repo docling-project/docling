@@ -29,14 +29,18 @@ from docling.utils.vlm_utils import normalize_section_header_levels
 _log = logging.getLogger(__name__)
 
 
-def _parse_table_html(html_content: str) -> TableData:
+def _parse_table_html(
+    html_content: str, *, max_grid_cells: int | None = None
+) -> TableData:
     """Parse HTML table content and create TableData structure.
 
     Args:
         html_content: HTML string containing <table> element
+        max_grid_cells: If set, the largest grid (rows x columns) to build
 
     Returns:
-        TableData with parsed table structure
+        TableData with parsed table structure. The table is empty if the HTML has
+        no rows or if its grid has more than max_grid_cells cells.
     """
     # Extract table HTML if wrapped in other content
     table_match = re.search(
@@ -70,6 +74,15 @@ def _parse_table_html(html_content: str) -> TableData:
                 colspan = int(cell.get("colspan", "1"))
                 col_count += colspan
             num_cols = max(num_cols, col_count)
+
+        if max_grid_cells is not None and num_rows * num_cols > max_grid_cells:
+            _log.warning(
+                "Ignoring an HTML table of %d x %d grid cells: the limit is %d",
+                num_rows,
+                num_cols,
+                max_grid_cells,
+            )
+            return TableData(num_rows=0, num_cols=0, table_cells=[])
 
         # Create grid to track cell positions
         grid: list[list[Union[str, None]]] = [

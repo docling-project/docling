@@ -33,7 +33,11 @@ from docling.datamodel.vlm_engine_options import (
 from docling.models.inference_engines.vlm.auto_inline_engine import (
     AutoInlineVlmEngine,
 )
-from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.models.inference_engines.vlm.base import (
+    VlmEngineInput,
+    VlmEngineOutput,
+    VlmEngineType,
+)
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionVlmEngineModel,
     _dataframe_to_tabledata,
@@ -305,3 +309,41 @@ def test_legacy_chart_preset_uses_its_csv_prompt_and_parser() -> None:
     assert engine.prompts == [options.model_spec.prompt]
     assert picture.meta.tabular_chart is not None
     assert picture.meta.tabular_chart.chart_data.num_rows == 2
+
+
+def test_chart_extraction_passes_the_chat_template_kwargs_of_the_model_spec() -> None:
+    class Engine:
+        def __init__(self) -> None:
+            self.inputs: list[VlmEngineInput] = []
+
+        def predict_batch(self, inputs):
+            self.inputs = list(inputs)
+            return [VlmEngineOutput(text="Category,Value\nNorth,10") for _ in inputs]
+
+        def cleanup(self) -> None:
+            pass
+
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+    # from_preset shares the spec of the preset, so change a copy of it.
+    options.model_spec = options.model_spec.model_copy(
+        update={"chat_template_kwargs": {"enable_thinking": False}}
+    )
+    model = ChartExtractionVlmEngineModel.__new__(ChartExtractionVlmEngineModel)
+    model.enabled = True
+    model.options = options
+    engine = Engine()
+    model.engine = engine
+
+    doc = DoclingDocument(name="chart")
+    picture = doc.add_picture()
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[PictureClassificationPrediction(class_name="bar_chart")]
+        )
+    )
+    image = Image.new("RGB", (10, 10), "white")
+    list(model(doc, [ItemAndImageEnrichmentElement(item=picture, image=image)]))
+
+    assert [item.chat_template_kwargs for item in engine.inputs] == [
+        {"enable_thinking": False}
+    ]

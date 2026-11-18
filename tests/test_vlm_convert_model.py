@@ -48,6 +48,7 @@ def _build_model() -> tuple[VlmConvertModel, VlmModelSpec]:
         max_new_tokens=128,
         stop_strings=["</doctag>"],
         extra_generation_config={"top_p": 0.9},
+        chat_template_kwargs={"enable_thinking": False},
     )
 
     model = VlmConvertModel.__new__(VlmConvertModel)
@@ -81,6 +82,7 @@ def test_process_images_uses_configured_generation_settings() -> None:
     assert engine_input.max_new_tokens == model_spec.max_new_tokens
     assert engine_input.stop_strings == model_spec.stop_strings
     assert engine_input.extra_generation_config == model_spec.extra_generation_config
+    assert engine_input.chat_template_kwargs == model_spec.chat_template_kwargs
 
 
 def test_call_uses_model_spec_generation_settings() -> None:
@@ -106,6 +108,7 @@ def test_call_uses_model_spec_generation_settings() -> None:
     assert engine_input.max_new_tokens == model_spec.max_new_tokens
     assert engine_input.stop_strings == model_spec.stop_strings
     assert engine_input.extra_generation_config == model_spec.extra_generation_config
+    assert engine_input.chat_template_kwargs == model_spec.chat_template_kwargs
 
 
 def test_process_images_merges_transformers_override_runtime_input_config() -> None:

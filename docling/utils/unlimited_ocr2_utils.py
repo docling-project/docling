@@ -72,6 +72,9 @@ _CAPTION_OWNER_LABELS = {
     "table_caption": {DocItemLabel.TABLE},
 }
 _NOISE_TEXT = {"[figure]", "[image]", "[non-text]", "[unreadable]"}
+# A page table has far fewer grid cells. A larger grid comes from a span in looping
+# model output, and its export can take gigabytes of memory.
+_MAX_TABLE_GRID_CELLS = 10_000
 
 _NUMBER = r"-?\d{1,9}"
 _LEVEL = r"</?LEVEL\d{0,9}[>}]?"
@@ -208,15 +211,21 @@ def _provenance(block: _Block, page_size: Size, page_no: int) -> ProvenanceItem 
     )
 
 
-def _add_table(doc: DoclingDocument, html: str, prov: ProvenanceItem | None) -> bool:
-    """Add a table and return False if the HTML gives no cells."""
+def _add_table(
+    doc: DoclingDocument, html: str, prov: ProvenanceItem | None, model: str
+) -> bool:
+    """Add a table and return False if the HTML gives no cells.
+
+    The Typhoon OCR V2 parser also uses this function. ``model`` names the model in
+    the log.
+    """
     if prov is not None:
         try:
             return _add_html_table(doc, html, prov) is not None
         except ValueError as exc:
             # A dense page can pass the grid limit of the shared table mapper.
-            _log.warning("Reading a large Unlimited-OCR 2 table without spans: %s", exc)
-    data = _parse_table_html(html)
+            _log.warning("Reading a large %s table without spans: %s", model, exc)
+    data = _parse_table_html(html, max_grid_cells=_MAX_TABLE_GRID_CELLS)
     if not data.table_cells:
         return False
     doc.add_table(data=data, prov=prov)
@@ -249,7 +258,7 @@ def _add_block(
         doc.add_formula(text=strip_math_delimiters(text), orig=text, prov=prov)
         return None
     if block.label == "table":
-        if _add_table(doc, text, prov):
+        if _add_table(doc, text, prov, "Unlimited-OCR 2"):
             return None
         _log.warning("Keeping an unreadable Unlimited-OCR 2 table as text")
         text = _strip_table_tags(text)

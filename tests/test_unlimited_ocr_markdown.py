@@ -69,5 +69,22 @@ def test_parse_builds_document_with_heading_and_table():
     assert "184 320.00" in markdown
 
 
+def test_table_with_a_large_grid_keeps_its_cells():
+    # 120 x 90 grid cells: the table reader of DeepSeek-OCR builds this grid. Only
+    # the table fallback of Unlimited-OCR 2 and Typhoon OCR V2 limits the grid.
+    rows = "".join(f"<tr><td>S{row}</td><td>{row * 3}</td></tr>" for row in range(119))
+    raw = (
+        "<|det|>table [51, 216, 601, 420]<|/det|>"
+        f'<table><tr><td colspan="90">Rainfall by station</td></tr>{rows}</table>'
+    )
+
+    doc = parse_unlimited_ocr_markdown(raw, PAGE_SIZE, page_no=1, filename="page.png")
+
+    (table,) = doc.tables
+    assert (table.data.num_rows, table.data.num_cols) == (120, 90)
+    assert len(table.data.table_cells) == 239
+    assert [cell.text for cell in table.data.table_cells[-2:]] == ["S118", "354"]
+
+
 def test_response_format_enum_value():
     assert ResponseFormat.UNLIMITED_OCR_MARKDOWN.value == "unlimited_ocr_markdown"

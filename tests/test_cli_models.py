@@ -166,6 +166,7 @@ def test_every_vlm_response_format_is_classified_for_grounding():
         ("mineru2_pro", True),
         ("lightonocr3_08b", True),
         ("surya_ocr2_5", True),
+        ("typhoon_ocr2_2b", True),
         ("lightonocr", False),
         ("granite_vision", False),
         ("qwen", False),
@@ -214,6 +215,7 @@ def test_table_fits_a_narrow_terminal_without_cut_names():
         (["--family", "parakeet"], "parakeet_ctc_1_1b", "whisper_tiny"),
         (["--family", "datalab"], "chandra_ocr2", "granite_docling"),
         (["--family", "datalab"], "surya_ocr2_5", "granite_docling"),
+        (["--family", "typhoon"], "typhoon_ocr2_08b", "granite_docling"),
     ],
 )
 def test_models_command_filters(args, present, absent):

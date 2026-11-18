@@ -156,6 +156,20 @@ def test_repetition_handling_can_be_turned_off():
     assert all(_stoppers(engine_input) == [] for engine_input in inputs)
 
 
+def test_the_chat_template_kwargs_of_the_model_spec_reach_the_engine():
+    options = CodeFormulaVlmOptions.from_preset("codeformulav2")
+    # from_preset shares the spec of the preset, so change a copy of it.
+    options.model_spec = options.model_spec.model_copy(
+        update={"chat_template_kwargs": {"enable_thinking": False}}
+    )
+
+    _, inputs = _enrich(options, [HEALTHY])
+
+    assert [engine_input.chat_template_kwargs for engine_input in inputs] == [
+        {"enable_thinking": False}
+    ]
+
+
 @pytest.mark.parametrize("expansion_factor", [0.0, 0.08, 0.18])
 def test_the_crop_margin_follows_the_option(tmp_path, expansion_factor):
     page_path = tmp_path / "page.png"

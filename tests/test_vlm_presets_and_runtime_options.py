@@ -746,6 +746,7 @@ class TestPresetEngineIntegration:
             ResponseFormat.NEMOTRON_PARSE_V2,
             ResponseFormat.NEMOTRON_PARSE_V3_5,
             ResponseFormat.MINERU2,
+            ResponseFormat.TYPHOON_OCR2_JSON,
         ]
 
         # Check VlmConvert presets

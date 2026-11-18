@@ -134,6 +134,7 @@ class ResponseFormat(str, Enum):
     NEMOTRON_PARSE_V2 = "nemotron_parse_v2"
     NEMOTRON_PARSE_V3_5 = "nemotron_parse_v3_5"
     MINERU2 = "mineru2"
+    TYPHOON_OCR2_JSON = "typhoon_ocr2_json"
 
 
 class InferenceFramework(str, Enum):
