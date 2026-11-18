@@ -195,10 +195,12 @@ def format_duration(delta: timedelta) -> str:
     """
     total = abs(int(delta.total_seconds()))
     days, rest = divmod(total, 86400)
+    # Weeks are used only for whole weeks, so check before `rest` is reused.
+    whole_weeks = days % 7 == 0 and not rest
     hours, rest = divmod(rest, 3600)
     minutes, seconds = divmod(rest, 60)
     parts: list[str] = []
-    if days and days % 7 == 0 and not rest:
+    if days and whole_weeks:
         parts.append(_plural(days // 7, "week"))
     elif days:
         parts.append(_plural(days, "day"))
