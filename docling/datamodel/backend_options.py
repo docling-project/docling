@@ -727,7 +727,8 @@ class EmailBackendOptions(BaseBackendOptions):
             "events with time, location, organizer and attendees. They are "
             "added under a 'Calendar' heading after the body. An event that "
             "the email carries twice, as an inline part and as an attachment, "
-            "is added once."
+            "is added once. An event description that the body already holds "
+            "is left out."
         ),
     )
 

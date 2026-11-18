@@ -173,6 +173,44 @@ def _merge_calendar_parts(
     return shown_parts, merged
 
 
+def _without_repeated_descriptions(
+    components: list[Component], body_text: str
+) -> list[Component]:
+    """Drop each entry description that the email body already holds.
+
+    Outlook copies the whole plain-text body of an invitation into the
+    DESCRIPTION of the event. The comparison ignores whitespace.
+
+    Args:
+        components: The calendar components to show.
+        body_text: The body text with each run of whitespace as one space.
+
+    Returns:
+        The components without the repeated descriptions.
+    """
+    result: list[Component] = []
+    for component in components:
+        if component.name == "VCALENDAR":
+            component = replace(
+                component,
+                components=_without_repeated_descriptions(
+                    component.components, body_text
+                ),
+            )
+        elif component.name in _CALENDAR_ENTRIES:
+            component = replace(
+                component,
+                properties=[
+                    prop
+                    for prop in component.properties
+                    if prop.name != "DESCRIPTION"
+                    or " ".join(prop.value.split()) not in body_text
+                ],
+            )
+        result.append(component)
+    return result
+
+
 class EmailDocumentBackend(DeclarativeDocumentBackend):
     def __init__(
         self,
@@ -555,8 +593,20 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             )
 
         if calendars:
+            body_text = " ".join(
+                " ".join(
+                    paragraph.text
+                    for paragraph in body_paragraphs
+                    if paragraph.content_layer == ContentLayer.BODY
+                ).split()
+            )
             doc.add_heading(text="Calendar", level=2)
-            add_calendar_components(doc, calendars, base_level=3, name_as_title=False)
+            add_calendar_components(
+                doc,
+                _without_repeated_descriptions(calendars, body_text),
+                base_level=3,
+                name_as_title=False,
+            )
 
         if self.options.list_attachments:
             attachment_labels = self._get_attachment_labels()
