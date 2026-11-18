@@ -255,3 +255,21 @@ def test_alarms(converter):
         "Display, 30 minutes before due",
         "Email, at start, repeated 2 times every 5 minutes",
     ]
+
+
+@pytest.mark.parametrize(
+    ("rule", "expected"),
+    [
+        ("FREQ=MONTHLY;BYDAY=MO", "Monthly on every Monday"),
+        ("FREQ=MONTHLY;BYDAY=TU,TH", "Monthly on every Tuesday and every Thursday"),
+        ("FREQ=MONTHLY;BYDAY=1MO,FR", "Monthly on the first Monday and every Friday"),
+        ("FREQ=YEARLY;BYDAY=SU", "Yearly on every Sunday"),
+        ("FREQ=YEARLY;BYMONTH=1;BYDAY=MO", "Yearly in January on every Monday"),
+        # A day with a position, and a weekly rule, already name one day.
+        ("FREQ=MONTHLY;BYDAY=-1FR", "Monthly on the last Friday"),
+        ("FREQ=WEEKLY;BYDAY=MO", "Weekly on Monday"),
+    ],
+)
+def test_describe_rrule_monthly_and_yearly_day_without_position(rule, expected):
+    """BYDAY=MO in a monthly or yearly rule is every Monday, not one Monday."""
+    assert describe_rrule(rule) == expected

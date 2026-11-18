@@ -238,7 +238,8 @@ def _ordinal_word(number: int) -> str:
     return _ORDINAL_WORDS.get(number, _ordinal(number))
 
 
-def _describe_byday(value: str) -> str | None:
+def _describe_byday(value: str, every: bool) -> str | None:
+    """Describe BYDAY; ``every`` marks a day without a position as every such day."""
     days: list[str] = []
     for token in value.split(","):
         match = _BYDAY.fullmatch(token.strip())
@@ -247,7 +248,7 @@ def _describe_byday(value: str) -> str | None:
         position, weekday = match.groups()
         name = _WEEKDAYS[weekday.upper()]
         if position is None:
-            days.append(name)
+            days.append(f"every {name}" if every else name)
         elif int(position) == 0:
             return None
         else:
@@ -329,7 +330,11 @@ def describe_rrule(raw: str) -> str | None:
             return None
         text += f" in {months}"
     if "BYDAY" in parts:
-        days = _describe_byday(parts["BYDAY"])
+        # In a monthly or yearly rule, a day without a position is every such
+        # day of the month or year, not one of them.
+        days = _describe_byday(
+            parts["BYDAY"], every=parts["FREQ"].upper() in ("MONTHLY", "YEARLY")
+        )
         if days is None:
             return None
         text += f" on {days}"
