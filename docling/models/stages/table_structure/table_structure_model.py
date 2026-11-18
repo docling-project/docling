@@ -4,9 +4,11 @@
 import copy
 import logging
 import warnings
+from collections import Counter
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Literal, Optional
+from threading import Lock
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -18,7 +20,7 @@ from docling_core.types.doc.page import (
 from PIL import ImageDraw
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import Page, Table, TableStructurePrediction
+from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     TableFormerMode,
@@ -35,6 +37,9 @@ from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 from docling.utils.text_normalization import normalize_extracted_text
+
+if TYPE_CHECKING:
+    from docling_ibm_models.tableformer.data_management.tf_predictor import TFPredictor
 
 _log = logging.getLogger(__name__)
 
@@ -112,31 +117,37 @@ class TableStructureModel(BaseTableStructureModel):
                     )
                     artifacts_path = artifacts_path / self._model_path
 
-            if self.mode == TableFormerMode.ACCURATE:
-                artifacts_path = artifacts_path / "accurate"
-            else:
-                artifacts_path = artifacts_path / "fast"
-
-            # Third Party
-            import docling_ibm_models.tableformer.common as c
-            from docling_ibm_models.tableformer.data_management.tf_predictor import (
-                TFPredictor,
-            )
-
             device = decide_device(accelerator_options.device)
 
             # Disable MPS here, until we know why it makes things slower.
             if device == AcceleratorDevice.MPS.value:
                 device = AcceleratorDevice.CPU.value
 
-            self.tm_config = c.read_config(f"{artifacts_path}/tm_config.json")
-            self.tm_config["model"]["save_dir"] = artifacts_path
-            self.tm_model_type = self.tm_config["model"]["type"]
+            self._tableformer_artifacts = artifacts_path
+            self._device = device
+            self._num_threads = accelerator_options.num_threads
+            self._fast_lock = Lock()
+            self._fast_predictor: tuple[TFPredictor, int] | None = None
 
-            self.tf_predictor = TFPredictor(
-                self.tm_config, device, accelerator_options.num_threads
+            model_dir = "accurate" if self.mode == TableFormerMode.ACCURATE else "fast"
+            self.tf_predictor, self.tm_config = self._load_predictor(
+                artifacts_path / model_dir, device, self._num_threads
             )
+            self.tm_model_type = self.tm_config["model"]["type"]
             self.scale = 2.0  # Scale up table input images to 144 dpi
+
+    @staticmethod
+    def _load_predictor(
+        artifacts_path: Path, device: str, num_threads: int
+    ) -> tuple["TFPredictor", dict[str, Any]]:
+        import docling_ibm_models.tableformer.common as c
+        from docling_ibm_models.tableformer.data_management.tf_predictor import (
+            TFPredictor,
+        )
+
+        config = c.read_config(str(artifacts_path / "tm_config.json"))
+        config["model"]["save_dir"] = artifacts_path
+        return TFPredictor(config, device, num_threads), config
 
     @classmethod
     def get_options_type(cls) -> type[TableStructureOptions]:
@@ -153,6 +164,103 @@ class TableStructureModel(BaseTableStructureModel):
             force=force,
             progress=progress,
         )
+
+    def _table_from_output(
+        self, output: dict[str, Any], page: Page, cluster: Cluster
+    ) -> Table:
+        cells = []
+        for element in output["tf_responses"]:
+            if not self.do_cell_matching:
+                assert page._backend is not None
+                bbox = BoundingBox.model_validate(element["bbox"]).scaled(
+                    1 / self.scale
+                )
+                element["bbox"]["token"] = page._backend.get_text_in_rect(bbox)
+
+            cell = TableCell.model_validate(element)
+            if cell.bbox is not None:
+                cell.bbox = cell.bbox.scaled(1 / self.scale)
+            cell.text = normalize_extracted_text(cell.text)
+            cells.append(cell)
+
+        details = output["predict_details"]
+        return Table(
+            otsl_seq=details.get("prediction", {}).get("rs_seq", []),
+            table_cells=cells,
+            num_rows=details.get("num_rows", 0),
+            num_cols=details.get("num_cols", 0),
+            id=cluster.id,
+            page_no=page.page_no,
+            cluster=cluster,
+            label=cluster.label,
+        )
+
+    def _retry_with_fast(
+        self,
+        *,
+        page_input: dict[str, Any],
+        table_box: list[float],
+        page: Page,
+        cluster: Cluster,
+    ) -> Table | None:
+        try:
+            with self._fast_lock:
+                if self._fast_predictor is None:
+                    fast_artifacts = self._tableformer_artifacts / "fast"
+                    if not (fast_artifacts / "tm_config.json").is_file():
+                        return None
+                    predictor, config = self._load_predictor(
+                        fast_artifacts, self._device, self._num_threads
+                    )
+                    self._fast_predictor = predictor, config["predict"]["max_steps"]
+                predictor, max_steps = self._fast_predictor
+                outputs = predictor.multi_table_predict(
+                    page_input, [table_box.copy()], do_matching=self.do_cell_matching
+                )
+            table = self._table_from_output(outputs[0], page, cluster)
+        except Exception:
+            _log.warning(
+                "FAST TableFormer retry failed for table %d on page %d.",
+                cluster.id,
+                page.page_no,
+                exc_info=True,
+            )
+            return None
+
+        if (
+            not table.otsl_seq
+            or degenerate_structure_reason(table.otsl_seq, max_steps) is not None
+            or table.num_rows <= 0
+            or table.num_cols <= 0
+            or not table.table_cells
+            or any(
+                not (
+                    0
+                    <= cell.start_row_offset_idx
+                    < cell.end_row_offset_idx
+                    <= table.num_rows
+                    and 0
+                    <= cell.start_col_offset_idx
+                    < cell.end_col_offset_idx
+                    <= table.num_cols
+                )
+                for cell in table.table_cells
+            )
+        ):
+            return None
+
+        # A plausible grid can still drop or duplicate source text.
+        source_words = Counter(
+            word
+            for token in page_input["tokens"]
+            for word in normalize_extracted_text(token["text"]).split()
+        )
+        matched_words = Counter(
+            word for cell in table.table_cells for word in cell.text.split()
+        )
+        if matched_words != source_words:
+            return None
+        return table
 
     def draw_table_and_cells(
         self,
@@ -264,7 +372,7 @@ class TableStructureModel(BaseTableStructureModel):
                     predictions.append(table_prediction)
                     continue
 
-                page_input = {
+                page_input: dict[str, Any] = {
                     "width": page.size.width * self.scale,
                     "height": page.size.height * self.scale,
                     "image": numpy.asarray(page.get_image(scale=self.scale)),
@@ -313,64 +421,44 @@ class TableStructureModel(BaseTableStructureModel):
                     page_input["tokens"] = tokens
 
                     tf_output = self.tf_predictor.multi_table_predict(
-                        page_input, [tbl_box], do_matching=self.do_cell_matching
+                        page_input, [tbl_box.copy()], do_matching=self.do_cell_matching
                     )
-                    table_out = tf_output[0]
-                    table_cells = []
-                    for element in table_out["tf_responses"]:
-                        if not self.do_cell_matching:
-                            the_bbox = BoundingBox.model_validate(
-                                element["bbox"]
-                            ).scaled(1 / self.scale)
-                            text_piece = page._backend.get_text_in_rect(the_bbox)
-                            element["bbox"]["token"] = text_piece
-
-                        tc = TableCell.model_validate(element)
-                        if tc.bbox is not None:
-                            tc.bbox = tc.bbox.scaled(1 / self.scale)
-                        tc.text = normalize_extracted_text(tc.text)
-                        table_cells.append(tc)
-
-                    assert "predict_details" in table_out
-
-                    # Retrieving cols/rows, after post processing:
-                    num_rows = table_out["predict_details"].get("num_rows", 0)
-                    num_cols = table_out["predict_details"].get("num_cols", 0)
-                    otsl_seq = (
-                        table_out["predict_details"]
-                        .get("prediction", {})
-                        .get("rs_seq", [])
-                    )
-
+                    table = self._table_from_output(tf_output[0], page, table_cluster)
                     reason = degenerate_structure_reason(
-                        otsl_seq, self.tm_config["predict"]["max_steps"]
+                        table.otsl_seq, self.tm_config["predict"]["max_steps"]
                     )
-                    if reason is not None:
-                        _log.warning(
-                            "Discarding the %dx%d structure predicted for table "
-                            "%d on page %d because %s; its text is kept as a "
-                            "single cell.",
-                            num_rows,
-                            num_cols,
+                    retry = None
+                    if reason is not None and self.mode == TableFormerMode.ACCURATE:
+                        retry = self._retry_with_fast(
+                            page_input=page_input,
+                            table_box=tbl_box,
+                            page=page,
+                            cluster=table_cluster,
+                        )
+                    if retry is not None:
+                        _log.info(
+                            "Recovered the structure of table %d on page %d with FAST "
+                            "after ACCURATE reported that %s.",
                             table_cluster.id,
                             page.page_no,
                             reason,
                         )
-                        num_rows, num_cols, table_cells = 0, 0, []
+                        table = retry
+                    elif reason is not None:
+                        _log.warning(
+                            "Discarding the %dx%d structure predicted for table "
+                            "%d on page %d because %s; its text is kept as a "
+                            "single cell.",
+                            table.num_rows,
+                            table.num_cols,
+                            table_cluster.id,
+                            page.page_no,
+                            reason,
+                        )
+                        table.num_rows, table.num_cols, table.table_cells = 0, 0, []
                         keep_table_text_as_child(table_cluster, page)
 
-                    tbl = Table(
-                        otsl_seq=otsl_seq,
-                        table_cells=table_cells,
-                        num_rows=num_rows,
-                        num_cols=num_cols,
-                        id=table_cluster.id,
-                        page_no=page.page_no,
-                        cluster=table_cluster,
-                        label=table_cluster.label,
-                    )
-
-                    table_prediction.table_map[table_cluster.id] = tbl
+                    table_prediction.table_map[table_cluster.id] = table
 
                 if settings.debug.visualize_tables:
                     self.draw_table_and_cells(

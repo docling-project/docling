@@ -32,6 +32,7 @@ from docling_core.types.doc.page import (
 )
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import (
     Cluster,
     InputFormat,
@@ -39,6 +40,7 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult, InputDocument, _DummyBackend
+from docling.datamodel.pipeline_options import TableFormerMode, TableStructureOptions
 from docling.models.base_table_model import (
     degenerate_structure_reason,
     keep_table_text_as_child,
@@ -421,6 +423,7 @@ class _FakePredictor:
         self.rs_seq = rs_seq
         self.shape = shape
         self.cells = cells
+        self.calls: list[tuple[list[float], list[str], bool]] = []
 
     def _response(self, index: int, cell: TextCell) -> dict:
         bbox = cell.rect.to_bounding_box().scaled(self.scale)
@@ -439,6 +442,16 @@ class _FakePredictor:
         }
 
     def multi_table_predict(self, page_input, table_bboxes, do_matching=True):
+        for bbox in table_bboxes:
+            self.calls.append(
+                (
+                    bbox.copy(),
+                    [token["text"] for token in page_input["tokens"]],
+                    do_matching,
+                )
+            )
+            # The IBM predictor mutates the input box when it resizes the page.
+            bbox[0] = 0
         num_rows, num_cols = self.shape
         return [
             {
@@ -458,6 +471,7 @@ class _FakePredictor:
 def _v1_model(rs_seq: list[str], shape: tuple[int, int], cells) -> TableStructureModel:
     model = object.__new__(TableStructureModel)
     model.enabled = True
+    model.mode = TableFormerMode.FAST
     model.do_cell_matching = True
     model.scale = 2.0
     model.tm_config = {"predict": {"max_steps": 1024}}
@@ -493,3 +507,117 @@ def test_v1_predict_tables_keeps_a_complete_structure(conv_res, caplog):
     assert [cell.text for cell in tbl.table_cells] == TABLE_TEXT
     assert table.children == []
     assert not caplog.records
+
+
+def _accurate_model(monkeypatch, artifacts_path, accurate, fast):
+    if fast is not None:
+        (artifacts_path / "fast").mkdir()
+        (artifacts_path / "fast" / "tm_config.json").touch()
+
+    loaded_modes = []
+
+    def load(path, device, num_threads):
+        mode = path.name
+        loaded_modes.append(mode)
+        predictor = {"accurate": accurate, "fast": fast}[mode]
+        assert predictor is not None
+        return predictor, {
+            "model": {"type": "TableModel04_rs"},
+            "predict": {"max_steps": 1024 if mode == "accurate" else 8},
+        }
+
+    monkeypatch.setattr(TableStructureModel, "_load_predictor", staticmethod(load))
+    model = TableStructureModel(
+        enabled=True,
+        artifacts_path=artifacts_path,
+        options=TableStructureOptions(mode=TableFormerMode.ACCURATE),
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+    )
+    return model, loaded_modes
+
+
+def test_v1_retries_with_one_lazily_loaded_fast_model(conv_res, monkeypatch, tmp_path):
+    accurate = _FakePredictor(2, ["ecel"] * 1023, (1, 6), TABLE_CELLS[:1])
+    fast = _FakePredictor(2, COMPLETE_SEQ, (2, 2), TABLE_CELLS)
+    model, loaded_modes = _accurate_model(monkeypatch, tmp_path, accurate, fast)
+    assert loaded_modes == ["accurate"]
+
+    for _ in range(2):
+        table = _table_cluster(cells=TABLE_CELLS)
+        page = _stage_page(table, model.scale)
+        (prediction,) = model.predict_tables(conv_res, [page])
+        tbl = prediction.table_map[table.id]
+        assert (tbl.num_rows, tbl.num_cols) == (2, 2)
+        assert tbl.otsl_seq == COMPLETE_SEQ
+        assert [cell.text for cell in tbl.table_cells] == TABLE_TEXT
+        assert table.children == []
+
+    assert loaded_modes == ["accurate", "fast"]
+    assert len(fast.calls) == 2
+    assert fast.calls == accurate.calls
+
+
+def test_v1_keeps_complete_accurate_structure_without_fast(
+    conv_res, monkeypatch, tmp_path
+):
+    accurate = _FakePredictor(2, COMPLETE_SEQ, (2, 2), TABLE_CELLS)
+    fast = _FakePredictor(2, COMPLETE_SEQ, (2, 2), TABLE_CELLS)
+    model, loaded_modes = _accurate_model(monkeypatch, tmp_path, accurate, fast)
+    table = _table_cluster(cells=TABLE_CELLS)
+    (prediction,) = model.predict_tables(conv_res, [_stage_page(table, model.scale)])
+
+    assert [
+        cell.text for cell in prediction.table_map[table.id].table_cells
+    ] == TABLE_TEXT
+    assert loaded_modes == ["accurate"]
+    assert not fast.calls
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "missing_weights",
+        "cut_off",
+        "invalid_grid",
+        "dropped_text",
+        "duplicate_text",
+        "error",
+    ],
+)
+def test_v1_keeps_text_when_fast_cannot_recover(
+    conv_res, monkeypatch, tmp_path, failure
+):
+    accurate = _FakePredictor(2, ["ecel"] * 1023, (1, 6), TABLE_CELLS[:1])
+    fast = _FakePredictor(2, COMPLETE_SEQ, (2, 2), TABLE_CELLS)
+    if failure == "cut_off":
+        fast.rs_seq = ["fcel", "fcel", "nl", "fcel", "fcel", "fcel"]
+    elif failure == "invalid_grid":
+        fast.shape = (1, 2)
+    elif failure == "dropped_text":
+        fast.cells = TABLE_CELLS[:-1]
+    elif failure == "duplicate_text":
+        fast.cells = [
+            *TABLE_CELLS[:-1],
+            TABLE_CELLS[-1].model_copy(update={"text": "0.93 0.93"}),
+        ]
+    elif failure == "error":
+
+        def fail(*args, **kwargs):
+            raise RuntimeError("FAST inference failed")
+
+        monkeypatch.setattr(fast, "multi_table_predict", fail)
+
+    model, loaded_modes = _accurate_model(
+        monkeypatch, tmp_path, accurate, None if failure == "missing_weights" else fast
+    )
+    table = _table_cluster(cells=TABLE_CELLS)
+    (prediction,) = model.predict_tables(conv_res, [_stage_page(table, model.scale)])
+
+    tbl = prediction.table_map[table.id]
+    assert (tbl.num_rows, tbl.num_cols, tbl.table_cells) == (0, 0, [])
+    assert tbl.otsl_seq == accurate.rs_seq
+    (child,) = table.children
+    assert [cell.text for cell in child.cells] == TABLE_TEXT
+    assert loaded_modes == (
+        ["accurate"] if failure == "missing_weights" else ["accurate", "fast"]
+    )
