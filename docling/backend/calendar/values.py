@@ -343,6 +343,9 @@ def describe_rrule(raw: str) -> str | None:
         if month_days is None:
             return None
         text += f" on {month_days}"
+        # Without BYMONTH, a yearly rule repeats on these days in every month.
+        if parts["FREQ"].upper() == "YEARLY" and "BYMONTH" not in parts:
+            text += " of every month"
     if "COUNT" in parts:
         try:
             count = int(parts["COUNT"])
