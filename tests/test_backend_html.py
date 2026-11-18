@@ -487,6 +487,76 @@ def test_table_row_header_rowspan_keeps_the_row_cells():
     assert "$134" in doc.export_to_markdown()
 
 
+# The "two headers" table of the W3C WAI tables tutorial: an empty corner cell,
+# a header row of days and a header column of times.
+_SCOPE_HEAD_ROW = (
+    b'<tr><td></td><th scope="col">Monday</th><th scope="col">Tuesday</th></tr>'
+)
+_SCOPE_BODY_ROWS = (
+    b'<tr><th scope="row">09:00 - 11:00</th><td>Closed</td><td>Open</td></tr>'
+    b'<tr><th scope="row">11:00 - 13:00</th><td>Open</td><td>Closed</td></tr>'
+)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        _SCOPE_HEAD_ROW + _SCOPE_BODY_ROWS,
+        b"<thead>"
+        + _SCOPE_HEAD_ROW
+        + b"</thead><tbody>"
+        + _SCOPE_BODY_ROWS
+        + b"</tbody>",
+        (_SCOPE_HEAD_ROW + _SCOPE_BODY_ROWS)
+        .replace(b'"col"', b'"COLGROUP"')
+        .replace(b'"row"', b'"RowGroup"'),
+        (_SCOPE_HEAD_ROW + _SCOPE_BODY_ROWS).replace(b">Monday<", b"><b>Monday</b><"),
+    ],
+    ids=["scope", "scope_in_thead", "group_scope_any_case", "rich_header_cell"],
+)
+def test_table_th_scope_sets_the_header_flags(body):
+    """The scope attribute of a <th> names the cells that it is a header for
+    (HTML Standard, the th element). It was ignored: the empty <td> corner
+    cell made Monday and Tuesday row headers, so the dataframe export had no
+    column names and kept the days as its first data row.
+    """
+    doc = _convert_html(b"<table>" + body + b"</table>")
+
+    table = doc.tables[0]
+    cells = {cell.text: cell for cell in table.data.table_cells}
+    for day in ("Monday", "Tuesday"):
+        assert (cells[day].column_header, cells[day].row_header) == (True, False)
+    for slot in ("09:00 - 11:00", "11:00 - 13:00"):
+        assert (cells[slot].column_header, cells[slot].row_header) == (False, True)
+    if b"<b>" in body:
+        # The rich cell path sets the same flags.
+        assert isinstance(cells["Monday"], RichTableCell)
+    else:
+        df = table.export_to_dataframe(doc=doc)
+        assert list(df.columns) == ["", "Monday", "Tuesday"]
+        assert df.iloc[0].tolist() == ["09:00 - 11:00", "Closed", "Open"]
+
+
+def test_table_th_without_scope_keeps_the_row_based_flags():
+    # Without scope, a <th> in a row of only <th> cells is a column header and
+    # a <th> in a row that has a <td> is a row header, as before.
+    doc = _convert_html(
+        b"<table><tr><th>Day</th><th>Hours</th></tr>"
+        b"<tr><th>Monday</th><td>09:00 - 17:00</td></tr></table>"
+    )
+
+    flags = {
+        cell.text: (cell.column_header, cell.row_header)
+        for cell in doc.tables[0].data.table_cells
+    }
+    assert flags == {
+        "Day": (True, False),
+        "Hours": (True, False),
+        "Monday": (False, True),
+        "09:00 - 17:00": (False, False),
+    }
+
+
 _THEAD = b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
 _TFOOT = b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
 

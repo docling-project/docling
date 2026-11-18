@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import DocItemLabel, DoclingDocument
 
-from docling.backend.calendar.values import describe_rrule
+from docling.backend.calendar.values import (
+    describe_rrule,
+    format_duration,
+    parse_duration,
+)
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.document_converter import DocumentConverter
 
@@ -225,6 +229,48 @@ def test_event_times(converter, lines, expected):
 )
 def test_describe_rrule(rule, expected):
     assert describe_rrule(rule) == expected
+
+
+@pytest.mark.parametrize(
+    ("duration", "expected"),
+    [
+        ("P1W", "1 week"),
+        ("P14D", "2 weeks"),
+        ("P10D", "10 days"),
+        # Weeks are used only when nothing is left over.
+        ("P7DT30M", "7 days 30 minutes"),
+        ("P7DT5H", "7 days 5 hours"),
+        ("P14DT1H", "14 days 1 hour"),
+    ],
+)
+def test_format_duration_uses_weeks_only_for_whole_weeks(duration, expected):
+    delta = parse_duration(duration)
+
+    assert delta is not None
+    assert format_duration(delta) == expected
+
+
+@pytest.mark.parametrize(
+    ("component", "title"),
+    [
+        ("VFREEBUSY", "Free/busy"),
+        ("VEVENT", "Untitled event"),
+    ],
+)
+def test_end_without_start_is_retained(converter, component, title):
+    raw = _calendar(
+        "PRODID:-//Repro//EN",
+        f"BEGIN:{component}",
+        "UID:busy@example.com",
+        "DTSTAMP:20261115T120000Z",
+        "DTEND:20261116T180000Z",
+        f"END:{component}",
+    )
+
+    result = _convert(converter, raw)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert _texts(result.document) == [title, "End: 2026-11-16 18:00 UTC"]
 
 
 def test_alarms(converter):
