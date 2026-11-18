@@ -256,8 +256,10 @@ _FORM_VALUE_ID_RE: Final = re.compile(
 _LIST_STYLE_STRING_RE: Final = re.compile(
     r"list-style-type\s*:\s*(?P<quote>['\"])(?P<marker>.*?)(?P=quote)", re.IGNORECASE
 )
-# `list-style-type: none` hides the marker of a list item.
-_LIST_STYLE_NONE_RE: Final = re.compile(r"list-style-type\s*:\s*none\b", re.IGNORECASE)
+_LIST_STYLE_KEYWORD_RE: Final = re.compile(
+    r"(?:^|;)\s*list-style(?:-type)?\s*:(?P<value>[^;]*)", re.IGNORECASE
+)
+_CSS_IMPORTANT_RE: Final = re.compile(r"!\s*important\s*$", re.IGNORECASE)
 # The `start` attribute of an `<ol>`, by the HTML rules for parsing integers:
 # leading ASCII whitespace, an optional plus sign, and ASCII digits.
 _OL_START_RE: Final = re.compile(r"[ \t\n\f\r]*\+?(?P<digits>[0-9]+)")
@@ -3370,9 +3372,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         marker=marker,
                     )
                     # A <li> without a marker in a <ul> only indents its nested list
-                    indent_only = not is_ordered and bool(
-                        _LIST_STYLE_NONE_RE.search(str(li.get("style", "")))
-                    )
+                    indent_only = not is_ordered and self._hides_list_marker(li)
                     holders = ["table", "img"]
                     if not indent_only:
                         holders += ["ul", "ol", "dl"]
@@ -3429,6 +3429,27 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level + 1] = None
             self.level -= 1
         return added_refs
+
+    @staticmethod
+    def _hides_list_marker(li: Tag) -> bool:
+        """Return True if the inline style of `li` hides its marker.
+
+        `list-style-type: none` and a `list-style` shorthand with only `none` and
+        a position hide the marker. In `list-style: none disc` or
+        `list-style: none url(...)`, `none` sets the image, and a marker stays. Of
+        several declarations, an `!important` one wins, else the last one.
+        """
+        style = li.get("style")
+        value = ""
+        important = False
+        for match in _LIST_STYLE_KEYWORD_RE.finditer(
+            style if isinstance(style, str) else ""
+        ):
+            declared, is_important = _CSS_IMPORTANT_RE.subn("", match.group("value"))
+            if is_important or not important:
+                value, important = declared, bool(is_important)
+        keywords = set(value.lower().split())
+        return "none" in keywords and keywords <= {"none", "inside", "outside"}
 
     @staticmethod
     def _get_list_style_marker(li: Tag) -> str:

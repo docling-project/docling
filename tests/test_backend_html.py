@@ -1193,6 +1193,37 @@ def test_list_item_without_text_or_marker():
 
 
 @pytest.mark.parametrize(
+    ("style", "expected"),
+    [
+        ("list-style:none", ["Nested."]),
+        ("list-style:none inside", ["Nested."]),
+        ("list-style-type: none !important; list-style: disc", ["Nested."]),
+        # `none` sets the image, the type keeps or sets a marker
+        ("list-style: none disc", ["", "Nested."]),
+        ("list-style: none url(dot.png)", ["", "Nested."]),
+        ("list-style-type: none; list-style: square", ["", "Nested."]),
+    ],
+)
+def test_list_item_without_text_marker_style(style, expected):
+    """The `list-style` shorthand hides the marker of a <li> as the longhand does."""
+    html = (
+        f"<html><body><ul><li style='{style}'><ul><li>Nested.</li></ul></li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    assert [item.text for item in list_items] == expected
+
+
+@pytest.mark.parametrize(
     "inner",
     [
         # table as a direct child of <li>
