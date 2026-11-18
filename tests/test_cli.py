@@ -1835,6 +1835,75 @@ def test_cli_layout_engine_can_be_set(tmp_path, monkeypatch):
     assert layout_options.kind == "docling_layout_default"
 
 
+def test_cli_layout_preset_can_be_set(tmp_path, monkeypatch):
+    """Test that --layout-preset selects the MLX layout model."""
+    result, layout_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--layout-preset", "layout_heron_mlx"],
+        tmp_path,
+        "layout_options",
+    )
+    assert result.exit_code == 0
+    assert layout_options is not None
+    assert layout_options.engine_options.engine_type.value == "mlx"
+    assert (
+        layout_options.model_spec.repo_id
+        == "mlx-community/docling-layout-heron-101-mlx-bf16"
+    )
+
+
+def test_cli_invalid_layout_preset_is_rejected(tmp_path):
+    """Test that an unknown --layout-preset is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--layout-preset",
+            "not_a_preset",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "not_a_preset" in result.output
+
+
+def test_cli_layout_preset_is_ignored_for_vlm_pipeline(tmp_path, monkeypatch, caplog):
+    """Test that --layout-preset warns and is ignored outside the PDF pipelines."""
+    caplog.set_level("WARNING")
+    captured = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            captured["pipeline_options"] = format_options[
+                InputFormat.PDF
+            ].pipeline_options
+
+        def convert_all(self, input_doc_paths, **kwargs):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--pipeline",
+            "vlm",
+            "--layout-preset",
+            "layout_egret_large",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "only supported" in caplog.text
+    assert isinstance(captured["pipeline_options"], VlmPipelineOptions)
+    assert not hasattr(captured["pipeline_options"], "layout_options")
+
+
 def test_cli_table_structure_engine_can_be_set(tmp_path, monkeypatch):
     """Test that --table-structure-engine sets table structure options correctly."""
     result, table_options = _capture_cli_engine_options(

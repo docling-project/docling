@@ -296,6 +296,15 @@ models-asr-inline = [
   'docling-slim[format-audio,feat-asr-transformers,feat-asr-mlx-audio]',
 ]
 
+# MLX layout model for Apple Silicon
+models-layout-mlx = [
+  'mlx-vlm>=0.7.0,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  # Same macOS constraints as models-vlm-inline: mlx-vlm needs transformers>=5.14,
+  # but 5.9.0-5.15.x crash on MPS.
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.9.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.* ; sys_platform == "darwin"',
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.13.0 ; sys_platform != "darwin"',
+]
+
 # ============================================================================
 # FEATURES
 # ============================================================================

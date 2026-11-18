@@ -65,6 +65,7 @@ app = typer.Typer(
 
 class _AvailableModels(str, Enum):
     LAYOUT = "layout"
+    LAYOUT_MLX = "layout_mlx"
     TABLEFORMER = "tableformer"
     TABLEFORMERV2 = "tableformerv2"
     CODE_FORMULA = "code_formula"
@@ -321,6 +322,7 @@ def download(
         force=force,
         progress=(not quiet),
         with_layout=_AvailableModels.LAYOUT in to_download,
+        with_layout_mlx=_AvailableModels.LAYOUT_MLX in to_download,
         with_tableformer=_AvailableModels.TABLEFORMER in to_download,
         with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
         with_code_formula=_AvailableModels.CODE_FORMULA in to_download,

@@ -114,6 +114,7 @@ pip install docling-slim[service-client]
 | `models-remote` | Remote model serving (Triton) | Production deployments |
 | `models-onnxruntime` | ONNX Runtime acceleration | Optimized inference |
 | `models-vlm-inline` | Vision Language Models | Image understanding, inline processing |
+| `models-layout-mlx` | MLX layout object detection | Apple Silicon layout inference |
 | `models-asr-inline` | All inline ASR engines (Whisper, Transformers, mlx-audio) | Speech recognition; needs macOS 14 or later on Apple Silicon |
 
 ### Other features

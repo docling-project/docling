@@ -71,6 +71,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
+| `layout_options` | Layout model and engine (`LayoutObjectDetectionOptions`; default Heron preset) |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 
@@ -87,6 +88,61 @@ the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
 on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
+
+### Choosing the layout model
+
+`PdfPipelineOptions.layout_options` controls layout detection. The default is
+`LayoutObjectDetectionOptions()`: preset `layout_heron_default` with
+`TransformersObjectDetectionEngineOptions`. There is no auto-detection and no
+fallback. Choose another preset with `from_preset()`:
+
+```python
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    PdfPipelineOptions,
+)
+
+opts = PdfPipelineOptions(
+    layout_options=LayoutObjectDetectionOptions.from_preset("layout_egret_large"),
+)
+```
+
+Preset IDs: `layout_heron_default`, `layout_heron_101`, `layout_egret_medium`,
+`layout_egret_large`, `layout_egret_xlarge`, `layout_heron_mlx`
+(see `LayoutObjectDetectionOptions.list_preset_ids()`).
+
+For Apple Silicon, `layout_heron_mlx` selects the MLX object-detection engine
+(`engine_type` value `"mlx"`) and the
+`mlx-community/docling-layout-heron-101-mlx-bf16@main` repository (RT-DETR v2,
+bf16). It requires the `mlx-vlm` package, installed by `docling[layout-mlx]` or
+`docling-slim[models-layout-mlx]`. `docling[vlm]` and `docling-slim[all]` also
+install it on Apple Silicon.
+
+Engine settings go through `engine_options`:
+
+```python
+from docling.datamodel.object_detection_engine_options import (
+    MlxObjectDetectionEngineOptions,
+)
+
+layout_options = LayoutObjectDetectionOptions.from_preset(
+    "layout_heron_mlx",
+    engine_options=MlxObjectDetectionEngineOptions(score_threshold=0.5),
+)
+```
+
+`MlxObjectDetectionEngineOptions` exposes only `engine_type` plus the inherited
+`score_threshold` (default `0.3`).
+
+Caveats:
+
+- `accelerator_options` (device and `num_threads`) does not affect the MLX
+  engine; Metal is used automatically.
+- Selecting `layout_heron_mlx` without `mlx-vlm` raises `ImportError` when the
+  engine initializes. Non-Apple hosts raise `RuntimeError`.
+- Offline: prefetch with `docling-tools models download layout_mlx`, or place
+  the repository under `artifacts_path` as
+  `mlx-community--docling-layout-heron-101-mlx-bf16`.
 
 ### Choosing an OCR engine
 
@@ -168,6 +224,9 @@ opts = PdfPipelineOptions(
     ),
 )
 ```
+
+This configures the torch- and ONNX-based stages. It does not affect the MLX
+layout engine, which always uses Metal.
 
 ## Native PDF pipeline (no models)
 

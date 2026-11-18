@@ -37,6 +37,7 @@ class ObjectDetectionEngineType(str, Enum):
     ONNXRUNTIME = "onnxruntime"
     TRANSFORMERS = "transformers"
     API_KSERVE_V2 = "api_kserve_v2"
+    MLX = "mlx"
 
     @classmethod
     def is_remote_variant(cls, engine_type: ObjectDetectionEngineType) -> bool:

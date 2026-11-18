@@ -21,6 +21,10 @@ from docling.datamodel.pipeline_options import (
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.stage_model_specs import (
+    OBJECT_DETECTION_LAYOUT_HERON_MLX,
+    ObjectDetectionModelSpec,
+)
 from docling.datamodel.vlm_model_specs import (
     GRANITEDOCLING_2STAGE_TRANSFORMERS,
     GRANITEDOCLING_MLX,
@@ -191,12 +195,40 @@ def _download_whisper_s2t_models(
                 )
 
 
+def _download_layout_spec(
+    spec: ObjectDetectionModelSpec,
+    output_dir: Path,
+    *,
+    force: bool,
+    progress: bool,
+) -> None:
+    """Download a layout model and every engine-specific repository variant."""
+    layout_repos = {spec.repo_id: spec.revision}
+    for override in spec.engine_overrides.values():
+        merged = override.merge_with(spec.repo_id, spec.revision)
+        if merged.repo_id is None or merged.revision is None:
+            raise ValueError(
+                f"Layout engine override for {spec.name!r} is missing a "
+                "repo_id or revision"
+            )
+        layout_repos[merged.repo_id] = merged.revision
+    for repo_id, revision in layout_repos.items():
+        download_hf_model(
+            repo_id=repo_id,
+            revision=revision,
+            local_dir=output_dir / repo_id.replace("/", "--"),
+            force=force,
+            progress=progress,
+        )
+
+
 def download_models(
     output_dir: Optional[Path] = None,
     *,
     force: bool = False,
     progress: bool = False,
     with_layout: bool = True,
+    with_layout_mlx: bool = False,
     with_tableformer: bool = True,
     with_tableformer_v2: bool = False,
     with_code_formula: bool = True,
@@ -255,21 +287,21 @@ def download_models(
 
     if with_layout:
         _log.info("Downloading layout model...")
-        layout_spec = LayoutObjectDetectionOptions().model_spec
-        # Fetch every engine variant: e.g. the ONNX engine reads from its own repo.
-        layout_repos = {layout_spec.repo_id: layout_spec.revision}
-        for override in layout_spec.engine_overrides.values():
-            merged = override.merge_with(layout_spec.repo_id, layout_spec.revision)
-            assert merged.repo_id is not None and merged.revision is not None
-            layout_repos[merged.repo_id] = merged.revision
-        for repo_id, revision in layout_repos.items():
-            download_hf_model(
-                repo_id=repo_id,
-                revision=revision,
-                local_dir=output_dir / repo_id.replace("/", "--"),
-                force=force,
-                progress=progress,
-            )
+        _download_layout_spec(
+            LayoutObjectDetectionOptions().model_spec,
+            output_dir,
+            force=force,
+            progress=progress,
+        )
+
+    if with_layout_mlx:
+        _log.info("Downloading MLX layout model...")
+        _download_layout_spec(
+            OBJECT_DETECTION_LAYOUT_HERON_MLX.model_spec,
+            output_dir,
+            force=force,
+            progress=progress,
+        )
 
     if with_tableformer:
         _log.info("Downloading tableformer model...")

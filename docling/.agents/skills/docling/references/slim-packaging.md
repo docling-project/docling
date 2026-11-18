@@ -20,6 +20,7 @@ pulling heavy packages (torch, OCR engines, VLM stacks) you won't use.
 | Scanned PDFs with a lightweight OCR engine | `docling-slim[format-pdf,feat-ocr-rapidocr]` |
 | Local layout/table/OCR ML models | `docling-slim[models-local]` |
 | Local VLM pipeline | `docling-slim[models-vlm-inline]` |
+| MLX layout model, Apple Silicon | `docling-slim[models-layout-mlx]` |
 | Whisper transcription | `docling-slim[format-audio]` |
 | All inline ASR engines | `docling-slim[models-asr-inline]` |
 | ASR on Apple Silicon without torch | `docling-slim[feat-asr-mlx-audio]` |
@@ -55,8 +56,11 @@ Extras compose — combine them with commas:
 - `feat-ocr-nemotron`
 
 **Models**
-- `models-local` — torch + docling-ibm-models (local layout/table/OCR models)
+- `models-local` — torch + docling-ibm-models (local layout/table/OCR models).
+  The Apple Silicon MLX layout path uses `models-layout-mlx` instead.
 - `models-vlm-inline` — local vision-language models
+- `models-layout-mlx` — MLX object-detection layout engine (`mlx-vlm`; Apple
+  Silicon only)
 - `models-asr-inline` — all inline ASR engines (Whisper, Transformers, mlx-audio);
   needs macOS 14 or later on Apple Silicon
 - `models-remote` — Triton client for remote model serving
@@ -92,3 +96,7 @@ Extras compose — combine them with commas:
   non-PDF formats or use a remote service.
 - To convert with zero local models, use `service-client` and point at a
   `docling-serve` endpoint — see [service-client.md](service-client.md).
+- `models-layout-mlx` backs the `layout_heron_mlx` layout preset. It is not
+  part of `standard` or `all`. The `docling` meta-package re-exports it as
+  `docling[layout-mlx]`. Only its `mlx-vlm` dependency is gated to `darwin` +
+  `arm64`; the extra itself is not platform-gated.

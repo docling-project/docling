@@ -23,6 +23,12 @@ accelerator_options = AcceleratorOptions(
 )
 ```
 
+!!! note
+    The MLX layout engine does not use `accelerator_options`. On Apple Silicon it
+    always runs on Metal. Select it with
+    `LayoutObjectDetectionOptions.from_preset("layout_heron_mlx")` or
+    `--layout-preset layout_heron_mlx`.
+
 Batch size and concurrency for document processing are controlled for each stage of the pipeline as:
 
 ```python
