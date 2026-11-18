@@ -1103,7 +1103,7 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
 
 
 def test_msg_loads_when_body_raises_unicode_decode_error():
-    """A .msg with 8-bit (non-Unicode) string properties must not crash.
+    """A .msg whose plain-text body cannot be decoded still loads.
 
     python-oxmsg <=0.0.2 decodes the body with the internet code page even
     when the bytes use the message code page, raising UnicodeDecodeError.
@@ -1136,8 +1136,77 @@ def test_msg_loads_when_body_raises_unicode_decode_error():
     doc = backend.convert()
     markdown = doc.export_to_markdown()
 
+    # Body is lost, but subject and sender survive.
     assert "Simple Email" in markdown
     assert "From:" in markdown
+    assert "Hello Bob" not in markdown
+
+
+def test_msg_loads_when_html_body_raises_unicode_decode_error():
+    """The html_body guard works the same way as the body guard."""
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    html_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "utf-8", b"\xe9", 0, 1, "invalid continuation byte"
+        )
+    )
+    with patch.object(OxMsgMessage, "html_body", html_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="non_unicode.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    # Plain body still present when only html_body fails.
+    assert "Hello Bob" in backend.convert().export_to_markdown()
+
+
+def test_msg_loads_when_subject_raises_unicode_decode_error():
+    """A .msg with a multi-byte coded subject still loads.
+
+    When PID_MESSAGE_CODEPAGE names a multi-byte codec like gb2312,
+    any PtypString8 property can raise UnicodeDecodeError.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    subject_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "gb2312", b"\xc0\xe9", 0, 1, "incomplete multibyte sequence"
+        )
+    )
+    with patch.object(OxMsgMessage, "subject", subject_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="non_unicode.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    markdown = backend.convert().export_to_markdown()
+
+    # Subject is lost, but body and sender survive.
+    assert "Simple Email" not in markdown
+    assert "Hello Bob" in markdown
 
 
 def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
