@@ -674,6 +674,19 @@ class OdsBackendOptions(BaseBackendOptions):
             )
         ),
     ] = None
+    max_repeated_cells: Annotated[
+        NonNegativeInt,
+        Field(
+            description=(
+                "Maximum number of cells that repeated rows and cells "
+                "(table:number-rows-repeated and table:number-columns-repeated) "
+                "can add to the workbook, in addition to the cells written in "
+                "the file. A repetition that goes over the limit keeps only the "
+                "copies that fit, and one copy when the limit is spent. Trailing "
+                "empty rows and cells do not count."
+            )
+        ),
+    ] = 100_000
 
 
 class LatexBackendOptions(BaseBackendOptions):

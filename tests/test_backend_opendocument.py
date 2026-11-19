@@ -2110,6 +2110,57 @@ def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
     ]
 
 
+@pytest.mark.parametrize("axis", ["rows", "columns"])
+def test_ods_repeated_content_is_limited(
+    tmp_path: Path, axis: str, caplog: pytest.LogCaptureFixture
+):
+    """Test a sheet that repeats a cell with content ten million times.
+
+    The trailing padding is removed, but a repetition with content is not. The
+    backend expanded each copy several times, so a file of less than 1 KB used
+    minutes of CPU time and gigabytes of memory. The copies over
+    ``max_repeated_cells`` are not converted, and the cells written after the
+    repetition are kept.
+    """
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    path = tmp_path / f"repeated_{axis}.ods"
+    doc = OdfDocument("spreadsheet")
+    doc.body.clear()
+    sheet = Table("Sheet1")
+    if axis == "rows":
+        repeated = Row(repeated=10_000_000)
+        repeated.append_cell(Cell("A"))
+        sheet.append_row(repeated)
+        last = Row()
+        last.append_cell(Cell("end"))
+        sheet.append_row(last)
+    else:
+        row = Row()
+        row.append_cell(Cell("A", repeated=10_000_000))
+        row.append_cell(Cell("end"))
+        sheet.append_row(row)
+    doc.body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(max_repeated_cells=100)
+            )
+        },
+    )
+    with caplog.at_level(logging.WARNING):
+        tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    cells = [cell.text for row in tables[0].data.grid for cell in row]
+    assert cells == ["A"] * 101 + ["end"]
+    assert "max_repeated_cells" in caplog.text
+
+
 @pytest.mark.parametrize("hidden", [False, True], ids=["visible", "hidden"])
 def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
     """Offset ODS tables preserve their full extent on visible and hidden sheets."""
