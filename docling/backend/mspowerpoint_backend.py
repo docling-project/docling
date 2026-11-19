@@ -74,7 +74,9 @@ from docling.backend.utils.chartex import CHARTEX_NAMESPACE, read_chartex
 from docling.backend.utils.charts import (
     ChartContent,
     build_chart_table,
+    chart_points_to_list,
     datetime_to_iso,
+    max_chart_data_rows,
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
@@ -1556,7 +1558,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return labels or [PictureClassificationLabel.OTHER_CHART]
 
     @staticmethod
-    def _plot_series(x_chart: Any) -> list[Any]:
+    def _plot_series(x_chart: Any) -> list[tuple[Any, Any]]:
         """Return the series of a plot, in the order of their ``c:order``.
 
         python-pptx has no plot class for some plot types (3-D bar, line and
@@ -1568,7 +1570,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             x_chart: The plot element, such as ``c:bar3DChart``.
 
         Returns:
-            One python-pptx series per ``c:ser`` element.
+            One ``(c:ser element, python-pptx series)`` pair per series.
         """
         series_class = (
             XySeries
@@ -1576,7 +1578,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             else BarSeries
         )
         sers = sorted(x_chart.iterchildren(qn("c:ser")), key=lambda ser: ser.order.val)
-        return [series_class(ser) for ser in sers]
+        return [(ser, series_class(ser)) for ser in sers]
 
     @staticmethod
     def _chart_title_text(chart: Any) -> Optional[str]:
@@ -1688,7 +1690,31 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             text = "".join(axis.xpath("./c:title/c:tx/c:strRef//c:v/text()"))
         return text.strip()
 
-    def _category_labels(self, chart: Any, axis: Any, x_chart: Any) -> list[str]:
+    @staticmethod
+    def _declared_points(source: Any, texts: dict[int, str]) -> dict[int, str]:
+        """Keep the cached points below the declared ``c:ptCount``.
+
+        python-pptx reads the indexes below the declared ``c:ptCount``, and
+        none when the count is missing. The same rule applies here, but the
+        count only filters the points that are present. It never sizes a list,
+        so a large declared count cannot use much memory.
+
+        Args:
+            source: A ``c:cat``, ``c:val`` or ``c:yVal`` element.
+            texts: The text of each cached point, keyed by its ``idx``.
+
+        Returns:
+            The points with an index below the declared count.
+        """
+        counts = source.xpath(".//c:ptCount/@val")
+        if not counts:
+            return {}
+        count = int(counts[0])
+        return {idx: text for idx, text in texts.items() if idx < count}
+
+    def _category_labels(
+        self, chart: Any, axis: Any, x_chart: Any, max_rows: int
+    ) -> list[str]:
         """Return the category labels of a plot, with dates in ISO 8601.
 
         The labels are read from the first series, as python-pptx's
@@ -1700,28 +1726,59 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             chart: A python-pptx ``Chart`` object.
             axis: The plot's category axis, or None.
             x_chart: The plot element, such as ``c:barChart``.
+            max_rows: The most data rows that the chart table keeps.
 
         Returns:
-            One label per category.
+            One label per category, up to the last cached label.
         """
         ser = x_chart.find(qn("c:ser"))
         if ser is None:
             return []
-        points = ser.xpath("./c:cat//c:lvl[1]/c:pt") or ser.xpath("./c:cat//c:pt")
+        cat = ser.find(qn("c:cat"))
+        if cat is None:
+            return []
+        points = cat.xpath(".//c:lvl[1]/c:pt") or cat.xpath(".//c:pt")
         texts = {point.idx: point.v.text or "" for point in points}
-        labels = [texts.get(idx, "") for idx in range(ser.cat_ptCount_val)]
+        labels = chart_points_to_list(self._declared_points(cat, texts), max_rows)
         if axis is None or not self._categories_are_dates(axis, ser):
             return labels
         date1904 = bool(chart.element.date_1904)
         return [_serial_to_iso(label, date1904) for label in labels]
 
+    def _series_values(self, ser: Any, x_chart: Any, max_rows: int) -> list[str]:
+        """Return the cached values of a chart series, one per point index.
+
+        python-pptx's ``series.values`` runs one XPath query for each index
+        below the declared ``c:ptCount``. Here the ``c:pt`` elements that are
+        present are read once, so the time and the memory follow the size of
+        the chart part. As in python-pptx, the first point with a given index
+        gives the value, and an index without a point gives "".
+
+        Args:
+            ser: A ``c:ser`` element.
+            x_chart: The plot element that holds the series.
+            max_rows: The most data rows that the chart table keeps.
+
+        Returns:
+            One value per index, up to the last cached value.
+        """
+        is_xy = etree.QName(x_chart).localname in _XY_PLOT_TAGNAMES
+        source = ser.find(qn("c:yVal" if is_xy else "c:val"))
+        if source is None:
+            return []
+        texts: dict[int, str] = {}
+        for point in source.xpath(".//c:pt"):
+            texts.setdefault(point.idx, self._cell_text(point.value))
+        return chart_points_to_list(self._declared_points(source, texts), max_rows)
+
     def _chart_to_table_data(self, chart: Any, plots: list[Any]) -> Optional[TableData]:
         """Reconstruct a chart's underlying data grid as a TableData.
 
-        Unlike the Excel backend, python-pptx exposes the plotted numbers
-        directly on each series (``series.values``), and the chart caches the
-        category labels with the first series — no workbook reference
-        resolution is needed. ``build_chart_table`` lays the table out.
+        Unlike the Excel backend, the chart caches the plotted numbers on each
+        series and the category labels with the first series — no workbook
+        reference resolution is needed. ``build_chart_table`` lays the table
+        out. The lists are limited to the rows that the table can keep before
+        they are made, so a large declared point count uses no memory.
 
         The series of every plot become columns in drawing order, so a
         combination chart keeps its line series next to its column series.
@@ -1736,17 +1793,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             A TableData, or None if the chart exposes no usable series or no
             populated data row.
         """
+        num_series = sum(len(x_chart.findall(qn("c:ser"))) for x_chart in plots)
+        max_rows = max_chart_data_rows(1 + num_series)
         categories: list[str] = []
         corner = ""
         columns: list[tuple[str, list[str]]] = []
         for x_chart in plots:
             if not categories:
                 axis = self._category_axis(chart, x_chart)
-                categories = self._category_labels(chart, axis, x_chart)
+                categories = self._category_labels(chart, axis, x_chart, max_rows)
                 corner = self._axis_title_text(axis) if axis is not None else ""
-            for series in self._plot_series(x_chart):
+            for ser, series in self._plot_series(x_chart):
                 name = self._cell_text(series.name) if series.name is not None else ""
-                values = [self._cell_text(v) for v in series.values]
+                values = self._series_values(ser, x_chart, max_rows)
                 columns.append((name, values))
 
         if not columns:

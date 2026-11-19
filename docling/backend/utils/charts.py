@@ -8,6 +8,7 @@ chart in their own way, and then lay them out as a table with the same helpers.
 """
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Final
@@ -24,6 +25,60 @@ to populated rows first; this cap only binds genuinely huge charts. 100k cells
 still admit e.g. a 10k-point, 5-series chart while keeping any single chart's
 markdown output to a few megabytes.
 """
+
+
+def max_chart_data_rows(num_cols: int) -> int:
+    """Return the most data rows that a chart table with ``num_cols`` columns keeps.
+
+    The header row and the data rows together stay within
+    ``MAX_CHART_TABLE_CELLS`` cells. A table always keeps at least one data row.
+
+    Args:
+        num_cols: The number of table columns, category columns included.
+
+    Returns:
+        The largest number of data rows.
+    """
+    return max(1, MAX_CHART_TABLE_CELLS // max(1, num_cols) - 1)
+
+
+def chart_points_to_list(
+    points: Mapping[int, str], max_rows: int, *, warn: bool = True
+) -> list[str]:
+    """Lay out the cached points of a chart series as one entry per index.
+
+    The list is sized by the points that are present, not by the ``ptCount``
+    that the chart part declares, because a part can declare any count. An index
+    that is missing between two points gives "", so all the series of a chart
+    stay aligned row by row.
+
+    A point at an index of ``max_rows`` or more is dropped. The chart table
+    keeps only ``max_rows`` data rows (see ``max_chart_data_rows``), so these
+    points would be cut from the table anyway. The points are not compacted
+    into the free rows, because that would move them out of line with the
+    categories and the other series. Thus one point at a very high index cannot
+    make the list longer than ``max_rows``.
+
+    Args:
+        points: The text of each point, keyed by its ``idx``.
+        max_rows: The most entries to return.
+        warn: Log a warning when points are dropped. A caller that reads only
+            the first point, such as a series name, turns it off.
+
+    Returns:
+        One text per index, from 0 to the highest kept index.
+    """
+    kept = {index: text for index, text in points.items() if 0 <= index < max_rows}
+    if warn and len(kept) < len(points):
+        _log.warning(
+            "Dropping %d chart points with an index of %d or more.",
+            len(points) - len(kept),
+            max_rows,
+        )
+    values = [""] * (max(kept) + 1 if kept else 0)
+    for index, text in kept.items():
+        values[index] = text
+    return values
 
 
 @dataclass(frozen=True)
@@ -134,7 +189,7 @@ def build_chart_grid(
 
     num_cols = len(columns)
     if (num_data_rows + 1) * num_cols > MAX_CHART_TABLE_CELLS:
-        capped_rows = max(1, MAX_CHART_TABLE_CELLS // num_cols - 1)
+        capped_rows = max_chart_data_rows(num_cols)
         _log.warning(
             "Truncating chart data table from %d to %d data rows: "
             "%d cells would exceed the %d-cell cap.",

@@ -59,6 +59,11 @@ from docling.backend.utils.archive_limits import (
     check_archive_limits,
     read_member,
 )
+from docling.backend.utils.charts import (
+    build_chart_table,
+    chart_points_to_list,
+    max_chart_data_rows,
+)
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.datamodel.backend_options import MsWordBackendOptions
@@ -4777,12 +4782,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return str(int(number))
         return str(number)
 
-    def _read_chart_cache(self, node: Any | None) -> list[str]:
+    def _read_chart_cache(
+        self, node: Any | None, max_rows: int, *, warn: bool = True
+    ) -> list[str]:
         """Read the cached ``c:pt`` values under a chart data source.
 
         Handles both cached references (``c:numCache``/``c:strCache``) and inline
         literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
         gaps are filled with empty strings so every series aligns to the same rows.
+        The list is sized by the points that are present and holds at most
+        ``max_rows`` entries; the declared ``c:ptCount`` is not used (see
+        ``chart_points_to_list``).
         """
         if node is None:
             return []
@@ -4805,25 +4815,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             points[idx] = self._chart_cell_text(
                 value.text if value is not None else None
             )
-        if not points:
-            return []
-
-        count = 0
-        count_el = cache.find("c:ptCount", namespaces=ns)
-        if count_el is not None and count_el.get("val"):
-            try:
-                count = int(count_el.get("val"))
-            except ValueError:
-                count = 0
-        length = max([count] + [idx + 1 for idx in points])
-        return [points.get(idx, "") for idx in range(length)]
+        return chart_points_to_list(points, max_rows, warn=warn)
 
     def _chart_series_name(self, series: Any) -> str:
         """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
         tx = series.find("c:tx", namespaces=_OOXML_NAMESPACES)
         if tx is None:
             return ""
-        cached = self._read_chart_cache(tx)
+        cached = self._read_chart_cache(tx, max_rows=1, warn=False)
         if cached:
             return cached[0]
         literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
@@ -4845,7 +4844,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         runs = [t.text for t in title.findall(".//a:t", namespaces=ns) if t.text]
         text = "".join(runs).strip()
         if not text:
-            cached = self._read_chart_cache(title)
+            cached = self._read_chart_cache(title, max_rows=1, warn=False)
             text = cached[0].strip() if cached else ""
         return text or None
 
@@ -4861,25 +4860,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         The plotted numbers and labels come from each series' inline cache
         (``c:numCache``/``c:strCache``), so no workbook reference resolution is
         needed. Scatter charts use ``c:xVal``/``c:yVal`` in place of ``c:cat``/
-        ``c:val``.
+        ``c:val``. ``build_chart_table`` lays the table out, so it has the same
+        size limit as the charts of the other backends.
 
         Args:
             chart_root: The parsed root of a ``chartN.xml`` part.
 
         Returns:
-            A TableData, or None if the chart exposes no usable series.
+            A TableData, or None if the chart exposes no usable series or no
+            populated data row.
         """
         ns = _OOXML_NAMESPACES
         series_list = chart_root.findall(".//c:ser", namespaces=ns)
         if not series_list:
             return None
+        max_rows = max_chart_data_rows(1 + len(series_list))
 
         categories: list[str] = []
         for series in series_list:
             cat = series.find("c:cat", namespaces=ns)
             if cat is None:
                 cat = series.find("c:xVal", namespaces=ns)
-            resolved = self._read_chart_cache(cat)
+            resolved = self._read_chart_cache(cat, max_rows)
             if resolved:
                 categories = resolved
                 break
@@ -4889,55 +4891,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             val = series.find("c:val", namespaces=ns)
             if val is None:
                 val = series.find("c:yVal", namespaces=ns)
-            values = self._read_chart_cache(val)
+            values = self._read_chart_cache(val, max_rows)
             columns.append((self._chart_series_name(series), values))
 
-        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
-        if num_data_rows == 0:
-            return None
-
-        num_rows = num_data_rows + 1
-        num_cols = 1 + len(columns)
-        cells: list[TableCell] = []
-
-        header_labels = [""] + [name for name, _ in columns]
-        for col_idx, label in enumerate(header_labels):
-            cells.append(
-                TableCell(
-                    text=label,
-                    row_span=1,
-                    col_span=1,
-                    start_row_offset_idx=0,
-                    end_row_offset_idx=1,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + 1,
-                    column_header=True,
-                    row_header=False,
-                )
-            )
-        for data_row in range(num_data_rows):
-            row_idx = data_row + 1
-            category = categories[data_row] if data_row < len(categories) else ""
-            row_texts = [category] + [
-                (values[data_row] if data_row < len(values) else "")
-                for _, values in columns
-            ]
-            for col_idx, text in enumerate(row_texts):
-                cells.append(
-                    TableCell(
-                        text=text,
-                        row_span=1,
-                        col_span=1,
-                        start_row_offset_idx=row_idx,
-                        end_row_offset_idx=row_idx + 1,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + 1,
-                        column_header=False,
-                        row_header=(col_idx == 0),
-                    )
-                )
-
-        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+        return build_chart_table(categories, columns)
 
     def _render_chart_image(self, drawing_el: Any) -> Image.Image | None:
         """Render a charted drawing to an image via LibreOffice.
