@@ -6,7 +6,9 @@ import os
 import re
 import threading
 import time
+import zipfile
 from contextlib import nullcontext
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -410,6 +412,52 @@ def test_chart_caption_is_parented_to_the_chart_container():
     container = picture.parent.resolve(doc)
     assert caption.self_ref in [child.cref for child in container.children]
     assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+
+def _docx_with_chart_xml(rewrite) -> BytesIO:
+    """Build a copy of CHART_DOCX whose chart part is changed by ``rewrite``."""
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    entries["word/charts/chart1.xml"] = rewrite(chart).encode("utf-8")
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def _declare_huge_point_count(chart: str) -> str:
+    return re.sub(r'<c:ptCount val="\d+"/>', f'<c:ptCount val="{10**11}"/>', chart)
+
+
+def _add_point_at_huge_index(chart: str) -> str:
+    far_point = f'<c:pt idx="{10**9}"><c:v>9</c:v></c:pt>'
+    return chart.replace('<c:ptCount val="4"/>', '<c:ptCount val="4"/>' + far_point, 1)
+
+
+@pytest.mark.parametrize(
+    "rewrite", [_declare_huge_point_count, _add_point_at_huge_index]
+)
+def test_chart_table_is_sized_by_the_cached_points(rewrite):
+    """The chart table follows the cached points, not the declared indexes.
+
+    Before, a list entry was made for each index up to ``c:ptCount`` or the
+    highest ``c:pt@idx``, so a small chart part could use gigabytes of memory.
+    Now a large point count adds no rows, and a point at an index past the
+    table size limit is dropped.
+    """
+    stream = DocumentStream(name="chart.docx", stream=_docx_with_chart_xml(rewrite))
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    chart = _single_chart_picture(doc)
+
+    assert chart.meta.tabular_chart is not None
+    assert (
+        _grid_from_table_data(chart.meta.tabular_chart.chart_data)
+        == EXPECTED_CHART_GRID
+    )
 
 
 def test_is_rich_table_cell(docx_paths):
