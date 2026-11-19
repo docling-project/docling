@@ -19,6 +19,7 @@ from docling.pipeline.asr_transcriber import (
     _AsrTranscriber,
     _ConversationItem,
     _ConversationWord,
+    _keep_media,
     _MlxAudioModel,
     _MlxWhisperModel,
     _NativeWhisperModel,
@@ -71,6 +72,8 @@ class AsrPipeline(BasePipeline):
         _log.info("Transcribing audio document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._model.run(conv_res=conv_res)
+        if self.pipeline_options.keep_media:
+            _keep_media(conv_res)
         return conv_res
 
     @classmethod

@@ -657,6 +657,18 @@ def _write_native_vlm_output(conv_res: ConversionResult) -> None:
         _log.info("writing native VLM output to %s", filename)
 
 
+def _archive_source(conv_res: ConversionResult) -> Path | None:
+    """The input file of a conversion, to store as the source of its archive.
+
+    Only a local file qualifies: a stream input has no file to read.
+    """
+    file = conv_res.input.file
+    if isinstance(file, Path) and file.is_file():
+        return file.resolve()
+    _log.warning(f"Not storing the source of {file.name}: it is not a local file")
+    return None
+
+
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -674,6 +686,7 @@ def export_documents(
     export_timings: bool,
     image_export_mode: ImageRefMode,
     export_dclx: bool = False,
+    keep_source: bool = False,
     export_chunks: bool = False,
     export_latex: bool = False,
     chunker_type: ChunkerType = ChunkerType.HYBRID,
@@ -836,7 +849,10 @@ def export_documents(
             if export_dclx:
                 fname = output_file or output_dir / f"{doc_filename}.dclx"
                 _log.info(f"writing DCLX output to {fname}")
-                conv_res.document.save_as_doclang_archive(filename=fname)
+                conv_res.document.save_as_doclang_archive(
+                    filename=fname,
+                    source=_archive_source(conv_res) if keep_source else None,
+                )
 
             # Export LaTeX format:
             if export_latex:
@@ -1142,6 +1158,27 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    keep_media: Annotated[
+        bool,
+        typer.Option(
+            "--keep-media/--no-keep-media",
+            help=(
+                "Reference audio and video inputs from their transcript, so that "
+                "--to dclx stores them in the archive. The document then holds the "
+                "input's local path."
+            ),
+        ),
+    ] = False,
+    keep_source: Annotated[
+        bool,
+        typer.Option(
+            "--keep-source/--no-keep-source",
+            help=(
+                "Store the input file unchanged in the archive written by --to dclx, "
+                "with its file name and media type."
+            ),
+        ),
+    ] = False,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -1782,6 +1819,12 @@ def convert(  # noqa: C901
                         # Keep the file in place: these backends resolve images
                         # and included files relative to the document.
                         input_doc_paths.append(local_path)
+                    elif keep_media and any(
+                        _name_matches_format(str(local_path), input_format)
+                        for input_format in (InputFormat.AUDIO, InputFormat.VIDEO)
+                    ):
+                        # Keep the file in place: the transcript references it.
+                        input_doc_paths.append(local_path)
                     else:
                         resolved_source = resolve_source_to_path(
                             source=src, headers=parsed_headers, workdir=Path(tempdir)
@@ -2214,6 +2257,7 @@ def convert(  # noqa: C901
             ),
             allow_external_plugins=allow_external_plugins,
             enable_remote_services=enable_remote_services,
+            keep_media=keep_media,
             # artifacts_path = artifacts_path
         )
 
@@ -2281,6 +2325,7 @@ def convert(  # noqa: C901
             # --video-cuts-per-minute is given (see _auto_prominence).
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
+            video_pipeline_options.keep_media = keep_media
             video_pipeline_options.document_timeout = document_timeout
             video_pipeline_options.asr_options = (
                 asr_pipeline_options.asr_options.model_copy(deep=True)
@@ -2350,6 +2395,7 @@ def convert(  # noqa: C901
                 chunk_tokenizer=chunk_tokenizer,
                 debug_vlm_native_output=debug_vlm_native_output,
                 output_file=output_file,
+                keep_source=keep_source,
             )
 
         end_time = time.time() - start_time
