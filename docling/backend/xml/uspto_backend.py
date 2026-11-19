@@ -8,9 +8,8 @@ patent applications since 2001.
 The original files can be found in https://bulkdata.uspto.gov.
 
 Security Note:
-    This module uses defusedxml.sax.make_parser() with security settings to protect
-    against XML External Entity (XXE) attacks and entity expansion attacks (Billion
-    Laughs/CWE-776). The parser is configured with:
+    This module parses the XML formats with defusedxml.sax.make_parser(), which
+    creates an expat SAX parser. The parser is configured with:
 
     - feature_external_ges: False (blocks external general entity resolution)
     - feature_external_pes: False (blocks external parameter entity resolution)
@@ -23,20 +22,22 @@ Security Note:
        they are never resolved or fetched due to feature_external_ges=False and
        feature_external_pes=False. This prevents XXE attacks.
 
-    2. Billion Laughs Mitigation: defusedxml's built-in entity expansion limits
-       (MAX_ENTITY_EXPANSION=10,000) prevent exponential entity expansion from
-       causing memory exhaustion. While not completely blocking entity expansion,
-       this limit prevents the worst-case denial-of-service scenarios.
+    2. Entity Expansion: With forbid_entities=False, defusedxml does not limit the
+       expansion of internal entities. The limit comes from expat: expat 2.4.0 and
+       later stop the parse with an error when the entity expansion is too large
+       compared to the input (billion laughs protection). The text that expat
+       accepts can still be millions of characters, reported in many small chunks.
+       The SAX handlers collect these chunks in a list and join them once, so the
+       processing time is linear in the size of the text.
 
     3. NDATA Entities: USPTO files use NDATA entities for image references
        (e.g., <!ENTITY img SYSTEM "file.tif" NDATA TIF>). These are unparsed
        entities that don't expand inline and aren't fetched due to the external
        entity resolution being disabled.
 
-    This configuration balances security with USPTO format compatibility. The key
-    insight is that defusedxml distinguishes between entity declaration (allowed)
-    and entity resolution/fetched (blocked), providing protection while allowing
-    the required DTD structure.
+    USPTO entity references such as ISO 8879 Greek letters (e.g., &sgr;) are not
+    declared in the document, because the external DTD is not loaded. The parser
+    reports them as skipped entities and the handlers map them to Unicode text.
 """
 
 from __future__ import annotations
@@ -88,6 +89,43 @@ _INSTALL_HINT = (
 )
 
 _log = logging.getLogger(__name__)
+
+
+class _TextBuffer:
+    """Collect the character data of a SAX stream in linear time.
+
+    A SAX parser can report the text of one element in many small chunks, for
+    example one chunk for each character or entity reference. Appending each chunk
+    to a `str` attribute copies the whole text every time. This buffer keeps the
+    chunks in a list and joins them only when the text is read.
+    """
+
+    def __init__(self) -> None:
+        self._chunks: list[str] = []
+        self._has_content: bool = False
+
+    def append(self, chunk: str) -> None:
+        """Add a chunk of text at the end of the buffer."""
+        self._chunks.append(chunk)
+        if not self._has_content and chunk.strip():
+            self._has_content = True
+
+    @property
+    def has_content(self) -> bool:
+        """Whether the buffer has a character that is not whitespace."""
+        return self._has_content
+
+    def getvalue(self) -> str:
+        """Return the text in the buffer."""
+        if len(self._chunks) > 1:
+            self._chunks = ["".join(self._chunks)]
+        return self._chunks[0] if self._chunks else ""
+
+    def clear(self) -> None:
+        """Remove all the text from the buffer."""
+        self._chunks = []
+        self._has_content = False
+
 
 XML_DECLARATION: Final[str] = '<?xml version="1.0" encoding="UTF-8"?>'
 
@@ -355,10 +393,10 @@ class PatentUsptoIce(PatentUspto):
             self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
-            self.claim: str
+            self.claim: _TextBuffer
             self.claims: list[str]
-            self.abstract: str
-            self.text: str
+            self.abstract: _TextBuffer
+            self.text = _TextBuffer()
             self._clean_data()
             # To handle mathematical styling
             self.style_html = HtmlEntity()
@@ -376,7 +414,7 @@ class PatentUsptoIce(PatentUspto):
                 self.GRANT_DOC_ELEMENT,
             ):
                 self.doc = DoclingDocument(name="file")
-                self.text = ""
+                self.text.clear()
             self._start_registered_elements(tag, attributes)
 
         @override
@@ -409,9 +447,9 @@ class PatentUsptoIce(PatentUspto):
                         parent_val = self.property[-2]
                         parent = self.Element(parent_val)
                         if parent.is_text:
-                            self.text += self._apply_style(unescaped, elm_val)
+                            self.text.append(self._apply_style(unescaped, elm_val))
                     else:
-                        self.text += unescaped
+                        self.text.append(unescaped)
 
         @override
         def endElement(self, tag):
@@ -448,9 +486,9 @@ class PatentUsptoIce(PatentUspto):
                         parent_val = self.property[-2]
                         parent = self.Element(parent_val)
                         if parent.is_text:
-                            self.text += self._apply_style(content, elm_val)
+                            self.text.append(self._apply_style(content, elm_val))
                     else:
-                        self.text += content
+                        self.text.append(content)
 
         def _start_registered_elements(
             self, tag: str, attributes: AttributesImpl
@@ -462,10 +500,10 @@ class PatentUsptoIce(PatentUspto):
                     tag == self.Element.CLAIM_TEXT.value
                     and self.property
                     and self.property[-1] == tag
-                    and self.text.strip()
+                    and self.text.has_content
                 ):
-                    self.claim += " " + self.text.strip()
-                    self.text = ""
+                    self.claim.append(" " + self.text.getvalue().strip())
+                    self.text.clear()
                 elif tag == self.Element.HEADING.value:
                     level_attr: str = attributes.get("level", "")
                     new_level: int = int(level_attr) if level_attr.isnumeric() else 1
@@ -479,7 +517,21 @@ class PatentUsptoIce(PatentUspto):
         def _end_registered_element(self, tag: str) -> None:
             if tag in [item.value for item in self.Element] and self.property:
                 current_tag = self.property.pop()
-                self._add_property(current_tag, self.text.strip())
+                # read the text only if an element uses it, to keep linear time
+                text = ""
+                if (
+                    self.doc
+                    and self.text.has_content
+                    and current_tag
+                    in (
+                        self.Element.TITLE.value,
+                        self.Element.CLAIM_TEXT.value,
+                        self.Element.PARAGRAPH.value,
+                        self.Element.HEADING.value,
+                    )
+                ):
+                    text = self.text.getvalue().strip()
+                self._add_property(current_tag, text)
 
         def _add_property(self, name: str, text: str) -> None:
             if not name or not self.doc:
@@ -492,10 +544,10 @@ class PatentUsptoIce(PatentUspto):
                         text=text,
                     )
                     self.level += 1
-                self.text = ""
+                self.text.clear()
 
             elif name == self.Element.ABSTRACT.value:
-                if self.abstract:
+                if self.abstract.has_content:
                     heading_text = PatentHeading.ABSTRACT.value
                     heading_level = (
                         PatentHeading.ABSTRACT.level
@@ -509,19 +561,19 @@ class PatentUsptoIce(PatentUspto):
                     )
                     self.doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
-                        text=self.abstract,
+                        text=self.abstract.getvalue(),
                         parent=abstract_item,
                     )
 
             elif name == self.Element.CLAIM_TEXT.value:
                 text = re.sub("\\s+", " ", text).strip()
                 if text:
-                    self.claim += " " + text
-                self.text = ""
+                    self.claim.append(" " + text)
+                self.text.clear()
 
-            elif name == self.Element.CLAIM.value and self.claim:
-                self.claims.append(self.claim.strip())
-                self.claim = ""
+            elif name == self.Element.CLAIM.value and self.claim.has_content:
+                self.claims.append(self.claim.getvalue().strip())
+                self.claim.clear()
 
             elif name == self.Element.CLAIMS.value and self.claims:
                 heading_text = PatentHeading.CLAIMS.value
@@ -544,16 +596,16 @@ class PatentUsptoIce(PatentUspto):
                 # remove blank spaces added in paragraphs
                 text = re.sub("\\s+", " ", text)
                 if self.Element.ABSTRACT.value in self.property:
-                    self.abstract = (
-                        (self.abstract + " " + text) if self.abstract else text
-                    )
+                    if self.abstract.has_content:
+                        self.abstract.append(" ")
+                    self.abstract.append(text)
                 else:
                     self.doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
                         text=text,
                         parent=self.parents[self.level],
                     )
-                self.text = ""
+                self.text.clear()
 
             elif name == self.Element.HEADING.value and text:
                 self.parents[self.level + 1] = self.doc.add_heading(
@@ -562,7 +614,7 @@ class PatentUsptoIce(PatentUspto):
                     parent=self.parents[self.level],
                 )
                 self.level += 1
-                self.text = ""
+                self.text.clear()
 
             elif name == self.Element.TABLE.value:
                 # set an empty table as placeholder
@@ -596,9 +648,9 @@ class PatentUsptoIce(PatentUspto):
         def _clean_data(self) -> None:
             """Reset the variables from stream data."""
             self.property = []
-            self.claim = ""
+            self.claim = _TextBuffer()
             self.claims = []
-            self.abstract = ""
+            self.abstract = _TextBuffer()
 
 
 class PatentUsptoGrantV2(PatentUspto):
@@ -706,10 +758,11 @@ class PatentUsptoGrantV2(PatentUspto):
             self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
-            self.claim: str
+            self.claim: _TextBuffer
             self.claims: list[str]
-            self.paragraph: str
-            self.abstract: str
+            self.paragraph: _TextBuffer
+            self.abstract: _TextBuffer
+            self.text = _TextBuffer()
             self._clean_data()
             # To handle mathematical styling
             self.style_html = HtmlEntity()
@@ -724,7 +777,7 @@ class PatentUsptoGrantV2(PatentUspto):
             """
             if tag == self.GRANT_DOC_ELEMENT:
                 self.doc = DoclingDocument(name="file")
-                self.text = ""
+                self.text.clear()
             self._start_registered_elements(tag, attributes)
 
         @override
@@ -757,9 +810,9 @@ class PatentUsptoGrantV2(PatentUspto):
                         parent_val = self.property[-2]
                         parent = self.Element(parent_val)
                         if parent.is_text:
-                            self.text += self._apply_style(unescaped, elm_val)
+                            self.text.append(self._apply_style(unescaped, elm_val))
                     else:
-                        self.text += unescaped
+                        self.text.append(unescaped)
 
         @override
         def endElement(self, tag):
@@ -793,9 +846,9 @@ class PatentUsptoGrantV2(PatentUspto):
                         parent_val = self.property[-2]
                         parent = self.Element(parent_val)
                         if parent.is_text:
-                            self.text += self._apply_style(content, elm_val)
+                            self.text.append(self._apply_style(content, elm_val))
                     else:
-                        self.text += content
+                        self.text.append(content)
 
         def _start_registered_elements(
             self, tag: str, attributes: AttributesImpl
@@ -817,14 +870,18 @@ class PatentUsptoGrantV2(PatentUspto):
         def _end_registered_element(self, tag: str) -> None:
             if tag in [elm.value for elm in self.Element] and self.property:
                 current_tag = self.property.pop()
-                self._add_property(current_tag, self.text)
+                # read the text only if an element uses it, to keep linear time
+                text = ""
+                if self.doc and current_tag == self.Element.PDAT.value:
+                    text = self.text.getvalue()
+                self._add_property(current_tag, text)
 
         def _add_property(self, name: str, text: str) -> None:
             if not name or not self.doc:
                 return
             if name == self.Element.PDAT.value and text:
                 if not self.property:
-                    self.text = ""
+                    self.text.clear()
                     return
 
                 wrapper = self.property[-1]
@@ -839,10 +896,10 @@ class PatentUsptoGrantV2(PatentUspto):
                     self.level += 1
 
                 elif self.Element.ABSTRACT.value in self.property:
-                    self.abstract += text
+                    self.abstract.append(text)
 
                 elif self.Element.CLAIM.value in self.property:
-                    self.claim += text
+                    self.claim.append(text)
 
                 # Paragraph text not in claims or abstract
                 elif (
@@ -850,7 +907,7 @@ class PatentUsptoGrantV2(PatentUspto):
                     and self.Element.CLAIM.value not in self.property
                     and self.Element.ABSTRACT.value not in self.property
                 ):
-                    self.paragraph += text
+                    self.paragraph.append(text)
 
                 # headers except claims statement
                 elif (
@@ -865,11 +922,11 @@ class PatentUsptoGrantV2(PatentUspto):
                     )
                     self.level += 1
 
-                self.text = ""
+                self.text.clear()
 
-            elif name == self.Element.CLAIM.value and self.claim.strip():
-                self.claims.append(self.claim.strip())
-                self.claim = ""
+            elif name == self.Element.CLAIM.value and self.claim.has_content:
+                self.claims.append(self.claim.getvalue().strip())
+                self.claim.clear()
 
             elif name == self.Element.CLAIMS.value and self.claims:
                 heading_text = PatentHeading.CLAIMS.value
@@ -888,8 +945,8 @@ class PatentUsptoGrantV2(PatentUspto):
                         label=DocItemLabel.PARAGRAPH, text=text, parent=claims_item
                     )
 
-            elif name == self.Element.ABSTRACT.value and self.abstract.strip():
-                abstract = self.abstract.strip()
+            elif name == self.Element.ABSTRACT.value and self.abstract.has_content:
+                abstract = self.abstract.getvalue().strip()
                 heading_text = PatentHeading.ABSTRACT.value
                 heading_level = (
                     PatentHeading.ABSTRACT.level
@@ -906,7 +963,7 @@ class PatentUsptoGrantV2(PatentUspto):
                 )
 
             elif name == self.Element.PARAGRAPH.value:
-                paragraph = self.paragraph.strip()
+                paragraph = self.paragraph.getvalue().strip()
                 if paragraph and self.Element.CLAIM.value not in self.property:
                     self.doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
@@ -915,8 +972,8 @@ class PatentUsptoGrantV2(PatentUspto):
                     )
                 elif self.Element.CLAIM.value in self.property:
                     # we may need a space after a paragraph in claim text
-                    self.claim += " "
-                self.paragraph = ""
+                    self.claim.append(" ")
+                self.paragraph.clear()
 
             elif name == self.Element.TABLE.value:
                 # set an empty table as placeholder
@@ -951,12 +1008,12 @@ class PatentUsptoGrantV2(PatentUspto):
 
         def _clean_data(self) -> None:
             """Reset the variables from stream data."""
-            self.text = ""
+            self.text.clear()
             self.property = []
-            self.claim = ""
+            self.claim = _TextBuffer()
             self.claims = []
-            self.paragraph = ""
-            self.abstract = ""
+            self.paragraph = _TextBuffer()
+            self.abstract = _TextBuffer()
 
 
 class PatentUsptoGrantAps(PatentUspto):
@@ -1280,10 +1337,10 @@ class PatentUsptoAppV1(PatentUspto):
             self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
-            self.claim: str
+            self.claim: _TextBuffer
             self.claims: list[str]
-            self.abstract: str
-            self.text: str
+            self.abstract: _TextBuffer
+            self.text = _TextBuffer()
             self._clean_data()
             # To handle mathematical styling
             self.style_html = HtmlEntity()
@@ -1298,7 +1355,7 @@ class PatentUsptoAppV1(PatentUspto):
             """
             if tag == self.APP_DOC_ELEMENT:
                 self.doc = DoclingDocument(name="file")
-                self.text = ""
+                self.text.clear()
             self._start_registered_elements(tag, attributes)
 
         @override
@@ -1331,9 +1388,9 @@ class PatentUsptoAppV1(PatentUspto):
                         parent_val = self.property[-2]
                         parent = self.Element(parent_val)
                         if parent.is_text:
-                            self.text += self._apply_style(unescaped, elm_val)
+                            self.text.append(self._apply_style(unescaped, elm_val))
                     else:
-                        self.text += unescaped
+                        self.text.append(unescaped)
 
         @override
         def endElement(self, tag):
@@ -1367,9 +1424,9 @@ class PatentUsptoAppV1(PatentUspto):
                         parent_val = self.property[-2]
                         parent = self.Element(parent_val)
                         if parent.is_text:
-                            self.text += self._apply_style(content, elm_val)
+                            self.text.append(self._apply_style(content, elm_val))
                     else:
-                        self.text += content
+                        self.text.append(content)
 
         def _start_registered_elements(
             self, tag: str, attributes: AttributesImpl
@@ -1381,10 +1438,10 @@ class PatentUsptoAppV1(PatentUspto):
                     tag == self.Element.CLAIM_TEXT.value
                     and self.property
                     and self.property[-1] == tag
-                    and self.text.strip()
+                    and self.text.has_content
                 ):
-                    self.claim += " " + self.text.strip("\n")
-                    self.text = ""
+                    self.claim.append(" " + self.text.getvalue().strip("\n"))
+                    self.text.clear()
                 elif tag == self.Element.HEADING.value:
                     level_attr: str = attributes.get("lvl", "")
                     new_level: int = int(level_attr) if level_attr.isnumeric() else 1
@@ -1398,7 +1455,16 @@ class PatentUsptoAppV1(PatentUspto):
         def _end_registered_element(self, tag: str) -> None:
             if tag in [elm.value for elm in self.Element] and self.property:
                 current_tag = self.property.pop()
-                self._add_property(current_tag, self.text)
+                # read the text only if an element uses it, to keep linear time
+                text = ""
+                if self.doc and current_tag in (
+                    self.Element.TITLE.value,
+                    self.Element.CLAIM_TEXT.value,
+                    self.Element.PARAGRAPH.value,
+                    self.Element.HEADING.value,
+                ):
+                    text = self.text.getvalue()
+                self._add_property(current_tag, text)
 
         def _add_property(self, name: str, text: str) -> None:
             if not name or not self.doc:
@@ -1413,9 +1479,9 @@ class PatentUsptoAppV1(PatentUspto):
                         text=title,
                     )
                     self.level += 1
-                self.text = ""
+                self.text.clear()
             elif name == self.Element.ABSTRACT.value:
-                abstract = self.abstract.strip()
+                abstract = self.abstract.getvalue().strip()
                 if abstract:
                     heading_text = PatentHeading.ABSTRACT.value
                     heading_level = (
@@ -1430,21 +1496,21 @@ class PatentUsptoAppV1(PatentUspto):
                     )
                     self.doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
-                        text=self.abstract,
+                        text=self.abstract.getvalue(),
                         parent=abstract_item,
                     )
-                    self.abstract = ""
-                self.text = ""
+                    self.abstract.clear()
+                self.text.clear()
             elif name == self.Element.CLAIM_TEXT.value:
                 if text:
-                    self.claim += self.text.strip("\n")
-                self.text = ""
+                    self.claim.append(text.strip("\n"))
+                self.text.clear()
 
             elif name == self.Element.CLAIM.value:
-                claim = self.claim.strip()
+                claim = self.claim.getvalue().strip()
                 if claim:
                     self.claims.append(claim)
-                self.claim = ""
+                self.claim.clear()
 
             elif name == self.Element.CLAIMS.value and self.claims:
                 heading_text = PatentHeading.CLAIMS.value
@@ -1468,7 +1534,7 @@ class PatentUsptoAppV1(PatentUspto):
                 self.Element.HEADING.value,
             ):
                 if text and self.Element.ABSTRACT.value in self.property:
-                    self.abstract = (self.abstract + text) if self.abstract else text
+                    self.abstract.append(text)
                 elif text.strip():
                     text = re.sub("\\s+", " ", text).strip()
                     if name == self.Element.HEADING.value:
@@ -1484,7 +1550,7 @@ class PatentUsptoAppV1(PatentUspto):
                             text=text,
                             parent=self.parents[self.level],
                         )
-                self.text = ""
+                self.text.clear()
 
             elif name == self.Element.TABLE.value:
                 # set an empty table as placeholder
@@ -1518,10 +1584,10 @@ class PatentUsptoAppV1(PatentUspto):
         def _clean_data(self):
             """Reset the variables from stream data."""
             self.property = []
-            self.abstract = ""
-            self.claim = ""
+            self.abstract = _TextBuffer()
+            self.claim = _TextBuffer()
             self.claims = []
-            self.text = ""
+            self.text.clear()
 
 
 class XmlTable:
