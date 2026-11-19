@@ -97,7 +97,7 @@ format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 format-pdf-docling = [
-  'docling-parse>=7.22.2,<8.0.0',
+  'docling-parse>=7.27.0,<8.0.0',
 ]
 
 format-pdf = [
@@ -421,9 +421,6 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-# Temporary pin for https://github.com/docling-project/docling-parse/pull/474.
-# After release, remove this source and raise the minimum docling-parse version.
-docling-parse = { git = "https://github.com/docling-project/docling-parse.git", rev = "6e8c15b6ec83548364952a9e320a6f0022ca5a7e" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 
 [tool.uv]
