@@ -278,6 +278,19 @@ there</v> and afterwards
     assert _process_vtt_doc(doc) == "Hello there  and afterwards"
 
 
+def test_ruby_text_is_left_out_of_the_base_text(converter):
+    vtt = """
+WEBVTT
+
+00:00:01.000 --> 00:00:05.000
+首都は<ruby>東京<rt>とうきょう</rt></ruby>です。<ruby>漢<rt>かん</rt>字<rt>じ</ruby>
+"""
+    stream = _create_vtt_stream(vtt)
+    doc = converter.convert(stream).document
+
+    assert "".join(item.text for item in doc.texts) == "首都は東京です。漢字"
+
+
 def test_style_blocks_and_note_between_styles_are_ignored(converter):
     vtt = """
 WEBVTT
