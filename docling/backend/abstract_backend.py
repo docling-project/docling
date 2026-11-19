@@ -15,7 +15,7 @@ from docling.datamodel.backend_options import (
 )
 
 if TYPE_CHECKING:
-    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.base_models import ErrorItem, InputFormat
     from docling.datamodel.document import InputDocument
 
 
@@ -71,6 +71,11 @@ class DeclarativeDocumentBackend(AbstractDocumentBackend):
 
     A declarative document backend is a backend that can transform to DoclingDocument
     straight without a recognition pipeline.
+
+    Attributes:
+        conversion_errors: Problems the backend recovered from, such as a part
+            that could not be read. ``SimplePipeline`` adds them to
+            ``ConversionResult.errors``.
     """
 
     @abstractmethod
@@ -83,6 +88,7 @@ class DeclarativeDocumentBackend(AbstractDocumentBackend):
         if options is None:
             options = DeclarativeBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
+        self.conversion_errors: list[ErrorItem] = []
 
     @abstractmethod
     def convert(self) -> DoclingDocument:

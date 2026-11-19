@@ -39,8 +39,12 @@ class SimplePipeline(ConvertPipeline):
         # Instead of running a page-level pipeline to build up the document structure,
         # the backend is expected to be of type DeclarativeDocumentBackend, which can output
         # a DoclingDocument straight.
-        with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
-            conv_res.document = conv_res.input._backend.convert()
+        backend = conv_res.input._backend
+        try:
+            with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
+                conv_res.document = backend.convert()
+        finally:
+            conv_res.errors.extend(backend.conversion_errors)
         return conv_res
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
