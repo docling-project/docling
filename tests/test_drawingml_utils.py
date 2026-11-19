@@ -125,6 +125,18 @@ def test_registrymodifications_xcu_locks_down_security():
     assert 'oor:name="Link"' in xcu
     assert "<value>0</value>" in xcu
 
+    # Links that come from the document are blocked, so linked files
+    # (e.g. an image linked to a file:// URL) are not loaded.
+    oor = "{http://openoffice.org/2001/registry}"
+    block_links = [
+        prop.findtext("value")
+        for item in ET.fromstring(xcu)
+        if item.get(f"{oor}path") == "/org.openoffice.Office.Common/Security/Scripting"
+        for prop in item
+        if prop.get(f"{oor}name") == "BlockUntrustedRefererLinks"
+    ]
+    assert block_links == ["true"]
+
 
 def test_isolated_profile_seeds_registrymodifications(monkeypatch):
     created = _track_mkdtemp(monkeypatch)
