@@ -390,3 +390,114 @@ def test_text_axis_categories_follow_the_shown_number_format(
 def test_serial_to_iso(text: str, date1904: bool, expected: str):
     """Excel serials map to ISO dates in both date systems; other text stays."""
     assert _serial_to_iso(text, date1904) == expected
+
+
+@pytest.mark.parametrize("axis_titles", [False, True], ids=["untitled", "titled"])
+def test_bubble_chart_keeps_coordinates_sizes_and_series(
+    tmp_path: Path, axis_titles: bool
+):
+    """Bubble coordinates and sizes stay aligned, including gaps and zeroes."""
+    from pptx import Presentation
+    from pptx.chart.data import BubbleChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    data = BubbleChartData()
+    mumbai = data.add_series("Mumbai")
+    mumbai.add_data_point(300, 31.4, 12)
+    mumbai.add_data_point(280, 0, 0)
+    mumbai.add_data_point(260, 29, 15)
+    data.add_series("Delhi").add_data_point(250, 29.8, 18)
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.BUBBLE, Inches(1), Inches(1), Inches(6), Inches(4), data
+    ).chart
+    chart.has_title = True
+    chart.chart_title.text_frame.text = "Our highest-value circles"
+    if axis_titles:
+        chart.category_axis.has_title = True
+        chart.category_axis.axis_title.text_frame.text = "ARPU"
+        chart.value_axis.has_title = True
+        chart.value_axis.axis_title.text_frame.text = "Revenue market share (%)"
+    # An absent cache entry must not shift the remaining coordinates.
+    plot = chart.element.chart.plotArea.xCharts[0]
+    cache = plot.xpath("./c:ser[1]/c:xVal/c:numRef/c:numCache")[0]
+    cache.remove(plot.xpath("./c:ser[1]/c:xVal/c:numRef/c:numCache/c:pt[@idx='1']")[0])
+    path = tmp_path / "bubble_chart.pptx"
+    prs.save(path)
+
+    doc = get_converter().convert(path).document
+    picture = doc.pictures[0]
+    x_label = "ARPU" if axis_titles else "X"
+    y_label = "Revenue market share (%)" if axis_titles else "Y"
+    assert _grid(picture) == [
+        [
+            "",
+            f"Mumbai ({x_label})",
+            f"Mumbai ({y_label})",
+            "Mumbai (Bubble size)",
+            f"Delhi ({x_label})",
+            f"Delhi ({y_label})",
+            "Delhi (Bubble size)",
+        ],
+        ["", "300", "31.4", "12", "250", "29.8", "18"],
+        ["", "", "0", "0", "", "", ""],
+        ["", "260", "29", "15", "", "", ""],
+    ]
+    assert picture.caption_text(doc) == "Our highest-value circles"
+    markdown = doc.export_to_markdown()
+    assert "Mumbai (Bubble size)" in markdown
+    assert "31.4" in markdown and "300" in markdown
+
+
+@pytest.mark.parametrize("source_tag", ["strRef", "strLit"])
+def test_bubble_chart_keeps_text_x_values(tmp_path: Path, source_tag: str):
+    """Text-valued bubble X caches must not discard the chart table."""
+    from pptx import Presentation
+    from pptx.chart.data import BubbleChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.oxml.ns import qn
+    from pptx.oxml.xmlchemy import OxmlElement
+    from pptx.util import Inches
+
+    data = BubbleChartData()
+    series = data.add_series("Quarterly")
+    series.add_data_point(300, 31.4, 12)
+    series.add_data_point(280, 25, 13)
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.BUBBLE, Inches(1), Inches(1), Inches(6), Inches(4), data
+    ).chart
+
+    source = chart.element.chart.plotArea.xCharts[0].xpath("./c:ser[1]/c:xVal")[0]
+    string_source = OxmlElement(f"c:{source_tag}")
+    if source_tag == "strRef":
+        formula = OxmlElement("c:f")
+        formula.text = "Sheet1!$A$2:$A$3"
+        string_source.append(formula)
+        cache = OxmlElement("c:strCache")
+    else:
+        cache = string_source
+    count = OxmlElement("c:ptCount")
+    count.set("val", "2")
+    cache.append(count)
+    for idx, text in enumerate(("Q1", "Q2")):
+        point = OxmlElement("c:pt")
+        point.set("idx", str(idx))
+        value = OxmlElement("c:v")
+        value.text = text
+        point.append(value)
+        cache.append(point)
+    if source_tag == "strRef":
+        string_source.append(cache)
+    source.replace(source.find(qn("c:numRef")), string_source)
+
+    path = tmp_path / f"bubble_{source_tag}.pptx"
+    prs.save(path)
+    assert _grid(_only_chart(path)) == [
+        ["", "Quarterly (X)", "Quarterly (Y)", "Quarterly (Bubble size)"],
+        ["", "Q1", "31.4", "12"],
+        ["", "Q2", "25", "13"],
+    ]
