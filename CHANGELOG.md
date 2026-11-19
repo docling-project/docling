@@ -1,3 +1,30 @@
+## [v2.151.1](https://github.com/docling-project/docling/releases/tag/v2.151.1) - 2026-11-19
+
+### Fix
+
+* **service-client:** Keep the WebSocket poll fallback within the original timeout ([#5121](https://github.com/docling-project/docling/issues/5121)) ([`f9249e5`](https://github.com/docling-project/docling/commit/f9249e5067d7dacc01bd9a55abf5eb945b3861d0))
+* **service-client:** Propagate input iterator errors ([#5013](https://github.com/docling-project/docling/issues/5013)) ([`1150323`](https://github.com/docling-project/docling/commit/11503233cc174f6f7eedc32e2f03c46a93c69176))
+* Preserve VLM page-range provenance and verify complete assembly ([#4498](https://github.com/docling-project/docling/issues/4498)) ([`5068b03`](https://github.com/docling-project/docling/commit/5068b0365c347641fe51219dd9b754357aa32c93))
+* Avoid OpenCV FIPS aborts with Databricks opt-out setting ([#5430](https://github.com/docling-project/docling/issues/5430)) ([`de09f2a`](https://github.com/docling-project/docling/commit/de09f2a81460fb8439fc228d09d0faeeec48d301))
+* **docx:** Keep XML comments in NOTES, drop processing instructions ([#4584](https://github.com/docling-project/docling/issues/4584)) ([`f13a8bc`](https://github.com/docling-project/docling/commit/f13a8bc98532abcd7b306fd83d6486bc9afcddc2))
+* **vlm:** Keep escaped citation brackets out of display math ([#5080](https://github.com/docling-project/docling/issues/5080)) ([`7d261b0`](https://github.com/docling-project/docling/commit/7d261b035e9fa615bac6acd35309cd8c11efced2))
+* **odf:** Keep the text of grouped shapes on ODP slides ([#4747](https://github.com/docling-project/docling/issues/4747)) ([`6119b87`](https://github.com/docling-project/docling/commit/6119b87855a801e194c299ec10a8b324d0a252ca))
+* **pdf:** Keep a line-final hyphen that belongs to the word ([#4387](https://github.com/docling-project/docling/issues/4387)) ([`f4b5872`](https://github.com/docling-project/docling/commit/f4b5872f8ba6eaa38e97914d971696a5774b44ee))
+* **video:** Keep speaker diarization working without pkg_resources ([#4864](https://github.com/docling-project/docling/issues/4864)) ([`de633fd`](https://github.com/docling-project/docling/commit/de633fd82938f68c6804390e73343641ca4d210f))
+* **email:** Leave out an event description that repeats the body ([#5455](https://github.com/docling-project/docling/issues/5455)) ([`127451b`](https://github.com/docling-project/docling/commit/127451ba4e93b96798b86b21aa14d1b0551e1c13))
+* **images:** Decode document pictures only as raster images and limit METS-GBS page size ([#5484](https://github.com/docling-project/docling/issues/5484)) ([`1d45d57`](https://github.com/docling-project/docling/commit/1d45d573c89987b4d869d2a6e9b51b0cd5f666b0))
+* **ods:** Limit the cells that repeated rows and cells add ([#5485](https://github.com/docling-project/docling/issues/5485)) ([`8f351cb`](https://github.com/docling-project/docling/commit/8f351cbf7b09dcbf23fe0162ab49a90ec531e421))
+* **xlsx,asciidoc:** Bound the table cells that spans and sparse regions create ([#5483](https://github.com/docling-project/docling/issues/5483)) ([`9cb843a`](https://github.com/docling-project/docling/commit/9cb843a33b50b5beb17c0a219bd2758642aec839))
+* **charts:** Size native chart data by the cached points ([#5482](https://github.com/docling-project/docling/issues/5482)) ([`9dfe3f1`](https://github.com/docling-project/docling/commit/9dfe3f1eeb206a89c01870f740705aeb11b26071))
+* **uspto:** Join the text of XML patents in linear time ([#5479](https://github.com/docling-project/docling/issues/5479)) ([`37c1909`](https://github.com/docling-project/docling/commit/37c19099741ce78faafd3efab38ff92bce01eb8d))
+* **office:** Block document links in the LibreOffice profile ([#5478](https://github.com/docling-project/docling/issues/5478)) ([`8619fc8`](https://github.com/docling-project/docling/commit/8619fc879b827c592efa98e58a73c3c8267b77c4))
+* **plugins:** Skip entry points of distributions without a name ([#5480](https://github.com/docling-project/docling/issues/5480)) ([`b5563e9`](https://github.com/docling-project/docling/commit/b5563e921265c8e8a6ec36a0fd8680620458cfe8))
+* **plugins:** Require Docling's own distribution for internal plugins ([#5477](https://github.com/docling-project/docling/issues/5477)) ([`5b862f7`](https://github.com/docling-project/docling/commit/5b862f733806f44af47ad64ce53e5d3a13d8b9eb))
+
+### Documentation
+
+* **security:** Describe scope and threat model for DoS reports ([#5475](https://github.com/docling-project/docling/issues/5475)) ([`89f1bd4`](https://github.com/docling-project/docling/commit/89f1bd406036477af8c9828b8341cb86873338a7))
+
 ## [v2.151.0](https://github.com/docling-project/docling/releases/tag/v2.151.0) - 2026-11-19
 
 ### Feature
