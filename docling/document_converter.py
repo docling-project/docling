@@ -48,6 +48,7 @@ from docling.backend.iwork_backend import (
     IWorkPagesDocumentBackend,
 )
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
+from docling.backend.json.github_json_backend import GitHubJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
@@ -75,6 +76,7 @@ from docling.datamodel.backend_options import (
     EbcdicBackendOptions,
     EmailBackendOptions,
     EpubBackendOptions,
+    GitHubJSONBackendOptions,
     HTMLBackendOptions,
     IWorkBackendOptions,
     JatsBackendOptions,
@@ -288,6 +290,14 @@ class DoclingJSONFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = DoclingJSONBackend
     backend_options: DeclarativeBackendOptions | None = None
+
+
+class GitHubJSONFormatOption(FormatOption):
+    """Convert native GitHub issue, pull request, and discussion JSON."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = GitHubJSONBackend
+    backend_options: GitHubJSONBackendOptions | None = None
 
 
 class XBRLFormatOption(FormatOption):
@@ -528,6 +538,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IMAGE: ImageFormatOption(),
         InputFormat.PDF: PdfFormatOption(),
         InputFormat.JSON_DOCLING: DoclingJSONFormatOption(),
+        InputFormat.JSON_GITHUB: GitHubJSONFormatOption(),
         InputFormat.AUDIO: AudioFormatOption(),
         InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(
@@ -943,6 +954,13 @@ class DocumentConverter:
             doc_stream = DocumentStream(name=name, stream=buff)
 
             return self.convert(doc_stream, progress_callback=progress_callback)
+        elif format == InputFormat.JSON_GITHUB:
+            if not name.endswith(".json"):
+                name += ".json"
+            return self.convert(
+                DocumentStream(name=name, stream=BytesIO(content.encode("utf-8"))),
+                progress_callback=progress_callback,
+            )
         elif format == InputFormat.XML_DOCLANG:
             if not name.endswith((".dclg", ".dclg.xml")):
                 name += ".dclg.xml"

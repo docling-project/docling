@@ -75,6 +75,7 @@ from docling.datamodel.base_models import (
     MimeTypeToFormat,
     Page,
 )
+from docling.datamodel.github import MAX_GITHUB_JSON_BYTES, parse_github_json
 from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
@@ -1042,6 +1043,29 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or "text/plain"
         if mime.lower() == "text/html" and is_ixbrl(content):
             mime = "application/xhtml+xml"
+        if mime.lower() == "application/json":
+            # JSON keys can occur after a large body. Read a bounded full object,
+            # rather than searching a truncated prefix or relying on key order.
+            if isinstance(obj, Path):
+                with obj.open("rb") as handle:
+                    json_content = handle.read(MAX_GITHUB_JSON_BYTES + 1)
+            else:
+                position = obj.stream.tell()
+                obj.stream.seek(0)
+                json_content = obj.stream.read(MAX_GITHUB_JSON_BYTES + 1)
+                obj.stream.seek(position)
+            if len(json_content) <= MAX_GITHUB_JSON_BYTES:
+                try:
+                    payload = json.loads(json_content.removeprefix(codecs.BOM_UTF8))
+                    if (
+                        not isinstance(payload, dict)
+                        or payload.get("schema_name") != "DoclingDocument"
+                    ):
+                        parse_github_json(payload)
+                        return InputFormat.JSON_GITHUB
+                except (ValueError, TypeError):
+                    pass
+            return InputFormat.JSON_DOCLING
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")
 
