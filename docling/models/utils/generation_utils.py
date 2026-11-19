@@ -182,6 +182,59 @@ class TailRepetitionStopper(GenerationStopper):
         return strip_repeated_tail(text, unit)
 
 
+class EmptyPictureRunStopper(GenerationStopper):
+    """Stops a DocTags generation once it emits a long run of empty pictures.
+
+    Page models occasionally split a dense figure into dozens of tiny
+    ``<picture>`` elements with no content, then end the page before any text
+    that follows the figure. A real page rarely has `min_run` consecutive
+    pictures with nothing between them.
+    """
+
+    def __init__(self, *, min_run: int = 12, lookback_tokens: int = 2048) -> None:
+        """Create the stopper.
+
+        Args:
+            min_run: The number of consecutive empty pictures that stops the
+                generation. The minimum is 2.
+            lookback_tokens: The size of the text window to check. The minimum
+                is 1.
+
+        Raises:
+            ValueError: If `min_run` is less than 2 or `lookback_tokens` is less
+                than 1.
+        """
+        if min_run < 2:
+            raise ValueError(f"min_run must be at least 2, got {min_run}")
+        if lookback_tokens < 1:
+            raise ValueError(
+                f"lookback_tokens must be at least 1, got {lookback_tokens}"
+            )
+        self._lookback_tokens = lookback_tokens
+        self._pattern = re.compile(
+            rf"(?:<picture>(?:<loc_\d+>){{4}}</picture>\s*){{{min_run},}}"
+        )
+
+    def lookback_tokens(self) -> int:
+        """Return the size of the text window to check.
+
+        Returns:
+            The size of the text window that `should_stop` receives.
+        """
+        return self._lookback_tokens
+
+    def should_stop(self, s: str) -> bool:
+        """Check the text for a run of empty pictures.
+
+        Args:
+            s: The text window to check.
+
+        Returns:
+            True if `s` contains at least `min_run` consecutive empty pictures.
+        """
+        return self._pattern.search(s) is not None
+
+
 class DocTagsRepetitionStopper(GenerationStopper):
     """
     Detects repetitive <tag>...<loc_x><loc_y><loc_w><loc_h>text</tag> blocks,

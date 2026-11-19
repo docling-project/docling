@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
+import pytest
 from PIL import Image
 
 from docling.datamodel.base_models import Page, VlmStopReason
@@ -17,6 +19,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineOutput, VlmEngineType
+from docling.models.stages.vlm_convert import vlm_convert_model
 from docling.models.stages.vlm_convert.vlm_convert_model import (
     VlmConvertModel,
     _prediction_from_engine_output,
@@ -240,3 +243,14 @@ def test_prediction_reads_a_vllm_stop_as_a_completed_call() -> None:
     )
 
     assert completed.stop_reason == VlmStopReason.END_OF_SEQUENCE
+
+
+def test_del_ignores_cleanup_failure_at_interpreter_shutdown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = VlmConvertModel.__new__(VlmConvertModel)
+    model.engine = MagicMock()
+    model.engine.cleanup.side_effect = RuntimeError("cleanup failed")
+    monkeypatch.setattr(vlm_convert_model, "_log", None)
+
+    model.__del__()
