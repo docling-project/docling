@@ -38,6 +38,7 @@ from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 from docling.backend.latex.utils.text import iter_child_nodelists
 from docling.backend.utils.image import normalize_image_for_png
+from docling.utils.image_utils import open_image
 
 if TYPE_CHECKING:
     from typing import Any
@@ -667,7 +668,7 @@ class MacroHandlerMixin:
                                     f"Rendered PDF image {img_path}: {pil_image.size}"
                                 )
                             else:
-                                pil_image = Image.open(img_full_path)
+                                pil_image = open_image(img_full_path)
                                 dpi = pil_image.info.get("dpi", (72, 72))
                                 if isinstance(dpi, tuple):
                                     dpi = dpi[0]

@@ -82,6 +82,12 @@ from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils._inline_runs import trim_run_edges
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    WMF_PLACEABLE_MAGIC,
+    is_metafile,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -161,13 +167,6 @@ _EXCEL_1904_EPOCH: Final = datetime(1904, 1, 1)
 _NUMBER_FORMAT_LITERALS: Final = re.compile(r'"[^"]*"|\\.|\[[^\]]*\]|[_*].')
 """Parts of an Excel number format that are not format codes: quoted text,
 escaped characters, bracketed colours, locales and conditions, and padding."""
-
-# Windows metafile signatures. A placeable WMF opens with the Aldus magic and an
-# EMF carries " EMF" in the dSignature field of its EMR_HEADER, 40 bytes in.
-# These are the two Pillow itself identifies, so a bare WMF never reaches here.
-_WMF_PLACEABLE_MAGIC: Final = b"\xd7\xcd\xc6\x9a"
-_EMF_SIGNATURE: Final = b" EMF"
-_EMF_SIGNATURE_OFFSET: Final = 40
 
 
 # The markup-compatibility namespace. python-pptx registers this URI under the
@@ -385,25 +384,6 @@ def _auto_number_marker(value: int, scheme: Optional[str]) -> str:
         return f"{value}."
     prefix, suffix = _AUTO_NUMBER_PUNCTUATION[match["punctuation"]]
     return prefix + _AUTO_NUMBER_COUNTERS[match["counter"]](value) + suffix
-
-
-def _is_metafile(image_bytes: bytes) -> bool:
-    """Return True when the bytes are a Windows metafile (WMF or EMF).
-
-    Pillow renders metafiles only on Windows, where it delegates to the GDI
-    ``PlayEnhMetaFile`` API; the wheels for every other platform carry a stub
-    that raises on load. Telling a metafile apart from a genuinely broken
-    image decides whether a picture is worth rasterizing externally.
-
-    Args:
-        image_bytes: Raw bytes of an embedded picture.
-
-    Returns:
-        True when the bytes carry a placeable WMF or an EMF signature.
-    """
-    return image_bytes[:4] == _WMF_PLACEABLE_MAGIC or (
-        image_bytes[_EMF_SIGNATURE_OFFSET : _EMF_SIGNATURE_OFFSET + 4] == _EMF_SIGNATURE
-    )
 
 
 def _is_date_format(format_code: str) -> bool:
@@ -1337,7 +1317,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 _log.warning(_IMAGE_RENDER_HINT)
             return None
 
-        suffix = ".wmf" if image_bytes[:4] == _WMF_PLACEABLE_MAGIC else ".emf"
+        suffix = ".wmf" if image_bytes[:4] == WMF_PLACEABLE_MAGIC else ".emf"
         temp_dir = Path(mkdtemp())
         try:
             input_path = temp_dir / f"image{suffix}"
@@ -1418,7 +1398,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         try:
             image_ref = self._decode_picture(image_bytes, im_dpi)
-        except (UnidentifiedImageError, OSError, ValueError) as e:
+        except (
+            Image.DecompressionBombError,
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+        ) as e:
             warnings.warn(
                 f"Skipping malformed picture shape: {e}",
                 UserWarning,
@@ -1447,13 +1432,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         Raises:
             UnidentifiedImageError, OSError, ValueError: The bytes are neither
-                an image Pillow can open nor a metafile.
+                a supported raster image nor a metafile.
         """
         try:
-            pil_image = normalize_image_for_png(Image.open(BytesIO(image_bytes)))
+            pil_image = normalize_image_for_png(
+                open_image(image_bytes, PICTURE_IMAGE_FORMATS)
+            )
             return ImageRef.from_pil(image=pil_image, dpi=dpi)
         except (UnidentifiedImageError, OSError, ValueError) as e:
-            if not _is_metafile(image_bytes):
+            if not is_metafile(image_bytes):
                 raise
             # A metafile Pillow cannot draw on this platform. Rasterize it
             # externally when possible, and otherwise still record the picture

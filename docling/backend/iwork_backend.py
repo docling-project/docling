@@ -92,6 +92,7 @@ from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import open_image
 
 _log = logging.getLogger(__name__)
 
@@ -814,7 +815,7 @@ def _picture_image(picture: Picture) -> ImageRef | None:
     if picture.data is None:
         return None
     try:
-        with Image.open(BytesIO(picture.data)) as opened:
+        with open_image(picture.data) as opened:
             return ImageRef.from_pil(image=normalize_image_for_png(opened), dpi=72)
     except (OSError, ValueError) as exc:
         # Pages stores whatever the author placed, including formats Pillow

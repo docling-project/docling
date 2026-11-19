@@ -36,7 +36,7 @@ from requests.utils import get_environ_proxies, select_proxy
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import DEFAULT_MAX_IMAGE_PIXELS
 from docling.exceptions import OperationNotAllowed
-from docling.utils.image_utils import check_image_pixels
+from docling.utils.image_utils import check_image_pixels, open_image
 
 _log = logging.getLogger(__name__)
 
@@ -390,8 +390,8 @@ class ImageResourceLoader:
         try:
             img_data = self.load_image_data(src_url, base_path)
             if img_data:
-                img = Image.open(BytesIO(img_data))
-                # Image.open reads only the header: check the size before
+                img = open_image(BytesIO(img_data))
+                # open_image reads only the header: check the size before
                 # the pixels are decoded.
                 check_image_pixels(img.size, self.max_image_pixels)
                 img.load()

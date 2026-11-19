@@ -1,9 +1,90 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-from typing import cast
+from collections.abc import Sequence
+from io import BytesIO
+from pathlib import Path
+from typing import IO, Final, cast
 
 from PIL import Image
+
+IMAGE_INPUT_FORMATS: Final[tuple[str, ...]] = (
+    "BMP",
+    "DIB",
+    "GIF",
+    "JPEG",
+    "PNG",
+    "TIFF",
+    "WEBP",
+)
+"""Pillow decoders for the image input formats (``InputFormat.IMAGE``).
+
+``DIB`` is the headerless variant of BMP. The ``JPEG`` decoder also opens
+multi-picture (MPO) JPEG files.
+"""
+
+RASTER_IMAGE_FORMATS: Final[tuple[str, ...]] = (
+    *IMAGE_INPUT_FORMATS,
+    "ICO",
+    "JPEG2000",
+)
+"""Pillow decoders for the raster pictures that a document can embed."""
+
+PICTURE_IMAGE_FORMATS: Final[tuple[str, ...]] = (*RASTER_IMAGE_FORMATS, "WMF")
+"""Pillow decoders for the pictures of Office documents.
+
+Pillow's ``WMF`` plugin identifies both WMF and EMF metafiles. It draws them on
+Windows only and raises ``OSError`` on load elsewhere, so the backends can
+rasterize the metafile with LibreOffice instead.
+"""
+
+# Windows metafile signatures. A placeable WMF opens with the Aldus magic and an
+# EMF carries " EMF" in the dSignature field of its EMR_HEADER, 40 bytes in.
+# These are the two Pillow itself identifies.
+WMF_PLACEABLE_MAGIC: Final = b"\xd7\xcd\xc6\x9a"
+_EMF_SIGNATURE: Final = b" EMF"
+_EMF_SIGNATURE_OFFSET: Final = 40
+
+
+def open_image(
+    source: bytes | Path | IO[bytes],
+    formats: Sequence[str] = RASTER_IMAGE_FORMATS,
+) -> Image.Image:
+    """Open an image from a document with an explicit list of Pillow decoders.
+
+    Without ``formats``, Pillow selects the decoder from the first bytes of the
+    data, so a picture could select a decoder that starts an external program
+    (``EPS`` runs Ghostscript). Use this function for all image data that comes
+    from an input document.
+
+    Like ``Image.open``, this reads only the header. The pixels are decoded on
+    ``load()``.
+
+    Raises:
+        PIL.UnidentifiedImageError: The data is not an image in ``formats``.
+        OSError, ValueError: Pillow cannot read the image header.
+    """
+    fp: Path | IO[bytes] = BytesIO(source) if isinstance(source, bytes) else source
+    return Image.open(fp, formats=list(formats))
+
+
+def is_metafile(image_bytes: bytes) -> bool:
+    """Return True when the bytes are a Windows metafile (WMF or EMF).
+
+    Pillow renders metafiles only on Windows, where it delegates to the GDI
+    ``PlayEnhMetaFile`` API; the wheels for every other platform carry a stub
+    that raises on load. Telling a metafile apart from a genuinely broken
+    image decides whether a picture is worth rasterizing externally.
+
+    Args:
+        image_bytes: Raw bytes of an embedded picture.
+
+    Returns:
+        True when the bytes carry a placeable WMF or an EMF signature.
+    """
+    return image_bytes[:4] == WMF_PLACEABLE_MAGIC or (
+        image_bytes[_EMF_SIGNATURE_OFFSET : _EMF_SIGNATURE_OFFSET + 4] == _EMF_SIGNATURE
+    )
 
 
 def check_image_pixels(size: tuple[int, int], max_pixels: int) -> None:
