@@ -91,13 +91,13 @@ class DeclarativeDocumentBackend(AbstractDocumentBackend):
     def load_media(self, location: str) -> Optional[bytes]:
         """Return the bytes of a video or audio file that the document plays.
 
-        A backend that records media on pictures (see
-        ``docling.backend.utils.media``) overrides this, so that a pipeline can
-        convert the media. The default knows no media and returns None.
+        A backend that turns media into tracks (see ``docling.backend.utils.media``)
+        overrides this, so that a pipeline can keep or convert the media. The
+        default knows no media and returns None.
 
         Args:
-            location: The value of a ``docling__video`` or ``docling__audio``
-                meta field: a path inside the document package, or a link.
+            location: The location in the ``MediaRef`` of a track: a path inside
+                the document package, or a link.
 
         Raises:
             OperationNotAllowed: If the file is linked and the backend options

@@ -6,7 +6,7 @@
 import zipfile
 from pathlib import Path
 
-from docling_core.types.doc import DoclingDocument, PictureItem
+from docling_core.types.doc import DoclingDocument, TrackItem
 
 from .test_backend_pptx import get_converter
 
@@ -39,9 +39,11 @@ def _add_media(tmp_path: Path, file_name: str, mime_type: str):
     return prs, slide, shape
 
 
-def _media_meta(picture: PictureItem) -> dict:
-    assert picture.meta is not None
-    return picture.meta.get_custom_part()
+def _media(track: TrackItem) -> tuple[str, str, str]:
+    """The kind, media type and location of the media of a track."""
+    kind, ref = ("video", track.video) if track.video else ("audio", track.audio)
+    assert ref is not None
+    return kind, ref.mimetype, str(ref.uri)
 
 
 def _convert(prs, path: Path) -> DoclingDocument:
@@ -49,30 +51,31 @@ def _convert(prs, path: Path) -> DoclingDocument:
     return get_converter().convert(path).document
 
 
-def test_pptx_embedded_video_is_a_picture_with_its_media_path(tmp_path: Path):
-    """An embedded video becomes a picture of its poster frame on its slide.
+def test_pptx_embedded_video_is_a_track_with_its_media_path(tmp_path: Path):
+    """An embedded video becomes a track on its slide, with its poster frame as cover.
 
-    The picture records the path of the video inside the package, so the video
-    can be read from the deck, e.g. to transcribe it.
+    The track references the video by its path inside the package, so the video
+    can be read from the deck, e.g. to keep or transcribe it.
     """
     prs, _, _ = _add_media(tmp_path, "clip.mp4", "video/mp4")
     deck = tmp_path / "video.pptx"
     doc = _convert(prs, deck)
 
-    assert len(doc.pictures) == 1
-    picture = doc.pictures[0]
-    assert picture.image is not None
-    assert picture.prov[0].page_no == 1
-    assert _media_meta(picture) == {"docling__video": "ppt/media/media1.mp4"}
+    assert doc.pictures == []
+    assert len(doc.tracks) == 1
+    track = doc.tracks[0]
+    assert track.image is not None
+    assert track.prov[0].page_no == 1
+    assert track.parent is not None and track.parent.cref == "#/groups/0"
+    assert _media(track) == ("video", "video/mp4", "ppt/media/media1.mp4")
+    # the reference only: the backend does not read the media
+    assert track.video is not None and track.video._content is None
     with zipfile.ZipFile(deck) as package:
         assert package.read("ppt/media/media1.mp4") == b"not decoded by the backend"
-    assert doc.export_to_markdown() == (
-        "Slide with media\n\n<!-- image -->\n\nppt/media/media1.mp4"
-    )
 
 
-def test_pptx_audio_picture_records_its_media_path(tmp_path: Path):
-    """An audio shape keeps its speaker icon and now says which file it plays.
+def test_pptx_audio_is_a_track_with_its_media_path(tmp_path: Path):
+    """An audio shape becomes a track with its speaker icon as cover.
 
     PowerPoint stores audio like video, with ``a:audioFile`` in place of
     ``a:videoFile``; python-pptx reads it as a plain picture.
@@ -83,13 +86,13 @@ def test_pptx_audio_picture_records_its_media_path(tmp_path: Path):
     shape._element.xpath("./p:nvPicPr/p:nvPr/a:videoFile")[0].tag = qn("a:audioFile")
     doc = _convert(prs, tmp_path / "audio.pptx")
 
-    assert len(doc.pictures) == 1
-    assert doc.pictures[0].image is not None
-    assert _media_meta(doc.pictures[0]) == {"docling__audio": "ppt/media/media1.mp3"}
+    assert doc.pictures == []
+    assert doc.tracks[0].image is not None
+    assert _media(doc.tracks[0]) == ("audio", "audio/mpeg", "ppt/media/media1.mp3")
 
 
 def test_pptx_linked_video_records_its_link(tmp_path: Path):
-    """A video that is linked, not embedded, records the link target."""
+    """A video that is linked, not embedded, references the link target."""
     from pptx.opc.constants import RELATIONSHIP_TYPE as RT
     from pptx.oxml.ns import qn
 
@@ -105,12 +108,22 @@ def test_pptx_linked_video_records_its_link(tmp_path: Path):
     p14_media.set(qn("r:link"), media_rid)
     doc = _convert(prs, tmp_path / "linked.pptx")
 
+    assert len(doc.tracks) == 1
+    assert _media(doc.tracks[0]) == ("video", "video/mp4", link)
+
+
+def test_pptx_video_in_a_legacy_container_stays_a_picture(tmp_path: Path):
+    """A track cannot reference a .wmv yet: the shape stays a picture of its poster frame."""
+    prs, _, _ = _add_media(tmp_path, "clip.wmv", "video/x-ms-wmv")
+    doc = _convert(prs, tmp_path / "legacy.pptx")
+
+    assert doc.tracks == []
     assert len(doc.pictures) == 1
-    assert _media_meta(doc.pictures[0]) == {"docling__video": link}
+    assert doc.pictures[0].image is not None
 
 
-def test_pptx_picture_without_media_has_no_media_meta(tmp_path: Path):
-    """A plain picture is unchanged: it carries no media field."""
+def test_pptx_picture_without_media_stays_a_picture(tmp_path: Path):
+    """A plain picture is unchanged: it is no track."""
     from io import BytesIO
 
     from PIL import Image
@@ -125,4 +138,4 @@ def test_pptx_picture_without_media_has_no_media_meta(tmp_path: Path):
     doc = _convert(prs, tmp_path / "picture.pptx")
 
     assert len(doc.pictures) == 1
-    assert doc.pictures[0].meta is None
+    assert doc.tracks == []

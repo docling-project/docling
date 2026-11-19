@@ -38,10 +38,10 @@ from docling_core.types.doc import (
     ImageRef,
     ListGroup,
     ListItem,
+    MediaRef,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
-    PictureItem,
     PictureMeta,
     ProvenanceItem,
     Size,
@@ -80,7 +80,7 @@ from docling.backend.utils.charts import (
     max_chart_data_rows,
 )
 from docling.backend.utils.image import normalize_image_for_png
-from docling.backend.utils.media import MediaKind, load_linked_media, set_media_meta
+from docling.backend.utils.media import MediaKind, load_linked_media, media_ref
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -1445,18 +1445,28 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             )
             return
 
-        picture = doc.add_picture(
+        if (media := self._media_of(shape)) is not None:
+            # A video or audio object: a track, with its picture as the cover.
+            kind, ref = media
+            doc.add_track(
+                parent=parent_slide,
+                image=image_ref,
+                prov=prov,
+                audio=ref if kind == "audio" else None,
+                video=ref if kind == "video" else None,
+            )
+            return
+        doc.add_picture(
             parent=parent_slide,
             image=image_ref,
             caption=None,
             prov=prov,
         )
-        self._add_media_meta(shape, picture)
         return
 
     @staticmethod
-    def _add_media_meta(shape, picture: PictureItem) -> None:
-        """Record the video or audio file that a picture shape plays.
+    def _media_of(shape) -> Optional[tuple[MediaKind, MediaRef]]:
+        """Return the video or audio file that a picture shape plays.
 
         PowerPoint draws a video or audio object as a picture: its poster frame
         or a speaker icon. A media element in the shape's ``p:nvPr`` gives the
@@ -1469,7 +1479,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if etree.QName(element).localname in _MEDIA_FILE_KINDS
         ]
         if not media_files:
-            return
+            return None
         kind = _MEDIA_FILE_KINDS[etree.QName(media_files[0]).localname]
 
         rels = shape.part.rels
@@ -1480,12 +1490,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if (r_id := element.get(attribute)) is not None and r_id in rels
         ]
         if not r_ids:
-            return
+            return None
         rel = rels[r_ids[0]]
         location = (
             rel.target_ref if rel.is_external else rel.target_part.partname.membername
         )
-        set_media_meta(picture, kind, location)
+        if (ref := media_ref(kind, location)) is None:
+            return None
+        return kind, ref
 
     def _decode_picture(self, image_bytes: bytes, dpi: int) -> Optional[ImageRef]:
         """Open the bytes of a picture as an image.

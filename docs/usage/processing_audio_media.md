@@ -269,9 +269,11 @@ See the [CLI reference](../reference/cli.md) for the complete flag list.
 
 ## Video and audio in slides
 
-PowerPoint (PPTX) and OpenDocument (ODP) slides can play video and audio. By default, Docling keeps each media object as a picture of its poster frame or icon. The `docling__video` or `docling__audio` field of the picture `meta` tells where the media file is: its path inside the presentation package, or the link of a linked file.
+PowerPoint (PPTX) and OpenDocument (ODP) slides can play video and audio. Docling turns each media object into a track on its slide, with its poster frame or icon as the cover. The `video` or `audio` of the track tells where the media file is: its path inside the presentation package, or the link of a linked file.
 
-Set `do_media_conversion=True` to also convert the media. Docling sends each media file through the ASR pipeline (audio) or the video pipeline (video). The result goes in a group right after the picture: the transcript with its timestamps and, for a video, the sampled frames. These items get the provenance of the picture, so you can see on which slide the media plays.
+Set `keep_media=True` to hold the media file in the track, so that a DocLang archive (`save_as_doclang_archive`, or `--keep-media --to dclx` on the CLI) stores it. The JSON of the document keeps only the reference.
+
+Set `do_media_conversion=True` to also convert the media. Docling sends each media file through the ASR pipeline (audio) or the video pipeline (video). The result goes in the track: the transcript with its timestamps and, for a video, the sampled frames. These items get the provenance of the track, so you can see on which slide the media plays.
 
 ```python
 from pathlib import Path
@@ -299,9 +301,9 @@ print(result.document.export_to_markdown())
 
 Docling loads a linked media file only when the backend options allow it: `enable_remote_fetch=True` for a URL, and `enable_local_fetch=True` for a local file. A local file must be in the folder of the presentation or below it, and the presentation must be given as a `Path`. PowerPoint stores links to local files as absolute paths, so Docling does not load them.
 
-Each media file is converted once, also when several slides show it. A video in a container that the video pipeline does not read (for example the `.wmv` or `.mpg` of an older deck) keeps its picture and its `docling__video` field, and Docling logs a warning that it is not converted. A video without an audio track gives only its sampled frames.
+Each media file is loaded and converted once, also when several slides show it. Media in a container that a track does not support yet (for example the `.wmv` or `.mpg` of an older deck) stays a picture of its poster frame or icon, and is neither kept nor converted. A video without an audio track gives only its sampled frames.
 
-If a media file cannot be converted, the picture stays, the result status is `PARTIAL_SUCCESS`, and the reason is in `ConversionResult.errors`.
+If a media file cannot be converted, the track stays, the result status is `PARTIAL_SUCCESS`, and the reason is in `ConversionResult.errors`.
 
 ## Choosing an ASR model and backend
 

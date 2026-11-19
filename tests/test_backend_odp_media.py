@@ -41,8 +41,8 @@ def _convert(odf: OdfDocument, frame: Frame, path: Path) -> DoclingDocument:
     return converter.convert(path).document
 
 
-def test_odp_embedded_video_records_its_media_path(tmp_path: Path):
-    """The preview of an embedded video records where the video is."""
+def test_odp_embedded_video_is_a_track_with_its_media_path(tmp_path: Path):
+    """An embedded video becomes a track, with its preview as cover."""
     odf = OdfDocument("presentation")
     video = tmp_path / "clip.mp4"
     video.write_bytes(b"not decoded by the backend")
@@ -51,48 +51,54 @@ def test_odp_embedded_video_records_its_media_path(tmp_path: Path):
     frame.insert(_plugin(media_path, "video/mp4"), position=0)
     doc = _convert(odf, frame, tmp_path / "video.odp")
 
-    assert len(doc.pictures) == 1
-    picture = doc.pictures[0]
-    assert picture.image is not None
-    assert picture.meta is not None
-    assert picture.meta.get_custom_part() == {"docling__video": media_path}
+    assert doc.pictures == []
+    assert len(doc.tracks) == 1
+    track = doc.tracks[0]
+    assert track.image is not None
+    assert track.video is not None and track.audio is None
+    assert (track.video.mimetype, str(track.video.uri)) == ("video/mp4", media_path)
 
 
-@pytest.mark.parametrize(
-    "href, field",
-    [
-        ("../sounds/tone.mp3", "docling__audio"),
-        # containers of older decks, which the input formats do not list
-        ("Media/clip.wmv", "docling__video"),
-        ("Media/clip.m4v", "docling__video"),
-        ("Media/note.wma", "docling__audio"),
-    ],
-)
-def test_odp_generic_media_type_falls_back_to_the_extension(
-    tmp_path: Path, href: str, field: str
-):
+def test_odp_generic_media_type_falls_back_to_the_extension(tmp_path: Path):
     """LibreOffice's generic media type still gives a kind, from the file name.
 
-    A linked file is recorded by its link, and a frame without a preview still
-    gets a picture, so the media keeps its place on the slide.
+    A linked file is referenced by its link, and a frame without a preview still
+    gets a track, without a cover, so the media keeps its place on the slide.
     """
     odf = OdfDocument("presentation")
     frame = Frame(size=("2cm", "2cm"), position=("1cm", "1cm"))
-    frame.append(_plugin(href, "application/vnd.sun.star.media"))
+    frame.append(_plugin("../sounds/tone.mp3", "application/vnd.sun.star.media"))
     doc = _convert(odf, frame, tmp_path / "media.odp")
 
+    assert doc.pictures == []
+    assert len(doc.tracks) == 1
+    track = doc.tracks[0]
+    assert track.image is None
+    assert track.audio is not None and track.video is None
+    assert (track.audio.mimetype, str(track.audio.uri)) == (
+        "audio/mpeg",
+        "../sounds/tone.mp3",
+    )
+
+
+@pytest.mark.parametrize("href", ["Media/clip.wmv", "Media/clip.m4v", "Media/note.wma"])
+def test_odp_media_in_a_legacy_container_is_no_track(tmp_path: Path, href: str):
+    """A track cannot reference the containers of older decks yet."""
+    odf = OdfDocument("presentation")
+    frame = Frame.image_frame(_preview(odf, tmp_path), size=("8cm", "4.5cm"))
+    frame.append(_plugin(href, "application/vnd.sun.star.media"))
+    doc = _convert(odf, frame, tmp_path / "legacy.odp")
+
+    assert doc.tracks == []
     assert len(doc.pictures) == 1
-    assert doc.pictures[0].image is None
-    assert doc.pictures[0].meta is not None
-    assert doc.pictures[0].meta.get_custom_part() == {field: href}
 
 
 def test_odp_plugin_that_is_not_media_is_ignored(tmp_path: Path):
-    """A plugin that is neither video nor audio adds nothing."""
+    """A plugin that is neither video nor audio leaves the preview a picture."""
     odf = OdfDocument("presentation")
     frame = Frame.image_frame(_preview(odf, tmp_path), size=("8cm", "4.5cm"))
     frame.append(_plugin("Objects/applet.swf", "application/x-shockwave-flash"))
     doc = _convert(odf, frame, tmp_path / "plugin.odp")
 
     assert len(doc.pictures) == 1
-    assert doc.pictures[0].meta is None
+    assert doc.tracks == []

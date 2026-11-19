@@ -9,9 +9,9 @@ from docling_core.types.doc import (
     ContentLayer,
     DocItem,
     DoclingDocument,
-    GroupLabel,
-    PictureItem,
+    MediaRef,
     TextItem,
+    TrackItem,
 )
 
 from docling.backend.abstract_backend import (
@@ -19,7 +19,12 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
 from docling.backend.noop_backend import NoOpBackend
-from docling.backend.utils.media import MediaKind, get_media_meta, media_file_name
+from docling.backend.utils.media import (
+    MediaKind,
+    media_file_name,
+    media_location,
+    track_media,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -43,6 +48,25 @@ from docling.utils.video_frame_sampling import (
 )
 
 _log = logging.getLogger(__name__)
+
+
+def _unwrap_track(media_doc: DoclingDocument) -> None:
+    """Replace the one track of a converted media file by its content.
+
+    The audio and video pipelines put the transcript and frames in a track; they
+    go in the track of the slide instead, as a track has no tracks.
+    """
+    children = media_doc.body.children
+    if len(children) != 1 or not isinstance(
+        track := children[0].resolve(media_doc), TrackItem
+    ):
+        return
+    body_ref = media_doc.body.get_ref()
+    for ref in track.children:
+        ref.resolve(media_doc).parent = body_ref
+    media_doc.body.children = [track.get_ref(), *track.children]
+    track.children = []
+    media_doc.delete_items(node_items=[track])
 
 
 class SimplePipeline(ConvertPipeline):
@@ -74,52 +98,71 @@ class SimplePipeline(ConvertPipeline):
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             conv_res.document = backend.convert()
 
-        if self.pipeline_options.do_media_conversion:
+        options = self.pipeline_options
+        if options.keep_media or options.do_media_conversion:
             with TimeRecorder(conv_res, "media_convert", scope=ProfilingScope.DOCUMENT):
-                self._convert_media(conv_res, backend)
+                self._process_media(conv_res, backend)
         return conv_res
 
-    def _convert_media(
+    def _process_media(
         self, conv_res: ConversionResult, backend: DeclarativeDocumentBackend
     ) -> None:
-        """Convert the video and audio files that the document plays.
+        """Keep or convert the video and audio files that the document plays.
 
-        The backend records each media file on the picture that shows it, and
-        loads the file again on request. The audio or video pipeline converts
-        it, and its document goes in a group right after that picture.
+        The backend turns each media object into a track that references its
+        file, and loads the file again on request. With ``keep_media`` the track
+        holds the file. With ``do_media_conversion`` the audio or video pipeline
+        converts it, and its transcript and frames go in the track.
         """
         doc = conv_res.document
-        # Several slides can show the same media part: convert each file once.
+        options = self.pipeline_options
+        # Several slides can show the same media part: load and convert each file once.
+        loaded: dict[str, bytes | None] = {}
         converted: dict[str, DoclingDocument | None] = {}
-        for picture in list(doc.pictures):
-            media = get_media_meta(picture)
-            if media is None:
+        for track in list(doc.tracks):
+            if (media := track_media(track)) is None:
                 continue
-            kind, location = media
-            if location not in converted:
-                converted[location] = self._convert_media_file(
-                    conv_res, backend, kind, location
-                )
-            if (media_doc := converted[location]) is not None:
-                self._add_media_document(doc, picture, location, media_doc)
+            kind, ref = media
+            location = media_location(ref)
+            convertible = options.do_media_conversion and self._is_convertible(
+                kind, location
+            )
+            if not (options.keep_media or convertible):
+                continue
+            if location not in loaded:
+                loaded[location] = self._load_media_file(conv_res, backend, location)
+            if (data := loaded[location]) is None:
+                continue
+            if options.keep_media:
+                held = MediaRef.from_bytes(data, mimetype=ref.mimetype, uri=ref.uri)
+                setattr(track, kind, held)
+            if convertible:
+                if location not in converted:
+                    converted[location] = self._convert_media_file(
+                        conv_res, kind, location, data
+                    )
+                if (media_doc := converted[location]) is not None:
+                    self._add_media_document(doc, track, media_doc)
 
-    def _convert_media_file(
-        self,
-        conv_res: ConversionResult,
-        backend: DeclarativeDocumentBackend,
-        kind: MediaKind,
-        location: str,
-    ) -> DoclingDocument | None:
-        """Load and convert one media file; return None when it is not converted."""
+    @staticmethod
+    def _is_convertible(kind: MediaKind, location: str) -> bool:
         name = media_file_name(location)
         if kind == "video" and ffmpeg_demuxer_for(Path(name)) is None:
-            # e.g. the .wmv or .mpg of an older deck: the media stays recorded
             _log.warning(
                 "Media file %s is not converted: %s",
                 location,
                 unsupported_container_message(Path(name)),
             )
-            return None
+            return False
+        return True
+
+    def _load_media_file(
+        self,
+        conv_res: ConversionResult,
+        backend: DeclarativeDocumentBackend,
+        location: str,
+    ) -> bytes | None:
+        """Load one media file; return None when it is not loaded."""
         try:
             data = backend.load_media(location)
         except OperationNotAllowed as exc:
@@ -129,9 +172,17 @@ class SimplePipeline(ConvertPipeline):
         except Exception as exc:
             self._add_media_error(conv_res, location, f"cannot be loaded: {exc}")
             return None
-        if not data:
-            return None
+        return data or None
 
+    def _convert_media_file(
+        self,
+        conv_res: ConversionResult,
+        kind: MediaKind,
+        location: str,
+        data: bytes,
+    ) -> DoclingDocument | None:
+        """Convert one media file; return None when it is not converted."""
+        name = media_file_name(location)
         try:
             pipeline = self._get_media_pipeline(kind)
         except ImportError as exc:
@@ -153,7 +204,9 @@ class SimplePipeline(ConvertPipeline):
             reasons = "; ".join(error.error_message for error in result.errors)
             self._add_media_error(conv_res, location, f"cannot be converted: {reasons}")
             return None
-        return result.document
+        media_doc = result.document
+        _unwrap_track(media_doc)
+        return media_doc
 
     def _get_media_pipeline(self, kind: MediaKind) -> BasePipeline:
         if kind not in self._media_pipelines:
@@ -183,36 +236,31 @@ class SimplePipeline(ConvertPipeline):
     @staticmethod
     def _add_media_document(
         doc: DoclingDocument,
-        picture: PictureItem,
-        location: str,
+        track: TrackItem,
         media_doc: DoclingDocument,
     ) -> None:
-        """Add the converted media after its picture.
+        """Add the transcript and frames of the converted media to its track.
 
-        The items take the content layer of the picture, so the media of a
-        hidden shape stays hidden, and its provenance: the media plays in the
-        area of the picture on the slide.
+        The items take the content layer of the track, so the media of a hidden
+        shape stays hidden, and its provenance: the media plays in the area of
+        the track on the slide.
         """
-        group = doc.insert_group(
-            sibling=picture,
-            label=GroupLabel.SECTION,
-            name=f"media: {location}",
-            content_layer=picture.content_layer,
-        )
-        doc.add_document(media_doc, parent=group)
-        for item, _ in doc.iterate_items(
-            root=group,
-            with_groups=True,
-            traverse_pictures=True,
-            included_content_layers=set(ContentLayer),
-        ):
-            item.content_layer = picture.content_layer
-            if isinstance(item, DocItem):
-                length = len(item.text) if isinstance(item, TextItem) else 0
-                item.prov = [
-                    prov.model_copy(update={"charspan": (0, length)})
-                    for prov in picture.prov
-                ]
+        first = len(track.children)
+        doc.add_document(media_doc, parent=track)
+        for child in track.children[first:]:
+            for item, _ in doc.iterate_items(
+                root=child.resolve(doc),
+                with_groups=True,
+                traverse_pictures=True,
+                included_content_layers=set(ContentLayer),
+            ):
+                item.content_layer = track.content_layer
+                if isinstance(item, DocItem):
+                    length = len(item.text) if isinstance(item, TextItem) else 0
+                    item.prov = [
+                        prov.model_copy(update={"charspan": (0, length)})
+                        for prov in track.prov
+                    ]
 
     @staticmethod
     def _add_media_error(

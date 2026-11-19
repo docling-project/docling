@@ -1165,7 +1165,8 @@ def convert(  # noqa: C901
             help=(
                 "Reference audio and video inputs from their transcript, so that "
                 "--to dclx stores them in the archive. The document then holds the "
-                "input's local path."
+                "input's local path. The video and audio that slides play (PPTX, "
+                "ODP) are kept as well."
             ),
         ),
     ] = False,
@@ -2053,6 +2054,7 @@ def convert(  # noqa: C901
                 do_picture_classification=enrich_picture_classes,
                 do_chart_extraction=enrich_chart_extraction,
                 chart_extraction_options=chart_extraction_options,
+                keep_media=keep_media,
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path

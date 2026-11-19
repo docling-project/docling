@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Tests for the conversion of slide video and audio in the simple pipeline.
+"""Tests for the slide video and audio that the simple pipeline keeps and converts.
 
 A stub stands in for the audio and video pipelines, so these tests need no
 speech model. ``test_simple_pipeline_media_asr.py`` runs the real models.
 """
 
+import zipfile
 from pathlib import Path
 from typing import Optional
 
@@ -15,10 +16,8 @@ from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
-    GroupItem,
-    GroupLabel,
-    PictureItem,
     TextItem,
+    TrackItem,
     TrackSource,
 )
 
@@ -39,7 +38,10 @@ _TRANSCRIPT = "Spoken words"
 
 
 class _StubMediaPipeline:
-    """Stands in for the audio and video pipelines: no model, a fixed transcript."""
+    """Stands in for the audio and video pipelines: no model, a fixed transcript.
+
+    Like them, it puts the transcript in a track.
+    """
 
     def __init__(self, status: ConversionStatus = ConversionStatus.SUCCESS) -> None:
         self.status = status
@@ -54,6 +56,7 @@ class _StubMediaPipeline:
             label=DocItemLabel.TEXT,
             text=_TRANSCRIPT,
             source=TrackSource(start_time=0.0, end_time=1.0),
+            parent=result.document.add_track(),
         )
         if self.status == ConversionStatus.FAILURE:
             result.errors.append(
@@ -99,13 +102,14 @@ def _convert(
     path: Path,
     do_media_conversion: bool = True,
     backend_options: Optional[MsPowerpointBackendOptions] = None,
+    keep_media: bool = False,
 ) -> ConversionResult:
     converter = DocumentConverter(
         allowed_formats=[InputFormat.PPTX],
         format_options={
             InputFormat.PPTX: PowerpointFormatOption(
                 pipeline_options=ConvertPipelineOptions(
-                    do_media_conversion=do_media_conversion
+                    do_media_conversion=do_media_conversion, keep_media=keep_media
                 ),
                 backend_options=backend_options,
             )
@@ -114,24 +118,18 @@ def _convert(
     return converter.convert(path, raises_on_error=False)
 
 
-def _media_group(doc: DoclingDocument, picture: PictureItem) -> Optional[GroupItem]:
-    """Return the group right after the picture, if it holds converted media."""
-    assert picture.parent is not None
-    siblings = picture.parent.resolve(doc).children
-    index = [ref.cref for ref in siblings].index(picture.self_ref)
-    if index + 1 == len(siblings):
-        return None
-    sibling = siblings[index + 1].resolve(doc)
-    if isinstance(sibling, GroupItem) and sibling.label == GroupLabel.SECTION:
-        return sibling
-    return None
+def _cues(doc: DoclingDocument, track: TrackItem) -> list[TextItem]:
+    items = [ref.resolve(doc) for ref in track.children]
+    assert all(isinstance(item, TextItem) for item in items)
+    return items  # type: ignore[return-value]
 
 
-def test_media_document_goes_after_its_picture(tmp_path: Path, stub):
-    """The converted media follows the picture that shows it, on the same slide.
+def test_transcript_goes_in_the_track_of_its_media(tmp_path: Path, stub):
+    """The converted media goes in the track that shows it, on the same slide.
 
-    Its items get the provenance of the picture: the media plays there.
-    Without ``do_media_conversion`` nothing is converted.
+    Its items get the provenance of the track: the media plays there. The track
+    of the media pipeline is not kept, as a track has no tracks. Without
+    ``do_media_conversion`` nothing is converted.
     """
     prs, _, _ = _deck(tmp_path)
     deck = tmp_path / "deck.pptx"
@@ -139,30 +137,26 @@ def test_media_document_goes_after_its_picture(tmp_path: Path, stub):
 
     plain = _convert(deck, do_media_conversion=False).document
     assert stub.calls == []
-    assert _media_group(plain, plain.pictures[0]) is None
+    assert plain.tracks[0].children == []
 
     result = _convert(deck)
     assert result.status == ConversionStatus.SUCCESS
     assert stub.calls == [("video", "media1.mp4", _MEDIA_BYTES)]
     doc = result.document
-    picture = doc.pictures[0]
-    group = _media_group(doc, picture)
-    assert group is not None
-    assert group.name == "media: ppt/media/media1.mp4"
-    transcript = group.children[0].resolve(doc)
-    assert isinstance(transcript, TextItem)
+    assert len(doc.tracks) == 1
+    track = doc.tracks[0]
+    [transcript] = _cues(doc, track)
     assert transcript.text == _TRANSCRIPT
     assert transcript.source[0].start_time == 0.0
     assert transcript.prov[0].page_no == 1
-    assert transcript.prov[0].bbox == picture.prov[0].bbox
+    assert transcript.prov[0].bbox == track.prov[0].bbox
     assert transcript.prov[0].charspan == (0, len(_TRANSCRIPT))
-    assert doc.export_to_markdown() == (
-        "Slide with media\n\n<!-- image -->\n\nppt/media/media1.mp4\n\nSpoken words"
-    )
+    # the media is referenced, not held
+    assert track.video is not None and track.video._content is None
 
 
 def test_media_of_a_hidden_shape_stays_hidden(tmp_path: Path, stub):
-    """The converted media takes the content layer of its picture."""
+    """The converted media takes the content layer of its track."""
     prs, _, video = _deck(tmp_path)
     video._element.xpath("./*/p:cNvPr")[0].set("hidden", "1")
     deck = tmp_path / "hidden.pptx"
@@ -170,10 +164,10 @@ def test_media_of_a_hidden_shape_stays_hidden(tmp_path: Path, stub):
 
     doc = _convert(deck).document
 
-    group = _media_group(doc, doc.pictures[0])
-    assert group is not None
-    assert group.content_layer == ContentLayer.INVISIBLE
-    assert group.children[0].resolve(doc).content_layer == ContentLayer.INVISIBLE
+    track = doc.tracks[0]
+    assert track.content_layer == ContentLayer.INVISIBLE
+    [transcript] = _cues(doc, track)
+    assert transcript.content_layer == ContentLayer.INVISIBLE
     assert _TRANSCRIPT not in doc.export_to_markdown()
 
 
@@ -214,7 +208,7 @@ def test_linked_media_follows_the_fetch_options(tmp_path: Path, stub):
     allowed = _convert(local_deck, backend_options=local_fetch)
     assert allowed.status == ConversionStatus.SUCCESS
     assert stub.calls == [("video", "talk.mp4", b"linked video next to the deck")]
-    assert _media_group(allowed.document, allowed.document.pictures[0]) is not None
+    assert _cues(allowed.document, allowed.document.tracks[0])
 
     absolute = _convert(absolute_deck, backend_options=local_fetch)
     assert absolute.status == ConversionStatus.PARTIAL_SUCCESS
@@ -225,7 +219,7 @@ def test_linked_media_follows_the_fetch_options(tmp_path: Path, stub):
 def test_media_that_cannot_be_converted_is_reported(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, missing_extra: bool
 ):
-    """A failed media conversion keeps the picture and makes a partial success.
+    """A failed media conversion keeps the track and makes a partial success.
 
     A missing ASR extra fails only the media too, the same way a missing ffmpeg
     fails the video pipeline.
@@ -249,12 +243,12 @@ def test_media_that_cannot_be_converted_is_reported(
     assert [error.error_message for error in result.errors] == [
         f"Media file ppt/media/media1.mp4 cannot be converted: {reason}"
     ]
-    assert len(result.document.pictures) == 1
-    assert _media_group(result.document, result.document.pictures[0]) is None
+    assert len(result.document.tracks) == 1
+    assert result.document.tracks[0].children == []
 
 
 def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
-    """The slides that show the same media part each get its document, converted once."""
+    """The slides that show the same media part each get its transcript, converted once."""
     from pptx.util import Inches
 
     prs, _, _ = _deck(tmp_path)
@@ -276,21 +270,20 @@ def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
     assert result.status == ConversionStatus.SUCCESS
     assert stub.calls == [("video", "media1.mp4", _MEDIA_BYTES)]
     doc = result.document
-    assert len(doc.pictures) == 2
-    for picture in doc.pictures:
-        group = _media_group(doc, picture)
-        assert group is not None
-        assert group.children[0].resolve(doc).text == _TRANSCRIPT
-        assert group.children[0].resolve(doc).prov[0].page_no == picture.prov[0].page_no
+    assert len(doc.tracks) == 2
+    for track in doc.tracks:
+        [transcript] = _cues(doc, track)
+        assert transcript.text == _TRANSCRIPT
+        assert transcript.prov[0].page_no == track.prov[0].page_no
 
 
 def test_video_container_the_video_pipeline_cannot_read_is_not_converted(
     tmp_path: Path, stub
 ):
-    """A .wmv of an older deck stays recorded, but is not converted, and is no error.
+    """A .wmv of an older deck stays a picture, is not converted, and is no error.
 
-    The video pipeline reads only some containers, so this video cannot be
-    converted at all; the conversion of the deck still succeeds.
+    A track cannot reference this container yet, and the video pipeline cannot
+    read it; the conversion of the deck still succeeds.
     """
     prs, _, _ = _deck(tmp_path, file_name="clip.wmv")
     deck = tmp_path / "wmv.pptx"
@@ -301,10 +294,8 @@ def test_video_container_the_video_pipeline_cannot_read_is_not_converted(
     assert result.status == ConversionStatus.SUCCESS
     assert result.errors == []
     assert stub.calls == []
-    picture = result.document.pictures[0]
-    assert picture.meta is not None
-    assert picture.meta.get_custom_part() == {"docling__video": "ppt/media/media1.wmv"}
-    assert _media_group(result.document, picture) is None
+    assert result.document.tracks == []
+    assert len(result.document.pictures) == 1
 
 
 def test_odp_audio_is_converted(tmp_path: Path, stub):
@@ -342,6 +333,60 @@ def test_odp_audio_is_converted(tmp_path: Path, stub):
     doc = converter.convert(path).document
 
     assert stub.calls == [("audio", Path(media_path).name, _MEDIA_BYTES)]
-    group = _media_group(doc, doc.pictures[0])
-    assert group is not None
-    assert group.children[0].resolve(doc).text == _TRANSCRIPT
+    [transcript] = _cues(doc, doc.tracks[0])
+    assert transcript.text == _TRANSCRIPT
+
+
+@pytest.mark.parametrize("do_media_conversion", [False, True])
+def test_keep_media_holds_the_file_in_its_track(
+    tmp_path: Path, stub, do_media_conversion: bool
+):
+    """With ``keep_media`` the track holds the media, so a DocLang archive stores it.
+
+    The JSON of the document keeps the reference only.
+    """
+    prs, _, _ = _deck(tmp_path)
+    deck = tmp_path / "deck.pptx"
+    prs.save(deck)
+
+    result = _convert(deck, do_media_conversion=do_media_conversion, keep_media=True)
+
+    assert result.status == ConversionStatus.SUCCESS
+    doc = result.document
+    track = doc.tracks[0]
+    assert track.video is not None
+    assert track.video._content == _MEDIA_BYTES
+    assert str(track.video.uri) == "ppt/media/media1.mp4"
+    assert bool(stub.calls) == do_media_conversion
+    assert bool(track.children) == do_media_conversion
+
+    archive = tmp_path / "deck.dclx"
+    doc.save_as_doclang_archive(archive)
+    with zipfile.ZipFile(archive) as package:
+        assert package.read("video/1.mp4") == _MEDIA_BYTES
+    loaded = DoclingDocument.model_validate_json(doc.model_dump_json())
+    assert loaded.tracks[0].video is not None
+    assert loaded.tracks[0].video._content is None
+
+
+def test_keep_media_follows_the_fetch_options(tmp_path: Path, stub):
+    """A linked file that the backend options do not allow is not kept, and is no error."""
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    from pptx.oxml.ns import qn
+
+    prs, slide, video = _deck(tmp_path)
+    r_id = slide.part.relate_to(
+        "https://example.com/talk.mp4", RT.VIDEO, is_external=True
+    )
+    video._element.xpath("./p:nvPicPr/p:nvPr/a:videoFile")[0].set(qn("r:link"), r_id)
+    ext_lst = video._element.xpath("./p:nvPicPr/p:nvPr/p:extLst")[0]
+    ext_lst.getparent().remove(ext_lst)
+    deck = tmp_path / "remote.pptx"
+    prs.save(deck)
+
+    result = _convert(deck, do_media_conversion=False, keep_media=True)
+
+    assert result.status == ConversionStatus.SUCCESS
+    track = result.document.tracks[0]
+    assert track.video is not None and track.video._content is None
+    assert str(track.video.uri) == "https://example.com/talk.mp4"

@@ -4,31 +4,32 @@
 """Helpers to record and load the video and audio that a presentation plays.
 
 A slide shows a video or audio object as a picture: a poster frame or a
-speaker icon. The backends keep that picture and record on it where the media
-file is. A pipeline can then load the file through the backend and convert it
-with the audio or video pipeline.
+speaker icon. The backends turn it into a track with that picture as its cover,
+and a ``MediaRef`` that records where the media file is. A pipeline can then
+load the file through the backend, keep it in the track, and convert it with
+the audio or video pipeline.
 """
 
-from pathlib import PurePosixPath
+import logging
+from pathlib import Path, PurePosixPath
 from typing import Final, Literal, Optional
 from urllib.parse import unquote, urlparse
 
-from docling_core.types.doc import PictureItem, PictureMeta
+from docling_core.types.doc import MediaRef, TrackItem
+from docling_core.types.doc.common.reference import media_type_of
+from pydantic import ValidationError
 
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import BaseBackendOptions
 from docling.datamodel.base_models import FormatToExtensions, InputFormat
 from docling.exceptions import OperationNotAllowed
 
-MediaKind = Literal["video", "audio"]
+_log = logging.getLogger(__name__)
 
-MEDIA_META_NAMESPACE: Final = "docling"
-"""The media file is in the ``docling__video`` or ``docling__audio`` meta field."""
+MediaKind = Literal["video", "audio"]
 
 MAX_LINKED_MEDIA_BYTES: Final = 512 * 1024 * 1024
 """Size limit for a linked media file that is downloaded from a remote URL."""
-
-_MEDIA_KINDS: Final[tuple[MediaKind, ...]] = ("video", "audio")
 
 # Containers that older decks embed, besides those of the audio and video input formats.
 _LEGACY_VIDEO_EXTENSIONS: Final = frozenset({"asf", "flv", "m4v", "mpeg", "mpg", "wmv"})
@@ -61,36 +62,44 @@ def media_kind(mimetype: Optional[str], location: str = "") -> Optional[MediaKin
     return None
 
 
-def set_media_meta(picture: PictureItem, kind: MediaKind, location: str) -> None:
-    """Record on a picture the video or audio file that it stands for.
+def media_ref(kind: MediaKind, location: str) -> Optional[MediaRef]:
+    """Return the reference of the video or audio file that a slide plays.
 
-    The value is the path of the file inside the document package when the
-    file is embedded, and the link target that the document gives when the file
-    is linked. It is a plain string, so the Markdown export shows it under the
-    picture.
+    The reference holds the location only: the path of the file inside the
+    document package when the file is embedded, or the link target that the
+    document gives when the file is linked. A pipeline loads the file through
+    the backend (see ``load_media``).
 
-    Args:
-        picture: The picture that shows the media on the slide.
-        kind: ``"video"`` or ``"audio"``; it names the meta field.
-        location: The package path or the link target of the media file.
+    Returns:
+        None when the file is in a container that a track cannot reference,
+        such as the ``.wmv`` of an older deck.
     """
-    if picture.meta is None:
-        picture.meta = PictureMeta()
-    picture.meta.set_custom_field(
-        namespace=MEDIA_META_NAMESPACE, name=kind, value=location
-    )
-
-
-def get_media_meta(picture: PictureItem) -> Optional[tuple[MediaKind, str]]:
-    """Return the kind and the location of the media file that a picture stands for."""
-    if picture.meta is None:
+    mimetype = media_type_of(media_file_name(location))
+    if kind == "audio" and mimetype == "video/mp4":
+        # an MP4 container that a slide plays as audio
+        mimetype = "audio/mp4"
+    if mimetype is None or not mimetype.startswith(f"{kind}/"):
+        _log.debug("Media file %s is not kept: unsupported container", location)
         return None
-    fields = picture.meta.get_custom_part()
-    for kind in _MEDIA_KINDS:
-        location = fields.get(f"{MEDIA_META_NAMESPACE}__{kind}")
-        if isinstance(location, str) and location:
-            return kind, location
+    try:
+        return MediaRef(mimetype=mimetype, uri=location)
+    except ValidationError:
+        _log.debug("Media file %s is not kept: unsupported reference", location)
+        return None
+
+
+def track_media(track: TrackItem) -> Optional[tuple[MediaKind, MediaRef]]:
+    """Return the kind and the reference of the media file of a track."""
+    if track.video is not None:
+        return "video", track.video
+    if track.audio is not None:
+        return "audio", track.audio
     return None
+
+
+def media_location(ref: MediaRef) -> str:
+    """Return the location that ``media_ref`` recorded: a package path or a link."""
+    return ref.uri.as_posix() if isinstance(ref.uri, Path) else str(ref.uri)
 
 
 def media_file_name(location: str) -> str:

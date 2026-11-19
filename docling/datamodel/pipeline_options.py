@@ -1584,10 +1584,21 @@ class ConvertPipelineOptions(PipelineOptions):
         Field(
             description=(
                 "Convert the video and audio files that slides play (PPTX, ODP) with the audio or video "
-                "pipeline. The transcript, and the sampled frames of a video, go in a group after the "
-                "picture of each media object. Needs the `asr` extra and ffmpeg. A linked file "
+                "pipeline. The transcript, and the sampled frames of a video, go in the track of each "
+                "media object. Needs the `asr` extra and ffmpeg. A linked file "
                 "is fetched only when the backend options `enable_remote_fetch` or `enable_local_fetch` "
                 "allow it. Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Hold the video and audio files that slides play (PPTX, ODP) in the track of each "
+                "media object, so that e.g. a DocLang archive stores them. A linked file is fetched "
+                "only when the backend options `enable_remote_fetch` or `enable_local_fetch` allow it. "
+                "Only formats that the simple pipeline converts use this option."
             )
         ),
     ] = False
