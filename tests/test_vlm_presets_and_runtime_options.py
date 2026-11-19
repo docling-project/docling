@@ -324,7 +324,11 @@ class TestRuntimeOptions:
 
         assert processor_kwargs["trust_remote_code"] is expected_trust_remote_code
         assert model_kwargs["trust_remote_code"] is expected_trust_remote_code
-        assert model_kwargs["_attn_implementation"] is None
+        # Transformers 5 only honors the public ``attn_implementation`` kwarg;
+        # the private ``_attn_implementation`` spelling is a transformers 4
+        # holdover (see test_transformers_engine_uses_versioned_dtype_arg).
+        assert model_kwargs["attn_implementation"] is None
+        assert "_attn_implementation" not in model_kwargs
 
     def test_dots_mocr_requires_flash_attn(self, monkeypatch):
         """dots.mocr remote code imports flash_attn even when SDPA is selected."""
