@@ -506,6 +506,12 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         already owns torch.compile for the loaded model. Defaults match the
         remote model's own defaults (``max_new_tokens=4096``,
         ``min_dimension=64``, ``max_dimension=1024``).
+
+        Limitation: the native ``generate`` returns only ``list[str]`` — no
+        token counts and no end-of-sequence flag — so ``stop_reason`` stays
+        unspecified and output truncated at ``max_new_tokens`` cannot be
+        detected as partial. ``stop_strings`` from ``VlmEngineInput`` are
+        not applied on this path.
         """
         if not input_batch:
             return []
