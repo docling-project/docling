@@ -67,7 +67,11 @@ from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
 from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
-from docling.utils.image_utils import PICTURE_IMAGE_FORMATS, is_metafile, open_image
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    is_known_picture,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -4570,9 +4574,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "image",
                 )
                 pil_image: Image.Image | None = None
-                # LibreOffice can still draw a metafile, or an image that Pillow
-                # identifies but cannot decode. A picture that no allowed
-                # decoder identifies is skipped.
+                # LibreOffice can still draw a metafile, or a known picture
+                # format that Pillow cannot decode. Other data, for example
+                # PostScript, is skipped.
                 can_render = False
 
                 if image_data is None:
@@ -4597,7 +4601,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         # Pillow 13 reports truncated PNG chunks as ValueError.
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
-                        can_render = is_metafile(image_data) or not isinstance(
+                        can_render = is_known_picture(image_data) or not isinstance(
                             e, UnidentifiedImageError
                         )
 
@@ -4673,10 +4677,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     except Exception as e:
                         _log.debug(f"Direct PIL loading failed: {e}")
                         pil_image = None
-                        # LibreOffice can still draw a metafile, or an image
-                        # that Pillow identifies but cannot decode. A picture
-                        # that no allowed decoder identifies is skipped.
-                        can_render = is_metafile(image_data) or not isinstance(
+                        # LibreOffice can still draw a metafile, or a known
+                        # picture format that Pillow cannot decode. Other
+                        # data, for example PostScript, is skipped.
+                        can_render = is_known_picture(image_data) or not isinstance(
                             e, UnidentifiedImageError
                         )
                         if not can_render:

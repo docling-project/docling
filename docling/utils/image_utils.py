@@ -87,6 +87,43 @@ def is_metafile(image_bytes: bytes) -> bool:
     )
 
 
+# Leading signatures of the formats in RASTER_IMAGE_FORMATS. Each entry is an
+# offset and the bytes expected there.
+_RASTER_SIGNATURES: Final[tuple[tuple[int, bytes], ...]] = (
+    (0, b"\x89PNG\r\n\x1a\n"),
+    (0, b"\xff\xd8\xff"),  # JPEG
+    (0, b"GIF87a"),
+    (0, b"GIF89a"),
+    (0, b"BM"),  # BMP
+    (0, b"II*\x00"),  # TIFF, little-endian
+    (0, b"MM\x00*"),  # TIFF, big-endian
+    (8, b"WEBP"),  # after the RIFF header
+    (0, b"\x00\x00\x01\x00"),  # ICO
+    (0, b"\xff\x4f\xff\x51"),  # JPEG 2000 codestream
+    (4, b"jP  "),  # JPEG 2000 file
+)
+
+
+def is_known_picture(image_bytes: bytes) -> bool:
+    """Return True when the bytes start like a picture format that Docling decodes.
+
+    Pillow raises ``UnidentifiedImageError`` also for a supported picture whose
+    header it cannot parse, for example a PNG with a truncated chunk in Pillow 12.
+    Such a picture can still be worth rasterizing externally, while data with no
+    known signature (for example PostScript) cannot.
+
+    Args:
+        image_bytes: Raw bytes of an embedded picture.
+
+    Returns:
+        True for a metafile or for bytes with a raster signature.
+    """
+    return is_metafile(image_bytes) or any(
+        image_bytes[offset : offset + len(magic)] == magic
+        for offset, magic in _RASTER_SIGNATURES
+    )
+
+
 def check_image_pixels(size: tuple[int, int], max_pixels: int) -> None:
     """Raise ``ValueError`` if an image of ``size`` exceeds ``max_pixels``.
 
