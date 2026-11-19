@@ -1,4 +1,3 @@
-
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
@@ -51,6 +50,8 @@ def test_create_file_hash_path(tmp_path: Path):
     expected = hashlib.sha256(content).hexdigest()
 
     assert actual == expected
+
+
 def test_create_file_hash_multiple_chunks():
     content = b"A" * (65536 * 2 + 100)
     stream = BytesIO(content)
