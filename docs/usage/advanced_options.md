@@ -906,6 +906,32 @@ doc_converter = DocumentConverter(
 )
 ```
 
+### Limit on repeated cells in ODS files
+
+An ODS sheet can repeat a row or a cell many times with one attribute
+(`table:number-rows-repeated` or `table:number-columns-repeated`). The ODS
+backend processes each copy, so a small file can declare millions of cells.
+`OdsBackendOptions.max_repeated_cells` limits the cells that repetition adds to
+a workbook, in addition to the cells written in the file. The default is
+100,000. Trailing empty rows and cells do not count. When a workbook goes over
+the limit, each repetition keeps only the copies that fit, Docling logs a
+warning, and the cells written in the file are kept. Raise the limit for large
+trusted files:
+
+```python
+from docling.datamodel.backend_options import OdsBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, OdsFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.ODS: OdsFormatOption(
+            backend_options=OdsBackendOptions(max_repeated_cells=1_000_000)
+        ),
+    }
+)
+```
+
 ## Convert from binary PDF streams
 
 You can convert PDFs from a binary stream instead of from the filesystem as follows:

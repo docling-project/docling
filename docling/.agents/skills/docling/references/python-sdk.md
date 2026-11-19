@@ -648,6 +648,15 @@ converter = DocumentConverter(
 )
 ```
 
+## ODS repeated cells limit
+
+ODS sheets can repeat a row or a cell with one attribute. The ODS backend keeps
+at most `OdsBackendOptions.max_repeated_cells` (default 100,000) cells added by
+repetition per workbook; trailing empty rows and cells do not count. Over the
+limit, each repetition keeps only the copies that fit and Docling logs a
+warning. Raise it for large trusted files with
+`OdsFormatOption(backend_options=OdsBackendOptions(max_repeated_cells=...))`.
+
 ## Offline / air-gapped models
 
 Pre-download model artifacts, then point conversions at them so no network is
