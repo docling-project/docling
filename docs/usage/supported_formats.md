@@ -48,7 +48,8 @@ Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
 Email conversion also reads the calendar parts of a message, such as meeting
 invitations, cancellations and attached `.ics` files. Their events are added under
 a "Calendar" heading after the body, with the same fields as iCalendar input. An
-event that the message carries both inline and as an attachment is added once. Set
+event that the message carries both inline and as an attachment is added once. An
+event description that repeats the body text, as Outlook writes it, is left out. Set
 `EmailBackendOptions.parse_calendar_invitations` to `False` to leave them out.
 
 For LaTeX input, front matter such as authors, affiliations, institutes, email
