@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Encoding handling shared by the Markdown, CSV and AsciiDoc backends.
+"""Encoding handling shared by the Markdown, CSV, AsciiDoc and calendar backends.
 
 Each of them reads a whole user-supplied file as text, and each decodes the
 path and the stream separately, so every case here is checked on both routes.
@@ -15,12 +15,14 @@ import pytest
 
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
+    CalendarBackendOptions,
     CsvBackendOptions,
     MarkdownBackendOptions,
 )
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.document_converter import (
     AsciiDocFormatOption,
+    CalendarFormatOption,
     CsvFormatOption,
     DocumentConverter,
     MarkdownFormatOption,
@@ -37,12 +39,20 @@ FORMATS = [
     pytest.param(
         InputFormat.ASCIIDOC, "adoc", f"= Rapport\n\n{ACCENTED}\n", id="asciidoc"
     ),
+    pytest.param(
+        InputFormat.CALENDAR,
+        "ics",
+        f"BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Rapport\nDESCRIPTION:{ACCENTED}\n"
+        "END:VEVENT\nEND:VCALENDAR\n",
+        id="calendar",
+    ),
 ]
 
 OPTIONS_BY_FORMAT = {
     InputFormat.MD: (MarkdownFormatOption, MarkdownBackendOptions),
     InputFormat.CSV: (CsvFormatOption, CsvBackendOptions),
     InputFormat.ASCIIDOC: (AsciiDocFormatOption, AsciiDocBackendOptions),
+    InputFormat.CALENDAR: (CalendarFormatOption, CalendarBackendOptions),
 }
 
 

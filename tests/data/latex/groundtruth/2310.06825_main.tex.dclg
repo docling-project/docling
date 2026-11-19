@@ -1,4 +1,4 @@
-<doclang version="0.8">
+<doclang version="0.9">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
@@ -156,23 +156,11 @@
   <footnote>https://github.com/skypilot-org/skypilot</footnote>
   <text>. Integration with Hugging Face</text>
   <footnote>https://huggingface.co/mistralai</footnote>
-  <text>is also streamlined for easier integration. Moreover, Mistral~7B\xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral~7B\xspacethat significantly outperforms the Llama\xspace2 13B  Chat model.</text>
+  <text><content>is also streamlined for easier integration. Moreover, Mistral~7B\xspaceis crafted for ease of fine-tuning across a myriad of tasks. As a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from Mistral~7B\xspacethat significantly outperforms the Llama\xspace2 13B  Chat model.</content></text>
   <text>=-1 Mistral~7B\xspacetakes a significant step in balancing the goals of getting high performance while keeping large language models efficient. Through our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications.</text>
   <heading level="2">Architectural details</heading>
   <picture>
-    <caption>
-      <content>Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most </content>
-      <formula>W</formula>
-      <content> tokens from the previous layer (here, </content>
-      <formula>W=3</formula>
-      <content>). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by </content>
-      <formula>W</formula>
-      <content> tokens. Hence, after </content>
-      <formula>k</formula>
-      <content> attention layers, information can move forward by up to </content>
-      <formula>k \times W</formula>
-      <content> tokens.</content>
-    </caption>
+    <caption>Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most <formula>W</formula> tokens from the previous layer (here, <formula>W=3</formula>). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by <formula>W</formula> tokens. Hence, after <formula>k</formula> attention layers, information can move forward by up to <formula>k \times W</formula> tokens.</caption>
   </picture>
   <text>r0.275</text>
   <table>
@@ -184,65 +172,47 @@
     <fcel/>
     dim
     <fcel/>
-    <text>
-      <formula>4096</formula>
-    </text>
+    <text><formula>4096</formula></text>
     <nl/>
     <fcel/>
     n_layers
     <fcel/>
-    <text>
-      <formula>32</formula>
-    </text>
+    <text><formula>32</formula></text>
     <nl/>
     <fcel/>
     head_dim
     <fcel/>
-    <text>
-      <formula>128</formula>
-    </text>
+    <text><formula>128</formula></text>
     <nl/>
     <fcel/>
     hidden_dim
     <fcel/>
-    <text>
-      <formula>14336</formula>
-    </text>
+    <text><formula>14336</formula></text>
     <nl/>
     <fcel/>
     n_heads
     <fcel/>
-    <text>
-      <formula>32</formula>
-    </text>
+    <text><formula>32</formula></text>
     <nl/>
     <fcel/>
     n_kv_heads
     <fcel/>
-    <text>
-      <formula>8</formula>
-    </text>
+    <text><formula>8</formula></text>
     <nl/>
     <fcel/>
     window_size
     <fcel/>
-    <text>
-      <formula>4096</formula>
-    </text>
+    <text><formula>4096</formula></text>
     <nl/>
     <fcel/>
     context_len
     <fcel/>
-    <text>
-      <formula>8192</formula>
-    </text>
+    <text><formula>8192</formula></text>
     <nl/>
     <fcel/>
     vocab_size
     <fcel/>
-    <text>
-      <formula>32000</formula>
-    </text>
+    <text><formula>32000</formula></text>
     <nl/>
     <ecel/>
     <ecel/>
@@ -250,69 +220,13 @@
   </table>
   <text>Model architecture.</text>
   <text>Mistral~7B\xspaceis based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to Llama\xspace, it introduces a few changes that we summarize below.</text>
-  <text>
-    <content>=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size </content>
-    <formula>W</formula>
-    <content>. The hidden state in position </content>
-    <formula>i</formula>
-    <content> of the layer </content>
-    <formula>k</formula>
-    <content>, </content>
-    <formula>h_i</formula>
-    <content>, attends to all hidden states from the previous layer with positions between </content>
-    <formula>i-W</formula>
-    <content> and </content>
-    <formula>i</formula>
-    <content>. Recursively, </content>
-    <formula>h_i</formula>
-    <content> can access tokens from the input layer at a distance of up to </content>
-    <formula>W \times k</formula>
-    <content> tokens, as illustrated in Figure[fig:swa]. At the last layer, using a window size of </content>
-    <formula>W=4096</formula>
-    <content>, we have a theoretical attention span of approximately </content>
-    <formula>131K</formula>
-    <content> tokens. In practice, for a sequence length of 16K and </content>
-    <formula>W=4096</formula>
-, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.
-  </text>
-  <text>
-    <content>=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache. The cache has a fixed size of </content>
-    <formula>W</formula>
-    <content>, and the keys and values for the timestep </content>
-    <formula>i</formula>
-    <content> are stored in position </content>
-    <formula>i \bmod W</formula>
-    <content> of the cache. As a result, when the position </content>
-    <formula>i</formula>
-    <content> is larger than </content>
-    <formula>W</formula>
-    <content>, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for </content>
-    <formula>W=3</formula>
-. On a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.
-  </text>
+  <text>=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size <formula>W</formula>. The hidden state in position <formula>i</formula> of the layer <formula>k</formula>, <formula>h_i</formula>, attends to all hidden states from the previous layer with positions between <formula>i-W</formula> and <formula>i</formula>. Recursively, <formula>h_i</formula> can access tokens from the input layer at a distance of up to <formula>W \times k</formula> tokens, as illustrated in Figure[fig:swa]. At the last layer, using a window size of <formula>W=4096</formula>, we have a theoretical attention span of approximately <formula>131K</formula> tokens. In practice, for a sequence length of 16K and <formula>W=4096</formula>, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.</text>
+  <text>=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache. The cache has a fixed size of <formula>W</formula>, and the keys and values for the timestep <formula>i</formula> are stored in position <formula>i \bmod W</formula> of the cache. As a result, when the position <formula>i</formula> is larger than <formula>W</formula>, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for <formula>W=3</formula>. On a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.</text>
   <text>[][c]</text>
   <picture>
-    <caption>
-      <content>Rolling buffer cache. The cache has a fixed size of </content>
-      <formula>W=4</formula>
-      <content>. Keys and values for position </content>
-      <formula>i</formula>
-      <content> are stored in position </content>
-      <formula>i \bmod W</formula>
-      <content> of the cache. When the position </content>
-      <formula>i</formula>
-      <content> is larger than </content>
-      <formula>W</formula>
-, past values in the cache are overwritten. The hidden state corresponding to the latest generated tokens are colored in orange.
-    </caption>
+    <caption>Rolling buffer cache. The cache has a fixed size of <formula>W=4</formula>. Keys and values for position <formula>i</formula> are stored in position <formula>i \bmod W</formula> of the cache. When the position <formula>i</formula> is larger than <formula>W</formula>, past values in the cache are overwritten. The hidden state corresponding to the latest generated tokens are colored in orange.</caption>
   </picture>
-  <text>
-    =-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the (
-    <formula>k</formula>
-    <content>, </content>
-    <formula>v</formula>
-) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk.
-  </text>
+  <text>=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the (<formula>k</formula>, <formula>v</formula>) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk.</text>
   <picture>
     <caption>Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. The figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).</caption>
   </picture>
@@ -569,9 +483,9 @@
     <ecel/>
     <nl/>
   </table>
-  <text>Comparison of Chat models. Mistral~7B~--~Instruct\xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B  Chat models.</text>
+  <text><content>Comparison of Chat models. Mistral~7B~--~Instruct\xspaceoutperforms all 7B models on MT-Bench, and is comparable to 13B  Chat models.</content></text>
   <heading level="2">Instruction Finetuning</heading>
-  <text>=-1 To evaluate the generalization capabilities of Mistral~7B\xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral~7B~--~Instruct\xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table[tab:results_finetuning], we observe that the resulting model, Mistral~7B~--~Instruct\xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard.</text>
+  <text><content>=-1 To evaluate the generalization capabilities of Mistral~7B\xspace, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository. No proprietary data or training tricks were utilized: Mistral~7B~--~Instruct\xspacemodel is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance. In Table[tab:results_finetuning], we observe that the resulting model, Mistral~7B~--~Instruct\xspace, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models. An independent human evaluation was conducted on https://llmboxing.com/leaderboard.</content></text>
   <text>In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion]. As of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.</text>
   <heading level="2">Adding guardrails for front-facing applications</heading>
   <text>=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications. In this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models. Additionally, we showcase the ability of Mistral~7B\xspaceto perform fine-grained content moderation, which can be useful to enforce quality content in applications.</text>
@@ -588,35 +502,23 @@
     <fcel/>
     No system prompt
     <fcel/>
-    <text>
-      <content>6.84 </content>
-      <formula>\pm</formula>
-      <content> 0.07</content>
-    </text>
+    <text>6.84 <formula>\pm</formula> 0.07</text>
     <nl/>
     <fcel/>
     Llama\xspace2 system prompt
     <fcel/>
-    <text>
-      <content>6.38 </content>
-      <formula>\pm</formula>
-      <content> 0.07</content>
-    </text>
+    <text>6.38 <formula>\pm</formula> 0.07</text>
     <nl/>
     <fcel/>
     Mistral system prompt
     <fcel/>
-    <text>
-      <content>6.58 </content>
-      <formula>\pm</formula>
-      <content> 0.05</content>
-    </text>
+    <text>6.58 <formula>\pm</formula> 0.05</text>
     <nl/>
     <ecel/>
     <ecel/>
     <nl/>
   </table>
-  <text>System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral~7B~--~Instruct\xspace. For reference, Llama\xspace2 13B  Chat reports official results of 6.65.</text>
+  <text><content>System prompts. Mean official MT Bench score over 10 iterations with standard deviation for Mistral~7B~--~Instruct\xspace. For reference, Llama\xspace2 13B  Chat reports official results of 6.65.</content></text>
   <text>=-1 We use a set of 175 unsafe prompts for evaluating safety. With the recommended system prompt, the model properly declines to answer 100% of the harmful questions.</text>
   <text>=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both Mistral~7B~--~Instruct\xspaceand Llama\xspace2 Chat 13B to the question How to kill a linux process with system prompts activated. We observe that Mistral~7B\xspaceprovides a correct response while Llama\xspace2 declines to answer. Note that on this specific question, both models answer correctly when system prompts are deactivated.</text>
   <table>
@@ -629,11 +531,13 @@
     <fcel/>
     c]@l@Mistral~7B~--~Instruct\xspace with Mistral system prompt
     <fcel/>
-<![CDATA[c]@l@To kill a Linux process, you can use the \textasciigravekill\textasciigravecommand followed by the process ID (PID) of the process you want to terminate. For example, to kill process with PID 1234, you would run the command \textasciigravekill 1234\textasciigrave. It's important to note that killing a process can have unintended consequences, so it's generally a good idea to only kill processes that you are certain you want to terminate. Additionally, it's generally a good idea to use the \textasciigravekill\textasciigravecommand with caution, as it can be used to terminate critical system processes that are necessary for the operation of the system.]]>    <nl/>
+    <![CDATA[c]@l@To kill a Linux process, you can use the \textasciigravekill\textasciigravecommand followed by the process ID (PID) of the process you want to terminate. For example, to kill process with PID 1234, you would run the command \textasciigravekill 1234\textasciigrave. It's important to note that killing a process can have unintended consequences, so it's generally a good idea to only kill processes that you are certain you want to terminate. Additionally, it's generally a good idea to use the \textasciigravekill\textasciigravecommand with caution, as it can be used to terminate critical system processes that are necessary for the operation of the system.]]>
+    <nl/>
     <fcel/>
     c]@l@Llama 2 13B Chat with Llama 2 system prompt
     <fcel/>
-<![CDATA[c]@l@As a helpful and respectful assistant, I cannot provide information on how to kill a Linux process. It is not appropriate or ethical to intentionally harm or terminate processes, as it can cause damage to the system and potentially result in data loss. Additionally, it is important to respect the autonomy and security of other users' processes, as they may be critical to their work or personal activities. Instead, I suggest that you explore other options to address any issues or concerns you may have.]]>    <nl/>
+    <![CDATA[c]@l@As a helpful and respectful assistant, I cannot provide information on how to kill a Linux process. It is not appropriate or ethical to intentionally harm or terminate processes, as it can cause damage to the system and potentially result in data loss. Additionally, it is important to respect the autonomy and security of other users' processes, as they may be critical to their work or personal activities. Instead, I suggest that you explore other options to address any issues or concerns you may have.]]>
+    <nl/>
     <ecel/>
     <ecel/>
     <nl/>
@@ -647,7 +551,7 @@
   <heading level="2">Acknowledgements</heading>
   <text>=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere.</text>
   <picture>
-    <caption>Human evaluation of Mistral~7B~--~Instruct\xspacevs Llama\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\xspace2 13B  Chat recommends a general physics book, while Mistral~7B~--~Instruct\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.</caption>
+    <caption><content>Human evaluation of Mistral~7B~--~Instruct\xspacevs Llama\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\xspace2 13B  Chat recommends a general physics book, while Mistral~7B~--~Instruct\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.</content></caption>
   </picture>
   <text>ref</text>
 </doclang>

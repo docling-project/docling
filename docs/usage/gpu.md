@@ -126,29 +126,36 @@ vllm serve ibm-granite/granite-docling-258M \
 Configure the VLM pipeline using Docling's VLM options:
 
 ```python
-from docling.datamodel.pipeline_options import VlmPipelineOptions
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 
-vlm_options = VlmPipelineOptions(
+api_options = ApiVlmEngineOptions(
+    url="http://localhost:8000/v1/chat/completions",  # or any other compatible endpoint
+    params={
+        "model": "ibm-granite/granite-docling-258M",
+        "max_tokens": 4096,
+    },
+    concurrency=64,  # default is 1
+    timeout=90,
+)
+vlm_options = VlmConvertOptions.from_preset(
+    "granite_docling",
+    engine_options=api_options,
+)
+pipeline_options = VlmPipelineOptions(
     enable_remote_services=True,
-    vlm_options={
-        "url": "http://localhost:8000/v1/chat/completions",  # or any other compatible endpoint
-        "params": {
-            "model": "ibm-granite/granite-docling-258M",
-            "max_tokens": 4096,
-        },
-        "concurrency": 64,  # default is 1
-        "prompt": "Convert this page to docling.",
-        "timeout": 90,
-    }
+    vlm_options=vlm_options,
 )
 ```
 
-Additionally to the concurrency, we also have to set the `page_batch_size` Docling parameter. Make sure to set `settings.perf.page_batch_size >= vlm_options.concurrency`.
+The preset supplies the model's prompt and response format. Use `pipeline_options` when configuring the VLM pipeline.
+
+Additionally to the concurrency, we also have to set the `page_batch_size` Docling parameter. Make sure to set `settings.perf.page_batch_size >= api_options.concurrency`.
 
 ```python
 from docling.datamodel.settings import settings
 
-settings.perf.page_batch_size = 64  # default is 4
+settings.perf.page_batch_size = api_options.concurrency  # default is 4
 ```
 
 #### Complete example

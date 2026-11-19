@@ -264,13 +264,19 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                     output_formats=output_formats,
                     target=effective_target,
                 )
-                initial_status = await self._submit_convert_task(
-                    source=source,
-                    options=submit_options,
-                    target=effective_target,
-                    async_client=self._async_client,
-                    request_headers=headers,
-                )
+                try:
+                    initial_status = await self._submit_convert_task(
+                        source=source,
+                        options=submit_options,
+                        target=effective_target,
+                        async_client=self._async_client,
+                        request_headers=headers,
+                    )
+                except ServiceError as fallback_exc:
+                    combined = self._inbody_fallback_error(exc, fallback_exc)
+                    if combined is None:
+                        raise
+                    raise combined from fallback_exc
         else:
             effective_target = target
             submit_options = self._options_for_output_formats(
@@ -493,13 +499,19 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                     output_formats=None,
                     target=effective_target,
                 )
-                initial_status = await self._submit_convert_task(
-                    source=item.source,
-                    options=submit_options,
-                    target=effective_target,
-                    async_client=async_client,
-                    request_headers=item.headers,
-                )
+                try:
+                    initial_status = await self._submit_convert_task(
+                        source=item.source,
+                        options=submit_options,
+                        target=effective_target,
+                        async_client=async_client,
+                        request_headers=item.headers,
+                    )
+                except ServiceError as fallback_exc:
+                    combined = self._inbody_fallback_error(exc, fallback_exc)
+                    if combined is None:
+                        raise
+                    raise combined from fallback_exc
 
             terminal_status = (
                 await self._wait_for_terminal_status_for_submit_and_retrieve_many(

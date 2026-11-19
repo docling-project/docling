@@ -95,7 +95,7 @@ class TestMlxWhisperIntegration:
             cuda = _Cuda()
 
         monkeypatch.setitem(sys.modules, "torch", _Torch())
-        monkeypatch.setitem(sys.modules, "mlx_whisper", object())
+        monkeypatch.setattr(specs, "find_spec", lambda name: object())
 
         m_tiny = specs._get_whisper_tiny_model()
         m_small = specs._get_whisper_small_model()
@@ -129,8 +129,7 @@ class TestMlxWhisperIntegration:
         )
 
         # Force native path (no mlx, no mps, no whisper_s2t)
-        if "mlx_whisper" in sys.modules:
-            del sys.modules["mlx_whisper"]
+        monkeypatch.setattr(specs, "find_spec", lambda name: None)
         monkeypatch.setitem(sys.modules, "whisper_s2t", None)
 
         class _MpsOff:
@@ -206,8 +205,7 @@ class TestMlxWhisperIntegration:
             cuda = _CudaOff()
 
         monkeypatch.setitem(sys.modules, "torch", _TorchOff())
-        if "mlx_whisper" in sys.modules:
-            del sys.modules["mlx_whisper"]
+        monkeypatch.setattr(specs, "find_spec", lambda name: None)
         monkeypatch.setitem(sys.modules, "whisper_s2t", None)
 
         model = specs._get_whisper_base_model()

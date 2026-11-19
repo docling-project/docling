@@ -32,6 +32,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
+from docling.backend.calendar_backend import CalendarDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
@@ -68,6 +69,7 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
+    CalendarBackendOptions,
     CsvBackendOptions,
     DeclarativeBackendOptions,
     EbcdicBackendOptions,
@@ -104,6 +106,7 @@ from docling.datamodel.document import (
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
+    PdfPipelineOptions,
     PipelineOptions,
 )
 from docling.datamodel.progress import (
@@ -288,9 +291,48 @@ class DoclingJSONFormatOption(FormatOption):
 
 
 class XBRLFormatOption(FormatOption):
+    """Format option for XBRL and iXBRL input.
+
+    Selects the `XBRLDocumentBackend` and accepts `XBRLBackendOptions` to
+    control taxonomy lookup and remote fetch behavior. The same options apply
+    to both traditional XBRL instance files (`.xml`, `.xbrl`) and inline XBRL
+    (iXBRL) reports (`.htm`, `.html`, `.xhtml`).
+    """
+
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
     backend_options: XBRLBackendOptions | None = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> XBRLBackendOptions | None:
+        """Keep the URL of a remote source.
+
+        An http(s) URL is downloaded into a stream before it reaches the
+        backend, which then cannot resolve the relative references of the
+        report to its schemas and linkbases. Local paths and streams are passed
+        on unchanged, and so is a URL that includes credentials.
+        """
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or not isinstance(source, str)
+        ):
+            return options
+        try:
+            TypeAdapter(AnyHttpUrl).validate_python(source)
+        except ValidationError:
+            return options
+        try:
+            return XBRLBackendOptions.model_validate(
+                {**options.model_dump(), "source_uri": source}
+            )
+        except ValidationError:
+            _log.warning(
+                "The URL of the source includes credentials, so it is ignored."
+            )
+            return options
 
 
 class ImageFormatOption(FormatOption):
@@ -302,6 +344,21 @@ class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
+
+    @model_validator(mode="after")
+    def configure_embedded_picture_images(self) -> Self:
+        if (
+            isinstance(self.pipeline_options, PdfPipelineOptions)
+            and self.pipeline_options.use_embedded_picture_images
+            and self.backend is ThreadedDoclingParseDocumentBackend
+        ):
+            if self.backend_options is None:
+                self.backend_options = ThreadedDoclingParseBackendOptions(
+                    include_bitmap_images=True
+                )
+            elif isinstance(self.backend_options, PdfBackendOptions):
+                self.backend_options.include_bitmap_images = True
+        return self
 
 
 class IWorkPagesFormatOption(FormatOption):
@@ -419,6 +476,12 @@ class EmailFormatOption(FormatOption):
     backend_options: Optional[EmailBackendOptions] = None
 
 
+class CalendarFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = CalendarDocumentBackend
+    backend_options: Optional[CalendarBackendOptions] = None
+
+
 class EpubFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
@@ -478,6 +541,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
         InputFormat.AFP: AfpFormatOption(),
+        InputFormat.CALENDAR: CalendarFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

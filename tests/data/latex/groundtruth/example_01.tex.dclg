@@ -1,4 +1,4 @@
-<doclang version="0.8">
+<doclang version="0.9">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
@@ -15,7 +15,7 @@
     <ldiv/>
     Second item in unordered list
   </list>
-  <list>
+  <list class="ordered">
     <ldiv/>
     First item in ordered list
     <ldiv/>

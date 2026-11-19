@@ -72,3 +72,12 @@ DOTS_LAYOUT_PROMPT = (
 
 # Keep the official Unlimited-OCR model-card prompt verbatim.
 UNLIMITED_OCR_GROUNDING_PROMPT = "<image>document parsing."
+
+# Keep the official Unlimited-OCR 2 model-card prompt verbatim, for one page.
+UNLIMITED_OCR2_PROMPT = "<PAGE><image>Multi page parsing."
+
+# Keep the Surya 2.5 full-page prompt verbatim; its wording is the training contract.
+SURYA_OCR_PROMPT = (
+    "OCR this image to HTML. Each block is a div with data-label and data-bbox "
+    "(x0 y0 x1 y1, normalized 0-1000)."
+)

@@ -1016,8 +1016,9 @@ class ReadingOrderPredictor:
                     x0 = x0_dil
                     x1 = x1_dil
 
-            pelem_i.l = x0
-            pelem_i.r = x1
+            dilated_box = BoundingBox(
+                l=x0, b=y0, r=x1, t=y1, coord_origin=pelem_i.coord_origin
+            )
 
             overlaps_with_rest: bool = False
             for j, pelem_j in enumerate(page_elems):
@@ -1025,7 +1026,7 @@ class ReadingOrderPredictor:
                     continue
 
                 if not overlaps_with_rest:
-                    overlaps_with_rest = pelem_j.overlaps(pelem_i)
+                    overlaps_with_rest = pelem_j.overlaps(dilated_box)
 
             # update
             if not overlaps_with_rest:

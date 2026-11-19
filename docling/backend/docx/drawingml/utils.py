@@ -82,10 +82,14 @@ def _registrymodifications_xcu() -> str:
       "update links when loading" to *never*, so opening an attacker file
       does not fetch external/DDE-linked content (an SSRF / file-inclusion
       vector via e.g. ``TargetMode="External"`` relationships).
+    * ``BlockUntrustedRefererLinks = true`` blocks links that come from the
+      document, so LibreOffice does not load linked files (e.g. an image
+      linked to a ``file://`` URL) into the converted output. The throwaway
+      profile has no trusted locations, so this applies to every document.
 
-    Registry nodes for DDE, OLE-object, and remote-image resolution are
-    *not* set here because no single well-documented key covers those
-    vectors across LibreOffice versions.
+    Registry nodes for DDE and OLE-object resolution are *not* set here
+    because no single well-documented key covers those vectors across
+    LibreOffice versions.
     """
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -100,6 +104,11 @@ def _registrymodifications_xcu() -> str:
         " </item>\n"
         ' <item oor:path="/org.openoffice.Office.Common/Security/Scripting">\n'
         '  <prop oor:name="DisableMacrosExecution" oor:op="fuse">\n'
+        "   <value>true</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Common/Security/Scripting">\n'
+        '  <prop oor:name="BlockUntrustedRefererLinks" oor:op="fuse">\n'
         "   <value>true</value>\n"
         "  </prop>\n"
         " </item>\n"

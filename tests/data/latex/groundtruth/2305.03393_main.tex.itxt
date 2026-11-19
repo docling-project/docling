@@ -62,7 +62,7 @@ item-0 at level 0: unspecified: group _root_
     item-58 at level 2: list_item: Left-looking cell rule: The left ... either another "L" cell or a "C" cell.
     item-59 at level 2: list_item: Up-looking cell rule: The upper  ... either another "U" cell or a "C" cell.
     item-60 at level 2: list_item: Cross cell rule:
-    item-61 at level 2: list_item: The left neighbour of an "X" cel ... ither another "X" cell or an "L" cell.
+      item-61 at level 3: text: The left neighbour of an "X" cel ... ither another "X" cell or an "L" cell.
     item-62 at level 2: list_item: First row rule: Only "L" cells and "C" cells are allowed in the first row.
     item-63 at level 2: list_item: First column rule: Only "U" cell ... cells are allowed in the first column.
     item-64 at level 2: list_item: Rectangular rule: The table repr ... of tokens, terminated with "NL" token.

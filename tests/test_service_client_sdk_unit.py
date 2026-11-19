@@ -83,6 +83,7 @@ from docling.service_client.exceptions import (
     ServiceError,
     ServiceUnavailableError,
     TaskExecutionError,
+    TaskTimeoutError,
     UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob, _JobHandlers
@@ -1904,6 +1905,40 @@ def test_submit_auto_falls_back_to_inbody_when_presigned_is_rejected() -> None:
         [OutputFormat.MARKDOWN],
         [OutputFormat.MARKDOWN, OutputFormat.JSON],
     ]
+
+
+def test_submit_auto_reports_presigned_rejection_when_inbody_is_also_rejected() -> None:
+    def fake_submit_convert_task(
+        self,
+        source,
+        options,
+        target,
+        request_headers=None,
+    ):
+        if isinstance(target, PresignedUrlTarget):
+            raise ServiceError(
+                "Task submission failed.",
+                status_code=422,
+                detail=(
+                    "Presigned URL target requires artifact storage to be configured "
+                    "and enabled on the server."
+                ),
+            )
+        raise ServiceError(
+            "Task submission failed.",
+            status_code=422,
+            detail="target kind 'inbody' is not allowed.",
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit_convert_task, client)
+        with pytest.raises(ServiceError) as exc_info:
+            client.submit(source="https://example.org/sample.pdf")
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail is not None
+    assert "target kind 'inbody' is not allowed." in exc_info.value.detail
+    assert "requires artifact storage" in exc_info.value.detail
 
 
 def test_submit_and_retrieve_each_auto_target_returns_presigned_when_supported(
@@ -4102,6 +4137,143 @@ async def test_async_websocket_watcher_falls_back_to_polling_on_unavailable(
     )
 
     updates = [u async for u in watcher.iter_updates("task-1")]
+    assert [u.task_status for u in updates] == ["success"]
+
+
+class _FakeClock:
+    """Monotonic clock that only moves when the watcher sleeps."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+class _RecordingPollFallback:
+    def __init__(self) -> None:
+        self.timeouts: list[float] = []
+
+    def iter_updates(self, task_id: str, timeout: float | None = None):
+        self.timeouts.append(timeout)
+        yield _status_response(task_id=task_id, status="success")
+
+
+class _AsyncRecordingPollFallback(_RecordingPollFallback):
+    async def iter_updates(self, task_id: str, timeout: float | None = None):
+        self.timeouts.append(timeout)
+        yield _status_response(task_id=task_id, status="success")
+
+
+def _raise_os_error(*args, **kwargs):
+    raise OSError("connection refused")
+
+
+def test_websocket_watcher_poll_fallback_gets_only_the_remaining_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = _FakeClock()
+    monkeypatch.setattr(watchers_module, "time", clock)
+    monkeypatch.setattr(watchers_module, "connect", _raise_os_error)
+    fallback = _RecordingPollFallback()
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda tid: f"ws://fake/{tid}",
+        poll_fallback=fallback,
+        fallback_to_poll=True,
+        connect_timeout=0.1,
+        default_timeout=10.0,
+    )
+
+    updates = list(watcher.iter_updates("task-1"))
+
+    # The reconnect attempts wait 1 + 2 + 4 seconds before falling back.
+    assert clock.now == 7.0
+    assert fallback.timeouts == [3.0]
+    assert [u.task_status for u in updates] == ["success"]
+
+
+def test_websocket_watcher_times_out_when_reconnects_use_the_whole_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = _FakeClock()
+    monkeypatch.setattr(watchers_module, "time", clock)
+    monkeypatch.setattr(watchers_module, "connect", _raise_os_error)
+    fallback = _RecordingPollFallback()
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda tid: f"ws://fake/{tid}",
+        poll_fallback=fallback,
+        fallback_to_poll=True,
+        connect_timeout=0.1,
+        default_timeout=5.0,
+    )
+
+    with pytest.raises(TaskTimeoutError):
+        list(watcher.iter_updates("task-1"))
+
+    assert fallback.timeouts == []
+
+
+def test_websocket_watcher_poll_fallback_timeout_reports_the_original_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = _FakeClock()
+    monkeypatch.setattr(watchers_module, "time", clock)
+    monkeypatch.setattr(watchers_module, "connect", _raise_os_error)
+
+    def pending_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        clock.sleep(wait)
+        return _status_response(task_id=task_id, status="pending")
+
+    fallback = PollingWatcher(
+        poll_status=pending_poll,
+        poll_server_wait=5.0,
+        poll_client_interval=None,
+        default_timeout=10.0,
+    )
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda tid: f"ws://fake/{tid}",
+        poll_fallback=fallback,
+        fallback_to_poll=True,
+        connect_timeout=0.1,
+        default_timeout=10.0,
+    )
+
+    with pytest.raises(TaskTimeoutError, match=r"after 10\.00s"):
+        list(watcher.iter_updates("task-1"))
+
+
+@pytest.mark.anyio
+async def test_async_websocket_watcher_poll_fallback_gets_only_the_remaining_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = _FakeClock()
+
+    async def _clock_sleep(seconds: float) -> None:
+        clock.sleep(seconds)
+
+    monkeypatch.setattr(watchers_module, "time", clock)
+    monkeypatch.setattr(watchers_module.asyncio, "sleep", _clock_sleep)
+    monkeypatch.setattr(
+        watchers_module,
+        "async_ws_connect",
+        lambda *a, **kw: _raise_os_error_ctx(),
+    )
+    fallback = _AsyncRecordingPollFallback()
+    watcher = watchers_module.AsyncWebSocketWatcher(
+        ws_url_for_task=lambda tid: f"ws://fake/{tid}",
+        poll_fallback=fallback,
+        fallback_to_poll=True,
+        connect_timeout=0.1,
+        default_timeout=10.0,
+    )
+
+    updates = [u async for u in watcher.iter_updates("task-1")]
+
+    assert clock.now == 7.0
+    assert fallback.timeouts == [3.0]
     assert [u.task_status for u in updates] == ["success"]
 
 

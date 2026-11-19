@@ -19,6 +19,8 @@ from docling_core.types.doc import (
     GroupLabel,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
+    TableCell,
     TableItem,
     TextItem,
 )
@@ -27,6 +29,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.worksheet.merge import MergedCellRange
+from PIL import Image
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msexcel_backend import (
@@ -1019,6 +1022,55 @@ def test_hyperlink_range_is_clipped_to_data(tmp_path: Path) -> None:
     assert (docs_table.num_rows, docs_table.num_cols) == (3, 2)
 
 
+def _number_sheet(rows: int, cols: int) -> Workbook:
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in range(1, rows + 1):
+        for col in range(1, cols + 1):
+            sheet.cell(row, col, row * col)
+    return workbook
+
+
+def test_row_merged_across_the_sheet_keeps_the_data_width(tmp_path: Path) -> None:
+    # The merged range covers all 16,384 columns of the row, but only 30
+    # columns hold data. The table used to have one cell for each column.
+    workbook = _number_sheet(50, 30)
+    sheet = workbook.active
+    sheet.merge_cells("A10:XFD10")
+    sheet["A10"] = "Section"
+    file_path = tmp_path / "merged-row.xlsx"
+    workbook.save(file_path)
+
+    doc = DocumentConverter().convert(file_path).document
+
+    [table] = [item.data for item in doc.tables]
+    assert (table.num_rows, table.num_cols) == (50, 30)
+    [section] = [cell for cell in table.table_cells if cell.text == "Section"]
+    assert (section.start_col_offset_idx, section.col_span) == (0, 30)
+
+
+def test_long_row_next_to_a_narrow_table_is_split(tmp_path: Path) -> None:
+    # A hyperlink range sets its target as the value of each empty cell, so
+    # the link row holds 10,000 values next to 600 rows of 30 values. One
+    # table for the bounding box of these cells would have 6,000,000 cells.
+    workbook = _number_sheet(600, 30)
+    sheet = workbook.active
+    for col in range(1, 31):
+        sheet.cell(10, col).value = None
+    sheet["A10"].hyperlink = "https://example.com/"
+    file_path = tmp_path / "hyperlink-row.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(file_path, 'ref="A10" r:id', 'ref="A10:NTP10" r:id')
+
+    doc = DocumentConverter().convert(file_path).document
+
+    tables = [item.data for item in doc.tables]
+    assert sum(table.num_rows * table.num_cols for table in tables) < 100_000
+    assert (tables[0].num_cols, tables[-1].num_cols) == (30, 30)
+    texts = [cell.text for table in tables for cell in table.table_cells]
+    assert sum(1 for text in texts if text) == 599 * 30 + 10_000
+
+
 def test_split_leading_section_label_helper() -> None:
     backend = object.__new__(MsExcelDocumentBackend)
 
@@ -1283,6 +1335,196 @@ def test_one_cell_anchor_image():
     assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
     assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
+
+
+def test_images_placed_in_cells(documents) -> None:
+    """Test that images placed in cells become pictures in rich table cells.
+
+    Excel stores an image placed in a cell ("Place in Cell") as a rich value in
+    xl/richData. The cell itself only holds the fallback error value #VALUE!.
+    """
+    doc = next(doc for path, doc in documents if path.stem == "xlsx_10_place_in_cell")
+
+    table = doc.tables[0]
+    cells = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.data.table_cells
+    }
+    for row, alt_text in ((1, "A red square"), (2, "A green square")):
+        cell = cells[(row, 1)]
+        assert isinstance(cell, RichTableCell)
+        assert cell.text == ""
+        picture = cell.ref.resolve(doc)
+        assert isinstance(picture, PictureItem)
+        assert picture.parent is not None
+        assert picture.parent.cref == table.self_ref
+        assert picture.image is not None
+        assert picture.meta is not None
+        assert picture.meta.description is not None
+        assert picture.meta.description.text == alt_text
+
+    # An error value without an image is cell content and keeps its text.
+    assert not isinstance(cells[(1, 3)], RichTableCell)
+    assert cells[(1, 3)].text == "#N/A"
+
+
+def _image_cells(doc: DoclingDocument) -> dict[str, TableCell]:
+    """Return the "logo" cell of the first table, by the "name" of its row."""
+    return {row[0].text: row[1] for row in doc.tables[0].data.grid[1:]}
+
+
+def _cell_picture(doc: DoclingDocument, cell: TableCell) -> PictureItem:
+    """Return the picture of an image cell."""
+    assert isinstance(cell, RichTableCell)
+    picture = cell.ref.resolve(doc)
+    assert isinstance(picture, PictureItem)
+    return picture
+
+
+def _assert_image_cell(
+    doc: DoclingDocument,
+    cell: TableCell,
+    color: tuple[int, int, int],
+    alt_text: str | None,
+) -> None:
+    """Assert that a cell holds a picture of one color with the alternative text."""
+    picture = _cell_picture(doc, cell)
+    image = picture.get_image(doc)
+    assert image is not None
+    assert image.convert("RGB").getpixel((0, 0)) == color
+    if alt_text is None:
+        assert picture.meta is None
+    else:
+        assert picture.meta is not None
+        assert picture.meta.description is not None
+        assert picture.meta.description.text == alt_text
+
+
+def test_images_from_the_image_function(documents) -> None:
+    """Test that images from the IMAGE() function become pictures in table cells.
+
+    Excel stores such an image with the _webimage structure, and the workbook has
+    no richValueRel part. An IMAGE() cell without a stored image keeps its text.
+    """
+    doc = next(doc for path, doc in documents if path.stem == "xlsx_11_image_function")
+
+    cells = _image_cells(doc)
+    _assert_image_cell(doc, cells["red"], (255, 0, 0), "A red square")
+    _assert_image_cell(doc, cells["green"], (0, 128, 0), None)
+    assert not isinstance(cells["lost"], RichTableCell)
+    assert cells["lost"].text == "#VALUE!"
+    assert len(doc.pictures) == 2
+
+
+def test_image_function_next_to_an_image_placed_in_a_cell(documents) -> None:
+    """Test that both kinds of images in cells are read from one workbook."""
+    doc = next(
+        doc
+        for path, doc in documents
+        if path.stem == "xlsx_12_image_function_and_place_in_cell"
+    )
+
+    cells = _image_cells(doc)
+    _assert_image_cell(doc, cells["placed"], (255, 255, 0), "A yellow square")
+    _assert_image_cell(doc, cells["function"], (0, 0, 255), "A blue square")
+
+
+def _convert_with_replaced_member(
+    tmp_path: Path, member: str, data: bytes
+) -> DoclingDocument:
+    """Convert the workbook with both kinds of images, with one member replaced."""
+    source = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_12_image_function_and_place_in_cell"
+    )
+    file_path = tmp_path / source.name
+    with zipfile.ZipFile(source) as src, zipfile.ZipFile(file_path, "w") as dst:
+        for info in src.infolist():
+            dst.writestr(
+                info, data if info.filename == member else src.read(info.filename)
+            )
+    return get_converter().convert(file_path).document
+
+
+def test_oversized_image_keeps_the_other_images(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that an image over the size limit of Pillow loses only its own data."""
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 1000)
+    oversized = BytesIO()
+    Image.new("RGB", (64, 64), "blue").save(oversized, format="PNG")
+    doc = _convert_with_replaced_member(
+        tmp_path, "xl/media/image2.png", oversized.getvalue()
+    )
+
+    cells = _image_cells(doc)
+    _assert_image_cell(doc, cells["placed"], (255, 255, 0), "A yellow square")
+    assert _cell_picture(doc, cells["function"]).image is None
+
+
+def test_truncated_image_keeps_the_other_images(tmp_path: Path) -> None:
+    """Test that an image that fails while it decodes loses only its own data."""
+    image = BytesIO()
+    Image.new("RGB", (64, 64), "blue").save(image, format="PNG")
+    png = image.getvalue()
+    doc = _convert_with_replaced_member(
+        tmp_path, "xl/media/image2.png", png[: len(png) // 2]
+    )
+
+    cells = _image_cells(doc)
+    _assert_image_cell(doc, cells["placed"], (255, 255, 0), "A yellow square")
+    assert _cell_picture(doc, cells["function"]).image is None
+
+
+def test_image_placed_in_a_singleton_cell() -> None:
+    """Test that a lone image cell becomes a picture with treat_singleton_as_text."""
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_10_place_in_cell"
+    )
+    options = MsExcelBackendOptions(treat_singleton_as_text=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    # The "Logo" sheet (page 2) holds only one image cell.
+    assert not [table for table in doc.tables if table.prov[0].page_no == 2]
+    assert not [text for text in doc.texts if text.prov[0].page_no == 2]
+    pictures = [picture for picture in doc.pictures if picture.prov[0].page_no == 2]
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+
+
+def test_image_cell_next_to_a_section_label(tmp_path: Path) -> None:
+    """Test that an image cell keeps a merged label in its table."""
+    xlsxwriter = pytest.importorskip("xlsxwriter")
+
+    image_path = tmp_path / "icon.png"
+    Image.new("RGB", (16, 16), "red").save(image_path)
+    file_path = tmp_path / "section_image.xlsx"
+    workbook = xlsxwriter.Workbook(str(file_path))
+    sheet = workbook.add_worksheet()
+    sheet.merge_range("A1:B1", "Fruit list")
+    sheet.embed_image("C1", str(image_path), {"description": "Section icon"})
+    sheet.write_row("A2", ["name", "qty", "note"])
+    sheet.write_row("A3", ["apple", 1, "x"])
+    sheet.write_row("A4", ["pear", 2, "y"])
+    workbook.close()
+
+    doc = DocumentConverter().convert(file_path).document
+
+    # The image is content in the first row, so the label is not split off.
+    assert not doc.texts
+    [table] = doc.tables
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+    [picture] = doc.pictures
+    cell = table.data.grid[0][2]
+    assert isinstance(cell, RichTableCell)
+    assert cell.ref.cref == picture.self_ref
+    assert picture.parent is not None
+    assert picture.parent.cref == table.self_ref
 
 
 def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):

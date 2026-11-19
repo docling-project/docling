@@ -1,4 +1,4 @@
-<doclang version="0.8">
+<doclang version="0.9">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
@@ -149,18 +149,10 @@
   <text>illia.polosukhin@gmail.com</text>
   <text>Provided proper attribution is provided, Google hereby grants permission to reproduce the tables and figures in this paper solely for use in journalistic or scholarly works.</text>
   <heading level="2">Abstract</heading>
-  <text>The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being  more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU.  On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing  both with large and limited training data.</text>
+  <text><content>The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being  more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU.  On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing  both with large and limited training data.</content></text>
   <heading level="2">Introduction</heading>
   <text>Recurrent neural networks, long short-term memory [hochreiter1997] and gated recurrent [gruEval14] neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and machine translation [sutskever14, bahdanau2014neural, cho2014learning]. Numerous efforts have since continued to push the boundaries of recurrent language models and encoder-decoder architectures [wu2016google,luong2015effective,jozefowicz2016exploring].</text>
-  <text>
-    <content>Recurrent models typically factor computation along the symbol positions of the input and output sequences. Aligning the positions to steps in computation time, they generate a sequence of hidden states </content>
-    <formula>h_t</formula>
-    <content>, as a function of the previous hidden state </content>
-    <formula>h_{t-1}</formula>
-    <content> and the input for position </content>
-    <formula>t</formula>
-. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Recent work has achieved significant improvements in computational efficiency through factorization tricks [Kuchaiev2017Factorization] and conditional computation [shazeer2017outrageously], while also improving model performance in case of the latter. The fundamental constraint of sequential computation, however, remains.
-  </text>
+  <text>Recurrent models typically factor computation along the symbol positions of the input and output sequences. Aligning the positions to steps in computation time, they generate a sequence of hidden states <formula>h_t</formula>, as a function of the previous hidden state <formula>h_{t-1}</formula> and the input for position <formula>t</formula>. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Recent work has achieved significant improvements in computational efficiency through factorization tricks [Kuchaiev2017Factorization] and conditional computation [shazeer2017outrageously], while also improving model performance in case of the latter. The fundamental constraint of sequential computation, however, remains.</text>
   <text>Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences [bahdanau2014neural, structuredAttentionNetworks]. In all but a few cases [decomposableAttnModel], however, such attention mechanisms are used in conjunction with a recurrent network.</text>
   <text>In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output. The Transformer allows for significantly more parallelization and can reach a new state of the art in translation quality after being trained for as little as twelve hours on eight P100 GPUs.</text>
   <heading level="2">Background</heading>
@@ -172,101 +164,23 @@
   <picture>
     <caption>The Transformer - model architecture.</caption>
   </picture>
-  <text>
-    <content>Most competitive neural sequence transduction models have an encoder-decoder structure [cho2014learning,bahdanau2014neural,sutskever14]. Here, the encoder maps an input sequence of symbol representations </content>
-    <formula>(x_1, ..., x_n)</formula>
-    <content> to a sequence of continuous representations </content>
-    <formula>\mathbf{z} = (z_1, ..., z_n)</formula>
-    <content>. Given </content>
-    <formula>\mathbf{z}</formula>
-    <content>, the decoder then generates an output sequence </content>
-    <formula>(y_1,...,y_m)</formula>
-    <content> of symbols one element at a time. At each step the model is auto-regressive [graves2013generating], consuming the previously generated symbols as additional input when generating the next.</content>
-  </text>
+  <text>Most competitive neural sequence transduction models have an encoder-decoder structure [cho2014learning,bahdanau2014neural,sutskever14]. Here, the encoder maps an input sequence of symbol representations <formula>(x_1, ..., x_n)</formula> to a sequence of continuous representations <formula>\mathbf{z} = (z_1, ..., z_n)</formula>. Given <formula>\mathbf{z}</formula>, the decoder then generates an output sequence <formula>(y_1,...,y_m)</formula> of symbols one element at a time. At each step the model is auto-regressive [graves2013generating], consuming the previously generated symbols as additional input when generating the next.</text>
   <text>The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure[fig:model-arch], respectively.</text>
   <heading level="3">Encoder and Decoder Stacks</heading>
-  <text>
-    <content>Encoder:The encoder is composed of a stack of </content>
-    <formula>N=6</formula>
-    <content> identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network.   We employ a residual connection [he2016deep] around each of the two sub-layers, followed by layer normalization [layernorm2016].  That is, the output of each sub-layer is </content>
-    <formula>\mathrm{LayerNorm}(x + \mathrm{Sublayer}(x))</formula>
-    <content>, where </content>
-    <formula>\mathrm{Sublayer}(x)</formula>
-    <content> is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension </content>
-    <formula>d_{\text{model}}=512</formula>
-.
-  </text>
-  <text>
-    <content>Decoder:The decoder is also composed of a stack of </content>
-    <formula>N=6</formula>
-    <content> identical layers.  In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.  Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization.  We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.  This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position </content>
-    <formula>i</formula>
-    <content> can depend only on the known outputs at positions less than </content>
-    <formula>i</formula>
-.
-  </text>
+  <text>Encoder:The encoder is composed of a stack of <formula>N=6</formula><content> identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network.   We employ a residual connection [he2016deep] around each of the two sub-layers, followed by layer normalization [layernorm2016].  That is, the output of each sub-layer is </content><formula>\mathrm{LayerNorm}(x + \mathrm{Sublayer}(x))</formula>, where <formula>\mathrm{Sublayer}(x)</formula><content> is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension </content><formula>d_{\text{model}}=512</formula>.</text>
+  <text>Decoder:The decoder is also composed of a stack of <formula>N=6</formula><content> identical layers.  In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.  Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization.  We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.  This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position </content><formula>i</formula> can depend only on the known outputs at positions less than <formula>i</formula>.</text>
   <heading level="3">Attention</heading>
-  <text>An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors.  The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key.</text>
+  <text><content>An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors.  The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key.</content></text>
   <heading level="4">Scaled Dot-Product Attention</heading>
-  <text>
-    <content><![CDATA[We call our particular attention "Scaled Dot-Product Attention" (Figure[fig:multi-head-att]).   The input consists of queries and keys of dimension ]]></content>
-    <formula>d_k</formula>
-    <content>, and values of dimension </content>
-    <formula>d_v</formula>
-    <content>.  We compute the dot products of the query with all keys, divide each by </content>
-    <formula>\sqrt{d_k}</formula>
-, and apply a softmax function to obtain the weights on the values.
-  </text>
-  <text>
-    <content>In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix </content>
-    <formula>Q</formula>
-    <content>.   The keys and values are also packed together into matrices </content>
-    <formula>K</formula>
-    <content> and </content>
-    <formula>V</formula>
-.  We compute the matrix of outputs as:
-  </text>
-  <formula>
-    <content>\begin{equation}
+  <text><content><![CDATA[We call our particular attention "Scaled Dot-Product Attention" (Figure[fig:multi-head-att]).   The input consists of queries and keys of dimension ]]></content><formula>d_k</formula>, and values of dimension <formula>d_v</formula><content>.  We compute the dot products of the query with all keys, divide each by </content><formula>\sqrt{d_k}</formula>, and apply a softmax function to obtain the weights on the values.</text>
+  <text>In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix <formula>Q</formula><content>.   The keys and values are also packed together into matrices </content><formula>K</formula> and <formula>V</formula><content>.  We compute the matrix of outputs as:</content></text>
+  <formula><content>\begin{equation}
    \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(\frac{QK^T}{\sqrt{d_k}})V
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>The two most commonly used attention functions are additive attention [bahdanau2014neural], and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of </content>
-    <formula>\frac{1}{\sqrt{d_k}}</formula>
-. Additive attention computes the compatibility function using a feed-forward network with a single hidden layer.  While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.
-  </text>
-  <text>
-    <content>While for small values of </content>
-    <formula>d_k</formula>
-    <content> the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of </content>
-    <formula>d_k</formula>
-    <content> [DBLP:journals/corr/BritzGLL17]. We suspect that for large values of </content>
-    <formula>d_k</formula>
-, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients
-  </text>
-  <footnote>
-    <content>To illustrate why the dot products get large, assume that the components of </content>
-    <formula>q</formula>
-    <content> and </content>
-    <formula>k</formula>
-    <content> are independent random variables with mean </content>
-    <formula>0</formula>
-    <content> and variance </content>
-    <formula>1</formula>
-    <content>.  Then their dot product, </content>
-    <formula>q \cdot k = \sum_{i=1}^{d_k} q_ik_i</formula>
-    <content>, has mean </content>
-    <formula>0</formula>
-    <content> and variance </content>
-    <formula>d_k</formula>
-.
-  </footnote>
-  <text>
-    <content>. To counteract this effect, we scale the dot products by </content>
-    <formula>\frac{1}{\sqrt{d_k}}</formula>
-.
-  </text>
+\end{equation}</content></formula>
+  <text><content>The two most commonly used attention functions are additive attention [bahdanau2014neural], and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of </content><formula>\frac{1}{\sqrt{d_k}}</formula><content>. Additive attention computes the compatibility function using a feed-forward network with a single hidden layer.  While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.</content></text>
+  <text>While for small values of <formula>d_k</formula> the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of <formula>d_k</formula> [DBLP:journals/corr/BritzGLL17]. We suspect that for large values of <formula>d_k</formula>, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients</text>
+  <footnote>To illustrate why the dot products get large, assume that the components of <formula>q</formula> and <formula>k</formula> are independent random variables with mean <formula>0</formula> and variance <formula>1</formula><content>.  Then their dot product, </content><formula>q \cdot k = \sum_{i=1}^{d_k} q_ik_i</formula>, has mean <formula>0</formula> and variance <formula>d_k</formula>.</footnote>
+  <text>. To counteract this effect, we scale the dot products by <formula>\frac{1}{\sqrt{d_k}}</formula>.</text>
   <heading level="4">Multi-Head Attention</heading>
   <text>[t]0.5</text>
   <text>Scaled Dot-Product Attention</text>
@@ -276,136 +190,48 @@
   <text>[t]0.5</text>
   <text>Multi-Head Attention</text>
   <picture></picture>
-  <text>
-    <content>Instead of performing a single attention function with </content>
-    <formula>d_{\text{model}}</formula>
-    <content>-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values </content>
-    <formula>h</formula>
-    <content> times with different, learned linear projections to </content>
-    <formula>d_k</formula>
-    <content>, </content>
-    <formula>d_k</formula>
-    <content> and </content>
-    <formula>d_v</formula>
-    <content> dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding </content>
-    <formula>d_v</formula>
--dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att].
-  </text>
+  <text>Instead of performing a single attention function with <formula>d_{\text{model}}</formula>-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values <formula>h</formula> times with different, learned linear projections to <formula>d_k</formula>, <formula>d_k</formula> and <formula>d_v</formula> dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding <formula>d_v</formula>-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att].</text>
   <text>Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this.</text>
-  <formula>
-    <content><![CDATA[\begin{align*}
+  <formula><content><![CDATA[\begin{align*}
     \mathrm{MultiHead}(Q, K, V) &= \mathrm{Concat}(\mathrm{head_1}, ..., \mathrm{head_h})W^O\\
 %    \mathrm{where} \mathrm{head_i} &= \mathrm{Attention}(QW_Q_i^{d_{\text{model}} \times d_q}, KW_K_i^{d_{\text{model}} \times d_k}, VW^V_i^{d_{\text{model}} \times d_v})\\
     \text{where}~\mathrm{head_i} &= \mathrm{Attention}(QW^Q_i, KW^K_i, VW^V_i)\\
-\end{align*}]]></content>
-  </formula>
-  <text>
-    <content>Where the projections are parameter matrices </content>
-    <formula>W^Q_i \in \mathbb{R}^{d_{\text{model}} \times d_k}</formula>
-    <content>, </content>
-    <formula>W^K_i \in \mathbb{R}^{d_{\text{model}} \times d_k}</formula>
-    <content>, </content>
-    <formula>W^V_i \in \mathbb{R}^{d_{\text{model}} \times d_v}</formula>
-    <content> and </content>
-    <formula>W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}</formula>
-.
-  </text>
-  <text>
-    <content>In this work we employ </content>
-    <formula>h=8</formula>
-    <content> parallel attention layers, or heads. For each of these we use </content>
-    <formula>d_k=d_v=d_{\text{model}}/h=64</formula>
-. Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.
-  </text>
+\end{align*}]]></content></formula>
+  <text>Where the projections are parameter matrices <formula>W^Q_i \in \mathbb{R}^{d_{\text{model}} \times d_k}</formula>, <formula>W^K_i \in \mathbb{R}^{d_{\text{model}} \times d_k}</formula>, <formula>W^V_i \in \mathbb{R}^{d_{\text{model}} \times d_v}</formula> and <formula>W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}</formula>.</text>
+  <text>In this work we employ <formula>h=8</formula> parallel attention layers, or heads. For each of these we use <formula>d_k=d_v=d_{\text{model}}/h=64</formula>. Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.</text>
   <heading level="4">Applications of Attention in our Model</heading>
   <text>The Transformer uses multi-head attention in three different ways:</text>
   <list>
     <ldiv/>
-<![CDATA[In "encoder-decoder attention" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder.   This allows every position in the decoder to attend over all positions in the input sequence.  This mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models such as [wu2016google, bahdanau2014neural,JonasFaceNet2017].]]>    
+    <content><![CDATA[In "encoder-decoder attention" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder.   This allows every position in the decoder to attend over all positions in the input sequence.  This mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models such as [wu2016google, bahdanau2014neural,JonasFaceNet2017].]]></content>
     <ldiv/>
-    The encoder contains self-attention layers.  In a self-attention layer all of the keys, values and queries come from the same place, in this case, the output of the previous layer in the encoder.   Each position in the encoder can attend to all positions in the previous layer of the encoder.
+    <content>The encoder contains self-attention layers.  In a self-attention layer all of the keys, values and queries come from the same place, in this case, the output of the previous layer in the encoder.   Each position in the encoder can attend to all positions in the previous layer of the encoder.</content>
     <ldiv/>
-    <content>Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position.  We need to prevent leftward information flow in the decoder to preserve the auto-regressive property.  We implement this inside of scaled dot-product attention by masking out (setting to </content>
-    <formula>-\infty</formula>
-) all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att].
+    <content>Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position.  We need to prevent leftward information flow in the decoder to preserve the auto-regressive property.  We implement this inside of scaled dot-product attention by masking out (setting to </content><formula>-\infty</formula><content>) all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att].</content>
   </list>
   <heading level="3">Position-wise Feed-Forward Networks</heading>
-  <text>In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically.  This consists of two linear transformations with a ReLU activation in between.</text>
-  <formula>
-    <content>\begin{equation}
+  <text><content>In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically.  This consists of two linear transformations with a ReLU activation in between.</content></text>
+  <formula><content>\begin{equation}
    \mathrm{FFN}(x)=\max(0, xW_1 + b_1) W_2 + b_2
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1.  The dimensionality of input and output is </content>
-    <formula>d_{\text{model}}=512</formula>
-    <content>, and the inner-layer has dimensionality </content>
-    <formula>d_{ff}=2048</formula>
-.
-  </text>
+\end{equation}</content></formula>
+  <text><content>While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1.  The dimensionality of input and output is </content><formula>d_{\text{model}}=512</formula>, and the inner-layer has dimensionality <formula>d_{ff}=2048</formula>.</text>
   <heading level="3">Embeddings and Softmax</heading>
-  <text>
-    <content>Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension </content>
-    <formula>d_{\text{model}}</formula>
-    <content>.  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [press2016using].   In the embedding layers, we multiply those weights by </content>
-    <formula>\sqrt{d_{\text{model}}}</formula>
-.
-  </text>
+  <text>Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension <formula>d_{\text{model}}</formula><content>.  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [press2016using].   In the embedding layers, we multiply those weights by </content><formula>\sqrt{d_{\text{model}}}</formula>.</text>
   <heading level="3">Positional Encoding</heading>
-  <text>
-    <content><![CDATA[Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.  To this end, we add "positional encodings" to the input embeddings at the bottoms of the encoder and decoder stacks.  The positional encodings have the same dimension ]]></content>
-    <formula>d_{\text{model}}</formula>
-    <content> as the embeddings, so that the two can be summed.   There are many choices of positional encodings, learned and fixed [JonasFaceNet2017].</content>
-  </text>
+  <text><content><![CDATA[Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.  To this end, we add "positional encodings" to the input embeddings at the bottoms of the encoder and decoder stacks.  The positional encodings have the same dimension ]]></content><formula>d_{\text{model}}</formula><content> as the embeddings, so that the two can be summed.   There are many choices of positional encodings, learned and fixed [JonasFaceNet2017].</content></text>
   <text>In this work, we use sine and cosine functions of different frequencies:</text>
-  <formula>
-    <content>\begin{align*}
+  <formula><content>\begin{align*}
     PE_{(pos,2i)} = sin(pos / 10000^{2i/d_{\text{model}}}) \\
     PE_{(pos,2i+1)} = cos(pos / 10000^{2i/d_{\text{model}}})
-\end{align*}</content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>pos</formula>
-    <content> is the position and </content>
-    <formula>i</formula>
-    <content> is the dimension.  That is, each dimension of the positional encoding corresponds to a sinusoid.  The wavelengths form a geometric progression from </content>
-    <formula>2\pi</formula>
-    <content> to </content>
-    <formula>10000 \cdot 2\pi</formula>
-    <content>.  We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset </content>
-    <formula>k</formula>
-    <content>, </content>
-    <formula>PE_{pos+k}</formula>
-    <content> can be represented as a linear function of </content>
-    <formula>PE_{pos}</formula>
-.
-  </text>
-  <text>We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.</text>
+\end{align*}</content></formula>
+  <text>where <formula>pos</formula> is the position and <formula>i</formula><content> is the dimension.  That is, each dimension of the positional encoding corresponds to a sinusoid.  The wavelengths form a geometric progression from </content><formula>2\pi</formula> to <formula>10000 \cdot 2\pi</formula><content>.  We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset </content><formula>k</formula>, <formula>PE_{pos+k}</formula> can be represented as a linear function of <formula>PE_{pos}</formula>.</text>
+  <text><content>We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.</content></text>
   <heading level="2">Why Self-Attention</heading>
-  <text>
-    <content>In this section we compare various aspects of self-attention layers to the recurrent and convolutional layers commonly used for mapping one variable-length sequence of symbol representations </content>
-    <formula>(x_1, ..., x_n)</formula>
-    <content> to another sequence of equal length </content>
-    <formula>(z_1, ..., z_n)</formula>
-    <content>, with </content>
-    <formula>x_i, z_i \in \mathbb{R}^d</formula>
-, such as a hidden layer in a typical sequence transduction encoder or decoder. Motivating our use of self-attention we consider three desiderata.
-  </text>
+  <text>In this section we compare various aspects of self-attention layers to the recurrent and convolutional layers commonly used for mapping one variable-length sequence of symbol representations <formula>(x_1, ..., x_n)</formula> to another sequence of equal length <formula>(z_1, ..., z_n)</formula>, with <formula>x_i, z_i \in \mathbb{R}^d</formula>, such as a hidden layer in a typical sequence transduction encoder or decoder. Motivating our use of self-attention we consider three desiderata.</text>
   <text>One is the total computational complexity per layer. Another is the amount of computation that can be parallelized, as measured by the minimum number of sequential operations required.</text>
   <text>The third is the path length between long-range dependencies in the network. Learning long-range dependencies is a key challenge in many sequence transduction tasks. One key factor affecting the ability to learn such dependencies is the length of the paths forward and backward signals have to traverse in the network. The shorter these paths between any combination of positions in the input and output sequences, the easier it is to learn long-range dependencies [hochreiter2001gradient]. Hence we also compare the maximum path length between any two input and output positions in networks composed of the different layer types.</text>
   <table>
-    <caption>
-      <content>Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. </content>
-      <formula>n</formula>
-      <content> is the sequence length, </content>
-      <formula>d</formula>
-      <content> is the representation dimension, </content>
-      <formula>k</formula>
-      <content> is the kernel size of convolutions and </content>
-      <formula>r</formula>
-      <content> the size of the neighborhood in restricted self-attention.</content>
-    </caption>
+    <caption>Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. <formula>n</formula> is the sequence length, <formula>d</formula> is the representation dimension, <formula>k</formula> is the kernel size of convolutions and <formula>r</formula> the size of the neighborhood in restricted self-attention.</caption>
     <fcel/>
     Layer Type
     <fcel/>
@@ -424,62 +250,38 @@
     <fcel/>
     0pt2.0exSelf-Attention
     <fcel/>
-    <text>
-      <formula>O(n^2 \cdot d)</formula>
-    </text>
+    <text><formula>O(n^2 \cdot d)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(1)</formula>
-    </text>
+    <text><formula>O(1)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(1)</formula>
-    </text>
+    <text><formula>O(1)</formula></text>
     <nl/>
     <fcel/>
     Recurrent
     <fcel/>
-    <text>
-      <formula>O(n \cdot d^2)</formula>
-    </text>
+    <text><formula>O(n \cdot d^2)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(n)</formula>
-    </text>
+    <text><formula>O(n)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(n)</formula>
-    </text>
+    <text><formula>O(n)</formula></text>
     <nl/>
     <fcel/>
     Convolutional
     <fcel/>
-    <text>
-      <formula>O(k \cdot n \cdot d^2)</formula>
-    </text>
+    <text><formula>O(k \cdot n \cdot d^2)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(1)</formula>
-    </text>
+    <text><formula>O(1)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(log_k(n))</formula>
-    </text>
+    <text><formula>O(log_k(n))</formula></text>
     <nl/>
     <fcel/>
     Self-Attention (restricted)
     <fcel/>
-    <text>
-      <formula>O(r \cdot n \cdot d)</formula>
-    </text>
+    <text><formula>O(r \cdot n \cdot d)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(1)</formula>
-    </text>
+    <text><formula>O(1)</formula></text>
     <fcel/>
-    <text>
-      <formula>O(n/r)</formula>
-    </text>
+    <text><formula>O(n/r)</formula></text>
     <nl/>
     <ecel/>
     <ecel/>
@@ -487,77 +289,27 @@
     <ecel/>
     <nl/>
   </table>
-  <text>
-    <content>As noted in Table [tab:op_complexities], a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires </content>
-    <formula>O(n)</formula>
-    <content> sequential operations. In terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length </content>
-    <formula>n</formula>
-    <content> is smaller than the representation dimensionality </content>
-    <formula>d</formula>
-    <content>, which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece [wu2016google] and byte-pair [sennrich2015neural] representations. To improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size </content>
-    <formula>r</formula>
-    <content> in the input sequence centered around the respective output position. This would increase the maximum path length to </content>
-    <formula>O(n/r)</formula>
-. We plan to investigate this approach further in future work.
-  </text>
-  <text>
-    <content>A single convolutional layer with kernel width </content>
-    <formula><![CDATA[k < n]]></formula>
-    <content> does not connect all pairs of input and output positions. Doing so requires a stack of </content>
-    <formula>O(n/k)</formula>
-    <content> convolutional layers in the case of contiguous kernels, or </content>
-    <formula>O(log_k(n))</formula>
-    <content> in the case of dilated convolutions [NalBytenet2017], increasing the length of the longest paths between any two positions in the network. Convolutional layers are generally more expensive than recurrent layers, by a factor of </content>
-    <formula>k</formula>
-    <content>. Separable convolutions [xception2016], however, decrease the complexity considerably, to </content>
-    <formula>O(k \cdot n \cdot d + n \cdot d^2)</formula>
-    <content>. Even with </content>
-    <formula>k=n</formula>
-, however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model.
-  </text>
+  <text>As noted in Table [tab:op_complexities], a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires <formula>O(n)</formula> sequential operations. In terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length <formula>n</formula> is smaller than the representation dimensionality <formula>d</formula>, which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece [wu2016google] and byte-pair [sennrich2015neural] representations. To improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size <formula>r</formula> in the input sequence centered around the respective output position. This would increase the maximum path length to <formula>O(n/r)</formula>. We plan to investigate this approach further in future work.</text>
+  <text>A single convolutional layer with kernel width <formula><![CDATA[k < n]]></formula> does not connect all pairs of input and output positions. Doing so requires a stack of <formula>O(n/k)</formula> convolutional layers in the case of contiguous kernels, or <formula>O(log_k(n))</formula> in the case of dilated convolutions [NalBytenet2017], increasing the length of the longest paths between any two positions in the network. Convolutional layers are generally more expensive than recurrent layers, by a factor of <formula>k</formula>. Separable convolutions [xception2016], however, decrease the complexity considerably, to <formula>O(k \cdot n \cdot d + n \cdot d^2)</formula>. Even with <formula>k=n</formula>, however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model.</text>
   <text>As side benefit, self-attention could yield more interpretable models. We inspect attention distributions from our models and present and discuss examples in the appendix. Not only do individual attention heads clearly learn to perform different tasks, many appear to exhibit behavior related to the syntactic and semantic structure of the sentences.</text>
   <heading level="2">Training</heading>
   <text>This section describes the training regime for our models.</text>
   <heading level="3">Training Data and Batching</heading>
-  <text>We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs.  Sentences were encoded using byte-pair encoding [DBLP:journals/corr/BritzGLL17], which has a shared source-target vocabulary of about 37000 tokens. For English-French, we used the significantly larger WMT 2014 English-French dataset consisting of 36M sentences and split tokens into a 32000 word-piece vocabulary [wu2016google].  Sentence pairs were batched together by approximate sequence length.  Each training batch contained a set of sentence pairs containing approximately 25000 source tokens and 25000 target tokens.</text>
+  <text><content>We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs.  Sentences were encoded using byte-pair encoding [DBLP:journals/corr/BritzGLL17], which has a shared source-target vocabulary of about 37000 tokens. For English-French, we used the significantly larger WMT 2014 English-French dataset consisting of 36M sentences and split tokens into a 32000 word-piece vocabulary [wu2016google].  Sentence pairs were batched together by approximate sequence length.  Each training batch contained a set of sentence pairs containing approximately 25000 source tokens and 25000 target tokens.</content></text>
   <heading level="3">Hardware and Schedule</heading>
-  <text>We trained our models on one machine with 8 NVIDIA P100 GPUs.  For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds.  We trained the base models for a total of 100,000 steps or 12 hours.  For our big models,(described on the bottom line of table [tab:variations]), step time was 1.0 seconds.  The big models were trained for 300,000 steps (3.5 days).</text>
+  <text><content>We trained our models on one machine with 8 NVIDIA P100 GPUs.  For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds.  We trained the base models for a total of 100,000 steps or 12 hours.  For our big models,(described on the bottom line of table [tab:variations]), step time was 1.0 seconds.  The big models were trained for 300,000 steps (3.5 days).</content></text>
   <heading level="3">Optimizer</heading>
-  <text>
-    <content>We used the Adam optimizer[kingma2014adam] with </content>
-    <formula>\beta_1=0.9</formula>
-    <content>, </content>
-    <formula>\beta_2=0.98</formula>
-    <content> and </content>
-    <formula>\epsilon=10^{-9}</formula>
-.  We varied the learning rate over the course of training, according to the formula:
-  </text>
-  <formula>
-    <content>\begin{equation}
+  <text>We used the Adam optimizer[kingma2014adam] with <formula>\beta_1=0.9</formula>, <formula>\beta_2=0.98</formula> and <formula>\epsilon=10^{-9}</formula><content>.  We varied the learning rate over the course of training, according to the formula:</content></text>
+  <formula><content>\begin{equation}
 lrate = d_{\text{model}}^{-0.5} \cdot
   \min({step\_num}^{-0.5},
     {step\_num} \cdot {warmup\_steps}^{-1.5})
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>This corresponds to increasing the learning rate linearly for the first </content>
-    <formula>warmup\_steps</formula>
-    <content> training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used </content>
-    <formula>warmup\_steps=4000</formula>
-.
-  </text>
+\end{equation}</content></formula>
+  <text>This corresponds to increasing the learning rate linearly for the first <formula>warmup\_steps</formula><content> training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used </content><formula>warmup\_steps=4000</formula>.</text>
   <heading level="3">Regularization</heading>
   <text>We employ three types of regularization during training:</text>
-  <text>
-    <content>Residual Dropout We apply dropout [srivastava2014dropout] to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of </content>
-    <formula>P_{drop}=0.1</formula>
-.
-  </text>
-  <text>
-    <content>Label Smoothing During training, we employed label smoothing of value </content>
-    <formula>\epsilon_{ls}=0.1</formula>
-    <content> [DBLP:journals/corr/SzegedyVISW15].  This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score.</content>
-  </text>
+  <text><content>Residual Dropout We apply dropout [srivastava2014dropout] to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of </content><formula>P_{drop}=0.1</formula>.</text>
+  <text>Label Smoothing During training, we employed label smoothing of value <formula>\epsilon_{ls}=0.1</formula><content> [DBLP:journals/corr/SzegedyVISW15].  This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score.</content></text>
   <heading level="2">Results</heading>
   <heading level="3">Machine Translation</heading>
   <table>
@@ -715,9 +467,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <ecel/>
     <fcel/>
-    <text>
-      <formula>1.0\cdot10^{20}</formula>
-    </text>
+    <text><formula>1.0\cdot10^{20}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -764,13 +514,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     39.92
     <ecel/>
     <fcel/>
-    <text>
-      <formula>2.3\cdot10^{19}</formula>
-    </text>
+    <text><formula>2.3\cdot10^{19}</formula></text>
     <fcel/>
-    <text>
-      <formula>1.4\cdot10^{20}</formula>
-    </text>
+    <text><formula>1.4\cdot10^{20}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -817,13 +563,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     40.46
     <ecel/>
     <fcel/>
-    <text>
-      <formula>9.6\cdot10^{18}</formula>
-    </text>
+    <text><formula>9.6\cdot10^{18}</formula></text>
     <fcel/>
-    <text>
-      <formula>1.5\cdot10^{20}</formula>
-    </text>
+    <text><formula>1.5\cdot10^{20}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -870,13 +612,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     40.56
     <ecel/>
     <fcel/>
-    <text>
-      <formula>2.0\cdot10^{19}</formula>
-    </text>
+    <text><formula>2.0\cdot10^{19}</formula></text>
     <fcel/>
-    <text>
-      <formula>1.2\cdot10^{20}</formula>
-    </text>
+    <text><formula>1.2\cdot10^{20}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -923,9 +661,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <ecel/>
     <fcel/>
-    <text>
-      <formula>8.0\cdot10^{20}</formula>
-    </text>
+    <text><formula>8.0\cdot10^{20}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -972,13 +708,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     41.16
     <ecel/>
     <fcel/>
-    <text>
-      <formula>1.8\cdot10^{20}</formula>
-    </text>
+    <text><formula>1.8\cdot10^{20}</formula></text>
     <fcel/>
-    <text>
-      <formula>1.1\cdot10^{21}</formula>
-    </text>
+    <text><formula>1.1\cdot10^{21}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1025,13 +757,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     41.29
     <ecel/>
     <fcel/>
-    <text>
-      <formula>7.7\cdot10^{19}</formula>
-    </text>
+    <text><formula>7.7\cdot10^{19}</formula></text>
     <fcel/>
-    <text>
-      <formula>1.2\cdot10^{21}</formula>
-    </text>
+    <text><formula>1.2\cdot10^{21}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1078,10 +806,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     38.1
     <ecel/>
     <fcel/>
-    <text>
-      2c
-      <formula>3.3\cdot10^{18}</formula>
-    </text>
+    <text>2c<formula>3.3\cdot10^{18}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1129,10 +854,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     41.8
     <ecel/>
     <fcel/>
-    <text>
-      2c
-      <formula>2.3\cdot10^{19}</formula>
-    </text>
+    <text>2c<formula>2.3\cdot10^{19}</formula></text>
     <ecel/>
     <ecel/>
     <ecel/>
@@ -1217,85 +939,33 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
   </table>
-  <text>
-    <content>On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than </content>
-    <formula>2.0</formula>
-    <content> BLEU, establishing a new state-of-the-art BLEU score of </content>
-    <formula>28.4</formula>
-    <content>.  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took </content>
-    <formula>3.5</formula>
-    <content> days on </content>
-    <formula>8</formula>
-    <content> P100 GPUs.  Even our base model surpasses all previously published models and ensembles, at a fraction of the training cost of any of the competitive models.</content>
-  </text>
-  <text>
-    <content>On the WMT 2014 English-to-French translation task, our big model achieves a BLEU score of </content>
-    <formula>41.0</formula>
-    <content>, outperforming all of the previously published single models, at less than </content>
-    <formula>1/4</formula>
-    <content> the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate </content>
-    <formula>P_{drop}=0.1</formula>
-    <content>, instead of </content>
-    <formula>0.3</formula>
-.
-  </text>
-  <text>
-    <content>For the base models, we used a single model obtained by averaging the last 5 checkpoints, which were written at 10-minute intervals.  For the big models, we averaged the last 20 checkpoints. We used beam search with a beam size of </content>
-    <formula>4</formula>
-    <content> and length penalty </content>
-    <formula>\alpha=0.6</formula>
-    <content> [wu2016google].  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length + </content>
-    <formula>50</formula>
-, but terminate early when possible [wu2016google].
-  </text>
-  <text>Table [tab:wmt-results] summarizes our results and compares our translation quality and training costs to other model architectures from the literature.  We estimate the number of floating point operations used to train a model by multiplying the training time, the number of GPUs used, and an estimate of the sustained single-precision floating-point capacity of each GPU</text>
+  <text>On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than <formula>2.0</formula> BLEU, establishing a new state-of-the-art BLEU score of <formula>28.4</formula><content>.  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took </content><formula>3.5</formula> days on <formula>8</formula><content> P100 GPUs.  Even our base model surpasses all previously published models and ensembles, at a fraction of the training cost of any of the competitive models.</content></text>
+  <text>On the WMT 2014 English-to-French translation task, our big model achieves a BLEU score of <formula>41.0</formula>, outperforming all of the previously published single models, at less than <formula>1/4</formula> the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate <formula>P_{drop}=0.1</formula>, instead of <formula>0.3</formula>.</text>
+  <text><content>For the base models, we used a single model obtained by averaging the last 5 checkpoints, which were written at 10-minute intervals.  For the big models, we averaged the last 20 checkpoints. We used beam search with a beam size of </content><formula>4</formula> and length penalty <formula>\alpha=0.6</formula><content> [wu2016google].  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length + </content><formula>50</formula>, but terminate early when possible [wu2016google].</text>
+  <text><content>Table [tab:wmt-results] summarizes our results and compares our translation quality and training costs to other model architectures from the literature.  We estimate the number of floating point operations used to train a model by multiplying the training time, the number of GPUs used, and an estimate of the sustained single-precision floating-point capacity of each GPU</content></text>
   <footnote>We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respectively.</footnote>
   <text>.</text>
   <heading level="3">Model Variations</heading>
   <table>
-    <caption>Variations on the Transformer architecture. Unlisted values are identical to those of the base model.  All metrics are on the English-to-German translation development set, newstest2013.  Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities.</caption>
+    <caption><content>Variations on the Transformer architecture. Unlisted values are identical to those of the base model.  All metrics are on the English-to-German translation development set, newstest2013.  Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities.</content></caption>
     <fcel/>
     0pt2.0ex
     <fcel/>
-    <text>
-      2*
-      <formula>N</formula>
-    </text>
+    <text>2*<formula>N</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>d_{\text{model}}</formula>
-    </text>
+    <text>2*<formula>d_{\text{model}}</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>d_{\text{ff}}</formula>
-    </text>
+    <text>2*<formula>d_{\text{ff}}</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>h</formula>
-    </text>
+    <text>2*<formula>h</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>d_k</formula>
-    </text>
+    <text>2*<formula>d_k</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>d_v</formula>
-    </text>
+    <text>2*<formula>d_v</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>P_{drop}</formula>
-    </text>
+    <text>2*<formula>P_{drop}</formula></text>
     <fcel/>
-    <text>
-      2*
-      <formula>\epsilon_{ls}</formula>
-    </text>
+    <text>2*<formula>\epsilon_{ls}</formula></text>
     <fcel/>
     train
     <fcel/>
@@ -1321,9 +991,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <fcel/>
     (dev)
     <fcel/>
-    <text>
-      <formula>\times10^6</formula>
-    </text>
+    <text><formula>\times10^6</formula></text>
     <nl/>
     <fcel/>
     0pt2.0ex base
@@ -1723,13 +1391,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <nl/>
   </table>
-  <text>To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations].</text>
+  <text><content>To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations].</content></text>
   <text>In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.</text>
-  <text>
-    <content>In Table[tab:variations] rows (B), we observe that reducing the attention key size </content>
-    <formula>d_k</formula>
-    <content> hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting.  In row (E) we replace our sinusoidal positional encoding with learned positional embeddings [JonasFaceNet2017], and observe nearly identical results to the base model.</content>
-  </text>
+  <text>In Table[tab:variations] rows (B), we observe that reducing the attention key size <formula>d_k</formula><content> hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting.  In row (E) we replace our sinusoidal positional encoding with learned positional embeddings [JonasFaceNet2017], and observe nearly identical results to the base model.</content></text>
   <heading level="3">English Constituency Parsing</heading>
   <table>
     <caption>The Transformer generalizes well to English constituency parsing (Results are on Section 23 of WSJ)</caption>
@@ -1847,20 +1511,8 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <nl/>
   </table>
   <text>To evaluate if the Transformer can generalize to other tasks we performed experiments on English constituency parsing. This task presents specific challenges: the output is subject to strong structural constraints and is significantly longer than the input. Furthermore, RNN sequence-to-sequence models have not been able to attain state-of-the-art results in small-data regimes [KVparse15].</text>
-  <text>
-    <content>We trained a 4-layer transformer with </content>
-    <formula>d_{model} = 1024</formula>
-    <content> on the Wall Street Journal (WSJ) portion of the Penn Treebank [marcus1993building], about 40K training sentences. We also trained it in a semi-supervised setting, using the larger high-confidence and BerkleyParser corpora from with approximately 17M sentences [KVparse15]. We used a vocabulary of 16K tokens for the WSJ only setting and a vocabulary of 32K tokens for the semi-supervised setting.</content>
-  </text>
-  <text>
-    <content>We performed only a small number of experiments to select the dropout, both attention and residual (section[sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + </content>
-    <formula>300</formula>
-    <content>. We used a beam size of </content>
-    <formula>21</formula>
-    <content> and </content>
-    <formula>\alpha=0.3</formula>
-    <content> for both WSJ only and the semi-supervised setting.</content>
-  </text>
+  <text>We trained a 4-layer transformer with <formula>d_{model} = 1024</formula> on the Wall Street Journal (WSJ) portion of the Penn Treebank [marcus1993building], about 40K training sentences. We also trained it in a semi-supervised setting, using the larger high-confidence and BerkleyParser corpora from with approximately 17M sentences [KVparse15]. We used a vocabulary of 16K tokens for the WSJ only setting and a vocabulary of 32K tokens for the semi-supervised setting.</text>
+  <text>We performed only a small number of experiments to select the dropout, both attention and residual (section[sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + <formula>300</formula>. We used a beam size of <formula>21</formula> and <formula>\alpha=0.3</formula> for both WSJ only and the semi-supervised setting.</text>
   <text>Our results in Table[tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16].</text>
   <text>In contrast to RNN sequence-to-sequence models [KVparse15], the Transformer outperforms the BerkeleyParser [petrov-EtAl:2006:ACL] even when training only on the WSJ training set of 40K sentences.</text>
   <heading level="2">Conclusion</heading>
@@ -1944,9 +1596,9 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ldiv/>
     [DBLP:journals/corr/SzegedyVISW15] Christian Szegedy, Vincent Vanhoucke, Sergey Ioffe, Jonathon Shlens, and Zbigniew Wojna. Rethinking the inception architecture for computer vision. CoRR, abs/1512.00567, 2015.
     <ldiv/>
-<![CDATA[[KVparse15] Vinyals & Kaiser, Koo, Petrov, Sutskever, and Hinton. Grammar as a foreign language. In Advances in Neural Information Processing Systems, 2015.]]>    
+    <![CDATA[[KVparse15] Vinyals & Kaiser, Koo, Petrov, Sutskever, and Hinton. Grammar as a foreign language. In Advances in Neural Information Processing Systems, 2015.]]>
     <ldiv/>
-<![CDATA[[wu2016google] Yonghui Wu, Mike Schuster, Zhifeng Chen, QuocV Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, etal. Google's neural machine translation system: Bridging the gap between human and machine translation. arXiv preprint arXiv:1609.08144, 2016.]]>    
+    <![CDATA[[wu2016google] Yonghui Wu, Mike Schuster, Zhifeng Chen, QuocV Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, etal. Google's neural machine translation system: Bridging the gap between human and machine translation. arXiv preprint arXiv:1609.08144, 2016.]]>
     <ldiv/>
     [DBLP:journals/corr/ZhouCWLX16] Jie Zhou, Ying Cao, Xuguang Wang, Peng Li, and Wei Xu. Deep recurrent models with fast-forward connections for neural machine translation. CoRR, abs/1606.04199, 2016.
     <ldiv/>
@@ -1954,7 +1606,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
   </list>
   <heading level="2">Attention Visualizations</heading>
   <picture>
-    <caption><![CDATA[An example of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6. Many of the attention heads attend to a distant dependency of the verb `making', completing the phrase `making...more difficult'.  Attentions here shown only for the word `making'. Different colors represent different heads. Best viewed in color.]]></caption>
+    <caption><content><![CDATA[An example of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6. Many of the attention heads attend to a distant dependency of the verb `making', completing the phrase `making...more difficult'.  Attentions here shown only for the word `making'. Different colors represent different heads. Best viewed in color.]]></content></caption>
   </picture>
   <picture>
     <caption><![CDATA[Two attention heads, also in layer 5 of 6, apparently involved in anaphora resolution. Top: Full attentions for head 5. Bottom: Isolated attentions from just the word `its' for attention heads 5 and 6. Note that the attentions are very sharp for this word.]]></caption>

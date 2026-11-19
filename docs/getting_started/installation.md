@@ -76,14 +76,16 @@ The following table summarizes the extras available in the `docling` package. Th
 
 | Extra | Description |
 | - | - |
-| `asr` | Installs dependencies for running the ASR pipeline. |
+| `audio` | Installs the Whisper backends for running the ASR pipeline. |
+| `asr` | Installs all inline ASR engines (Whisper, Transformers, and `mlx-audio`). Needs macOS 14 or later on Apple Silicon. See [Processing audio and video](../usage/processing_audio_media.md#installation). |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
-| `feat-ocr-nemotron` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `htmlrender` | Installs dependencies for HTML page rendering in the HTML backend. |
 | `rapidocr` | Installs the [RapidOCR](https://github.com/RapidAI/RapidOCR) OCR engine with [onnxruntime](https://github.com/microsoft/onnxruntime/) backend. |
+
+For Nemotron OCR, install `docling-slim[feat-ocr-nemotron]` alongside `docling` as shown below.
 
 
 ### OCR engines
@@ -95,7 +97,7 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
-| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `feat-ocr-nemotron` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `docling-slim[feat-ocr-nemotron]`. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
@@ -128,31 +130,32 @@ doc_converter = DocumentConverter(
     [Tesseract](https://github.com/tesseract-ocr/tesseract) is a popular OCR engine which is available
     on most operating systems. For using this engine with Docling, Tesseract must be installed on your
     system, using the packaging tool of your choice. Below we provide example commands.
-    After installing Tesseract you are expected to provide the path to its language files using the
-    `TESSDATA_PREFIX` environment variable (note that it must terminate with a slash `/`).
+    After installing Tesseract, export `TESSDATA_PREFIX` with the path to its language files
+    in the same shell where you start Docling or Python. Run `tesseract --list-langs` to check
+    that Tesseract can find the languages you intend to use.
 
     === "macOS (via [Homebrew](https://brew.sh/))"
 
         ```console
         brew install tesseract leptonica pkg-config
-        TESSDATA_PREFIX=/opt/homebrew/share/tessdata/
-        echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
+        export TESSDATA_PREFIX="$(brew --prefix)/share/tessdata/"
+        tesseract --list-langs
         ```
 
     === "Debian-based"
 
         ```console
         apt-get install tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev pkg-config
-        TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)
-        echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
+        export TESSDATA_PREFIX="$(dpkg -L tesseract-ocr-eng | grep '/tessdata$')"
+        tesseract --list-langs
         ```
 
     === "RHEL"
 
         ```console
         dnf install tesseract tesseract-devel tesseract-langpack-eng tesseract-osd leptonica-devel
-        TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
-        echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
+        export TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
+        tesseract --list-langs
         ```
 
     <h4>Linking to Tesseract</h4>
@@ -170,11 +173,12 @@ doc_converter = DocumentConverter(
 ??? "Nemotron OCR installation"
 
     [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) requires the CUDA 13 PyTorch wheels.
-    Install it with the `feat-ocr-nemotron` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
-    index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
+    Install `docling` together with `docling-slim[feat-ocr-nemotron]` using uv.
+    Use uv's `unsafe-best-match` index strategy to select the CUDA-enabled `torch` wheels.
 
     ```console
-    pip install "docling[feat-ocr-nemotron]" \
+    uv venv --python 3.12
+    uv pip install docling "docling-slim[feat-ocr-nemotron]" \
       --extra-index-url https://download.pytorch.org/whl/cu130 \
       --index-strategy unsafe-best-match
     ```

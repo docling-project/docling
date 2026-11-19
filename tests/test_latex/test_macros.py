@@ -599,12 +599,11 @@ This is \\myterm and the value is \\myvalue.
 
 def test_latex_href_macro():
     """Test \\href{url}{display} emits a markdown-style link."""
-    latex_content = rb"""
-    \documentclass{article}
-    \begin{document}
-    Visit \href{https://example.com}{Example Site} for more.
-    \end{document}
-    """
+    latex_content = rb"""\documentclass{article}
+\begin{document}
+Visit \href{https://example.com}{Example Site} for more.
+\end{document}
+"""
     in_doc = InputDocument(
         path_or_stream=BytesIO(latex_content),
         format=InputFormat.LATEX,
@@ -614,9 +613,41 @@ def test_latex_href_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    md = doc.export_to_markdown()
-    assert "Example Site" in md
-    assert "https://example.com" in md
+    assert [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY] == [
+        "Visit [Example Site](https://example.com) for more."
+    ]
+
+
+def test_latex_href_keeps_text_together():
+    """\\href stays inside its paragraph, list item or heading, takes an optional
+    argument, and keeps the URL as written."""
+    latex_content = rb"""\documentclass{article}
+\usepackage{hyperref}
+\begin{document}
+\section{About \href{https://example.com}{us}}
+Go \href[pdfnewwindow=true]{https://example.com/my_page#top}{there} now.
+\begin{itemize}
+\item See \href{https://example.com}{the site} here
+\end{itemize}
+\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    # each link stays in place and its item keeps its kind
+    assert [
+        (t.label, t.text) for t in doc.texts if t.content_layer == ContentLayer.BODY
+    ] == [
+        (DocItemLabel.SECTION_HEADER, "About [us](https://example.com)"),
+        (DocItemLabel.TEXT, "Go [there](https://example.com/my_page#top) now."),
+        (DocItemLabel.LIST_ITEM, "See [the site](https://example.com) here"),
+    ]
 
 
 def test_latex_textcolor_macro():
@@ -699,6 +730,31 @@ def test_latex_legacy_font_switches():
     assert "bold text" in md
     assert "italic text" in md
     assert "Normal content here" in md
+
+
+def test_latex_verb_keeps_braces_and_spaces():
+    """Test \\verb content keeps its own braces, in body text and in headings."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \section{The \verb|{x}| key}
+    Start a section with \verb|\section{Intro}| and write an empty group as \verb|{}|.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY]
+    assert texts == [
+        "The {x} key",
+        "Start a section with \\section{Intro} and write an empty group as {}.",
+    ]
 
 
 def test_latex_accent_macro():

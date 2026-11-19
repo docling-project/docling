@@ -10,8 +10,8 @@ includes generation time, conversion time, and peak Python memory usage.
 
 Run from the repository root, for example::
 
-    uv run python perfs/xlsx_merged_cells.py --merge-count 100 1000
-    uv run python perfs/xlsx_merged_cells.py --merge-count 5000 --output results.jsonl
+    uv run python scripts/benchmarking/xlsx_merged_cells.py --merge-count 100 1000
+    uv run python scripts/benchmarking/xlsx_merged_cells.py --merge-count 5000 --output results.jsonl
 
 Progress is written to stderr so stdout remains valid JSONL.
 """
@@ -87,7 +87,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def _runtime_info() -> RuntimeInfo:
-    repository_root = Path(__file__).resolve().parents[1]
+    repository_root = Path(__file__).resolve().parents[2]
     pyproject_text = (repository_root / "pyproject.toml").read_text(encoding="utf-8")
     version_match = re.search(
         r'^version\s*=\s*"([^"]+)"', pyproject_text, flags=re.MULTILINE

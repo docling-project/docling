@@ -8,9 +8,10 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Final
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -40,12 +41,14 @@ from docling_core.types.doc import (
 from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
 
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import detect_code_language
 from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 
 _MAX_TABLE_GRID_CELLS = 1000
+_BR_SPACES: Final = re.compile(r"(?<=\S) *\n *| *\n *(?=\S)")
 
 _LABEL_MAP = {
     "Title": DocItemLabel.TITLE,
@@ -278,14 +281,6 @@ class _Run:
     formatting: Formatting = field(default_factory=Formatting)
     hyperlink: AnyUrl | Path | None = None
 
-    @property
-    def plain(self) -> bool:
-        return (
-            self.label == DocItemLabel.TEXT
-            and self.formatting == Formatting()
-            and self.hyperlink is None
-        )
-
 
 @dataclass
 class _Provenance:
@@ -343,7 +338,13 @@ def _inline_runs(
         text = "" if kind in {"checkbox", "radio"} else node.text()
         yield _Run(text, label, formatting, hyperlink)
     elif label is not None:
-        yield _Run(node.text().strip(), label, formatting, hyperlink)
+        # A boundary space never goes inside a code or formula run: move it out.
+        text = node.text()
+        if text[:1].isspace():
+            yield _Run(" ", formatting=formatting, hyperlink=hyperlink)
+        yield _Run(text.strip(), label, formatting, hyperlink)
+        if text.strip() and text[-1:].isspace():
+            yield _Run(" ", formatting=formatting, hyperlink=hyperlink)
     elif node.tag == "br":
         yield _Run("\n", formatting=formatting, hyperlink=hyperlink)
     elif node.tag not in {"script", "style", "head"}:
@@ -352,25 +353,35 @@ def _inline_runs(
 
 
 class _ChandraDocumentBuilder:
-    def __init__(self, doc: DoclingDocument, size: Size, page_no: int):
+    def __init__(
+        self,
+        doc: DoclingDocument,
+        size: Size,
+        page_no: int,
+        warn_bbox: bool = True,
+    ):
         self.doc = doc
         self.size = size
         self.page_no = page_no
+        self.warn_bbox = warn_bbox
 
     def _provenance(self, node: _Element) -> ProvenanceItem | None:
         raw = node.attrs.get("data-bbox", "")
         try:
             x0, y0, x1, y1 = (float(c) for c in raw.split())
         except ValueError:
-            _log.warning(
-                "Missing or invalid Chandra bbox %r; preserving content without coordinates",
-                raw,
-            )
+            if self.warn_bbox:
+                _log.warning(
+                    "Missing or invalid Chandra bbox %r; preserving content without coordinates",
+                    raw,
+                )
             return None
         if not (0 <= x0 <= x1 <= 1000 and 0 <= y0 <= y1 <= 1000):
-            _log.warning(
-                "Invalid Chandra bbox %r; preserving content without coordinates", raw
-            )
+            if self.warn_bbox:
+                _log.warning(
+                    "Invalid Chandra bbox %r; preserving content without coordinates",
+                    raw,
+                )
             return None
         return ProvenanceItem(
             page_no=self.page_no,
@@ -397,6 +408,12 @@ class _ChandraDocumentBuilder:
     ) -> None:
         merged: list[_Run] = []
         for run in runs:
+            if run.label == DocItemLabel.TEXT and merged:
+                if merged[-1].text[-1:].isspace():
+                    # HTML collapses a boundary to one space; the left run carries it.
+                    run.text = run.text.lstrip(" \t")
+                if not run.text:
+                    continue
             if (
                 merged
                 and run.label == merged[-1].label == DocItemLabel.TEXT
@@ -410,37 +427,32 @@ class _ChandraDocumentBuilder:
             DocItemLabel.SECTION_HEADER,
             DocItemLabel.TITLE,
         }
+        # A break inside one run of a multi-run heading would end the heading line.
+        collapse = heading and len(merged) > 1
         runs, merged = merged, []
-        line_break = False
         for run in runs:
-            edges = run.text.strip(" \t")
-            run.text = run.text.strip()
-            is_text = run.label == DocItemLabel.TEXT
-            if is_text:
-                # Like a browser, drop the spaces around a `<br/>` line break.
-                run.text = re.sub(r" *\n *", "\n", run.text)
-            line_break = line_break or (is_text and edges.startswith("\n"))
+            if run.label != DocItemLabel.TEXT:
+                # Code, formula and field runs never own boundary whitespace.
+                run.text = run.text.strip()
+            elif collapse:
+                run.text = re.sub(r"\s+", " ", run.text)
+            else:
+                # Like a browser, drop the spaces around a `<br/>` line break. A run of
+                # nothing but spaces and a break is the separator between two others.
+                run.text = _BR_SPACES.sub("\n", run.text)
             if not run.text and run.label not in {
                 DocItemLabel.FIELD_VALUE,
                 DocItemLabel.CHECKBOX_SELECTED,
                 DocItemLabel.CHECKBOX_UNSELECTED,
             }:
                 continue
-            if line_break and merged and not heading:
-                # shortcut: a break next to a formatted run or in a heading becomes a
-                # space: docling-core's Markdown puts run edge whitespace inside the
-                # emphasis markers ("**  \nX**"). Upgrade when it emits that outside
-                # them and joins heading lines: then always carry it to the next run.
-                if run.plain:
-                    run.text = "\n" + run.text
-                elif merged[-1].plain:
-                    merged[-1].text += "\n"
-            line_break = is_text and edges.endswith("\n")
             merged.append(run)
-        if heading and len(merged) > 1:
-            # A break inside one run of a multi-run heading would end the heading line.
-            for run in merged:
-                run.text = " ".join(run.text.split())
+        merged = trim_run_edges(
+            merged,
+            get_text=lambda run: run.text,
+            with_text=lambda run, text: replace(run, text=text),
+            is_trimmable=lambda run: run.label == DocItemLabel.TEXT,
+        )
         if not merged:
             return
         before = len(self.doc.texts)
@@ -680,8 +692,16 @@ class _ChandraDocumentBuilder:
     def _table(
         self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
     ) -> None:
-        parsed = _table_cells(node)
-        if not parsed:
+        parsed: list[tuple[TableCell, _Element]] | None
+        try:
+            parsed = _table_cells(node)
+        except ValueError as exc:
+            # Like the Nemotron Parse mapper: drop the grid, keep the page.
+            _log.warning(
+                "Chandra table is too large to map (%s); preserving an empty table", exc
+            )
+            parsed = None
+        if parsed is not None and not parsed:
             _log.warning("Chandra table contains no cells; preserving its content")
             self.walk(node.children, parent, prov)
             return
@@ -691,7 +711,7 @@ class _ChandraDocumentBuilder:
             prov=prov.take() if prov is not None else None,
         )
         cells: list[TableCell] = []
-        for cell, cell_node in parsed:
+        for cell, cell_node in parsed or []:
             if any(child.tag != "span" for child in cell_node.elements()):
                 group = self.doc.add_group(parent=table)
                 self.walk(cell_node.children, group)
@@ -770,14 +790,18 @@ def _add_html_fragment(
     label: DocItemLabel,
     prov: ProvenanceItem | None = None,
     parent: NodeItem | None = None,
+    warn_bbox: bool = True,
 ) -> bool:
-    """Add an HTML fragment using Chandra's dependency-free rich tree mapping."""
+    """Add an HTML fragment using Chandra's dependency-free rich tree mapping.
+
+    Set ``warn_bbox`` to False when the caller reports bad boxes in its own words.
+    """
     root = _HTMLTreeParser(html_content).root
     if not any(True for _ in root.elements()):
         return False
     page_no = prov.page_no if prov is not None else next(iter(doc.pages))
     size = doc.pages[page_no].size
-    _ChandraDocumentBuilder(doc, size, page_no).walk(
+    _ChandraDocumentBuilder(doc, size, page_no, warn_bbox).walk(
         root.children,
         parent=parent,
         prov=_Provenance(prov, text_owner=True) if prov is not None else None,

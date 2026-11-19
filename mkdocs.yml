@@ -106,6 +106,7 @@ nav:
       - "Multi-format conversion": _generated/examples/run_with_formats.md
       - "VLM pipeline with GraniteDocling": _generated/examples/minimal_vlm_pipeline.md
       - "VLM pipeline with remote model": _generated/examples/vlm_pipeline_api_model.md
+      - "VLM page-range assembly": _generated/examples/vlm_page_range_assembly.md
       - "VLM comparison": _generated/examples/compare_vlm_models.md
       - "ASR pipeline with Whisper": _generated/examples/minimal_asr_pipeline.md
       - _generated/examples/video_pipeline.md
