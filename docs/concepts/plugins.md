@@ -205,6 +205,12 @@ doc_converter = DocumentConverter(
 
 Similarly, when using the `docling` CLI, users have to enable external plugins before selecting the new one.
 
+`--show-external-plugins` lists OCR, layout, table structure, and picture-description
+engines. The "Package" column shows the installed distribution that provides each
+plugin. Listing plugins loads their code; conversions require
+`--allow-external-plugins` to load third-party plugins. `--help` does not discover
+plugins.
+
 ```sh
 # Show the external plugins
 docling --show-external-plugins
