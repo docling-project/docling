@@ -154,6 +154,11 @@ opts = PdfPipelineOptions(
 )
 ```
 
+The keyword markers (`PART`, `CHAPTER`, `ARTICLE`, ...) are English. For other languages, add
+words with `numbering_keywords`, for example
+`HeadingHierarchyOptions(enabled=True, numbering_keywords={"chapter": ["rozdział"], "article": ["art."]})`,
+and number words with `numbering_number_words`.
+
 The service equivalent is `do_pdf_heading_hierarchy` plus `pdf_heading_hierarchy_options`.
 
 ### Selecting the accelerator
