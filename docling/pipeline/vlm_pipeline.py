@@ -328,7 +328,6 @@ class VlmPipeline(PaginatedPipeline):
                     processed_pages=len(processed_page_nos),
                     total_pages=len(pages_by_no),
                 ):
-                    conv_res.input._backend.cancel()
                     break
 
             if page_batch:

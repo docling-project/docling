@@ -71,6 +71,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
+| `document_timeout` | Set the processing time limit in seconds. Teardown can wait for PDF pages already claimed by the threaded parser. |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 

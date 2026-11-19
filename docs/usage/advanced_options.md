@@ -339,6 +339,14 @@ The equivalent CLI option is independent of `--num-threads`:
 docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
+### Set a PDF conversion timeout
+
+Set `document_timeout` on the pipeline options to limit PDF processing time.
+With the threaded docling-parse backend, the standard PDF pipeline cancels
+queued pages and discards unread results when it detects the timeout. The native
+and VLM pipelines stop consuming pages and cancel pending work during teardown.
+Teardown waits for already-claimed parser pages to finish, so conversion can
+return after the configured timeout.
 
 ### Extract the native content of a PDF
 
@@ -1013,9 +1021,6 @@ Things to know:
   `EnrichmentProgress`.
 - Failed pages, and pages cut by `document_timeout`, are reported with
   `success=False`, so `completed_pages` always reaches `total_pages`.
-- With a cancellation-capable `docling-parse` release, PDF timeouts also discard
-  queued parser pages. Pages already running in native code can finish in the
-  background, and the backend releases their resources when they finish.
 - Exceptions raised by the callback are logged and ignored.
 - For a single document all events come from the thread that called
   `convert`. With `settings.perf.doc_batch_concurrency > 1` several documents

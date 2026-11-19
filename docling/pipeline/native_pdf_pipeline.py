@@ -143,7 +143,6 @@ class NativePdfPipeline(ConvertPipeline):
                         )
                     )
                     conv_res.status = ConversionStatus.PARTIAL_SUCCESS
-                    backend.cancel()
                     break
 
             # Backends without random page access (the threaded docling-parse

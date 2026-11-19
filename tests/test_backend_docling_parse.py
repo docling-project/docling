@@ -2,10 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
-from threading import Event
 from typing import Any
 
 import pypdfium2 as pdfium
@@ -15,7 +13,6 @@ from docling_core.types.doc.page import PdfCellRenderingMode
 from docling_parse.pdf_parser import ContentLevel, ThreadedPdfParserConfig
 from PIL import Image, ImageDraw, ImageStat
 
-import docling.backend.docling_parse_backend as docling_parse_backend_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
@@ -218,11 +215,8 @@ class _FakeThreadedParser:
         assert doc_key == "doc-key"
         return None
 
-    def has_tasks(self) -> bool:
-        return False
-
-    def get_task(self):
-        raise AssertionError("get_task must not be called once has_tasks() is False")
+    def cancel(self, doc_key: str) -> None:
+        assert doc_key == "doc-key"
 
     def unload(self, doc_key: str) -> bool:
         self.unload_calls.append(doc_key)
@@ -316,61 +310,42 @@ def test_threaded_backend_open_ended_page_range_is_clipped_to_document(
     in_doc._backend.unload()
 
 
-def test_threaded_backend_unloads_after_cancel_without_waiting_on_claimed_page(
-    test_doc_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "cancel_first",
+    [True, False],
+    ids=["cancel-then-unload", "unload-with-pending-work"],
+)
+def test_threaded_backend_discards_pending_pages_and_unloads_stream(
+    test_doc_path: Path, cancel_first: bool
 ) -> None:
-    cancelled = Event()
-    waiting_for_page = Event()
-    finish_page = Event()
-    worker_finished = Event()
-    unloaded = Event()
-
-    class BlockingParser(_FakeThreadedParser):
-        def cancel(self, doc_key: str) -> int:
-            assert doc_key == "doc-key"
-            cancelled.set()
-            return 4
-
-        def has_tasks(self) -> bool:
-            assert cancelled.is_set()
-            return not finish_page.is_set()
-
-        def get_task(self) -> None:
-            waiting_for_page.set()
-            assert finish_page.wait(timeout=5)
-
-        def all_scheduled_work_completed(self) -> bool:
-            return worker_finished.is_set()
-
-        def unload(self, doc_key: str) -> bool:
-            assert doc_key == "doc-key"
-            assert self.all_scheduled_work_completed()
-            unloaded.set()
-            return True
-
-    monkeypatch.setattr(
-        docling_parse_backend_module, "DoclingThreadedPdfParser", BlockingParser
-    )
     stream = BytesIO(test_doc_path.read_bytes())
     in_doc = InputDocument(
         path_or_stream=stream,
         format=InputFormat.PDF,
         backend=ThreadedDoclingParseDocumentBackend,
         filename=test_doc_path.name,
+        backend_options=ThreadedDoclingParseBackendOptions(
+            parser_threads=1, max_concurrent_results=1
+        ),
+        limits=DocumentLimits(page_range=(1, 3)),
     )
     backend = in_doc._backend
     assert isinstance(backend, ThreadedDoclingParseDocumentBackend)
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        try:
-            executor.submit(backend.unload).result(timeout=3)
-            assert stream.closed
-            assert waiting_for_page.wait(timeout=3)
-            assert not unloaded.is_set()
-        finally:
-            finish_page.set()
-            worker_finished.set()
 
-    assert unloaded.wait(timeout=3)
+    pages = backend.iter_pages()
+    try:
+        assert next(pages).is_valid()
+        assert backend.parser.has_tasks()
+        if cancel_first:
+            backend.cancel()
+            assert list(pages) == []
+    finally:
+        backend.unload()
+
+    assert stream.closed
+    assert list(pages) == []
+    with pytest.raises(ValueError, match="Document key not loaded"):
+        backend.page_count()
 
 
 def test_threaded_backend_rewinds_stream_before_deriving_document_key(
