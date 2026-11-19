@@ -34,11 +34,15 @@ def _is_internal_plugin(entry_point: EntryPoint) -> bool:
     The module name alone is not enough, because any installed distribution
     can add modules to the ``docling`` package namespace. The entry point
     must also be declared by one of Docling's own distributions.
+
+    This check controls which plugins Docling activates by default. It does
+    not restrict other installed distributions in general.
     """
     if not entry_point.module.startswith("docling."):
         return False
     dist = entry_point.dist
-    if dist is None:
+    # The name is None when the distribution metadata has no Name field.
+    if dist is None or not dist.name:
         return False
     return _normalize_distribution_name(dist.name) in _INTERNAL_PLUGIN_DISTRIBUTIONS
 
