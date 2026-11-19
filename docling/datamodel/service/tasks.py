@@ -11,6 +11,14 @@ class TaskType(str, enum.Enum):
     CHUNK = "chunk"
 
 
+class TaskStatus(str, enum.Enum):
+    PENDING = "pending"
+    STARTED = "started"
+    SUCCESS = "success"
+    FAILURE = "failure"
+    CANCELLED = "cancelled"
+
+
 class TaskProcessingMeta(BaseModel):
     num_docs: int
     num_processed: int = 0

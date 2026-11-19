@@ -80,7 +80,7 @@ class ProgressTaskCompleted(BaseProgress):
     """Terminal task outcome, independent of document outcomes."""
 
     kind: Literal[ProgressKind.TASK_COMPLETED] = ProgressKind.TASK_COMPLETED
-    task_status: Literal["success", "failure"]
+    task_status: Literal["success", "failure", "cancelled"]
     failure: PublicFailureInfo | None = None
 
 

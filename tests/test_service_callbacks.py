@@ -47,3 +47,28 @@ def test_progress_task_completed_round_trip_and_discrimination() -> None:
     assert isinstance(failure.progress, ProgressTaskCompleted)
     assert failure.progress.kind == ProgressKind.TASK_COMPLETED
     assert failure.progress.failure == _failure()
+
+
+def test_progress_task_completed_accepts_cancelled_terminal_status() -> None:
+    callback = ProgressCallbackRequest.model_validate(
+        {
+            "task_id": "task-3",
+            "progress": {
+                "kind": "task_completed",
+                "task_status": "cancelled",
+                "failure": None,
+            },
+        }
+    )
+
+    assert isinstance(callback.progress, ProgressTaskCompleted)
+    assert callback.progress.task_status == "cancelled"
+    assert callback.progress.failure is None
+    assert callback.model_dump(mode="json") == {
+        "task_id": "task-3",
+        "progress": {
+            "kind": "task_completed",
+            "task_status": "cancelled",
+            "failure": None,
+        },
+    }

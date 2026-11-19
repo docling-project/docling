@@ -28,7 +28,7 @@ from docling.service_client.exceptions import (
 
 _logger = logging.getLogger(__name__)
 
-TERMINAL_TASK_STATUSES: set[str] = {"success", "failure"}
+TERMINAL_TASK_STATUSES: set[str] = {"success", "failure", "cancelled"}
 WS_MAX_RECONNECT_ATTEMPTS = 3
 WS_RECONNECT_BACKOFF_BASE_SECONDS = 1.0
 
