@@ -72,6 +72,11 @@ from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
 from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    is_known_picture,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -4574,25 +4579,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "image",
                 )
                 pil_image: Image.Image | None = None
+                # LibreOffice can still draw a metafile, or a known picture
+                # format that Pillow cannot decode. Other data, for example
+                # PostScript, is skipped.
+                can_render = False
 
                 if image_data is None:
                     _log.warning("Warning: image cannot be found")
                 else:
                     try:
-                        image_bytes = BytesIO(image_data)
-                        pil_image = normalize_image_for_png(Image.open(image_bytes))
+                        pil_image = normalize_image_for_png(
+                            open_image(image_data, PICTURE_IMAGE_FORMATS)
+                        )
                         # Try to ensure the image is usable by converting to PNG
                         # This will fail for WMF/EMF files that PIL can't render
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
-                        pil_image = Image.open(test_bytes)
-                    except (UnidentifiedImageError, OSError, ValueError) as e:
+                        pil_image = Image.open(test_bytes, formats=["PNG"])
+                    except (
+                        Image.DecompressionBombError,
+                        UnidentifiedImageError,
+                        OSError,
+                        ValueError,
+                    ) as e:
                         # Pillow 13 reports truncated PNG chunks as ValueError.
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
+                        can_render = is_known_picture(image_data) or not isinstance(
+                            e, UnidentifiedImageError
+                        )
 
-                if pil_image is None and image is not None and image_data is not None:
+                if pil_image is None and image is not None and can_render:
                     _log.debug(
                         "Direct PIL loading failed, trying DOCX conversion via LibreOffice"
                     )
@@ -4648,24 +4666,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "VML image",
                 )
                 pil_image: Image.Image | None = None
+                can_render = False
 
                 if image_data is None:
                     _log.warning("Warning: VML image cannot be found")
                 else:
                     try:
-                        image_bytes = BytesIO(image_data)
-                        pil_image = normalize_image_for_png(Image.open(image_bytes))
+                        pil_image = normalize_image_for_png(
+                            open_image(image_data, PICTURE_IMAGE_FORMATS)
+                        )
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
-                        pil_image = Image.open(test_bytes)
-                    except (UnidentifiedImageError, OSError, Exception) as e:
-                        _log.debug(
-                            f"Direct PIL loading failed: {e}, trying DOCX conversion"
-                        )
+                        pil_image = Image.open(test_bytes, formats=["PNG"])
+                    except Exception as e:
+                        _log.debug(f"Direct PIL loading failed: {e}")
                         pil_image = None
+                        # LibreOffice can still draw a metafile, or a known
+                        # picture format that Pillow cannot decode. Other
+                        # data, for example PostScript, is skipped.
+                        can_render = is_known_picture(image_data) or not isinstance(
+                            e, UnidentifiedImageError
+                        )
+                        if not can_render:
+                            _log.warning(
+                                "Warning: VML image cannot be loaded by Pillow."
+                            )
 
-                    if pil_image is None and image_data is not None:
+                    if pil_image is None and can_render:
                         pil_image = self._convert_elements_via_docx(
                             imagedata, ["object", "pict"]
                         )

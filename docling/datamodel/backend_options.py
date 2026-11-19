@@ -343,8 +343,9 @@ class PdfBackendOptions(BaseBackendOptions):
         DEFAULT_MAX_IMAGE_PIXELS,
         description=(
             "The maximum number of pixels (width x height) of one page of an "
-            "image input, such as one frame of a multi-page TIFF. Used by the "
-            "image backend; an image with a larger page is rejected."
+            "image input, such as one frame of a multi-page TIFF, or of one "
+            "METS-GBS page. Used by the image and METS-GBS backends; a larger "
+            "page is rejected."
         ),
     )
 

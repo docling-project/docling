@@ -78,6 +78,12 @@ from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    RASTER_IMAGE_FORMATS,
+    is_metafile,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -2272,13 +2278,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 _log.warning("Skipping image %s: %s", dep.target, exc)
                 continue
 
-            # Skip images PIL can already handle — openpyxl already added those.
+            # Only metafiles are left for LibreOffice. openpyxl adds the
+            # images that PIL can handle, and other pictures are skipped.
+            if not is_metafile(image_bytes):
+                continue
+            # Skip metafiles PIL can already draw (on Windows only).
             try:
-                pil_probe = normalize_image_for_png(PILImage.open(BytesIO(image_bytes)))
+                pil_probe = normalize_image_for_png(
+                    open_image(image_bytes, PICTURE_IMAGE_FORMATS)
+                )
                 probe_buf = BytesIO()
                 pil_probe.save(probe_buf, format="PNG")
                 continue  # PIL succeeded; openpyxl took care of this one
-            except (UnidentifiedImageError, OSError, ValueError):
+            except (
+                PILImage.DecompressionBombError,
+                UnidentifiedImageError,
+                OSError,
+                ValueError,
+            ):
                 pass
 
             pil_image = self._convert_emf_to_pil(image_bytes)
@@ -2397,9 +2414,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             image_bytes = read_member(zip_file, target, self._MAX_IMAGE_BYTES)
             try:
                 pil_image: PILImage.Image | None = normalize_image_for_png(
-                    PILImage.open(BytesIO(image_bytes))
+                    open_image(image_bytes, PICTURE_IMAGE_FORMATS)
                 )
             except (UnidentifiedImageError, OSError, ValueError):
+                if not is_metafile(image_bytes):
+                    raise
                 pil_image = self._convert_emf_to_pil(image_bytes)
             if pil_image is None:
                 _log.warning("Could not decode the image %s in a cell", target)
@@ -2455,9 +2474,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 try:
                     image: Image = cast(Image, item)
                     ref = image.ref
-                    pil_image = normalize_image_for_png(
-                        ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)
-                    )
+                    if isinstance(ref, PILImage.Image):
+                        if ref.format not in RASTER_IMAGE_FORMATS:
+                            raise ValueError(f"Unsupported image format {ref.format}")
+                        pil_image = normalize_image_for_png(ref)
+                    else:
+                        # openpyxl selects any Pillow decoder: open the
+                        # bytes again with the raster decoders only.
+                        pil_image = normalize_image_for_png(open_image(ref))
                     doc.add_picture(
                         parent=self.parent,
                         image=ImageRef.from_pil(image=pil_image, dpi=72),

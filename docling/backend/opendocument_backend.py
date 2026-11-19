@@ -68,6 +68,7 @@ from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.utils._inline_runs import trim_run_edges
+from docling.utils.image_utils import open_image
 
 _ODFDO_AVAILABLE: bool = False
 _ODFDO_IMPORT_ERROR: ImportError | None = None
@@ -1134,7 +1135,7 @@ def _image_ref_from_odf_image(
     if image_data is None:
         return None
 
-    pil_image = PILImage.open(BytesIO(image_data))
+    pil_image = open_image(image_data)
     pil_image.load()
     return ImageRef.from_pil(image=normalize_image_for_png(pil_image), dpi=72)
 

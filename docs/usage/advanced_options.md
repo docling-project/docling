@@ -841,7 +841,10 @@ page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits
 the pixels (width x height) of one page; the default, 89,478,485, is the default
 of Pillow's `Image.MAX_IMAGE_PIXELS`. A larger first page rejects the document,
-and a larger later page fails that page:
+and a larger later page fails that page. Image inputs are decoded only as PNG,
+JPEG, TIFF, GIF, BMP or WEBP. The METS-GBS backend (`MetsGbsBackendOptions`)
+applies the same limit to each page image and to the page size in the hOCR, and
+skips a larger page with a warning:
 
 ```python
 from docling.datamodel.backend_options import PdfBackendOptions

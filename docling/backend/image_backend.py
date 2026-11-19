@@ -25,7 +25,12 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
-from docling.utils.image_utils import check_image_pixels, to_rgb
+from docling.utils.image_utils import (
+    IMAGE_INPUT_FORMATS,
+    check_image_pixels,
+    open_image,
+    to_rgb,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -232,7 +237,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self._source: Image.Image | None = None
         self._frame_count = 0
         try:
-            self._source = Image.open(self.path_or_stream)  # type: ignore[arg-type]
+            self._source = open_image(self.path_or_stream, IMAGE_INPUT_FORMATS)
             # Multi-frame formats: TIFF, GIF, ICO, animated WEBP/PNG. Other
             # formats have no n_frames attribute and hold one frame.
             self._frame_count = getattr(self._source, "n_frames", 1)
