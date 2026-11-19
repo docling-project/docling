@@ -7,7 +7,7 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import LayoutOptions, LayoutPostprocessorOptions
-from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.utils.layout_postprocessor import LayoutPostprocessor, SpatialClusterIndex
 
 
 def _text_cell(
@@ -496,3 +496,16 @@ def test_direct_child_uses_tightest_container() -> None:
     by_id = {cluster.id: cluster for cluster in result}
     assert by_id[1].children == []
     assert [child.id for child in by_id[2].children] == [3]
+
+
+def test_wrapper_overlaps_keeps_nested_table_and_deduplicates_duplicate() -> None:
+    processor = object.__new__(LayoutPostprocessor)
+    parent = _cluster(1, _bbox(0, 0, 400, 400), DocItemLabel.TABLE)
+    nested = _cluster(2, _bbox(100, 100, 200, 200), DocItemLabel.TABLE)
+    nested_duplicate = _cluster(3, _bbox(101, 101, 201, 201), DocItemLabel.TABLE)
+    tables = [parent, nested, nested_duplicate]
+    processor.wrapper_index = SpatialClusterIndex(tables)
+
+    result = processor._remove_overlapping_clusters(tables, "wrapper")
+
+    assert {cluster.id for cluster in result} == {1, 2}
