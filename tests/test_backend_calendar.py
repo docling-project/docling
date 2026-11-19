@@ -220,6 +220,8 @@ def test_event_times(converter, lines, expected):
         ("FREQ=DAILY;COUNT=1", "Daily, once"),
         ("FREQ=DAILY;UNTIL=20261231", "Daily, until 2026-12-31"),
         ("FREQ=WEEKLY;WKST=MO;BYDAY=MO", "Weekly on Monday"),
+        # Some producers end the rule with a semicolon.
+        ("FREQ=YEARLY;BYMONTH=11;BYDAY=1SU;", "Yearly in November on the first Sunday"),
         # Parts a description cannot carry keep the whole rule raw.
         ("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", None),
         ("FREQ=DAILY;BYHOUR=9,17", None),

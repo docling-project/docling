@@ -304,6 +304,9 @@ def describe_rrule(raw: str) -> str | None:
     """
     parts: dict[str, str] = {}
     for item in raw.split(";"):
+        if not item.strip():
+            # Some producers end the rule with a semicolon: FREQ=WEEKLY;BYDAY=MO;
+            continue
         key, sep, value = item.partition("=")
         if not sep or not value:
             return None
