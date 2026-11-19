@@ -458,6 +458,13 @@ class ReadingOrderPredictor:
     _NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM: ClassVar[float] = 0.0025
     _LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM: ClassVar[float] = 0.01
     _INTERRUPTION_QUERY_PADDING: ClassVar[float] = 1.0
+    # A short line can end just short of a narrow centred heading above or
+    # below it, so the two share no horizontal overlap although nothing else
+    # stands between them. Link such near neighbours only while both gaps
+    # stay small: the horizontal gap must stay below a column gutter, and
+    # the vertical gap below a paragraph break.
+    _NEAR_VERTICAL_LINK_HORIZONTAL_GAP_NORM: ClassVar[float] = 0.02
+    _NEAR_VERTICAL_LINK_VERTICAL_GAP_NORM: ClassVar[float] = 0.05
 
     def __init__(self):
         self.dilated_page_element = True
@@ -834,11 +841,17 @@ class ReadingOrderPredictor:
                     state.dn_map[left_partner].append(j)
                 if left_partner not in state.up_map[j]:
                     state.up_map[j].append(left_partner)
-            # Find elements above current that might precede it in reading order
+            # Find elements above current that might precede it in reading order.
+            # The query reaches past the element's own edges by the near-link
+            # gap, so a narrow neighbour that ends just short of this element
+            # is a candidate too (see _is_near_vertical_neighbour).
+            near_gap = (
+                self._NEAR_VERTICAL_LINK_HORIZONTAL_GAP_NORM * pelem_j.page_size.width
+            )
             query_bbox = (
-                pelem_j.l - self._RTREE_QUERY_PADDING,
+                pelem_j.l - max(self._RTREE_QUERY_PADDING, near_gap),
                 pelem_j.t,
-                pelem_j.r + self._RTREE_QUERY_PADDING,
+                pelem_j.r + max(self._RTREE_QUERY_PADDING, near_gap),
                 float("inf"),
             )
             candidates = list(spatial_idx.intersection(query_bbox))
@@ -850,9 +863,11 @@ class ReadingOrderPredictor:
                 pelem_i = page_elems[i]
 
                 # Check spatial relationship
+                if not pelem_i.is_strictly_above(pelem_j):
+                    continue
                 if not (
-                    pelem_i.is_strictly_above(pelem_j)
-                    and pelem_i.overlaps_horizontally(pelem_j)
+                    pelem_i.overlaps_horizontally(pelem_j)
+                    or self._is_near_vertical_neighbour(pelem_i, pelem_j)
                 ):
                     continue
 
@@ -896,6 +911,32 @@ class ReadingOrderPredictor:
             ):
                 state.dn_map[i].append(j)
                 state.up_map[j].append(i)
+
+    def _is_near_vertical_neighbour(
+        self, upper: ReadingOrderNode, lower: ReadingOrderNode
+    ) -> bool:
+        """Whether `upper` sits just beside `lower` in the same column.
+
+        A short line can end just short of a narrow centred heading above or
+        below it, so the two share no horizontal overlap although they are
+        consecutive in the column. Link them only when the neighbour is more
+        below than beside (the horizontal gap is smaller than the vertical
+        gap) and both gaps stay small, so a line in a side-by-side column —
+        beside by a gutter, below by a line pitch — never links across.
+        """
+        horizontal_gap = max(upper.l - lower.r, lower.l - upper.r)
+        if horizontal_gap < 0:
+            # Overlapping pairs take the ordinary path; this is only for the
+            # narrow gap beside a neighbour.
+            return False
+        vertical_gap = max(0.0, upper.b - lower.t)
+        return (
+            horizontal_gap
+            <= self._NEAR_VERTICAL_LINK_HORIZONTAL_GAP_NORM * lower.page_size.width
+            and vertical_gap
+            <= self._NEAR_VERTICAL_LINK_VERTICAL_GAP_NORM * lower.page_size.height
+            and horizontal_gap < vertical_gap
+        )
 
     def _has_sequence_interruption(
         self,

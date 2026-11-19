@@ -595,6 +595,105 @@ def test_heads_in_side_by_side_columns_keep_column_order():
     assert _predicted_cids(elements) == [2, 0, 1]
 
 
+def test_short_line_between_narrow_centred_headings_stays_in_place():
+    # Issue #5466: a short line between two narrow centred headings (§ 2,
+    # § 3) lost both its predecessor and its successor, because the line ends
+    # before the left edge of the headings and shares no horizontal overlap
+    # with them. The headings interrupt the links to the wide elements
+    # further up and down, so the line became a head of its own and was read
+    # at the end of the page body, under the wrong heading.
+    page_size = Size(width=595.3, height=841.9)
+
+    def elem(cid, label, l, r, b, t, text=""):  # noqa: E741
+        return PageElement(
+            cid=cid,
+            text=text,
+            page_no=1,
+            page_size=page_size,
+            label=label,
+            l=l,
+            r=r,
+            b=b,
+            t=t,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        elem(
+            0,
+            DocItemLabel.TEXT,
+            70,
+            540,
+            520,
+            730,
+            "Body paragraph above the list.",
+        ),
+        elem(
+            1,
+            DocItemLabel.LIST_ITEM,
+            70,
+            540,
+            410,
+            505,
+            "8) a list item that spans the full text width",
+        ),
+        elem(2, DocItemLabel.SECTION_HEADER, 290, 310, 385, 395, "§ 2"),
+        elem(
+            3,
+            DocItemLabel.TEXT,
+            70,
+            285,
+            340,
+            355,
+            "A short line ending left of the mark.",
+        ),
+        elem(4, DocItemLabel.SECTION_HEADER, 290, 310, 300, 310, "§ 3"),
+        elem(
+            5,
+            DocItemLabel.TEXT,
+            70,
+            360,
+            250,
+            265,
+            "A longer line that follows the next mark.",
+        ),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5]
+
+
+def test_narrow_gutter_columns_do_not_link_across():
+    # Guard for the near-neighbour link: two columns separated by a narrow
+    # (10pt) gutter with staggered rows. The right column's line sits just
+    # above the left column's next line, but it is beside it by a gutter and
+    # below it by only a line pitch, so the two columns must still read one
+    # after the other.
+    page_size = Size(width=612.0, height=792.0)
+
+    def elem(cid, l, r, b, t):  # noqa: E741
+        return PageElement(
+            cid=cid,
+            text="",
+            page_no=1,
+            page_size=page_size,
+            label=DocItemLabel.TEXT,
+            l=l,
+            r=r,
+            b=b,
+            t=t,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        elem(0, 295, 540, 620, 635),  # right column, upper row
+        elem(1, 70, 285, 600, 615),  # left column, upper row
+        elem(2, 295, 540, 580, 595),  # right column, lower row
+        elem(3, 70, 285, 560, 575),  # left column, lower row
+    ]
+
+    assert _predicted_cids(elements) == [1, 3, 0, 2]
+
+
 """
 def test_readingorder_multipage():
 
