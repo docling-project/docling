@@ -65,6 +65,8 @@ SENSITIVE_PATHS: tuple[tuple[str, str], ...] = (
     (".github/*", "changes CI workflows, actions, or CI scripts"),
     ("conftest.py", "pytest runs this file at collection"),
     ("*/conftest.py", "pytest runs this file at collection"),
+    # The model does not see reference-data content, but pytest still collects it.
+    ("tests/data/*.py", "pytest can collect and run Python files in test data"),
     ("pyproject.toml", "changes build, dependency, or tool configuration"),
     ("packages/*/pyproject.toml", "changes package build configuration"),
     ("uv.lock", "changes locked dependencies"),
