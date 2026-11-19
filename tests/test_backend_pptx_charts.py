@@ -31,6 +31,10 @@ _LINES = {
     ),
 }
 
+# The reporter's file of docling#5365: a scatter chart whose two series plot
+# over different x values (network availability per circle).
+SCATTER_CHART_5365 = Path("./tests/data/pptx/sources/scatter_chart_5365.pptx")
+
 
 def _save_combo_chart_deck(
     path: Path, second_plot: str = "lineChart", linked_axis_title: bool = False
@@ -158,6 +162,42 @@ def _single_plot_deck(plot: str) -> tuple[Any, Any]:
     bar_chart.addnext(other_plot)
     bar_chart.getparent().remove(bar_chart)
     return prs, other_plot
+
+
+def _save_scatter_deck(
+    path: Path,
+    series: dict[str, list[tuple[Any, float]]],
+    x_axis_title: str = "",
+) -> None:
+    """Save a deck whose chart is a scatter plot over the given points.
+
+    Each series maps its name to a list of (x, y) points. python-pptx writes
+    a native ``c:scatterChart`` for ``XL_CHART_TYPE.XY_SCATTER``.
+    """
+    from pptx import Presentation
+    from pptx.chart.data import XyChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    chart_data = XyChartData()
+    for name, points in series.items():
+        xy_series = chart_data.add_series(name)
+        for x, y in points:
+            xy_series.add_data_point(x, y)
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.XY_SCATTER,
+        Inches(1),
+        Inches(1),
+        Inches(6),
+        Inches(4),
+        chart_data,
+    ).chart
+    if x_axis_title:
+        chart.category_axis.has_title = True
+        chart.category_axis.axis_title.text_frame.text = x_axis_title
+    prs.save(path)
 
 
 def _only_chart(path: Path) -> PictureItem:
@@ -370,6 +410,218 @@ def test_text_axis_categories_follow_the_shown_number_format(
     grid = _grid(_only_chart(path))
 
     assert [row[0] for row in grid[1:]] == expected
+
+
+def test_scatter_chart_keeps_each_series_x_values(tmp_path: Path):
+    """Each scatter series keeps its own x values next to its y values.
+
+    The two series plot over different x values, so a shared category column
+    would lose one series' x coordinates. Before, only the y values were kept,
+    in an empty first column, and no point could be mapped back to its series.
+    """
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(
+        path,
+        {
+            "Series A": [(1.0, 10.0), (2.0, 20.0), (3.0, 30.0)],
+            "Series B": [(1.5, 15.0), (2.5, 25.0), (3.5, 35.0)],
+        },
+    )
+
+    picture = _only_chart(path)
+
+    assert _labels(picture) == [PictureClassificationLabel.SCATTER_CHART.value]
+    assert _grid(picture) == [
+        ["", "Series A", "Series B (X)", "Series B"],
+        ["1", "10", "1.5", "15"],
+        ["2", "20", "2.5", "25"],
+        ["3", "30", "3.5", "35"],
+    ]
+
+
+def test_scatter_chart_with_shared_x_values_has_one_x_column(tmp_path: Path):
+    """Series that share their x values share one x column.
+
+    The x values head the table like the categories of other plots, and no
+    redundant "(X)" column is emitted.
+    """
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(
+        path,
+        {
+            "Series A": [(1.0, 10.0), (2.0, 20.0)],
+            "Series B": [(1.0, 15.0), (2.0, 25.0)],
+        },
+    )
+
+    assert _grid(_only_chart(path)) == [
+        ["", "Series A", "Series B"],
+        ["1", "10", "15"],
+        ["2", "20", "25"],
+    ]
+
+
+def test_scatter_chart_with_a_single_series(tmp_path: Path):
+    """A single-series scatter chart reads like any other chart table."""
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(path, {"Series A": [(1.0, 10.0), (2.0, 20.0)]})
+
+    assert _grid(_only_chart(path)) == [
+        ["", "Series A"],
+        ["1", "10"],
+        ["2", "20"],
+    ]
+
+
+def test_scatter_chart_x_axis_title_heads_the_x_column(tmp_path: Path):
+    """The x axis title fills the top-left cell of a scatter table.
+
+    The x axis is the scatter plot's category axis, so its title heads the
+    x column the way a category axis title heads the category column.
+    """
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(
+        path, {"Series A": [(1.0, 10.0), (2.0, 20.0)]}, x_axis_title="Time (s)"
+    )
+
+    assert _grid(_only_chart(path)) == [
+        ["Time (s)", "Series A"],
+        ["1", "10"],
+        ["2", "20"],
+    ]
+
+
+def test_scatter_chart_with_ragged_series(tmp_path: Path):
+    """A shorter series leaves blank cells in the rows it does not cover.
+
+    The series still get their own "(X)" column when their x values differ,
+    and the table runs to the longest series.
+    """
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(
+        path,
+        {
+            "Series A": [(1.0, 10.0), (2.0, 20.0), (3.0, 30.0)],
+            "Series B": [(1.5, 15.0), (2.5, 25.0)],
+        },
+    )
+
+    assert _grid(_only_chart(path)) == [
+        ["", "Series A", "Series B (X)", "Series B"],
+        ["1", "10", "1.5", "15"],
+        ["2", "20", "2.5", "25"],
+        ["3", "30", "", ""],
+    ]
+
+
+def test_scatter_chart_with_a_missing_x_value(tmp_path: Path):
+    """A point without a cached x value leaves its cell blank.
+
+    The point's y value stays in its row; only the missing coordinate is
+    empty, and the table keeps its shape.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(
+        path,
+        {
+            "Series A": [(1.0, 10.0), (2.0, 20.0), (3.0, 30.0)],
+            "Series B": [(1.5, 15.0), (2.5, 25.0), (3.5, 35.0)],
+        },
+    )
+    prs = Presentation(path)
+    chart = next(shape.chart for shape in prs.slides[0].shapes if shape.has_chart)
+    series = chart.plots[0].series[0]._element
+    point = series.find(qn("c:xVal")).xpath("./c:numRef/c:numCache/c:pt[@idx='1']")[0]
+    point.getparent().remove(point)
+    prs.save(path)
+
+    assert _grid(_only_chart(path)) == [
+        ["", "Series A", "Series B (X)", "Series B"],
+        ["1", "10", "1.5", "15"],
+        ["", "20", "2.5", "25"],
+        ["3", "30", "3.5", "35"],
+    ]
+
+
+def test_scatter_chart_with_date_x_values(tmp_path: Path):
+    """X values on a date axis read as ISO 8601 dates, not as serials.
+
+    The chart caches 1 January and 1 February 2012 as the serials 40909 and
+    40940 with a date number format, like the date categories of other plots.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(path, {"Series A": [(1.0, 10.0), (2.0, 20.0)]})
+    prs = Presentation(path)
+    chart = next(shape.chart for shape in prs.slides[0].shapes if shape.has_chart)
+    series = chart.plots[0].series[0]._element
+    num_cache = series.find(qn("c:xVal")).find(qn("c:numRef")).find(qn("c:numCache"))
+    num_cache.find(qn("c:formatCode")).text = "m/d/yyyy"
+    for point, serial in zip(num_cache.findall(qn("c:pt")), ("40909", "40940")):
+        point.find(qn("c:v")).text = serial
+    prs.save(path)
+
+    assert _grid(_only_chart(path)) == [
+        ["", "Series A"],
+        ["2012-01-01", "10"],
+        ["2012-02-01", "20"],
+    ]
+
+
+def test_scatter_chart_with_iso_string_x_values(tmp_path: Path):
+    """X values cached as ISO dates stay as they are, and the table survives.
+
+    python-pptx writes datetime x values as ISO date strings in the cache.
+    They are not numbers, so they are kept verbatim instead of dropping the
+    whole table.
+    """
+    path = tmp_path / "scatter_chart.pptx"
+    _save_scatter_deck(
+        path,
+        {
+            "Series A": [
+                (datetime.date(2012, 1, 1), 10.0),
+                (datetime.date(2012, 2, 1), 20.0),
+            ]
+        },
+    )
+
+    assert _grid(_only_chart(path)) == [
+        ["", "Series A"],
+        ["2012-01-01", "10"],
+        ["2012-02-01", "20"],
+    ]
+
+
+def test_scatter_chart_from_issue_5365():
+    """The chart of #5365 keeps every point's x and y coordinates.
+
+    Both series plot network availability against monthly churn over
+    different circles, so their x values differ and each series keeps its
+    own "(X)" column; the x axis title heads the shared x column.
+    """
+    picture = _only_chart(SCATTER_CHART_5365)
+
+    assert _labels(picture) == [PictureClassificationLabel.SCATTER_CHART.value]
+    assert _grid(picture) == [
+        [
+            "Network availability (%)",
+            "Metro and Category A circles",
+            "Category B and C circles (X)",
+            "Category B and C circles",
+        ],
+        ["99.82", "1.21", "99.52", "1.74"],
+        ["99.76", "1.34", "99.44", "1.92"],
+        ["99.71", "1.42", "99.37", "2.08"],
+        ["99.68", "1.38", "99.28", "2.21"],
+        ["99.64", "1.55", "99.19", "2.43"],
+        ["99.59", "1.61", "99.11", "2.57"],
+    ]
 
 
 @pytest.mark.parametrize(
