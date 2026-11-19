@@ -2296,7 +2296,8 @@ CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
             ),
         },
     ),
-    scale=2.0,
+    # Small chart text needs about 288 dpi; at 144 dpi the model invents values.
+    scale=4.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,
     stage_options={"output_format": "granite_vision_charts"},
 )
