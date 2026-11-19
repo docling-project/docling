@@ -45,6 +45,12 @@ text in `<footer>` elements is retained in the furniture content layer. Default
 Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
 `included_content_layers` to export it.
 
+With `EmailBackendOptions(list_attachments=True)`, Outlook (`.msg`) messages list
+attachment names and content types without embedding their contents. Hidden
+attachments and inline resources referenced by a `cid:` URL in the HTML body's
+`src`, `href`, `background`, or `data` attributes are excluded. An attachment is
+not excluded merely because it has a content ID or an image MIME type.
+
 Email conversion also reads the calendar parts of a message, such as meeting
 invitations, cancellations and attached `.ics` files. Their events are added under
 a "Calendar" heading after the body, with the same fields as iCalendar input. An
