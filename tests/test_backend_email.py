@@ -1208,3 +1208,26 @@ def test_msg_reads_the_html_body_from_the_rtf_body():
     markdown = preferred.convert().export_to_markdown()
     assert "| **Matériau**" in markdown
     assert "| Béton          | 2 300                         | 1,6" in markdown
+
+
+class _RtfOnlyProperties:
+    def __init__(self, rtf: bytes) -> None:
+        self.rtf = rtf
+
+    def binary_prop_value(self, prop_id: int) -> bytes | None:
+        return self.rtf if prop_id == 0x1009 else None
+
+
+class _RtfOnlyMessage:
+    def __init__(self, rtf: bytes) -> None:
+        self.properties = _RtfOnlyProperties(rtf)
+
+
+def test_msg_skips_an_rtf_body_that_cannot_be_read(caplog):
+    # A truncated PidTagRtfCompressed must not fail the conversion: the HTML body is optional.
+    message = _RtfOnlyMessage(b"LZFu-too-short")
+
+    with caplog.at_level("WARNING", logger="docling.backend.email_backend"):
+        assert EmailDocumentBackend._html_from_rtf_body(message) is None
+
+    assert "Skipped an RTF body that cannot be read" in caplog.text

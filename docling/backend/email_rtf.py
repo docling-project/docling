@@ -112,7 +112,7 @@ def decompress_rtf(data: bytes) -> bytes:
                 out.append(byte)
                 dictionary[write] = byte
                 write = (write + 1) % _LZFU_DICT_SIZE
-    return bytes(out[:raw_size])
+    raise ValueError("Compressed RTF ends before its end marker")
 
 
 def _codec(codepage: int) -> str:
