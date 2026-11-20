@@ -138,3 +138,55 @@ def test_whitespace_between_inline_equations_is_kept(listed: bool) -> None:
     ]
     assert runs == ["Let ", "a", " ", "b", " hold."]
     assert ("- " if listed else "") + "Let $a$ $b$ hold." in doc.export_to_markdown()
+
+
+def _text_box(paragraphs: str) -> str:
+    return (
+        '<p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+        '<p:nvSpPr><p:cNvPr id="9" name="TextBox 8"/><p:cNvSpPr txBox="1"/><p:nvPr/>'
+        "</p:nvSpPr><p:spPr><a:xfrm>"
+        '<a:off x="914400" y="914400"/><a:ext cx="4572000" cy="914400"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>'
+        f"<p:txBody><a:bodyPr/><a:lstStyle/>{paragraphs}</p:txBody></p:sp>"
+    )
+
+
+@pytest.mark.parametrize("grouped", [False, True])
+def test_equation_shape_wrapped_in_alternate_content(grouped: bool) -> None:
+    """PowerPoint wraps a whole shape that holds an equation in mc:AlternateContent.
+
+    The mc:Choice holds the text box and mc:Fallback a copy of it filled with a
+    picture of the equation (MS-ODRAWXML, Math). python-pptx does not list such
+    a shape, so the text box was dropped with all of its text.
+    """
+    choice = _text_box(
+        "<a:p><a:r><a:t>Energy is </a:t></a:r>"
+        + _EQUATION
+        + "<a:r><a:t> in this model.</a:t></a:r></a:p>"
+        "<a:p><a:r><a:t>Second paragraph</a:t></a:r></a:p>"
+    )
+    fallback = _text_box("<a:p><a:r><a:t>Fallback picture</a:t></a:r></a:p>")
+    alternate = etree.fromstring(
+        f"<mc:AlternateContent {_NAMESPACES}>"
+        f'<mc:Choice Requires="a14">{choice}</mc:Choice>'
+        f"<mc:Fallback>{fallback}</mc:Fallback></mc:AlternateContent>"
+    )
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    container = (
+        slide.shapes.add_group_shape()._element if grouped else slide.shapes._spTree
+    )
+    container.append(alternate)
+    stream = BytesIO()
+    presentation.save(stream)
+    stream.seek(0)
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.PPTX])
+        .convert(DocumentStream(name="equations.pptx", stream=stream))
+        .document
+    )
+
+    assert doc.export_to_markdown() == (
+        "Energy is $E=mc^2$ in this model.\n\nSecond paragraph"
+    )
