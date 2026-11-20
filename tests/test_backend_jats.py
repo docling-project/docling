@@ -438,6 +438,197 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     assert footnotes == ["Plain footnote."]
 
 
+def _convert_jats_front(front: str, article_attrs: str = "") -> DoclingDocument:
+    xml = JATS_WRAPPER.replace(
+        '<article xmlns:xlink="http://www.w3.org/1999/xlink" ',
+        f'<article xmlns:xlink="http://www.w3.org/1999/xlink" {article_attrs} ',
+    ).format(content=front)
+    stream = DocumentStream(name="keywords-test.nxml", stream=BytesIO(xml.encode()))
+    return get_converter().convert(stream).document
+
+
+def _body_keywords(doc: DoclingDocument) -> list[str] | None:
+    meta = doc.body.meta
+    if meta is None or meta.keywords is None:
+        return None
+    return list(meta.keywords.values)
+
+
+def _keywords_doc(kwd_groups: str, article_attrs: str = "", extra: str = ""):
+    return _convert_jats_front(
+        "<front><article-meta><title-group><article-title>Keyword Test"
+        f"</article-title></title-group>{kwd_groups}</article-meta></front>{extra}",
+        article_attrs,
+    )
+
+
+def test_jats_kwd_group_becomes_body_keywords():
+    doc = _keywords_doc(
+        "<kwd-group><kwd>alpha</kwd><kwd>beta</kwd><kwd>gamma</kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["alpha", "beta", "gamma"]
+    assert not [t for t in doc.texts if t.text in {"alpha", "beta", "gamma"}]
+
+
+def test_jats_kwd_groups_are_merged_in_order_without_duplicates():
+    doc = _keywords_doc(
+        "<kwd-group><kwd>b</kwd><kwd>a</kwd></kwd-group>"
+        "<kwd-group><kwd>c</kwd><kwd>b</kwd><kwd>d</kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["b", "a", "c", "d"]
+
+
+def test_jats_kwd_group_title_is_not_a_keyword():
+    doc = _keywords_doc(
+        "<kwd-group><title>Research organism</title><kwd>Mouse</kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["Mouse"]
+
+
+def test_jats_kwd_text_is_flattened_and_whitespace_normalised():
+    doc = _keywords_doc(
+        "<kwd-group><kwd>  <italic>E. coli</italic>\n  K-12 </kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["E. coli K-12"]
+
+
+@pytest.mark.parametrize(
+    "kwd_groups",
+    [
+        "",
+        "<kwd-group><title>Keywords</title></kwd-group>",
+        "<kwd-group><kwd>  </kwd><kwd/></kwd-group>",
+    ],
+    ids=["no-group", "no-kwd", "empty-kwd"],
+)
+def test_jats_without_keywords_leaves_body_meta_without_keywords(kwd_groups: str):
+    doc = _keywords_doc(kwd_groups)
+
+    assert _body_keywords(doc) is None
+
+
+def test_jats_empty_kwd_is_skipped_among_others():
+    doc = _keywords_doc("<kwd-group><kwd/><kwd>x</kwd><kwd> </kwd></kwd-group>")
+
+    assert _body_keywords(doc) == ["x"]
+
+
+def test_jats_compound_kwd_is_one_keyword():
+    doc = _keywords_doc(
+        "<kwd-group><compound-kwd><compound-kwd-part>machine"
+        "</compound-kwd-part><compound-kwd-part>learning</compound-kwd-part>"
+        "</compound-kwd><kwd>plain</kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["machine learning", "plain"]
+
+
+def test_jats_nested_kwd_children_are_keywords_without_double_counting():
+    doc = _keywords_doc(
+        "<kwd-group><nested-kwd><kwd>parent</kwd>"
+        "<nested-kwd><kwd>child</kwd></nested-kwd></nested-kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["parent", "child"]
+
+
+@pytest.mark.parametrize(
+    ("article_attrs", "expected"),
+    [
+        ('xml:lang="en"', ["english", "untagged"]),
+        ('xml:lang="fr"', ["francais", "untagged"]),
+        ('xml:lang="EN"', ["english", "untagged"]),
+        ('xml:lang="en-US"', ["english", "untagged"]),
+        ("", ["english", "francais", "untagged"]),
+    ],
+    ids=[
+        "en-article",
+        "fr-article",
+        "upper-case-article",
+        "region-article",
+        "no-article-lang",
+    ],
+)
+def test_jats_kwd_group_language_must_match_article(
+    article_attrs: str, expected: list[str]
+):
+    doc = _keywords_doc(
+        '<kwd-group xml:lang="en"><kwd>english</kwd></kwd-group>'
+        '<kwd-group xml:lang="fr"><kwd>francais</kwd></kwd-group>'
+        "<kwd-group><kwd>untagged</kwd></kwd-group>",
+        article_attrs,
+    )
+
+    assert _body_keywords(doc) == expected
+
+
+@pytest.mark.parametrize("group_lang", ["EN", "en-US"])
+def test_jats_kwd_group_language_ignores_case_and_region(group_lang: str):
+    doc = _keywords_doc(
+        f'<kwd-group xml:lang="{group_lang}"><kwd>english</kwd></kwd-group>'
+        '<kwd-group xml:lang="fr"><kwd>francais</kwd></kwd-group>',
+        'xml:lang="en"',
+    )
+
+    assert _body_keywords(doc) == ["english"]
+
+
+def test_jats_kwd_inline_markup_does_not_split_words():
+    doc = _keywords_doc(
+        "<kwd-group><kwd><sup>18</sup>F-FDG</kwd><kwd>H<sub>2</sub>O</kwd>"
+        "<compound-kwd><compound-kwd-part>CO<sub>2</sub></compound-kwd-part>"
+        "<compound-kwd-part>capture</compound-kwd-part></compound-kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["18F-FDG", "H2O", "CO2 capture"]
+
+
+def test_jats_kwd_groups_of_non_keyword_types_are_skipped():
+    doc = _keywords_doc(
+        '<kwd-group kwd-group-type="author-keywords"><kwd>kept</kwd></kwd-group>'
+        '<kwd-group kwd-group-type="research-organism"><kwd>Mouse</kwd></kwd-group>'
+        '<kwd-group kwd-group-type="abbreviations"><kwd>DNA</kwd></kwd-group>'
+        "<kwd-group><kwd>untyped</kwd></kwd-group>"
+    )
+
+    assert _body_keywords(doc) == ["kept", "untyped"]
+
+
+def test_jats_book_part_meta_keywords_are_collected():
+    doc = _convert_jats_front(
+        "<front><book-part-meta><kwd-group><kwd>chapter</kwd></kwd-group>"
+        "</book-part-meta></front>"
+    )
+
+    assert _body_keywords(doc) == ["chapter"]
+
+
+def test_jats_sub_article_kwd_group_is_ignored():
+    doc = _keywords_doc(
+        "<kwd-group><kwd>main</kwd></kwd-group>",
+        extra=(
+            '<sub-article article-type="reply" id="sa1"><front-stub>'
+            "<kwd-group><kwd>reply-only</kwd></kwd-group></front-stub>"
+            "<body><p>Reply text.</p></body></sub-article>"
+        ),
+    )
+
+    assert _body_keywords(doc) == ["main"]
+
+
+def test_jats_keywords_appear_in_markdown_export():
+    doc = _keywords_doc(
+        "<kwd-group><kwd>alpha</kwd><kwd>beta</kwd></kwd-group>",
+        extra="<body><p>Body text.</p></body>",
+    )
+
+    assert doc.export_to_markdown() == "# Keyword Test\n\nBody text.\n\nalpha, beta"
+
+
 @pytest.mark.parametrize(
     "notes",
     [
