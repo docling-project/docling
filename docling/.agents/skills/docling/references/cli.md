@@ -187,6 +187,9 @@ docling report.pdf --enrich-picture-classes --output /tmp/
 docling report.pdf --enrich-picture-description --output /tmp/
 ```
 
+With `--table-mode accurate`, TableFormer can retry an incomplete table once with
+`fast` when its model files are available.
+
 ## Common situations
 
 | Situation | Handling |

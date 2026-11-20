@@ -252,6 +252,11 @@ doc_converter = DocumentConverter(
 
 Since docling 1.16.0: You can control which TableFormer mode you want to use. Choose between `TableFormerMode.FAST` (faster but less accurate) and `TableFormerMode.ACCURATE` (default) to receive better quality with difficult table structures.
 
+If `ACCURATE` predicts an incomplete table structure, Docling retries that table
+once with `FAST` when the FAST model files are available. The FAST model loads on
+demand. If the retry cannot produce a grid that retains the input text, Docling
+keeps the table text in a single cell.
+
 ```python
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, PdfFormatOption

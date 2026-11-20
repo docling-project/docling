@@ -74,6 +74,9 @@ Useful `PdfPipelineOptions` / base fields:
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 
+TableFormer `ACCURATE` can retry an incomplete table once with `FAST`. A failed
+retry keeps the table text in a single cell.
+
 `extract_form_fields=True` associates each widget with a field key from printed
 text, using page geometry. The key can be text in or beside its cell, or a
 paragraph that contains the widget. Checkbox and radio option text becomes an
