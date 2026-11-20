@@ -57,12 +57,13 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, ImageOps, UnidentifiedImageError
-from pydantic import AnyUrl, BaseModel, ValidationError
+from pydantic import AnyUrl, BaseModel
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.hyperlink import parse_hyperlink
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
@@ -2726,14 +2727,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @contextmanager
     def _use_hyperlink(self, tag: Tag):
-        old_hyperlink: Union[AnyUrl, Path, None] = None
-        new_hyperlink: Union[AnyUrl, Path, None] = None
         this_href = tag.get("href")
         if this_href is None:
             yield None
         else:
+            old_hyperlink: Union[AnyUrl, Path, None] = self.hyperlink
             if isinstance(this_href, str) and this_href:
-                old_hyperlink = self.hyperlink
                 try:
                     this_href = self._resolve_relative_path(this_href)
                 except ValueError:
@@ -2741,17 +2740,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     # directory (e.g. "/about" or "../index.html") is kept
                     # as written instead of failing the conversion.
                     pass
-                # ugly fix for relative links since pydantic does not support them.
-                try:
-                    new_hyperlink = AnyUrl(this_href)
-                except ValidationError:
-                    new_hyperlink = Path(this_href)
-                self.hyperlink = new_hyperlink
+                self.hyperlink = parse_hyperlink(this_href)
             try:
                 yield None
             finally:
-                if new_hyperlink:
-                    self.hyperlink = old_hyperlink
+                self.hyperlink = old_hyperlink
 
     @contextmanager
     def _use_format(self, tags: list[str]):

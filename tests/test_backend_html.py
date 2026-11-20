@@ -236,6 +236,17 @@ def test_caption_with_partial_link_has_no_hyperlink():
     assert captions[0].hyperlink is None
 
 
+def test_malformed_link_keeps_text_without_hyperlink():
+    """A malformed URL gives no hyperlink, and the next link is not affected."""
+    doc = _convert_html(
+        b'<html><body><p><a href="https://api.example.com:{port}/v1">API</a>'
+        b' and <a href="https://example.com/ok">ok</a></p></body></html>'
+    )
+
+    links = [(item.text, item.hyperlink) for item in doc.texts if item.text.strip()]
+    assert links == [("API and ", None), ("ok", AnyUrl("https://example.com/ok"))]
+
+
 def test_table_header_rowspan_without_body_does_not_crash():
     # A table whose only row is a `th` with rowspan (no body rows to span into)
     # used to raise IndexError: get_html_table_row_col counts no rows for an
