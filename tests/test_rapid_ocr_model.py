@@ -106,3 +106,32 @@ def test_rapidocr_pins_explicit_model_paths(
     assert params["Rec.model_path"] is not None
     assert "Det.lang_type" not in params
     assert "Rec.lang_type" not in params
+
+
+def test_rapidocr_onnxruntime_skips_the_cudnn_algorithm_search(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    params = _capture_params(
+        monkeypatch,
+        RapidOcrOptions(backend="onnxruntime"),
+        tmp_path,
+        resolved_device="cuda:0",
+    )
+    # RapidOCR defaults to EXHAUSTIVE, which re-searches convolution algorithms for
+    # every new input shape. Recognition feeds one text-line crop at a time, so the
+    # shape changes constantly and the search costs more than the inference it picks
+    # kernels for -- enough to make the GPU slower than the CPU.
+    assert (
+        params["EngineConfig.onnxruntime.cuda_ep_cfg.cudnn_conv_algo_search"]
+        == "DEFAULT"
+    )
+
+
+def test_rapidocr_onnxruntime_engine_receives_the_dml_choice(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    params = _capture_params(
+        monkeypatch, RapidOcrOptions(backend="onnxruntime"), tmp_path
+    )
+    # DirectML is selected from the engine config too, not from the per-model entries.
+    assert params["EngineConfig.onnxruntime.use_dml"] == params["Det.use_dml"]
