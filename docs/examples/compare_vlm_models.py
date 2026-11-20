@@ -178,11 +178,11 @@ if __name__ == "__main__":
         # OCR-focused markdown presets on CUDA / CPU
         ("nanonets_ocr2", TransformersVlmEngineOptions()),
         # Other presets with Ollama
-        ("deepseek_ocr", ApiVlmEngineOptions(runtime_type=VlmEngineType.API_OLLAMA)),
+        ("deepseek_ocr", ApiVlmEngineOptions(engine_type=VlmEngineType.API_OLLAMA)),
         # Other presets with LM Studio
         (
             "deepseek_ocr",
-            ApiVlmEngineOptions(runtime_type=VlmEngineType.API_LMSTUDIO),
+            ApiVlmEngineOptions(engine_type=VlmEngineType.API_LMSTUDIO),
         ),
     ]
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
         preset_configs = [
             (preset, runtime)
             for preset, runtime in preset_configs
-            if runtime.runtime_type != VlmEngineType.MLX
+            if runtime.engine_type != VlmEngineType.MLX
         ]
 
     rows = []
@@ -222,7 +222,7 @@ if __name__ == "__main__":
             sources=sources,
             converter=converter,
             preset_name=preset_name,
-            runtime_type=engine_options.runtime_type,
+            runtime_type=engine_options.engine_type,
         )
         rows.append(row)
 
