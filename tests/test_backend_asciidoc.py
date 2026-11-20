@@ -535,6 +535,86 @@ def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
     )
 
 
+def test_wrapped_line_stays_in_its_list_item() -> None:
+    # A line right below a list item is more of the text of that item. It used
+    # to close the list: the items after it started a new list, numbered from 1
+    # again, and the line became a paragraph under the next item.
+    source = b""". Download the archive
+for your platform
+.. Unpack it
+   into an empty folder
+. Run the installer +
+as an administrator
+// A comment does not end the text of the item.
+and wait
+
+Done.
+"""
+    doc = _convert_adoc(source)
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == [
+        "Download the archive for your platform",
+        "Unpack it into an empty folder",
+        "Run the installer\nas an administrator and wait",
+    ]
+    download, unpack, run = list_items
+    assert unpack.parent.resolve(doc).parent == download.get_ref()
+    assert run.parent == download.parent
+    body_texts = [
+        item.text for item in doc.texts if item.content_layer == ContentLayer.BODY
+    ]
+    assert body_texts[3:] == ["Done."]
+
+
+def test_wrapped_text_of_a_list_item_ends_at_a_blank_line_or_a_block() -> None:
+    source = b"""* apple
+
+Not in the list.
+
+* banana
++
+----
+code
+----
+* cherry
+== Section
+"""
+    doc = _convert_adoc(source)
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == ["apple", "banana", "cherry"]
+    paragraph = next(item for item in doc.texts if item.text == "Not in the list.")
+    assert paragraph.parent == doc.body.get_ref()
+    code = next(item for item in doc.texts if isinstance(item, CodeItem))
+    assert code.parent == list_items[1].get_ref()
+    assert [item.text for item in doc.texts if item.label == "section_header"] == [
+        "Section"
+    ]
+
+
+@pytest.mark.parametrize("delimiter", ["====", "****", "____", "--", "++++"])
+def test_delimited_block_ends_the_text_of_a_list_item(delimiter: str) -> None:
+    # The opening delimiter of a block is not passed on as a line, so the text
+    # of the block was read as more of the item text, and so was the text of
+    # a paragraph right above a block.
+    source = f"""* apple
+{delimiter}
+Block text
+{delimiter}
+
+A paragraph
+{delimiter}
+More block text
+{delimiter}
+""".encode()
+    doc = _convert_adoc(source)
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == ["apple"]
+    assert "Block text" not in list_items[0].text
+    body_texts = [item.text for item in doc.texts if not isinstance(item, ListItem)]
+    assert "A paragraph" in body_texts
+    assert "A paragraph More block text" not in body_texts
+
+
 def test_text_after_a_nested_list_is_not_part_of_the_list() -> None:
     # Ending a list used to close only its innermost level, so the paragraph
     # after a nested list was added to the outer list group, and so was the
