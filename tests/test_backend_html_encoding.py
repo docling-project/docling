@@ -82,3 +82,18 @@ def test_utf16_and_utf32_page_with_ascii_text(encoding: str):
     source = _page("plain text").encode(encoding)
 
     assert _convert_to_texts(source) == ["Doc", "plain text"]
+
+
+@pytest.mark.parametrize(
+    ("source", "texts"),
+    [
+        (_page("Résumé\x00 text").encode(), ["Doc", "Résumé text"]),
+        (_page("plain\x00 text").encode(), ["Doc", "plain text"]),
+        (b"<p>ab</p>\x00<p>c</p>", ["ab", "c"]),
+        (_page("<img src='a.png' alt='Lo\x00go'>").encode(), ["Doc", "Logo"]),
+    ],
+    ids=["utf8", "ascii", "short", "alt"],
+)
+def test_page_with_nul_byte(source: bytes, texts: list[str]):
+    """A stray NUL byte neither changes the encoding nor stays in the text."""
+    assert _convert_to_texts(source) == texts
