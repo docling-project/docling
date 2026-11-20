@@ -784,12 +784,15 @@ both, and applies them to every reference:
   the proxy.
 - Other URL schemes are refused.
 
-A refused reference stops the conversion with an error that lists it.
+A refused reference stops the conversion of an XBRL instance with an error that
+lists it.
 
 The same options apply to inline XBRL (iXBRL) reports. Docling recognizes them
 by the inline XBRL namespace that the root `html` element declares, and converts
-them with the XBRL backend instead of the HTML backend. Without the `xbrl`
-extra, converting such a report raises an error that asks you to install it.
+them with the XBRL backend. The document contains the full HTML text of the
+report and, as key-value items, its numeric facts. When the facts cannot be
+read (no `xbrl` extra, no fetch option set, or a taxonomy that does not load),
+Docling logs a warning and converts the report as HTML only.
 
 Reports from SEC EDGAR reference their company-specific extension taxonomy with
 a relative path. When you convert from a URL with `enable_remote_fetch=True`,
