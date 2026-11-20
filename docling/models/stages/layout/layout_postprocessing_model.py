@@ -6,6 +6,7 @@
 Runs after the layout (prediction) stage. It always computes the page
 ``layout_score`` and, unless disabled, finalizes the raw clusters with
 ``LayoutPostprocessor`` (cell assignment, empty-cluster handling, etc.).
+Only surviving model clusters contribute to the score after post-processing.
 """
 
 from __future__ import annotations
@@ -58,13 +59,19 @@ class LayoutPostprocessingModel(BaseLayoutPostprocessingModel):
                 raw_clusters = page.predictions.layout.clusters
 
                 if self.options.run_postprocessor:
+                    model_cluster_ids = {cluster.id for cluster in raw_clusters}
                     processed_clusters = LayoutPostprocessor(
                         page, raw_clusters, self.options
                     ).postprocess()
                     # Note: LayoutPostprocessor updates page.cells and
                     # page.parsed_page internally.
                     prediction = LayoutPrediction(clusters=processed_clusters)
-                    clusters_for_score = processed_clusters
+                    # Orphan clusters carry text confidence, not layout confidence.
+                    clusters_for_score = [
+                        cluster
+                        for cluster in processed_clusters
+                        if cluster.id in model_cluster_ids
+                    ]
 
                     if settings.debug.visualize_layout:
                         draw_clusters_and_cells_side_by_side(
