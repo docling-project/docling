@@ -380,7 +380,10 @@ class _NativeWhisperModel:
         convo: list[_ConversationItem] = []
         for _ in result["segments"]:
             item = _ConversationItem(
-                start_time=_["start"], end_time=_["end"], text=_["text"], words=[]
+                start_time=_["start"],
+                end_time=_["end"],
+                text=_["text"].strip(),
+                words=[],
             )
             if "words" in _ and self.word_timestamps:
                 item.words = []
