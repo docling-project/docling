@@ -414,6 +414,8 @@ class TextHelperMixin:
                 math_text = self._clean_math(node.latex_verbatim(), node.envname)
                 if math_text:
                     text_buffer.append(InlineFormula(math_text))
+            elif isinstance(node, LatexSpecialsNode):
+                text_buffer.append(SPECIALS_TEXT.get(node.specials_chars, ""))
             elif isinstance(node, LatexGroupNode):
                 self._append_inline_nodes(
                     node.nodelist or [],
