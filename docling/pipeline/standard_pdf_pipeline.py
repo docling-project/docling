@@ -693,7 +693,8 @@ class StandardPdfPipeline(ConvertPipeline):
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(
             options=ReadingOrderOptions(
-                use_page_separators=self.pipeline_options.use_reading_order_separators
+                use_page_separators=self.pipeline_options.use_reading_order_separators,
+                page_direction=self.pipeline_options.reading_order_page_direction,
             )
         )
         self.heading_hierarchy_model = HeadingHierarchyModel(

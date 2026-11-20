@@ -69,6 +69,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
 | `script_position_options` | Mark superscript and subscript runs; off by default |
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
+| `reading_order_page_direction` | Read right-to-left pages (Hebrew, Arabic) in RTL order: `ltr` (default), `rtl`, or per-page `auto` |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
