@@ -936,6 +936,45 @@ def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
     ], "the footnote body must be recovered, not silently dropped"
 
 
+def test_odt_footnote_in_table_cell_is_not_spliced(tmp_path: Path):
+    """A footnote cited in a table cell stays out of the cell text, as it does in
+    a paragraph. Its body is a footnote item."""
+    path = tmp_path / "table_footnote.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(
+        Element.from_tag(
+            '<table:table table:name="T"><table:table-row>'
+            "<table:table-cell><text:p>Year</text:p></table:table-cell>"
+            "<table:table-cell><text:p>Revenue</text:p></table:table-cell>"
+            "</table:table-row><table:table-row>"
+            "<table:table-cell><text:p>2024</text:p></table:table-cell>"
+            "<table:table-cell><text:p>42 EUR"
+            '<text:note text:id="n1" text:note-class="footnote">'
+            "<text:note-citation>1</text:note-citation>"
+            "<text:note-body><text:p>Audited figures.</text:p></text:note-body>"
+            "</text:note></text:p></table:table-cell>"
+            "</table:table-row></table:table>"
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Year",
+        "Revenue",
+        "2024",
+        "42 EUR",
+    ]
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Audited figures."]
+
+
 def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
     """A comment (office:annotation), as LibreOffice Writer saves it, must not be
     spliced into the paragraph, footnote or table cell that anchors it. A reply
