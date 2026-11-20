@@ -72,7 +72,7 @@ def main():
     vlm_options = VlmConvertOptions.from_preset(
         "granite_docling",
         engine_options=ApiVlmEngineOptions(
-            runtime_type=VlmEngineType.API,
+            engine_type=VlmEngineType.API,
             url="http://localhost:8000/v1/chat/completions",
             concurrency=BATCH_SIZE,
         ),
