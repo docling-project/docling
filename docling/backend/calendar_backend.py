@@ -54,7 +54,11 @@ def read_calendar_text(raw: bytes, encoding: str | None) -> str:
     ascii_compatible = not raw.startswith(_WIDE_BOMS)
     if encoding is not None:
         try:
-            ascii_compatible = _FOLD_SAMPLE.encode(encoding) == _FOLD_SAMPLE.encode()
+            # utf-8-sig puts a BOM before the sample, but it is still plain UTF-8.
+            ascii_compatible = (
+                codecs.lookup(encoding).name == "utf-8-sig"
+                or _FOLD_SAMPLE.encode(encoding) == _FOLD_SAMPLE.encode()
+            )
         except LookupError:
             pass  # decode_text reports the unknown codec
     if ascii_compatible:
