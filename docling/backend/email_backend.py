@@ -40,6 +40,7 @@ _MAILPARSER_AVAILABLE: bool = False
 _MAILPARSER_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     import mailparser
+    from mailparser.utils import ported_string
 
     _MAILPARSER_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -97,6 +98,32 @@ _MAILPARSER_BODY_DELIMITER = "\n--- mail_boundary ---\n"
 class _BodyParagraph:
     text: str
     content_layer: ContentLayer
+
+
+def _unflow(text: str, delsp: bool) -> str:
+    """Join the soft line breaks of a `format=flowed` text (RFC 3676, 4.2).
+
+    A line ending in a space continues on the next line with the same quote
+    depth. With `delsp=yes`, used for languages written without spaces, that
+    space is not part of the text. The signature separator `-- ` is never
+    flowed.
+    """
+    lines: list[tuple[str, int]] = []
+    flowing = False
+    for line in re.sub(r"\r\n|\r", "\n", text).split("\n"):
+        stripped = line.lstrip(">")
+        depth = len(line) - len(stripped)
+        if stripped.startswith(" "):
+            stripped = stripped[1:]
+        prefix = ">" * depth + " " if depth else ""
+        if flowing and lines and lines[-1][1] == depth:
+            lines[-1] = (lines[-1][0] + stripped, depth)
+        else:
+            lines.append((prefix + stripped, depth))
+        flowing = stripped.endswith(" ") and stripped != "-- "
+        if flowing and delsp:
+            lines[-1] = (lines[-1][0][:-1], depth)
+    return "\n".join(line for line, _ in lines)
 
 
 def _is_calendar_part(part: Message) -> bool:
@@ -479,8 +506,21 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
+            # mailparser keeps only the decoded text of a part, so the flowed
+            # parts are found again by their text.
+            flowed = {
+                ported_string(
+                    part.get_payload(decode=True),
+                    encoding=part.get_content_charset("utf-8"),
+                ): str(part.get_param("delsp", "")).lower() == "yes"
+                for part in self.mail.message.walk()
+                if part.get_content_type() == "text/plain"
+                and str(part.get_param("format", "")).lower() == "flowed"
+            }
             paragraphs: list[_BodyParagraph] = []
             for part in self.mail.text_plain:
+                if part in flowed:
+                    part = _unflow(part, flowed[part])
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
                     for paragraph in self._split_paragraphs(part)
