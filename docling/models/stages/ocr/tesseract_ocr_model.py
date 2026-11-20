@@ -193,6 +193,8 @@ class TesseractOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
+                        if self.options.convert_to_grayscale:
+                            high_res_image = high_res_image.convert("L")
 
                         local_reader = self._reader
                         self._osd_reader.SetImage(high_res_image)
@@ -213,7 +215,10 @@ class TesseractOcrModel(BaseOcrModel):
                             # to OCR in the hope OCR will succeed while OSD failed
                             if self._auto_script:
                                 continue
-                        else:
+                        elif (
+                            osd["orient_conf"]
+                            >= self.options.orientation_confidence_threshold
+                        ):
                             doc_orientation = parse_tesseract_orientation(
                                 osd["orient_deg"]
                             )
