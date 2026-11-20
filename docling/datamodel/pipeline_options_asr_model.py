@@ -72,7 +72,7 @@ class ApiAsrOptions(BaseAsrOptions):
     ``/audio/transcriptions`` endpoint with ``response_format=verbose_json``, and the
     timed segments of the answer become the text items of the document. No model is
     loaded in the Docling process, and FFmpeg is not needed for audio files (the
-    server decodes them).
+    server decodes them) unless ``max_chunk_seconds`` is set.
 
     Notes:
         Requires ``enable_remote_services=True`` on the parent pipeline options to
@@ -156,6 +156,21 @@ class ApiAsrOptions(BaseAsrOptions):
             )
         ),
     ] = 600.0
+    max_chunk_seconds: Annotated[
+        Optional[float],
+        Field(
+            gt=0,
+            description=(
+                "Split the audio into pieces of at most this many seconds and send "
+                "one request per piece, for servers that limit the upload size. Each "
+                "piece is 16 kHz mono WAV (about 1.9 MB per minute), and the times of "
+                "its segments are shifted by the piece's start. OpenAI accepts 25 MB, "
+                "so 600 is a safe value there. Requires FFmpeg. When empty, the whole "
+                "file is sent in one request."
+            ),
+            examples=[600.0],
+        ),
+    ] = None
 
 
 class InlineAsrOptions(BaseAsrOptions):
