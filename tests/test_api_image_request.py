@@ -527,3 +527,47 @@ class TestApiImageRequest:
         assert response.text == "done"
         assert response.num_tokens == 3
         assert response.usage == {"total_tokens": 3}
+
+
+class TestApiImageRequestStreamingErrors:
+    """An error the server sends inside the SSE stream is reported, not read as an empty answer."""
+
+    @staticmethod
+    def _run(mock_session_factory, lines):
+        class _StreamingResponse:
+            ok = True
+            text = ""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def iter_lines(self, decode_unicode=True):
+                yield from lines
+
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            _StreamingResponse()
+        )
+        return api_image_request_streaming(
+            image=Image.new("RGB", (10, 10), color="red"),
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_error_chunk_without_choices_is_reported_as_a_failure(
+        self, mock_session_factory
+    ):
+        response = self._run(
+            mock_session_factory,
+            [
+                'data: {"choices": [{"delta": {"content": "partial"}}]}',
+                'data: {"error": {"message": "context length exceeded", "type": "bad"}}',
+            ],
+        )
+
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        assert response.error is not None
+        assert "context length exceeded" in response.error
