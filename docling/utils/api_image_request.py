@@ -157,8 +157,16 @@ def _extract_total_tokens(usage: Any) -> int | None:
     return None
 
 
-def _response_preview(text: str, *, limit: int = 500) -> str:
+def _response_preview(
+    text: str, *, limit: int = 500, headers: dict[str, str] | None = None
+) -> str:
     stripped = text.strip()
+    # Error bodies may echo the request's credentials (e.g. a 401 quoting the
+    # API key); mask header values and their bare tokens before logging.
+    for value in (headers or {}).values():
+        for secret in {value, value.rpartition(" ")[2]}:
+            if len(secret) >= 8:
+                stripped = stripped.replace(secret, "[REDACTED]")
     if len(stripped) <= limit:
         return stripped
     return f"{stripped[:limit]}..."
@@ -259,10 +267,10 @@ def api_image_request(
                     "Error calling the API. status=%s content_type=%s response=%r",
                     r.status_code,
                     r.headers.get("content-type"),
-                    _response_preview(r.text),
+                    _response_preview(r.text, headers=headers),
                 )
                 return _failed_request(
-                    f"HTTP {r.status_code}: {_response_preview(r.text)}"
+                    f"HTTP {r.status_code}: {_response_preview(r.text, headers=headers)}"
                 )
 
             response_payload = _parse_response_json(r)
@@ -375,10 +383,11 @@ def api_image_request_streaming(
                             "status=%s content_type=%s response=%r",
                             r.status_code,
                             r.headers.get("content-type"),
-                            _response_preview(r.text),
+                            _response_preview(r.text, headers=headers),
                         )
                         return _failed_streaming_request(
-                            f"HTTP {r.status_code}: {_response_preview(r.text)}"
+                            f"HTTP {r.status_code}: "
+                            f"{_response_preview(r.text, headers=headers)}"
                         )
 
                     full_text = []
