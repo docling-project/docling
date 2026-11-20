@@ -1580,6 +1580,37 @@ class ConvertPipelineOptions(PipelineOptions):
             )
         ),
     ] = _default_chart_extraction_options
+    do_media_conversion: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert the video and audio files that slides play (PPTX, ODP) with the audio or video "
+                "pipeline. The transcript, and the sampled frames of a video, go in the track of each "
+                "media object. Needs the `asr` extra and ffmpeg. A linked file "
+                "is fetched only when the backend options `enable_remote_fetch` or `enable_local_fetch` "
+                "allow it. Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Hold the video and audio files that slides play (PPTX, ODP) in the track of each "
+                "media object, so that e.g. a DocLang archive stores them. A linked file is fetched "
+                "only when the backend options `enable_remote_fetch` or `enable_local_fetch` allow it. "
+                "Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    media_asr_options: Annotated[
+        InlineAsrOptions,
+        Field(
+            description=(
+                "Speech recognition model for the media files of `do_media_conversion`."
+            )
+        ),
+    ] = asr_model_specs.WHISPER_TINY
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -1880,6 +1911,17 @@ class AsrPipelineOptions(PipelineOptions):
             )
         ),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the audio (or video) of the transcript "
+                "track, so that e.g. a DocLang archive stores it. The document then "
+                "holds the input's local path. Only file inputs are supported; for a "
+                "stream, no media is kept."
+            )
+        ),
+    ] = False
 
 
 from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
@@ -1901,6 +1943,16 @@ class VideoPipelineOptions(PipelineOptions):
         InlineAsrOptions | ApiAsrOptions,
         Field(description="ASR model configuration for the video audio track."),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the video of the track, so that e.g. a "
+                "DocLang archive stores it. The document then holds the input's local "
+                "path. Only file inputs are supported; for a stream, no media is kept."
+            )
+        ),
+    ] = False
 
     frame_sampling_mode: Annotated[
         VideoFrameSamplingMode,

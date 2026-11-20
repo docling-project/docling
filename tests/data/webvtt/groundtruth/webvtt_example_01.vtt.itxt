@@ -1,14 +1,15 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: text: We are in New York City
-  item-2 at level 1: text: We’re actually at the Lucern Hotel, just down the street
-  item-3 at level 1: text: from the American Museum of Natural History
-  item-4 at level 1: text: And with me is Neil deGrasse Tyson
-  item-5 at level 1: text: Astrophysicist, Director of the Hayden Planetarium
-  item-6 at level 1: text: at the AMNH.
-  item-7 at level 1: text: Thank you for walking down here.
-  item-8 at level 1: text: And I want to do a follow-up on the last conversation we did.
-  item-9 at level 1: text: When we e-mailed—
-  item-10 at level 1: text: Didn’t we talk about enough in that conversation?
-  item-11 at level 1: text: No! No no no no; 'cos 'cos obviously 'cos
-  item-12 at level 1: text: Laughs
-  item-13 at level 1: text: You know I’m so excited my glasses are falling off here.
+    item-1 at level 1: track: ignored
+    item-2 at level 2: text: We are in New York City
+    item-3 at level 2: text: We’re actually at the Lucern Hotel, just down the street
+    item-4 at level 2: text: from the American Museum of Natural History
+    item-5 at level 2: text: And with me is Neil deGrasse Tyson
+    item-6 at level 2: text: Astrophysicist, Director of the Hayden Planetarium
+    item-7 at level 2: text: at the AMNH.
+    item-8 at level 2: text: Thank you for walking down here.
+    item-9 at level 2: text: And I want to do a follow-up on the last conversation we did.
+    item-10 at level 2: text: When we e-mailed—
+    item-11 at level 2: text: Didn’t we talk about enough in that conversation?
+    item-12 at level 2: text: No! No no no no; 'cos 'cos obviously 'cos
+    item-13 at level 2: text: Laughs
+    item-14 at level 2: text: You know I’m so excited my glasses are falling off here.
