@@ -82,9 +82,9 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
 )
 
 _AUDIO_SUFFIX_TO_MIMETYPE = {
-    ".wav": "audio/x-wav",
-    ".mp3": "audio/mp3",
-    ".m4a": "audio/m4a",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
     ".aac": "audio/aac",
     ".ogg": "audio/ogg",
     ".flac": "audio/flac",
@@ -93,7 +93,7 @@ _AUDIO_SUFFIX_TO_MIMETYPE = {
 
 def _audio_mimetype(filename: str) -> str:
     suffix = Path(filename).suffix.lower()
-    return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/x-wav")
+    return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/wav")
 
 
 def _keep_media(conv_res: ConversionResult) -> None:
