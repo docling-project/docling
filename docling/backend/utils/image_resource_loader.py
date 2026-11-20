@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
-from urllib.parse import urljoin, urlparse, urlsplit
+from urllib.parse import unquote, urljoin, urlparse, urlsplit
 from urllib.request import url2pathname
 
 import certifi
@@ -36,7 +36,7 @@ from requests.utils import get_environ_proxies, select_proxy
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import DEFAULT_MAX_IMAGE_PIXELS
 from docling.exceptions import OperationNotAllowed
-from docling.utils.image_utils import check_image_pixels
+from docling.utils.image_utils import check_image_pixels, open_image
 
 _log = logging.getLogger(__name__)
 
@@ -334,7 +334,13 @@ class ImageResourceLoader:
             path = f"//{parsed.netloc}{path}"
         return url2pathname(path)
 
-    def resolve_relative_path(self, loc: str, base_path: Optional[str]) -> str:
+    def resolve_relative_path(
+        self, loc: str, base_path: Optional[str], *, decode_url_path: bool = False
+    ) -> str:
+        """Resolve a resource, optionally decoding local URL paths before confinement.
+
+        Native path callers keep percent characters unchanged by default.
+        """
         loc = loc.strip()
 
         # Strip file:// prefix for validation as local path
@@ -351,7 +357,15 @@ class ImageResourceLoader:
                 if ImageResourceLoader.is_remote_url(base_path):
                     abs_loc = urljoin(base_path, loc)
                 elif ImageResourceLoader.is_local_path(base_path):
-                    if ImageResourceLoader.is_absolute_path(loc):
+                    if decode_url_path and not ImageResourceLoader.is_absolute_path(
+                        loc
+                    ):
+                        parsed_loc = urlsplit(loc)
+                        if not parsed_loc.scheme:
+                            loc = unquote(parsed_loc.path)
+                    if ImageResourceLoader.is_absolute_path(loc) or (
+                        decode_url_path and loc.startswith(("/", "\\"))
+                    ):
                         raise ValueError(
                             f"Absolute paths are not allowed with local base_path: '{loc}'"
                         )
@@ -376,8 +390,8 @@ class ImageResourceLoader:
         try:
             img_data = self.load_image_data(src_url, base_path)
             if img_data:
-                img = Image.open(BytesIO(img_data))
-                # Image.open reads only the header: check the size before
+                img = open_image(BytesIO(img_data))
+                # open_image reads only the header: check the size before
                 # the pixels are decoded.
                 check_image_pixels(img.size, self.max_image_pixels)
                 img.load()

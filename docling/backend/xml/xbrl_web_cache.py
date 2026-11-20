@@ -12,6 +12,8 @@ local path for local references and downloads http(s) references with the
   or when they are inside the directories prepared by the backend (the copy of
   the instance and of the taxonomy folder);
 - other schemes than http(s) are refused;
+- http(s) URLs are refused when their cache file is not inside the cache
+  directory, e.g. for an empty host or `.` and `..` path segments;
 - http(s) requests, including every redirect, connect only to public, globally
   routable addresses, with the same checks as the image resource loader.
 """
@@ -233,14 +235,34 @@ class FetchPolicyWebCache(WebCache):  # type: ignore[misc]
         opener.add_handler(_HTTPOnlyRedirectHandler(self._on_refused))
         self._checked_opener = opener
 
+    def _cache_path_reason(self, url: str) -> str | None:
+        """Keep the cache file of an http(s) URL inside the cache directory."""
+        authority, _, path = url.partition("://")[2].partition("/")
+        # Same host split as `WebCache.urlToCacheFilepath`.
+        user, at, server = authority.partition("@")
+        host = (server if at else user).partition(":")[0]
+        parts = unquote(f"{host}/{path}").replace("\\", "/").split("/")
+        if not parts[0] or any(part in (".", "..") for part in parts):
+            return "URL host or path not allowed in the web cache"
+        cache_dir = Path(self.cacheDir).resolve()
+        cache_file = Path(self.urlToCacheFilepath(url, useRedirectFallback=False))
+        if not cache_file.resolve().is_relative_to(cache_dir):
+            return "Web cache file outside the cache directory"
+        return None
+
     def _refusal_reason(self, url: str, normalized: str) -> str | None:
+        remote = False
         for target in (url, normalized):
             scheme, sep, _ = target.partition("://")
             if sep and scheme in _REMOTE_SCHEMES:
-                # Downloads are checked by the handlers of the opener.
-                return None
-            if sep and scheme != "file":
+                if reason := self._cache_path_reason(target):
+                    return reason
+                remote = True
+            elif sep and scheme != "file":
                 return f"URL scheme not allowed: {scheme}"
+        if remote:
+            # Downloads are checked by the handlers of the opener.
+            return None
         if self.enable_local_fetch:
             return None
         local = normalized.removeprefix("file://").removeprefix("file:\\")

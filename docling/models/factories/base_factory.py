@@ -3,8 +3,9 @@
 
 import enum
 import logging
+import re
 from abc import ABCMeta
-from importlib.metadata import entry_points
+from importlib.metadata import EntryPoint, entry_points
 from typing import Generic, Optional, Type, TypeVar
 
 from pluggy import PluginManager
@@ -17,6 +18,33 @@ A = TypeVar("A", bound=BaseModelWithOptions)
 
 
 logger = logging.getLogger(__name__)
+
+# Distributions that ship Docling's own plugins.
+_INTERNAL_PLUGIN_DISTRIBUTIONS = frozenset({"docling", "docling-slim"})
+
+
+def _normalize_distribution_name(name: str) -> str:
+    """Normalize a distribution name as defined in PEP 503."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _is_internal_plugin(entry_point: EntryPoint) -> bool:
+    """Return True if the entry point is a plugin shipped by Docling itself.
+
+    The module name alone is not enough, because any installed distribution
+    can add modules to the ``docling`` package namespace. The entry point
+    must also be declared by one of Docling's own distributions.
+
+    This check controls which plugins Docling activates by default. It does
+    not restrict other installed distributions in general.
+    """
+    if not entry_point.module.startswith("docling."):
+        return False
+    dist = entry_point.dist
+    # The name is None when the distribution metadata has no Name field.
+    if dist is None or not dist.name:
+        return False
+    return _normalize_distribution_name(dist.name) in _INTERNAL_PLUGIN_DISTRIBUTIONS
 
 
 class FactoryMeta(BaseModel):
@@ -105,9 +133,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
             if plugin_manager.get_plugin(entry_point.name) is not None:
                 continue
 
-            if not allow_external_plugins and not entry_point.module.startswith(
-                "docling."
-            ):
+            if not allow_external_plugins and not _is_internal_plugin(entry_point):
                 logger.warning(
                     f"The plugin {entry_point.name} will not be loaded because Docling is being executed with allow_external_plugins=false."
                 )

@@ -6,7 +6,9 @@ import os
 import re
 import threading
 import time
+import zipfile
 from contextlib import nullcontext
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -410,6 +412,52 @@ def test_chart_caption_is_parented_to_the_chart_container():
     container = picture.parent.resolve(doc)
     assert caption.self_ref in [child.cref for child in container.children]
     assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+
+def _docx_with_chart_xml(rewrite) -> BytesIO:
+    """Build a copy of CHART_DOCX whose chart part is changed by ``rewrite``."""
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    entries["word/charts/chart1.xml"] = rewrite(chart).encode("utf-8")
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def _declare_huge_point_count(chart: str) -> str:
+    return re.sub(r'<c:ptCount val="\d+"/>', f'<c:ptCount val="{10**11}"/>', chart)
+
+
+def _add_point_at_huge_index(chart: str) -> str:
+    far_point = f'<c:pt idx="{10**9}"><c:v>9</c:v></c:pt>'
+    return chart.replace('<c:ptCount val="4"/>', '<c:ptCount val="4"/>' + far_point, 1)
+
+
+@pytest.mark.parametrize(
+    "rewrite", [_declare_huge_point_count, _add_point_at_huge_index]
+)
+def test_chart_table_is_sized_by_the_cached_points(rewrite):
+    """The chart table follows the cached points, not the declared indexes.
+
+    Before, a list entry was made for each index up to ``c:ptCount`` or the
+    highest ``c:pt@idx``, so a small chart part could use gigabytes of memory.
+    Now a large point count adds no rows, and a point at an index past the
+    table size limit is dropped.
+    """
+    stream = DocumentStream(name="chart.docx", stream=_docx_with_chart_xml(rewrite))
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    chart = _single_chart_picture(doc)
+
+    assert chart.meta.tabular_chart is not None
+    assert (
+        _grid_from_table_data(chart.meta.tabular_chart.chart_data)
+        == EXPECTED_CHART_GRID
+    )
 
 
 def test_is_rich_table_cell(docx_paths):
@@ -1011,6 +1059,26 @@ def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
         "Two paragraphs",
         "First\nJane Doe",
     ]
+
+
+def test_table_cell_text_reads_symbols_like_a_paragraph(tmp_path):
+    """A table cell reads ``w:sym`` and Symbol font text like a body paragraph."""
+    document = Document()
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 1).text = "sym"
+    table.cell(1, 1).text = "font"
+    sym_paragraph = table.cell(0, 0).paragraphs[0]
+    sym_paragraph.add_run("20")
+    _append_sym(sym_paragraph, "Symbol", "F0B0")
+    table.cell(1, 0).paragraphs[0].add_run("a").font.name = "Symbol"
+    document.add_paragraph("20")
+    _append_sym(document.paragraphs[-1], "Symbol", "F0B0")
+
+    doc = _convert_built(document, tmp_path)
+
+    cells = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cells[0::2] == ["20\N{DEGREE SIGN}", "\N{GREEK SMALL LETTER ALPHA}"]
+    assert doc.texts[0].text == "20\N{DEGREE SIGN}"
 
 
 def _table_with_grid_before(
@@ -1863,6 +1931,42 @@ def test_invisible_spacer_logic():
     )  # coloured
 
 
+@pytest.mark.parametrize(
+    "address, fragment, expected",
+    [
+        (
+            "https://example.org/guide",
+            "installation",
+            "https://example.org/guide#installation",
+        ),
+        ("manual.docx", "Installation", "manual.docx#Installation"),
+        (
+            "https://example.org/guide#installation",
+            "",
+            "https://example.org/guide#installation",
+        ),
+    ],
+)
+def test_hyperlink_preserves_external_fragment(
+    tmp_path: Path, address: str, fragment: str, expected: str
+):
+    source = Document()
+    paragraph = source.add_paragraph()
+    rel_id = source.part.relate_to(address, RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(paragraph._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), rel_id)
+    hyperlink.set(qn("w:anchor"), fragment)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "Install"
+
+    doc = _convert_built(source, tmp_path)
+
+    assert [(item.text, str(item.hyperlink)) for item in doc.texts] == [
+        ("Install", expected)
+    ]
+    assert doc.export_to_markdown() == f"[Install]({expected})"
+
+
 def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     """A single malformed hyperlink address (e.g. containing a space) must not
     raise a pydantic ValidationError that aborts the whole DOCX conversion.
@@ -2683,7 +2787,9 @@ _PLAIN_FOOTNOTE_BODY = (
 )
 
 
-def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
+def _docx_with_notes(
+    footnote_body: str = _PLAIN_FOOTNOTE_BODY, footnote_rels: str = ""
+):
     """Build a minimal DOCX with a real footnote and endnote, each preceded by
     Word's own separator/continuationSeparator placeholders (present in every
     Word-authored document, holding no user content).
@@ -2697,6 +2803,7 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
         footnote_body: The XML of the footnote body. Override it to place the
             footnote text inside markup that ``python-docx`` does not descend
             into.
+        footnote_rels: ``Relationship`` elements of the footnotes part.
     """
     import zipfile
     from io import BytesIO
@@ -2720,8 +2827,9 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
         entries = {name: src.read(name) for name in src.namelist()}
 
     w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    r_ns = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
     footnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:footnotes xmlns:w="{w_ns}">
+<w:footnotes xmlns:w="{w_ns}" xmlns:r="{r_ns}">
   <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
   <w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>
   <w:footnote w:id="2">{footnote_body}</w:footnote>
@@ -2734,6 +2842,11 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
 </w:endnotes>"""
     entries["word/footnotes.xml"] = footnotes_xml.encode("utf-8")
     entries["word/endnotes.xml"] = endnotes_xml.encode("utf-8")
+    if footnote_rels:
+        entries["word/_rels/footnotes.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+            f'relationships">{footnote_rels}</Relationships>'
+        ).encode()
 
     ct_key = "[Content_Types].xml"
     content_types = entries[ct_key].decode("utf-8")
@@ -2870,6 +2983,43 @@ def test_hidden_footnote_paragraph_is_left_out():
         if item.label == DocItemLabel.FOOTNOTE
     ]
     assert footnote_items == ["Shown note.", "An endnote body."]
+
+
+def test_footnote_hyperlink_keeps_its_target():
+    """A hyperlink in a footnote keeps the target from the footnotes part.
+
+    Regression test: note paragraphs were read against the document part's
+    relationships and joined into plain text, so the link target was lost.
+    """
+    note_body = (
+        "<w:p><w:r><w:t xml:space='preserve'>See </w:t></w:r>"
+        "<w:hyperlink r:id='rIdNote1'><w:r><w:t>the source</w:t></w:r>"
+        "</w:hyperlink></w:p><w:p><w:r><w:t>Second line.</w:t></w:r></w:p>"
+    )
+    note_rels = (
+        f'<Relationship Id="rIdNote1" Type="{RT.HYPERLINK}" '
+        'Target="https://example.org/note" TargetMode="External"/>'
+    )
+    stream = DocumentStream(
+        name="notes.docx",
+        stream=_docx_with_notes(footnote_body=note_body, footnote_rels=note_rels),
+    )
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.DOCX])
+        .convert(stream, raises_on_error=True)
+        .document
+    )
+
+    linked = [
+        (item.text, str(item.hyperlink))
+        for item in doc.texts
+        if item.label == DocItemLabel.FOOTNOTE and item.hyperlink is not None
+    ]
+    assert linked == [("the source", "https://example.org/note")]
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert "See [the source](https://example.org/note) Second line." in markdown
 
 
 _MC_BODY_BLOCK = """
@@ -3097,6 +3247,34 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
     assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
 
 
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        ("d", r"\left(x\right)"),
+        ("acc", r"\hat{x}"),
+        ("bar", r"\overline{x}"),
+        ("groupChr", r"\underbrace{x}"),
+    ],
+)
+def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expected):
+    """An OMML element without its optional properties child uses the defaults."""
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:{tag}><m:e><m:r><m:t>x</m:t></m:r></m:e></m:{tag}></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / f"equation_without_{tag}_properties.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
 def test_symbol_font_case_and_whitespace_resilience(tmp_path):
     """Symbol font detection handles case and whitespace variations defensively."""
     docx_path = tmp_path / "symbol_font_casing.docx"
@@ -3111,3 +3289,166 @@ def test_symbol_font_case_and_whitespace_resilience(tmp_path):
     doc = get_converter().convert(docx_path).document
     texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
     assert texts == ["\N{GREEK SMALL LETTER ALPHA}", "\N{GREEK SMALL LETTER ALPHA}"]
+
+
+def _docx_with_xml_node(insert):
+    """Build a DOCX with a heading, a two-run paragraph and a 1x2 table, then let
+    ``insert`` add an XML comment or processing instruction to word/document.xml."""
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    doc.add_heading("Title", 1)
+    paragraph = doc.add_paragraph("first run ")
+    paragraph.add_run("second run")
+    table = doc.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "cell A"
+    table.cell(0, 1).text = "cell B"
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    out = BytesIO()
+    with zipfile.ZipFile(buf) as src, zipfile.ZipFile(out, "w") as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == "word/document.xml":
+                changed = insert(data)
+                assert changed != data
+                data = changed
+            dst.writestr(info, data)
+    out.seek(0)
+    return out
+
+
+_COMMENT = b"<!-- Created by docx4j 8.2.8 (Apache licensed) -->"
+
+
+@pytest.mark.parametrize(
+    "insert",
+    [
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1), id="body"
+        ),
+        pytest.param(
+            lambda x: re.sub(rb"(<w:p>|<w:p [^>]*>)", rb"\1" + _COMMENT, x, count=1),
+            id="paragraph",
+        ),
+        pytest.param(lambda x: x.replace(b"<w:r>", b"<w:r>" + _COMMENT, 1), id="run"),
+        pytest.param(
+            lambda x: x.replace(b"<w:tc>", b"<w:tc>" + _COMMENT, 1), id="table-cell"
+        ),
+        pytest.param(
+            lambda x: re.sub(
+                rb"(<w:tr[ >][^>]*>|<w:tr>)", rb"\1" + _COMMENT, x, count=1
+            ),
+            id="table-row",
+        ),
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body><?producer note?>", 1),
+            id="processing-instruction",
+        ),
+    ],
+)
+def test_xml_comments_and_processing_instructions_keep_body_text(insert):
+    """Regression test: an XML comment or processing instruction in the document
+    part (docx4j writes one at the start of the body) used to fail the whole
+    conversion with ``ValueError: Invalid input tag``, or drop the text of the
+    table it was in."""
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+    markdown = result.document.export_to_markdown()
+    for text in ("Title", "first run", "second run", "cell A", "cell B"):
+        assert text in markdown
+
+
+def test_xml_comment_text_goes_to_notes():
+    """XML comments in the document part are kept in the NOTES layer, out of the
+    body; blank comments and processing instructions are dropped."""
+
+    def insert(data):
+        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT + b"<!--   -->", 1)
+        # indented, in a paragraph that keeps its whitespace, so the comment has a tail
+        data = re.sub(
+            rb"<w:p( [^>]*)?>",
+            rb'<w:p\1 xml:space="preserve"><!-- indented -->\n  ',
+            data,
+            count=1,
+        )
+        data = data.replace(b">first run <", b">first <!-- inline -->run <", 1)
+        return data.replace(b"<w:tc>", b"<w:tc><?producer note?>", 1)
+
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    notes = [
+        item.text
+        for item, _ in doc.iterate_items(included_content_layers={ContentLayer.NOTES})
+        if isinstance(item, TextItem)
+    ]
+    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "indented", "inline"]
+    markdown = doc.export_to_markdown()
+    assert "# Title" in markdown
+    assert "first run second run" in markdown
+    assert "docx4j" not in markdown
+    assert "indented" not in markdown
+    assert "inline" not in markdown
+    assert "producer" not in markdown
+
+
+def test_xml_comments_in_footnotes_are_removed():
+    """python-docx loads footnotes and endnotes as plain parts, which the backend
+    parses itself: their XML comments and processing instructions are removed
+    too, and dropped like those of the other parts."""
+    body = (
+        "<w:p><!-- note --><w:r><w:t>Smith, J. <!-- inline -->(2020).</w:t></w:r>"
+        "<?producer note?><w:r><w:t> Example Study.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(name="notes.docx", stream=_docx_with_notes(body))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    footnotes = [item.text for item in doc.texts if item.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Smith, J. (2020). Example Study.", "An endnote body."]
+    assert not [item for item in doc.texts if item.content_layer == ContentLayer.NOTES]
+
+
+def test_xml_comments_in_charts_are_removed(monkeypatch):
+    """python-docx loads a chart as a plain part, which the backend parses itself:
+    its XML comments and processing instructions do not stop the chart's
+    classification or drop its data."""
+    import zipfile
+    from io import BytesIO
+
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart_xml = entries["word/charts/chart1.xml"]
+    for old, new in [
+        (b"<c:plotArea>", b"<c:plotArea><!-- x --><?producer note?>"),
+        (b"<c:v>4.3</c:v>", b"<c:v>4<!-- x -->.3</c:v>"),
+    ]:
+        assert chart_xml.count(old) == 1
+        chart_xml = chart_xml.replace(old, new)
+    entries["word/charts/chart1.xml"] = chart_xml
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+
+    stream = DocumentStream(name="chart.docx", stream=buffer)
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+    chart = _single_chart_picture(doc)
+
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.LINE_CHART
+    )
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
+        EXPECTED_CHART_GRID
+    )

@@ -21,10 +21,7 @@ from docling_core.types.doc import (
 )
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
-from docling.backend.mspowerpoint_backend import (
-    MsPowerpointDocumentBackend,
-    _is_metafile,
-)
+from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.utils.charts import (
     MAX_CHART_TABLE_CELLS,
     _last_populated_row,
@@ -37,6 +34,7 @@ from docling.datamodel.pipeline_options import ConvertPipelineOptions
 from docling.document_converter import DocumentConverter, PowerpointFormatOption
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.utils.image_utils import is_metafile
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -989,7 +987,7 @@ def test_metafile_detection(image_bytes: bytes, expected: bool):
     only recognizes the placeable magic and EMF, so python-pptx raises while
     reading the picture and the bytes never reach this check.
     """
-    assert _is_metafile(image_bytes) is expected
+    assert is_metafile(image_bytes) is expected
 
 
 def _clear_pillow_wmf_handler(monkeypatch: pytest.MonkeyPatch) -> None:

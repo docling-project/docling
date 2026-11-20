@@ -492,6 +492,17 @@ The picture itself is empty unless you set `render_chart_images=True` in
 `MsPowerpointBackendOptions` or `MsExcelBackendOptions`. That draws each chart
 with LibreOffice.
 
+The chart types that Office 2016 added (waterfall, treemap, sunburst, funnel,
+Pareto, histogram, and box and whisker) also become classified pictures on a
+PowerPoint slide. Their data is the data that the chart is drawn from, as the
+file stores it. Each level of a treemap or sunburst gets a category column, outer
+level first. A histogram has no categories, so its data has only the value
+column. Office calculates histogram bins, quartiles and Pareto percentages each
+time it draws the chart, and the file does not store them, so they are not in
+the data. The picture shows the image that PowerPoint stores for these charts,
+when the file has one. LibreOffice does not draw them, so `render_chart_images`
+has no effect on them.
+
 ### Excel number formats
 
 By default, a number or date cell in an Excel sheet gets the text that Excel
@@ -734,6 +745,14 @@ location such as `file:///path/to/article.nxml` instead.
 Missing or damaged images produce a warning. The figure, its caption, and the
 rest of the article remain in the converted document. SVG figures are skipped.
 
+### Fetch HTML images from local files
+
+Set `fetch_images=True` and `enable_local_fetch=True` on `HTMLBackendOptions`.
+For stream inputs, set `source_uri` to the HTML file path or its `file://` URI.
+Relative image URLs are decoded once: `figure%20one.png` refers to `figure one.png`.
+The URL query and fragment are not part of the filename. Files outside the
+source document's directory are still blocked by the directory-confinement check.
+
 ### Fetch HTML images from remote hosts
 
 The HTML backend only downloads images referenced by a page when you opt in with
@@ -855,7 +874,10 @@ page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits
 the pixels (width x height) of one page; the default, 89,478,485, is the default
 of Pillow's `Image.MAX_IMAGE_PIXELS`. A larger first page rejects the document,
-and a larger later page fails that page:
+and a larger later page fails that page. Image inputs are decoded only as PNG,
+JPEG, TIFF, GIF, BMP or WEBP. The METS-GBS backend (`MetsGbsBackendOptions`)
+applies the same limit to each page image and to the page size in the hOCR, and
+skips a larger page with a warning:
 
 ```python
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -871,32 +893,37 @@ converter = DocumentConverter(
 )
 ```
 
-### Limits on the decompressed size of DOCX, XLSX and EPUB files
+### Limits on the decompressed size of DOCX, XLSX, PPTX and EPUB files
 
-DOCX, XLSX and EPUB files are ZIP archives, so a small file can decompress to a
+DOCX, XLSX, PPTX and EPUB files are ZIP archives, so a small file can decompress to a
 much larger size. Docling checks the decompressed sizes that the archive declares
 before it parses the file, and stops each read once the decompressed bytes go
 above the limit. A file that exceeds a limit fails to convert with an
 `ArchiveLimitError`, which is a `DocumentLoadError`.
 
-| Option | `MsWordBackendOptions` / `MsExcelBackendOptions` | `EpubBackendOptions` |
+| Option | `MsWordBackendOptions` / `MsExcelBackendOptions` / `MsPowerpointBackendOptions` | `EpubBackendOptions` |
 | --- | --- | --- |
 | `max_file_bytes` | 128 MiB per member | 10 MB per content document |
 | `max_total_bytes` | 512 MiB for all members | 100 MB for all content documents |
 | `max_member_count` | 10,000 members | 1,000 content documents |
 
-The DOCX and XLSX limits apply to every member of the package, because
-python-docx and openpyxl load the package members into memory. The EPUB limits
+The DOCX, XLSX and PPTX limits apply to every member of the package, because
+python-docx, openpyxl and python-pptx load the package members into memory. The EPUB limits
 apply to the container, the package document and the content documents in the
 spine, and also to the members extracted for image processing. Raise the limits
 for large trusted files:
 
 ```python
-from docling.datamodel.backend_options import MsExcelBackendOptions, MsWordBackendOptions
+from docling.datamodel.backend_options import (
+    MsExcelBackendOptions,
+    MsPowerpointBackendOptions,
+    MsWordBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import (
     DocumentConverter,
     ExcelFormatOption,
+    PowerpointFormatOption,
     WordFormatOption,
 )
 
@@ -907,6 +934,35 @@ doc_converter = DocumentConverter(
         ),
         InputFormat.XLSX: ExcelFormatOption(
             backend_options=MsExcelBackendOptions(max_total_bytes=2 * 1024**3)
+        ),
+        InputFormat.PPTX: PowerpointFormatOption(
+            backend_options=MsPowerpointBackendOptions(max_file_bytes=256 * 1024 * 1024)
+        ),
+    }
+)
+```
+
+### Limit on repeated cells in ODS files
+
+An ODS sheet can repeat a row or a cell many times with one attribute
+(`table:number-rows-repeated` or `table:number-columns-repeated`). The ODS
+backend processes each copy, so a small file can declare millions of cells.
+`OdsBackendOptions.max_repeated_cells` limits the cells that repetition adds to
+a workbook, in addition to the cells written in the file. The default is
+100,000. Trailing empty rows and cells do not count. When a workbook goes over
+the limit, each repetition keeps only the copies that fit, Docling logs a
+warning, and the cells written in the file are kept. Raise the limit for large
+trusted files:
+
+```python
+from docling.datamodel.backend_options import OdsBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, OdsFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.ODS: OdsFormatOption(
+            backend_options=OdsBackendOptions(max_repeated_cells=1_000_000)
         ),
     }
 )

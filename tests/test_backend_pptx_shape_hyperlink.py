@@ -5,10 +5,12 @@
 
 from pathlib import Path
 
+import pytest
 from docling_core.types.doc import ContentLayer, TextItem
 from pptx import Presentation
 from pptx.util import Inches
 
+from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import DoclingDocument
 
 from .test_backend_pptx import get_converter
@@ -93,3 +95,65 @@ def test_pptx_slide_jump_action_is_not_a_hyperlink(tmp_path: Path):
     doc = _convert(prs, tmp_path / "slide_jump.pptx")
 
     assert _links_by_text(doc) == {"Go to the next slide": None}
+
+
+@pytest.mark.parametrize(
+    "address",
+    ["https://[broken", "https://broken]", "https://[not-ipv6]/"],
+)
+def test_malformed_shape_hyperlink_keeps_the_slide_text(tmp_path: Path, address: str):
+    """``urlparse`` rejects a bracketed host before the URL check can.
+
+    The shape text and the rest of the slide stay, and the bad target is omitted.
+    """
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    link = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+    link.text_frame.text = "Link text"
+    link.click_action.hyperlink.address = address
+    later = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+    later.text_frame.text = "Following text"
+    source = tmp_path / "malformed.pptx"
+    prs.save(source)
+
+    result = get_converter().convert(source)
+
+    assert result.status == ConversionStatus.SUCCESS
+    doc = result.document
+    assert _links_by_text(doc) == {"Link text": None, "Following text": None}
+    markdown = doc.export_to_markdown()
+    assert "Link text" in markdown
+    assert "Following text" in markdown
+    assert address not in markdown
+
+
+def test_malformed_shape_hyperlink_does_not_stop_the_next_file(tmp_path: Path):
+    def write(name: str, address: str) -> Path:
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+        box.text_frame.text = "Link text"
+        box.click_action.hyperlink.address = address
+        path = tmp_path / name
+        prs.save(path)
+        return path
+
+    results = list(
+        get_converter().convert_all(
+            [
+                write("malformed.pptx", "https://[broken"),
+                write("valid.pptx", "https://example.org/valid"),
+            ],
+            raises_on_error=False,
+        )
+    )
+
+    assert [result.status for result in results] == [
+        ConversionStatus.SUCCESS,
+        ConversionStatus.SUCCESS,
+    ]
+    assert "Link text" in results[0].document.export_to_markdown()
+    assert (
+        "[Link text](https://example.org/valid)"
+        in results[1].document.export_to_markdown()
+    )

@@ -52,7 +52,7 @@ def run_lm_studio_example(input_doc_path: Path):
     picture_desc_options = PictureDescriptionVlmEngineOptions.from_preset(
         "granite_vision",
         engine_options=ApiVlmEngineOptions(
-            runtime_type=VlmEngineType.API_LMSTUDIO,
+            engine_type=VlmEngineType.API_LMSTUDIO,
             # url is pre-configured for LM Studio (http://localhost:1234/v1/chat/completions)
             # model name is pre-configured from the preset
             timeout=90,
@@ -130,7 +130,7 @@ def run_watsonx_example(input_doc_path: Path):
     picture_desc_options = PictureDescriptionVlmEngineOptions.from_preset(
         "granite_vision",
         engine_options=ApiVlmEngineOptions(
-            runtime_type=VlmEngineType.API,  # Generic API type
+            engine_type=VlmEngineType.API,  # Generic API type
             url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
             headers={
                 "Authorization": "Bearer " + _get_iam_access_token(api_key=api_key),

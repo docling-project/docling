@@ -235,6 +235,25 @@ def test_table_rows_over_several_lines_count_duplicated_cells() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("cell", "expected"),
+    [
+        (b"1000000000+|wide", [("wide", 1, 0, 1, 2), ("x", 2, 0, 1, 1)]),
+        (b".1000000000+|tall", [("tall", 1, 0, 2, 1), ("x", 1, 1, 1, 1)]),
+        (b"1000000000*|copy", [("copy", 1, 0, 1, 1), ("copy", 1, 1, 1, 1)]),
+    ],
+)
+def test_huge_spans_and_copy_factors_stay_within_the_table(
+    cell: bytes, expected: list[tuple[str, int, int, int, int]]
+) -> None:
+    # The spans are cut at the edges of the table, and a "*" factor makes at
+    # most one copy for each column, instead of one grid cell or one copy for
+    # each declared column, row or copy.
+    num_cols, cells = _table_grid(b"|===\n|A |B\n" + cell + b"\n|x |y\n|===\n")
+    assert num_cols == 2
+    assert cells[2:4] == expected
+
+
 def test_blank_line_inside_table_does_not_split_it() -> None:
     # Inside |=== ... |=== a blank line only separates rows: Asciidoctor's own
     # examples put one after the header row. It used to end the table, so the
