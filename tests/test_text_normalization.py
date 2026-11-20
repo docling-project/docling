@@ -18,6 +18,6 @@ def test_unit_middle_dots_preserved():
 
 def test_typographic_and_ligature_normalization():
     # Quotes and fraction slash continue to fold
-    input_text = "“Special” ‘quote’ 1⁄2 ﬁle ﬆep"
-    expected = '"Special" \'quote\' 1/2 file step'
+    input_text = "“Special” ‘quote’ 1⁄2 ﬁle ﬆep"  # noqa: RUF001
+    expected = "\"Special\" 'quote' 1/2 file step"
     assert normalize_extracted_text(input_text) == expected
