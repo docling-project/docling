@@ -28,6 +28,13 @@ import struct
 from decimal import Decimal
 from typing import NamedTuple
 
+from docling.backend.iwork.content import (
+    format_bool,
+    format_date,
+    format_duration,
+    format_number,
+)
+
 
 class CellValues(NamedTuple):
     """A table's shared value lists, keyed as its cells reference them.
@@ -181,7 +188,7 @@ DECIMAL128_BIAS = 6176
 
 
 def iwa_cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
-    """Read the text of one packed cell, or None when it holds none.
+    """Read what one packed cell shows, or None when it shows nothing.
 
     Args:
         storage: The row's packed cell buffer.
@@ -189,10 +196,36 @@ def iwa_cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
         values: The table's shared value lists.
 
     Returns:
-        The cell's text, or None for an empty cell or one holding a number.
+        The cell's value as text, or None for an empty cell.
     """
-    decoded = iwa_cell(storage, start, values)
-    return decoded.text if decoded is not None else None
+    return render(iwa_cell(storage, start, values))
+
+
+def render(decoded: Cell | None) -> str | None:
+    """Turn a decoded cell into the text the document shows in it.
+
+    Args:
+        decoded: The cell as the table layer read it.
+
+    Returns:
+        The text, or None for an empty cell or a value type this reader has not
+        been shown how to render.
+    """
+    if decoded is None or decoded.type == CELL_TYPE_EMPTY:
+        return None
+    if decoded.type in (CELL_TYPE_TEXT, CELL_TYPE_RICH_TEXT):
+        return decoded.text
+    if decoded.number is None:
+        return None
+    if decoded.type in (CELL_TYPE_NUMBER, CELL_TYPE_CURRENCY):
+        return format_number(decoded.number)
+    if decoded.type == CELL_TYPE_DATE:
+        return format_date(decoded.number)
+    if decoded.type == CELL_TYPE_DURATION:
+        return format_duration(decoded.number)
+    if decoded.type == CELL_TYPE_BOOL:
+        return format_bool(decoded.number)
+    return None
 
 
 def iwa_cell(storage: bytes, start: int, values: CellValues) -> Cell | None:
