@@ -193,6 +193,11 @@ class BaseVlmEngine(ABC):
     These model specs are provided at construction time for eager initialization.
     """
 
+    # Defaulted at class level so engines built via __new__ (as in unit tests,
+    # which skip __init__) can call methods that read model_config before
+    # initialization; such engines simply report no model config.
+    model_config: Optional["EngineModelConfig"] = None
+
     def __init__(
         self,
         options: BaseVlmEngineOptions,
