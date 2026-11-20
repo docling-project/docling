@@ -413,7 +413,55 @@ def test_latex_tilde_macro():
     doc = backend.convert()
 
     md = doc.export_to_markdown()
-    assert "Smith" in md
+    assert "Dr. Smith arrived." in md
+
+
+def test_latex_dashes_and_quotes():
+    """Test that dash and quote ligatures are typeset, not dropped"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    See pages 10--20 of ``the book''---or \\textbf{1990--2000}.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "See pages 10\u201320 of \u201cthe book\u201d\u2014or 1990\u20132000." in md
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"\\textbf{See Fig.~1 on pages 10--20 and $x$.}",
+        b"\\emph{See Fig.~1 on pages 10--20 and $x$.}",
+        b"{See Fig.~1 on pages 10--20 and $x$.}",
+        b"{\\bfseries See Fig.~1 on pages 10--20 and $x$.}",
+    ],
+)
+def test_latex_specials_in_group_with_inline_math(body):
+    """Test that specials are typeset in groups and formatted text with math"""
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n" + body + b"\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "See Fig. 1 on pages 10\u201320 and $x$." in md
 
 
 def test_latex_custom_macro_with_backslash():

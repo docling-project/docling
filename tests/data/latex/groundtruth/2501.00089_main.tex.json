@@ -1579,8 +1579,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Deep neural networks that exploit pixel-scale information from images can now robustly predict galaxy properties; optical images of galaxies contain enough information to constrain their physical characteristics [2019ApJ...887..251W,2020ApJ...900..142W,2021arXiv211101154B]. In fact, entire galaxy spectra can be estimated directly from image cutouts of individual galaxies [2020arXiv200912318W,2021ApJ...914..142H,Doorenbos+2022,Doorenbos+2024,2024MNRAS.531.4990P]. This last discovery highlights the promise of machine learning (ML) in the physical sciences. By leveraging deep learning models such as convolutional neural networks (CNNs), we can derive valuable physical constraints from plentiful galaxy images [2023PASA...40....1H,2024MNRAS.531.4990P]. So machines are capable of learning physics from galaxy imagingbut what about us astronomers?",
-      "text": "Deep neural networks that exploit pixel-scale information from images can now robustly predict galaxy properties; optical images of galaxies contain enough information to constrain their physical characteristics [2019ApJ...887..251W,2020ApJ...900..142W,2021arXiv211101154B]. In fact, entire galaxy spectra can be estimated directly from image cutouts of individual galaxies [2020arXiv200912318W,2021ApJ...914..142H,Doorenbos+2022,Doorenbos+2024,2024MNRAS.531.4990P]. This last discovery highlights the promise of machine learning (ML) in the physical sciences. By leveraging deep learning models such as convolutional neural networks (CNNs), we can derive valuable physical constraints from plentiful galaxy images [2023PASA...40....1H,2024MNRAS.531.4990P]. So machines are capable of learning physics from galaxy imagingbut what about us astronomers?"
+      "orig": "Deep neural networks that exploit pixel-scale information from images can now robustly predict galaxy properties; optical images of galaxies contain enough information to constrain their physical characteristics [2019ApJ...887..251W,2020ApJ...900..142W,2021arXiv211101154B]. In fact, entire galaxy spectra can be estimated directly from image cutouts of individual galaxies [2020arXiv200912318W,2021ApJ...914..142H,Doorenbos+2022,Doorenbos+2024,2024MNRAS.531.4990P]. This last discovery highlights the promise of machine learning (ML) in the physical sciences. By leveraging deep learning models such as convolutional neural networks (CNNs), we can derive valuable physical constraints from plentiful galaxy images [2023PASA...40....1H,2024MNRAS.531.4990P]. So machines are capable of learning physics from galaxy imaging—but what about us astronomers?",
+      "text": "Deep neural networks that exploit pixel-scale information from images can now robustly predict galaxy properties; optical images of galaxies contain enough information to constrain their physical characteristics [2019ApJ...887..251W,2020ApJ...900..142W,2021arXiv211101154B]. In fact, entire galaxy spectra can be estimated directly from image cutouts of individual galaxies [2020arXiv200912318W,2021ApJ...914..142H,Doorenbos+2022,Doorenbos+2024,2024MNRAS.531.4990P]. This last discovery highlights the promise of machine learning (ML) in the physical sciences. By leveraging deep learning models such as convolutional neural networks (CNNs), we can derive valuable physical constraints from plentiful galaxy images [2023PASA...40....1H,2024MNRAS.531.4990P]. So machines are capable of learning physics from galaxy imaging—but what about us astronomers?"
     },
     {
       "self_ref": "#/texts/19",
@@ -1591,8 +1591,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Two major challenges arise when we try to interpret physics from deep neural networks. First, each neuron in the network represents a non-linear combination of features, resulting in uninterpretable mess of features [superposition]. Second, each neuron can also be activated in multiple independent contexts, and can thus take on multiple meanings [geva2021transformerfeedforwardlayerskeyvalue]. In other words, neuron values are not one-to-one with learned concepts. Superposition and polysemanticity allow neural networks to increase their capacity for storing features [olah2020zoom,superposition,10136140]; these phenomena are topics of cutting-edge ML research, and we present an extended discussion in Appendix[appendix]. Unfortunately, they also obscure the interpretation and contribution of any specific neuron, preventing us from understanding the physics behind the patterns that ML models learn.",
-      "text": "Two major challenges arise when we try to interpret physics from deep neural networks. First, each neuron in the network represents a non-linear combination of features, resulting in uninterpretable mess of features [superposition]. Second, each neuron can also be activated in multiple independent contexts, and can thus take on multiple meanings [geva2021transformerfeedforwardlayerskeyvalue]. In other words, neuron values are not one-to-one with learned concepts. Superposition and polysemanticity allow neural networks to increase their capacity for storing features [olah2020zoom,superposition,10136140]; these phenomena are topics of cutting-edge ML research, and we present an extended discussion in Appendix[appendix]. Unfortunately, they also obscure the interpretation and contribution of any specific neuron, preventing us from understanding the physics behind the patterns that ML models learn."
+      "orig": "Two major challenges arise when we try to interpret physics from deep neural networks. First, each neuron in the network represents a non-linear combination of features, resulting in uninterpretable mess of features [superposition]. Second, each neuron can also be activated in multiple independent contexts, and can thus take on multiple meanings [geva2021transformerfeedforwardlayerskeyvalue]. In other words, neuron values are not one-to-one with learned concepts. Superposition and polysemanticity allow neural networks to increase their capacity for storing features [olah2020zoom,superposition,10136140]; these phenomena are topics of cutting-edge ML research, and we present an extended discussion in Appendix [appendix]. Unfortunately, they also obscure the interpretation and contribution of any specific neuron, preventing us from understanding the physics behind the patterns that ML models learn.",
+      "text": "Two major challenges arise when we try to interpret physics from deep neural networks. First, each neuron in the network represents a non-linear combination of features, resulting in uninterpretable mess of features [superposition]. Second, each neuron can also be activated in multiple independent contexts, and can thus take on multiple meanings [geva2021transformerfeedforwardlayerskeyvalue]. In other words, neuron values are not one-to-one with learned concepts. Superposition and polysemanticity allow neural networks to increase their capacity for storing features [olah2020zoom,superposition,10136140]; these phenomena are topics of cutting-edge ML research, and we present an extended discussion in Appendix [appendix]. Unfortunately, they also obscure the interpretation and contribution of any specific neuron, preventing us from understanding the physics behind the patterns that ML models learn."
     },
     {
       "self_ref": "#/texts/20",
@@ -1811,8 +1811,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We train the SFNet to predict galaxy properties from image cutouts according to the methodology described in Section[sec:methodology]. In Section[sec:results], we show that the SFNet achieves robust performance while learning interpretable features. We discuss these results further in Section[sec:discussion], and state our conclusions in Section[sec:summary].",
-      "text": "We train the SFNet to predict galaxy properties from image cutouts according to the methodology described in Section[sec:methodology]. In Section[sec:results], we show that the SFNet achieves robust performance while learning interpretable features. We discuss these results further in Section[sec:discussion], and state our conclusions in Section[sec:summary]."
+      "orig": "We train the SFNet to predict galaxy properties from image cutouts according to the methodology described in Section [sec:methodology]. In Section [sec:results], we show that the SFNet achieves robust performance while learning interpretable features. We discuss these results further in Section [sec:discussion], and state our conclusions in Section [sec:summary].",
+      "text": "We train the SFNet to predict galaxy properties from image cutouts according to the methodology described in Section [sec:methodology]. In Section [sec:results], we show that the SFNet achieves robust performance while learning interpretable features. We discuss these results further in Section [sec:discussion], and state our conclusions in Section [sec:summary]."
     },
     {
       "self_ref": "#/texts/38",
@@ -1839,8 +1839,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate Top-k layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a ",
-      "text": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate Top-k layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a "
+      "orig": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate “Top-k” layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a ",
+      "text": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate “Top-k” layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a "
     },
     {
       "self_ref": "#/texts/40",
@@ -2148,8 +2148,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our SFNet implementation is shown in Figure[fig:SFNet-architecture]. We use a CNN architecture identical to the resnet18 [he2015deepresiduallearningimage], except that we insert a top-",
-      "text": "Our SFNet implementation is shown in Figure[fig:SFNet-architecture]. We use a CNN architecture identical to the resnet18 [he2015deepresiduallearningimage], except that we insert a top-"
+      "orig": "Our SFNet implementation is shown in Figure [fig:SFNet-architecture]. We use a CNN architecture identical to the resnet18 [he2015deepresiduallearningimage], except that we insert a top-",
+      "text": "Our SFNet implementation is shown in Figure [fig:SFNet-architecture]. We use a CNN architecture identical to the resnet18 [he2015deepresiduallearningimage], except that we insert a top-"
     },
     {
       "self_ref": "#/texts/65",
@@ -2268,8 +2268,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Later, in Section[ssec:comparison-pca], we vary ",
-      "text": ". Later, in Section[ssec:comparison-pca], we vary "
+      "orig": ". Later, in Section [ssec:comparison-pca], we vary ",
+      "text": ". Later, in Section [ssec:comparison-pca], we vary "
     },
     {
       "self_ref": "#/texts/75",
@@ -2345,8 +2345,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Motivated by previous works that connect galaxy imaging with their physical properties [2019MNRAS.484.4683W,2020arXiv200912318W,2021MNRAS.506.3313G,2021ApJ...914..142H], we train the SFNet to predict spectroscopic line fluxes (Section[ssec:ionization]) and gas-phase metallicity ([ssec:metallicity]) directly from image cutouts. We identify the learned features using their sparse activation index, e.g., SL17 for the 17th feature of a SFNet trained to predict spectral lines fluxes, or Z256 for the 256th feature of a SFNet trained to predict gas-phase metallicity. Feature activations are scaled between 0 and 1, and we refer to these example activation strengths as ",
-      "text": "Motivated by previous works that connect galaxy imaging with their physical properties [2019MNRAS.484.4683W,2020arXiv200912318W,2021MNRAS.506.3313G,2021ApJ...914..142H], we train the SFNet to predict spectroscopic line fluxes (Section[ssec:ionization]) and gas-phase metallicity ([ssec:metallicity]) directly from image cutouts. We identify the learned features using their sparse activation index, e.g., SL17 for the 17th feature of a SFNet trained to predict spectral lines fluxes, or Z256 for the 256th feature of a SFNet trained to predict gas-phase metallicity. Feature activations are scaled between 0 and 1, and we refer to these example activation strengths as "
+      "orig": "Motivated by previous works that connect galaxy imaging with their physical properties [2019MNRAS.484.4683W,2020arXiv200912318W,2021MNRAS.506.3313G,2021ApJ...914..142H], we train the SFNet to predict spectroscopic line fluxes (Section [ssec:ionization]) and gas-phase metallicity ([ssec:metallicity]) directly from image cutouts. We identify the learned features using their sparse activation index, e.g., SL17 for the 17th feature of a SFNet trained to predict spectral lines fluxes, or Z256 for the 256th feature of a SFNet trained to predict gas-phase metallicity. Feature activations are scaled between 0 and 1, and we refer to these example activation strengths as ",
+      "text": "Motivated by previous works that connect galaxy imaging with their physical properties [2019MNRAS.484.4683W,2020arXiv200912318W,2021MNRAS.506.3313G,2021ApJ...914..142H], we train the SFNet to predict spectroscopic line fluxes (Section [ssec:ionization]) and gas-phase metallicity ([ssec:metallicity]) directly from image cutouts. We identify the learned features using their sparse activation index, e.g., SL17 for the 17th feature of a SFNet trained to predict spectral lines fluxes, or Z256 for the 256th feature of a SFNet trained to predict gas-phase metallicity. Feature activations are scaled between 0 and 1, and we refer to these example activation strengths as "
     },
     {
       "self_ref": "#/texts/81",
@@ -2570,8 +2570,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In Figure[fig:bpt-interpretation], we show galaxy image examples for the strongest activations, and where they appear in a BPT diagram. The four features reside in overlapping regions of the [O3]/H",
-      "text": "In Figure[fig:bpt-interpretation], we show galaxy image examples for the strongest activations, and where they appear in a BPT diagram. The four features reside in overlapping regions of the [O3]/H"
+      "orig": "In Figure [fig:bpt-interpretation], we show galaxy image examples for the strongest activations, and where they appear in a BPT diagram. The four features reside in overlapping regions of the [O3]/H",
+      "text": "In Figure [fig:bpt-interpretation], we show galaxy image examples for the strongest activations, and where they appear in a BPT diagram. The four features reside in overlapping regions of the [O3]/H"
     },
     {
       "self_ref": "#/texts/99",
@@ -2690,8 +2690,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "). Additional features contain information about metallicity and stellar populations. In Table[tab:features], we offer physical interpretations for these features.",
-      "text": "). Additional features contain information about metallicity and stellar populations. In Table[tab:features], we offer physical interpretations for these features."
+      "orig": "). Additional features contain information about metallicity and stellar populations. In Table [tab:features], we offer physical interpretations for these features.",
+      "text": "). Additional features contain information about metallicity and stellar populations. In Table [tab:features], we offer physical interpretations for these features."
     },
     {
       "self_ref": "#/texts/109",
@@ -2867,8 +2867,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex, and our trained SFNet can predict it to within ",
-      "text": "dex, and our trained SFNet can predict it to within "
+      "orig": " dex, and our trained SFNet can predict it to within ",
+      "text": " dex, and our trained SFNet can predict it to within "
     },
     {
       "self_ref": "#/texts/123",
@@ -2891,8 +2891,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex using only two image features, Z61 and Z256, which are activated 99.6% and 87.9% of the time respectively. If we also incorporate the third and fourth most frequent activations (40.2% and 11.9%, respectively), then we can achieve ",
-      "text": "dex using only two image features, Z61 and Z256, which are activated 99.6% and 87.9% of the time respectively. If we also incorporate the third and fourth most frequent activations (40.2% and 11.9%, respectively), then we can achieve "
+      "orig": " dex using only two image features, Z61 and Z256, which are activated 99.6% and 87.9% of the time respectively. If we also incorporate the third and fourth most frequent activations (40.2% and 11.9%, respectively), then we can achieve ",
+      "text": " dex using only two image features, Z61 and Z256, which are activated 99.6% and 87.9% of the time respectively. If we also incorporate the third and fourth most frequent activations (40.2% and 11.9%, respectively), then we can achieve "
     },
     {
       "self_ref": "#/texts/125",
@@ -2915,8 +2915,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex error. This level of performance suggests that our SFNet is extremely accurate (see Section[ssec:performance-interpretability] for further discussion).",
-      "text": "dex error. This level of performance suggests that our SFNet is extremely accurate (see Section[ssec:performance-interpretability] for further discussion)."
+      "orig": " dex error. This level of performance suggests that our SFNet is extremely accurate (see Section [ssec:performance-interpretability] for further discussion).",
+      "text": " dex error. This level of performance suggests that our SFNet is extremely accurate (see Section [ssec:performance-interpretability] for further discussion)."
     },
     {
       "self_ref": "#/texts/127",
@@ -2943,8 +2943,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In the bottom two rows of Table[tab:features], we describe the two main features used to predict metallicity. Z61 is associated with galaxies with prominent red bulges and is linked to higher metallicity. It activates strongly for red ellipticals or face-on disk galaxies (often with two loosely wound spiral arms; see, e.g., 2019MNRAS.487.1808M for more on the correlations between galaxy properties and spiral arm pitch angle).  Feature Z256 is associated with blue, edge-on disk galaxies and lower metallicity. [2004ApJ...613..898T] noted that metal-poor galaxies tended to have highly inclined disk morphologies, and attributed this effect to observational bias. SDSS spectroscopic fibers collect light from lower-",
-      "text": "In the bottom two rows of Table[tab:features], we describe the two main features used to predict metallicity. Z61 is associated with galaxies with prominent red bulges and is linked to higher metallicity. It activates strongly for red ellipticals or face-on disk galaxies (often with two loosely wound spiral arms; see, e.g., 2019MNRAS.487.1808M for more on the correlations between galaxy properties and spiral arm pitch angle).  Feature Z256 is associated with blue, edge-on disk galaxies and lower metallicity. [2004ApJ...613..898T] noted that metal-poor galaxies tended to have highly inclined disk morphologies, and attributed this effect to observational bias. SDSS spectroscopic fibers collect light from lower-"
+      "orig": "In the bottom two rows of Table [tab:features], we describe the two main features used to predict metallicity. Z61 is associated with galaxies with prominent red bulges and is linked to higher metallicity. It activates strongly for red ellipticals or face-on disk galaxies (often with two loosely wound spiral arms; see, e.g., 2019MNRAS.487.1808M for more on the correlations between galaxy properties and spiral arm pitch angle).  Feature Z256 is associated with blue, edge-on disk galaxies and lower metallicity. [2004ApJ...613..898T] noted that metal-poor galaxies tended to have highly inclined disk morphologies, and attributed this effect to observational bias. SDSS spectroscopic fibers collect light from lower-",
+      "text": "In the bottom two rows of Table [tab:features], we describe the two main features used to predict metallicity. Z61 is associated with galaxies with prominent red bulges and is linked to higher metallicity. It activates strongly for red ellipticals or face-on disk galaxies (often with two loosely wound spiral arms; see, e.g., 2019MNRAS.487.1808M for more on the correlations between galaxy properties and spiral arm pitch angle).  Feature Z256 is associated with blue, edge-on disk galaxies and lower metallicity. [2004ApJ...613..898T] noted that metal-poor galaxies tended to have highly inclined disk morphologies, and attributed this effect to observational bias. SDSS spectroscopic fibers collect light from lower-"
     },
     {
       "self_ref": "#/texts/129",
@@ -3005,8 +3005,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Because the SFNet learns a linear projection from these activations to the final prediction, we can write down a simple equation between learned galaxy features and the physical quantity of interest. In Figure[fig:equations], we present linear equations for predicting gas metallicity and spectral line ratios by using the aforementioned galaxy image features. The maximally activating galaxy examples are shown in the equations (each labeled by their activated feature index).",
-      "text": "Because the SFNet learns a linear projection from these activations to the final prediction, we can write down a simple equation between learned galaxy features and the physical quantity of interest. In Figure[fig:equations], we present linear equations for predicting gas metallicity and spectral line ratios by using the aforementioned galaxy image features. The maximally activating galaxy examples are shown in the equations (each labeled by their activated feature index)."
+      "orig": "Because the SFNet learns a linear projection from these activations to the final prediction, we can write down a simple “equation” between learned galaxy features and the physical quantity of interest. In Figure [fig:equations], we present linear equations for predicting gas metallicity and spectral line ratios by using the aforementioned galaxy image features. The maximally activating galaxy examples are shown in the equations (each labeled by their activated feature index).",
+      "text": "Because the SFNet learns a linear projection from these activations to the final prediction, we can write down a simple “equation” between learned galaxy features and the physical quantity of interest. In Figure [fig:equations], we present linear equations for predicting gas metallicity and spectral line ratios by using the aforementioned galaxy image features. The maximally activating galaxy examples are shown in the equations (each labeled by their activated feature index)."
     },
     {
       "self_ref": "#/texts/134",
@@ -3133,8 +3133,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " directly correspond to higher and lower metallicity. Interestingly, both can be activated at the same timeand in fact, both are non-zero for the majority of galaxies in the validation set, demonstrating the physical interplay between these morphological features and metallicity. For predicting spectral lines, features SL17 and SL157 positively correlate with both [N2]/H",
-      "text": " directly correspond to higher and lower metallicity. Interestingly, both can be activated at the same timeand in fact, both are non-zero for the majority of galaxies in the validation set, demonstrating the physical interplay between these morphological features and metallicity. For predicting spectral lines, features SL17 and SL157 positively correlate with both [N2]/H"
+      "orig": " directly correspond to higher and lower metallicity. Interestingly, both can be activated at the same time—and in fact, both are non-zero for the majority of galaxies in the validation set, demonstrating the physical interplay between these morphological features and metallicity. For predicting spectral lines, features SL17 and SL157 positively correlate with both [N2]/H",
+      "text": " directly correspond to higher and lower metallicity. Interestingly, both can be activated at the same time—and in fact, both are non-zero for the majority of galaxies in the validation set, demonstrating the physical interplay between these morphological features and metallicity. For predicting spectral lines, features SL17 and SL157 positively correlate with both [N2]/H"
     },
     {
       "self_ref": "#/texts/144",
@@ -3266,8 +3266,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Previous works have found that a CNN trained on optical image cutouts can successfully classify AGN from star-forming galaxies with an accuracy [2021ApJ...914..142H,2022arXiv221207881G,Doorenbos+2024]. We test how well the interpretable SFNet from Section[ssec:ionization] can also identify AGN. By optimizing a linear support vector machine (SVM) classifier on SL17, SL138, SL157, and SL322 from the training dataset, we can classify AGN with a validation accuracy of 0.85 and F1 score of 0.72.",
-      "text": "Previous works have found that a CNN trained on optical image cutouts can successfully classify AGN from star-forming galaxies with an accuracy [2021ApJ...914..142H,2022arXiv221207881G,Doorenbos+2024]. We test how well the interpretable SFNet from Section[ssec:ionization] can also identify AGN. By optimizing a linear support vector machine (SVM) classifier on SL17, SL138, SL157, and SL322 from the training dataset, we can classify AGN with a validation accuracy of 0.85 and F1 score of 0.72."
+      "orig": "Previous works have found that a CNN trained on optical image cutouts can successfully classify AGN from star-forming galaxies with an accuracy [2021ApJ...914..142H,2022arXiv221207881G,Doorenbos+2024]. We test how well the interpretable SFNet from Section [ssec:ionization] can also identify AGN. By optimizing a linear support vector machine (SVM) classifier on SL17, SL138, SL157, and SL322 from the training dataset, we can classify AGN with a validation accuracy of 0.85 and F1 score of 0.72.",
+      "text": "Previous works have found that a CNN trained on optical image cutouts can successfully classify AGN from star-forming galaxies with an accuracy [2021ApJ...914..142H,2022arXiv221207881G,Doorenbos+2024]. We test how well the interpretable SFNet from Section [ssec:ionization] can also identify AGN. By optimizing a linear support vector machine (SVM) classifier on SL17, SL138, SL157, and SL322 from the training dataset, we can classify AGN with a validation accuracy of 0.85 and F1 score of 0.72."
     },
     {
       "self_ref": "#/texts/155",
@@ -3278,8 +3278,8 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "If we use all non-zero SFNet features, then the best-fit linear SVM validates at 0.83 accuracy and 0.70 F1 score, i.e., it performs worse. This suggests that restricting to the four most frequent feature activations reduces noiseanother benefit of sparsity.",
-      "text": "If we use all non-zero SFNet features, then the best-fit linear SVM validates at 0.83 accuracy and 0.70 F1 score, i.e., it performs worse. This suggests that restricting to the four most frequent feature activations reduces noiseanother benefit of sparsity."
+      "orig": "If we use all non-zero SFNet features, then the best-fit linear SVM validates at 0.83 accuracy and 0.70 F1 score, i.e., it performs worse. This suggests that restricting to the four most frequent feature activations reduces noise—another benefit of sparsity.",
+      "text": "If we use all non-zero SFNet features, then the best-fit linear SVM validates at 0.83 accuracy and 0.70 F1 score, i.e., it performs worse. This suggests that restricting to the four most frequent feature activations reduces noise—another benefit of sparsity."
     },
     {
       "self_ref": "#/texts/156",
@@ -3318,8 +3318,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In Section[ssec:metallicity], we estimate gas metallicity to within 0.087dex using a linear combination of two features (and 0.086dex using four features). For comparison, a typical CNN only achieves ",
-      "text": "In Section[ssec:metallicity], we estimate gas metallicity to within 0.087dex using a linear combination of two features (and 0.086dex using four features). For comparison, a typical CNN only achieves "
+      "orig": "In Section [ssec:metallicity], we estimate gas metallicity to within 0.087 dex using a linear combination of two features (and 0.086 dex using four features). For comparison, a typical CNN only achieves ",
+      "text": "In Section [ssec:metallicity], we estimate gas metallicity to within 0.087 dex using a linear combination of two features (and 0.086 dex using four features). For comparison, a typical CNN only achieves "
     },
     {
       "self_ref": "#/texts/159",
@@ -3342,8 +3342,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex error [2019MNRAS.484.4683W]; note that the systematic scatter is ",
-      "text": "dex error [2019MNRAS.484.4683W]; note that the systematic scatter is "
+      "orig": " dex error [2019MNRAS.484.4683W]; note that the systematic scatter is ",
+      "text": " dex error [2019MNRAS.484.4683W]; note that the systematic scatter is "
     },
     {
       "self_ref": "#/texts/161",
@@ -3366,8 +3366,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex. Again, this suggests that SFNets do not sacrifice performance in order to gain interpretability.",
-      "text": "dex. Again, this suggests that SFNets do not sacrifice performance in order to gain interpretability."
+      "orig": " dex. Again, this suggests that SFNets do not sacrifice performance in order to gain interpretability.",
+      "text": " dex. Again, this suggests that SFNets do not sacrifice performance in order to gain interpretability."
     },
     {
       "self_ref": "#/texts/163",
@@ -3623,8 +3623,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The results are shown in Figure[fig:pca-comparison], and specific RMSE values are given in Table[tab:dimred].",
-      "text": "The results are shown in Figure[fig:pca-comparison], and specific RMSE values are given in Table[tab:dimred]."
+      "orig": "The results are shown in Figure [fig:pca-comparison], and specific RMSE values are given in Table [tab:dimred].",
+      "text": "The results are shown in Figure [fig:pca-comparison], and specific RMSE values are given in Table [tab:dimred]."
     },
     {
       "self_ref": "#/texts/183",
@@ -4015,8 +4015,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " principal components. For metallicity (left panel of Figure[fig:pca-comparison]), we find that the CNN + PCA performs poorly on the validation set for all values of ",
-      "text": " principal components. For metallicity (left panel of Figure[fig:pca-comparison]), we find that the CNN + PCA performs poorly on the validation set for all values of "
+      "orig": " principal components. For metallicity (left panel of Figure [fig:pca-comparison]), we find that the CNN + PCA performs poorly on the validation set for all values of ",
+      "text": " principal components. For metallicity (left panel of Figure [fig:pca-comparison]), we find that the CNN + PCA performs poorly on the validation set for all values of "
     },
     {
       "self_ref": "#/texts/215",
@@ -4063,8 +4063,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " explainable features, reinforcing our results found in Section[ssec:metallicity]. We interpret this as evidence that the metallicity cannot be linearly combined using a small number of principal components of features extracted via a typical CNN.",
-      "text": " explainable features, reinforcing our results found in Section[ssec:metallicity]. We interpret this as evidence that the metallicity cannot be linearly combined using a small number of principal components of features extracted via a typical CNN."
+      "orig": " explainable features, reinforcing our results found in Section [ssec:metallicity]. We interpret this as evidence that the metallicity cannot be linearly combined using a small number of principal components of features extracted via a typical CNN.",
+      "text": " explainable features, reinforcing our results found in Section [ssec:metallicity]. We interpret this as evidence that the metallicity cannot be linearly combined using a small number of principal components of features extracted via a typical CNN."
     },
     {
       "self_ref": "#/texts/219",
@@ -4115,8 +4115,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " suggests that PCAwhile able to reduce dimensionalitydoes not optimally distill morphological features into the ones most relevant for predicting galaxy properties.",
-      "text": " suggests that PCAwhile able to reduce dimensionalitydoes not optimally distill morphological features into the ones most relevant for predicting galaxy properties."
+      "orig": " suggests that PCA—while able to reduce dimensionality—does not optimally distill morphological features into the ones most relevant for predicting galaxy properties.",
+      "text": " suggests that PCA—while able to reduce dimensionality—does not optimally distill morphological features into the ones most relevant for predicting galaxy properties."
     },
     {
       "self_ref": "#/texts/223",
@@ -4143,8 +4143,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We turn our attention to spectral line fluxes (right panel of Figure[fig:pca-comparison]), and find that performance is poor for small values of ",
-      "text": "We turn our attention to spectral line fluxes (right panel of Figure[fig:pca-comparison]), and find that performance is poor for small values of "
+      "orig": "We turn our attention to spectral line fluxes (right panel of Figure [fig:pca-comparison]), and find that performance is poor for small values of ",
+      "text": "We turn our attention to spectral line fluxes (right panel of Figure [fig:pca-comparison]), and find that performance is poor for small values of "
     },
     {
       "self_ref": "#/texts/225",
@@ -4292,8 +4292,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " sparsity constraint (Figure[fig:SFNet-architecture]). Zoobot predicts citizen scientist vote fractions for GalaxyZoo morphological labels. We hypothesize that Zoobot's 512-dimensional features directly after the pooling layer suffer from superposition and polysemanticity, and thereby produce an uninterpretable combination of morphology and color.",
-      "text": " sparsity constraint (Figure[fig:SFNet-architecture]). Zoobot predicts citizen scientist vote fractions for GalaxyZoo morphological labels. We hypothesize that Zoobot's 512-dimensional features directly after the pooling layer suffer from superposition and polysemanticity, and thereby produce an uninterpretable combination of morphology and color."
+      "orig": " sparsity constraint (Figure [fig:SFNet-architecture]). Zoobot predicts citizen scientist vote fractions for GalaxyZoo morphological labels. We hypothesize that Zoobot's 512-dimensional features directly after the pooling layer suffer from superposition and polysemanticity, and thereby produce an uninterpretable combination of morphology and color.",
+      "text": " sparsity constraint (Figure [fig:SFNet-architecture]). Zoobot predicts citizen scientist vote fractions for GalaxyZoo morphological labels. We hypothesize that Zoobot's 512-dimensional features directly after the pooling layer suffer from superposition and polysemanticity, and thereby produce an uninterpretable combination of morphology and color."
     },
     {
       "self_ref": "#/texts/237",
@@ -4320,8 +4320,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Using morphological features from Zoobot, we train a regression model to predict galaxy metallicity. This experiment allows us to assess whether traditional CNNs can also be used to learn astrophysical relationships between image features and galaxy properties.  We use the same training/validation datasets from Section[ssec:metallicity], and independently test two models that use Zoobot-extracted features as inputs and ",
-      "text": "Using morphological features from Zoobot, we train a regression model to predict galaxy metallicity. This experiment allows us to assess whether traditional CNNs can also be used to learn astrophysical relationships between image features and galaxy properties.  We use the same training/validation datasets from Section[ssec:metallicity], and independently test two models that use Zoobot-extracted features as inputs and "
+      "orig": "Using morphological features from Zoobot, we train a regression model to predict galaxy metallicity. This experiment allows us to assess whether traditional CNNs can also be used to learn astrophysical relationships between image features and galaxy properties.  We use the same training/validation datasets from Section [ssec:metallicity], and independently test two models that use Zoobot-extracted features as inputs and ",
+      "text": "Using morphological features from Zoobot, we train a regression model to predict galaxy metallicity. This experiment allows us to assess whether traditional CNNs can also be used to learn astrophysical relationships between image features and galaxy properties.  We use the same training/validation datasets from Section [ssec:metallicity], and independently test two models that use Zoobot-extracted features as inputs and "
     },
     {
       "self_ref": "#/texts/239",
@@ -4396,8 +4396,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex). When we fit on the validation dataseti.e., if we attempt to memorize the answersthe error remains very high (",
-      "text": "dex). When we fit on the validation dataseti.e., if we attempt to memorize the answersthe error remains very high ("
+      "orig": " dex). When we fit on the validation dataset—i.e., if we attempt to memorize the answers—the error remains very high (",
+      "text": " dex). When we fit on the validation dataset—i.e., if we attempt to memorize the answers—the error remains very high ("
     },
     {
       "self_ref": "#/texts/245",
@@ -4420,8 +4420,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex). This result demonstrates that no linear combination of Zoobot features can reconstruct galaxy metallicity.",
-      "text": "dex). This result demonstrates that no linear combination of Zoobot features can reconstruct galaxy metallicity."
+      "orig": " dex). This result demonstrates that no linear combination of Zoobot features can reconstruct galaxy metallicity.",
+      "text": " dex). This result demonstrates that no linear combination of Zoobot features can reconstruct galaxy metallicity."
     },
     {
       "self_ref": "#/texts/247",
@@ -4472,8 +4472,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex error on the validation dataset. However, when we cheat by fitting on the validation dataset, we can lower the error down to ",
-      "text": "dex error on the validation dataset. However, when we cheat by fitting on the validation dataset, we can lower the error down to "
+      "orig": " dex error on the validation dataset. However, when we “cheat” by fitting on the validation dataset, we can lower the error down to ",
+      "text": " dex error on the validation dataset. However, when we “cheat” by fitting on the validation dataset, we can lower the error down to "
     },
     {
       "self_ref": "#/texts/251",
@@ -4496,8 +4496,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dex (comparable to the SFNet performance).",
-      "text": "dex (comparable to the SFNet performance)."
+      "orig": " dex (comparable to the SFNet performance).",
+      "text": " dex (comparable to the SFNet performance)."
     },
     {
       "self_ref": "#/texts/253",
@@ -4633,8 +4633,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The ML discipline generally focuses on classification problems, which has led to rapid development of classification-based interpretability algorithms [erhan2009_visualizing,zeiler2013visualizingunderstandingconvolutionalnetworks,simonyan2014deepinsideconvolutionalnetworks,8099837]. For example, Gradient-weighted Class Activation Mapping (GradCAM; gradcam) enables researchers to interrogate the model to reveal the pixels that are most important for each class prediction. However, GradCAM and its variations are reliant on classification labels. For example, galaxy morphologies and other properties exist along a continuum rather than in distinct categories. Even identifying AGN via the BPT diagram, which we explore in Section[ssec:ionization], is more accurately posed as a regression problem than a classification problem.",
-      "text": "The ML discipline generally focuses on classification problems, which has led to rapid development of classification-based interpretability algorithms [erhan2009_visualizing,zeiler2013visualizingunderstandingconvolutionalnetworks,simonyan2014deepinsideconvolutionalnetworks,8099837]. For example, Gradient-weighted Class Activation Mapping (GradCAM; gradcam) enables researchers to interrogate the model to reveal the pixels that are most important for each class prediction. However, GradCAM and its variations are reliant on classification labels. For example, galaxy morphologies and other properties exist along a continuum rather than in distinct categories. Even identifying AGN via the BPT diagram, which we explore in Section[ssec:ionization], is more accurately posed as a regression problem than a classification problem."
+      "orig": "The ML discipline generally focuses on classification problems, which has led to rapid development of classification-based interpretability algorithms [erhan2009_visualizing,zeiler2013visualizingunderstandingconvolutionalnetworks,simonyan2014deepinsideconvolutionalnetworks,8099837]. For example, Gradient-weighted Class Activation Mapping (GradCAM; gradcam) enables researchers to interrogate the model to reveal the pixels that are most important for each class prediction. However, GradCAM and its variations are reliant on classification labels. For example, galaxy morphologies and other properties exist along a continuum rather than in distinct categories. Even identifying AGN via the BPT diagram, which we explore in Section [ssec:ionization], is more accurately posed as a regression problem than a classification problem.",
+      "text": "The ML discipline generally focuses on classification problems, which has led to rapid development of classification-based interpretability algorithms [erhan2009_visualizing,zeiler2013visualizingunderstandingconvolutionalnetworks,simonyan2014deepinsideconvolutionalnetworks,8099837]. For example, Gradient-weighted Class Activation Mapping (GradCAM; gradcam) enables researchers to interrogate the model to reveal the pixels that are most important for each class prediction. However, GradCAM and its variations are reliant on classification labels. For example, galaxy morphologies and other properties exist along a continuum rather than in distinct categories. Even identifying AGN via the BPT diagram, which we explore in Section [ssec:ionization], is more accurately posed as a regression problem than a classification problem."
     },
     {
       "self_ref": "#/texts/264",
@@ -4657,8 +4657,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Moreover, interpretation for classification tasks (with fully separable classes) serves a different purpose than interpretation for regression tasks. Specifically, astronomers might ask questions like, which morphological features in this galaxy scale with its gas-phase metallicity? Astronomers are generally less interested in asking questions like, which morphological features in this image scale with the probability that it is a galaxy rather than a star? Regression tasks can be interpreted by understanding how output quantities scale with input features (see, e.g., our equations in Figure[fig:equations]), but classification problemswherein predictions are selected via the softmax operationonly require the dominant class to be marginally higher than every other class. Therefore, interpretability for regression and classification problems is different.",
-      "text": "Moreover, interpretation for classification tasks (with fully separable classes) serves a different purpose than interpretation for regression tasks. Specifically, astronomers might ask questions like, which morphological features in this galaxy scale with its gas-phase metallicity? Astronomers are generally less interested in asking questions like, which morphological features in this image scale with the probability that it is a galaxy rather than a star? Regression tasks can be interpreted by understanding how output quantities scale with input features (see, e.g., our equations in Figure[fig:equations]), but classification problemswherein predictions are selected via the softmax operationonly require the dominant class to be marginally higher than every other class. Therefore, interpretability for regression and classification problems is different."
+      "orig": "Moreover, interpretation for classification tasks (with fully separable classes) serves a different purpose than interpretation for regression tasks. Specifically, astronomers might ask questions like, “which morphological features in this galaxy scale with its gas-phase metallicity?” Astronomers are generally less interested in asking questions like, “which morphological features in this image scale with the probability that it is a galaxy rather than a star?” Regression tasks can be interpreted by understanding how output quantities scale with input features (see, e.g., our “equations” in Figure [fig:equations]), but classification problems—wherein predictions are selected via the softmax operation—only require the dominant class to be marginally higher than every other class. Therefore, interpretability for regression and classification problems is different.",
+      "text": "Moreover, interpretation for classification tasks (with fully separable classes) serves a different purpose than interpretation for regression tasks. Specifically, astronomers might ask questions like, “which morphological features in this galaxy scale with its gas-phase metallicity?” Astronomers are generally less interested in asking questions like, “which morphological features in this image scale with the probability that it is a galaxy rather than a star?” Regression tasks can be interpreted by understanding how output quantities scale with input features (see, e.g., our “equations” in Figure [fig:equations]), but classification problems—wherein predictions are selected via the softmax operation—only require the dominant class to be marginally higher than every other class. Therefore, interpretability for regression and classification problems is different."
     },
     {
       "self_ref": "#/texts/266",
@@ -4669,8 +4669,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Other interpretability methods like saliency mapping [simonyan2014deepinsideconvolutionalnetworks] cannot learn the non-linear patterns of multiple pixels at oncewhich is exactly what makes deep learning models so powerful. Despite these limitations, saliency and GradCAM-like techniques are widely adopted in astronomy [2019ApJ...882L..12P,2020ApJ...900..142W,2021MNRAS.501.4579B,2024ApJ...967..152A]. Our results demonstrate that sparse algorithms provide a powerful alternative for interpretable ML in the physical sciences.",
-      "text": "Other interpretability methods like saliency mapping [simonyan2014deepinsideconvolutionalnetworks] cannot learn the non-linear patterns of multiple pixels at oncewhich is exactly what makes deep learning models so powerful. Despite these limitations, saliency and GradCAM-like techniques are widely adopted in astronomy [2019ApJ...882L..12P,2020ApJ...900..142W,2021MNRAS.501.4579B,2024ApJ...967..152A]. Our results demonstrate that sparse algorithms provide a powerful alternative for interpretable ML in the physical sciences."
+      "orig": "Other interpretability methods like saliency mapping [simonyan2014deepinsideconvolutionalnetworks] cannot learn the non-linear patterns of multiple pixels at once—which is exactly what makes deep learning models so powerful. Despite these limitations, saliency and GradCAM-like techniques are widely adopted in astronomy [2019ApJ...882L..12P,2020ApJ...900..142W,2021MNRAS.501.4579B,2024ApJ...967..152A]. Our results demonstrate that sparse algorithms provide a powerful alternative for interpretable ML in the physical sciences.",
+      "text": "Other interpretability methods like saliency mapping [simonyan2014deepinsideconvolutionalnetworks] cannot learn the non-linear patterns of multiple pixels at once—which is exactly what makes deep learning models so powerful. Despite these limitations, saliency and GradCAM-like techniques are widely adopted in astronomy [2019ApJ...882L..12P,2020ApJ...900..142W,2021MNRAS.501.4579B,2024ApJ...967..152A]. Our results demonstrate that sparse algorithms provide a powerful alternative for interpretable ML in the physical sciences."
     },
     {
       "self_ref": "#/texts/267",
@@ -4710,8 +4710,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We present a novel method for learning the relationship between the physical properties and interpretable morphologies of galaxies. Our sparse feature network (SFNet; Figure[fig:SFNet-architecture]) maps galaxy features onto galaxies' physical properties such as spectroscopic line fluxes and gas-phase metallicity. We identify features that correspond to hard ionizing radiation (starbursts), low gas density, old stellar populations/high metallicities, and star-forming regions/low metallicity (e.g., Table[tab:features] and Figure[fig:bpt-interpretation]). Critically, our method does not substantially sacrifice ML performance in order to gain interpretability. We can write down equations (Figure[fig:equations]) that reveal the robust linear connection between galaxy properties and their appearances. Optimizing a SFNet yields more robust and interpretable features than training a CNN and then using PCA to consolidate the dense features: we find that a linear combination of ",
-      "text": "We present a novel method for learning the relationship between the physical properties and interpretable morphologies of galaxies. Our sparse feature network (SFNet; Figure[fig:SFNet-architecture]) maps galaxy features onto galaxies' physical properties such as spectroscopic line fluxes and gas-phase metallicity. We identify features that correspond to hard ionizing radiation (starbursts), low gas density, old stellar populations/high metallicities, and star-forming regions/low metallicity (e.g., Table[tab:features] and Figure[fig:bpt-interpretation]). Critically, our method does not substantially sacrifice ML performance in order to gain interpretability. We can write down equations (Figure[fig:equations]) that reveal the robust linear connection between galaxy properties and their appearances. Optimizing a SFNet yields more robust and interpretable features than training a CNN and then using PCA to consolidate the dense features: we find that a linear combination of "
+      "orig": "We present a novel method for learning the relationship between the physical properties and interpretable morphologies of galaxies. Our sparse feature network (SFNet; Figure [fig:SFNet-architecture]) maps galaxy features onto galaxies' physical properties such as spectroscopic line fluxes and gas-phase metallicity. We identify features that correspond to hard ionizing radiation (starbursts), low gas density, old stellar populations/high metallicities, and star-forming regions/low metallicity (e.g., Table [tab:features] and Figure [fig:bpt-interpretation]). Critically, our method does not substantially sacrifice ML performance in order to gain interpretability. We can write down “equations” (Figure [fig:equations]) that reveal the robust linear connection between galaxy properties and their appearances. Optimizing a SFNet yields more robust and interpretable features than training a CNN and then using PCA to consolidate the dense features: we find that a linear combination of ",
+      "text": "We present a novel method for learning the relationship between the physical properties and interpretable morphologies of galaxies. Our sparse feature network (SFNet; Figure [fig:SFNet-architecture]) maps galaxy features onto galaxies' physical properties such as spectroscopic line fluxes and gas-phase metallicity. We identify features that correspond to hard ionizing radiation (starbursts), low gas density, old stellar populations/high metallicities, and star-forming regions/low metallicity (e.g., Table [tab:features] and Figure [fig:bpt-interpretation]). Critically, our method does not substantially sacrifice ML performance in order to gain interpretability. We can write down “equations” (Figure [fig:equations]) that reveal the robust linear connection between galaxy properties and their appearances. Optimizing a SFNet yields more robust and interpretable features than training a CNN and then using PCA to consolidate the dense features: we find that a linear combination of "
     },
     {
       "self_ref": "#/texts/270",
@@ -4758,8 +4758,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " principal components of a regular CNN's features (see Figure[fig:pca-comparison]).",
-      "text": " principal components of a regular CNN's features (see Figure[fig:pca-comparison])."
+      "orig": " principal components of a regular CNN's features (see Figure [fig:pca-comparison]).",
+      "text": " principal components of a regular CNN's features (see Figure [fig:pca-comparison])."
     },
     {
       "self_ref": "#/texts/274",
@@ -4933,8 +4933,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Superposition is where semantic concepts (i.e., features) become distributed across many neurons. For example, a single feature like three-armed spiral galaxy can be spread out across multiple neurons (in one or even multiple layers).",
-      "text": "Superposition is where semantic concepts (i.e., features) become distributed across many neurons. For example, a single feature like three-armed spiral galaxy can be spread out across multiple neurons (in one or even multiple layers).",
+      "orig": "Superposition is where semantic concepts (i.e., features) become distributed across many neurons. For example, a single feature like “three-armed spiral galaxy” can be spread out across multiple neurons (in one or even multiple layers).",
+      "text": "Superposition is where semantic concepts (i.e., features) become distributed across many neurons. For example, a single feature like “three-armed spiral galaxy” can be spread out across multiple neurons (in one or even multiple layers).",
       "enumerated": false,
       "marker": ""
     },
@@ -4965,8 +4965,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Polysemanticity means that any given neuron can also have multiple separate meanings. These semantic concepts may not even be correlated with each other! For example, a specific neuron in a regularly trained CNN might activate on features such as three-armed spiral galaxy and ",
-      "text": "Polysemanticity means that any given neuron can also have multiple separate meanings. These semantic concepts may not even be correlated with each other! For example, a specific neuron in a regularly trained CNN might activate on features such as three-armed spiral galaxy and "
+      "orig": "Polysemanticity means that any given neuron can also have multiple separate meanings. These semantic concepts may not even be correlated with each other! For example, a specific neuron in a regularly trained CNN might activate on features such as “three-armed spiral galaxy” and “",
+      "text": "Polysemanticity means that any given neuron can also have multiple separate meanings. These semantic concepts may not even be correlated with each other! For example, a specific neuron in a regularly trained CNN might activate on features such as “three-armed spiral galaxy” and “"
     },
     {
       "self_ref": "#/texts/290",
@@ -4989,8 +4989,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-band light bleed from nearby saturated star.",
-      "text": "-band light bleed from nearby saturated star."
+      "orig": "-band light bleed from nearby saturated star.”",
+      "text": "-band light bleed from nearby saturated star.”"
     },
     {
       "self_ref": "#/texts/292",

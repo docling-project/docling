@@ -43,7 +43,7 @@ item-0 at level 0: unspecified: group _root_
   item-40 at level 1: section_header: Optimised Table Structure Language
   item-41 at level 1: text: To mitigate the issues with HTML ...  time in the TableFormer architecture.
   item-42 at level 1: section_header: Language Definition
-  item-43 at level 1: text: In Figure[OTSL_PROOF], we illust ...  structure based on an atomic 2D grid.
+  item-43 at level 1: text: In Figure [OTSL_PROOF], we illus ...  structure based on an atomic 2D grid.
   item-44 at level 1: section: group figure
     item-45 at level 2: caption: OTSL description of table struct ... ding; E - explanation on cell encoding
     item-46 at level 2: picture
@@ -67,7 +67,7 @@ item-0 at level 0: unspecified: group _root_
     item-63 at level 2: list_item: First column rule: Only "U" cell ... cells are allowed in the first column.
     item-64 at level 2: list_item: Rectangular rule: The table repr ... of tokens, terminated with "NL" token.
   item-65 at level 1: paragraph: The application of these rules g ... icted sequence is syntactically valid.
-  item-66 at level 1: text: These characteristics can be eas ... odels (see Figure[OTSLvHTML_compare]).
+  item-66 at level 1: text: These characteristics can be eas ... dels (see Figure [OTSLvHTML_compare]).
   item-67 at level 1: section_header: Error-detection and -mitigation
   item-68 at level 1: paragraph: The design of OTSL allows to val ... idence until OTSL rules are satisfied.
   item-69 at level 1: section_header: Experiments
@@ -86,7 +86,7 @@ item-0 at level 0: unspecified: group _root_
   item-80 at level 1: text: We picked the model parameter co ...  that contain sparse and large tables.
   item-81 at level 1: caption: TSR and cell detection results c ... eFormer] (with enc=6, dec=6, heads=8).
   item-82 at level 1: table with [9x7]
-    item-82 at level 2: caption: TSR and cell detection results compared between OTSL and HTML on the PubTabNet[PubTabNet], FinTabNet[GTE] and PubTables-1M[smock2022pubtables] data sets using TableFormer[TableFormer] (with enc=6, dec=6, heads=8).
+    item-82 at level 2: caption: TSR and cell detection results compared between OTSL and HTML on the PubTabNet [PubTabNet], FinTabNet [GTE] and PubTables-1M [smock2022pubtables] data sets using TableFormer [TableFormer] (with enc=6, dec=6, heads=8).
   item-83 at level 1: paragraph: Additionally, the results show t ... f the reduced sequence representation.
   item-84 at level 1: section_header: Qualitative Results
   item-85 at level 1: text: To illustrate the qualitative di ... ructure prediction and bounding boxes.
@@ -100,6 +100,6 @@ item-0 at level 0: unspecified: group _root_
       item-91 at level 3: caption: Visualization of predicted structure and detected bounding boxes on a complex table with many rows. The OTSL model (B) captured repeating pattern of horizontally merged cells from the GT (A), unlike the HTML model (C). The HTML model also didn't complete the HTML sequence correctly and displayed a lot more of drift and overlap of bounding boxes. "PMC5406406_003_01.png" PubTabNet.
   item-92 at level 1: section_header: Conclusion
   item-93 at level 1: text: We demonstrated that representin ... e languages, has several key benefits.
-  item-94 at level 1: text: First and foremost, given the sa ...  trained on HTML (see Table[tab:HPO]).
+  item-94 at level 1: text: First and foremost, given the sa ... trained on HTML (see Table [tab:HPO]).
   item-95 at level 1: text: Secondly, OTSL has more inherent ... on-the-fly during sequence generation.
   item-96 at level 1: text: papers
