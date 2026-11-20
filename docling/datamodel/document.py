@@ -627,6 +627,9 @@ class ConversionResult(ConversionAssets):
     # above: the assembly stage reads it to bound work that runs after the page
     # stages (e.g. reading-order separator extraction).
     _conversion_deadline: Optional[float] = PrivateAttr(default=None)
+    # Original page-processing exception, retained for error chaining.
+    # PrivateAttr keeps it out of serialized conversion results.
+    _page_failure_cause: Optional[BaseException] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):
