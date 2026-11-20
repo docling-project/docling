@@ -64,6 +64,7 @@ from docling.cli.export_utils import (
     _parse_page_range,
     _should_generate_export_images,
     _split_list,
+    _unique_output_stem,
 )
 from docling.cli.model_table import (
     ASR_BACKENDS,
@@ -690,6 +691,7 @@ def export_documents(
     success_count = 0
     partial_success_count = 0
     failure_count = 0
+    used_output_stems: set[str] = set()
 
     # Initialize chunker once for all documents
     chunker_obj = None
@@ -729,7 +731,14 @@ def export_documents(
             ConversionStatus.PARTIAL_SUCCESS,
         }
         if not doc_failed:
-            doc_filename = conv_res.input.file.stem
+            source_stem = conv_res.input.file.stem
+            doc_filename = _unique_output_stem(source_stem, used_output_stems)
+
+            if doc_filename != source_stem:
+                _log.warning(
+                    f"Output filename collision for {conv_res.input.file}; "
+                    f"using stem {doc_filename!r}"
+                )
 
             # Export JSON format:
             if export_json:
@@ -1762,7 +1771,8 @@ def convert(  # noqa: C901
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: list[Path | str] = []
-        for src in source:
+        for source_index, src in enumerate(source):
+            source_workdir = Path(tempdir) / f"source_{source_index}"
             try:
                 if _is_http_url(src) and _is_html_source(src, from_formats):
                     input_doc_paths.append(src)
@@ -1784,14 +1794,18 @@ def convert(  # noqa: C901
                         input_doc_paths.append(local_path)
                     else:
                         resolved_source = resolve_source_to_path(
-                            source=src, headers=parsed_headers, workdir=Path(tempdir)
+                            source=src,
+                            headers=parsed_headers,
+                            workdir=source_workdir,
                         )
                         input_doc_paths.append(resolved_source)
                     continue
 
                 # check if we can fetch some remote url
                 resolved_source = resolve_source_to_path(
-                    source=src, headers=parsed_headers, workdir=Path(tempdir)
+                    source=src,
+                    headers=parsed_headers,
+                    workdir=source_workdir,
                 )
                 input_doc_paths.append(resolved_source)
             except FileNotFoundError:
