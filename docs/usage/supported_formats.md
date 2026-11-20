@@ -40,7 +40,11 @@ and retains the decoder error as its cause.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
-Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
+Email conversion prefers non-empty plain-text bodies. Set
+`EmailBackendOptions.prefer_html` to `True` to use the HTML body when the message
+has both, for example to keep tables that the plain-text body flattens. For `.msg`
+files, the HTML body is also read from the RTF body when Outlook stores it only
+there. When it uses an HTML body,
 text in `<footer>` elements is retained in the furniture content layer. Default
 Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
 `included_content_layers` to export it.
