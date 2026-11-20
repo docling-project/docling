@@ -936,9 +936,18 @@ class ReadingOrderPredictor:
                 lane_element = pelem_j if horizontal_i else pelem_i
                 overlaps_sequence = lane_element.overlaps_horizontally(pelem_w)
             else:
-                overlaps_sequence = pelem_i.overlaps_horizontally(
-                    pelem_w
-                ) or pelem_j.overlaps_horizontally(pelem_w)
+                # When a column feeds into a wider block, another column
+                # must not hide that link. The wider block must reach the
+                # upper column's centre; a slight overlap at its edge still
+                # needs the ordinary interruption check.
+                lower_spans_upper_column = (
+                    not horizontal_i
+                    and pelem_j.l <= (pelem_i.l + pelem_i.r) / 2 <= pelem_j.r
+                )
+                overlaps_sequence = pelem_i.overlaps_horizontally(pelem_w) or (
+                    not lower_spans_upper_column
+                    and pelem_j.overlaps_horizontally(pelem_w)
+                )
 
             # Check if w interrupts the i->j sequence
             if (
