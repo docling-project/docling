@@ -64,6 +64,7 @@ from docling.backend.docx.drawingml.utils import (
     convert_to_modern_format,
     crop_whitespace,
     get_docx_to_pdf_converter,
+    render_pdf_page_as_pil,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.backend.utils.archive_limits import (
@@ -114,16 +115,6 @@ try:  # pragma: no cover - import-time guard
     _PPTX_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
     _PPTX_IMPORT_ERROR = e
-
-# pypdfium2 ships with the PDF extras, not with format-pptx, and is only reached
-# after `get_docx_to_pdf_converter` returns a converter. That shared factory
-# returns None when pypdfium2 is missing, so the rendering paths already degrade
-# to "no image"; this guard only keeps the module itself importable.
-# See https://github.com/docling-project/docling/issues/3613.
-try:  # pragma: no cover - import-time guard
-    import pypdfium2
-except ImportError:  # pragma: no cover - import-time guard
-    pass
 
 _INSTALL_HINT = (
     "The 'python-pptx' package is required to process PowerPoint files. "
@@ -1329,8 +1320,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         LibreOffice converts a standalone ``.emf``/``.wmf`` to PDF directly, so
         no wrapper document is needed; the first page is then rendered with
-        pypdfium2. This is the same route ``_render_chart_image`` already takes
-        for native charts.
+        docling-parse. This is the same route ``_render_chart_image`` already
+        takes for native charts.
 
         Args:
             image_bytes: Raw metafile data.
@@ -1356,11 +1347,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("EMF/WMF rasterization via LibreOffice failed: %s", exc)
@@ -2068,8 +2055,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         input file to PDF.
 
         Returns:
-            A converter callable, or None when LibreOffice or pypdfium2 is not
-            available; `get_docx_to_pdf_converter` checks for both.
+            A converter callable, or None when LibreOffice or docling-parse is
+            not available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.pptx_to_pdf_converter_init:
             return self.pptx_to_pdf_converter
@@ -2212,7 +2199,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         obtain a picture we isolate the chart onto a throwaway single-slide
         presentation, convert that to PDF with LibreOffice — the same external
         tool already used for EMF/WMF images — and rasterize the first page with
-        pypdfium2, trimming the surrounding whitespace.
+        docling-parse, trimming the surrounding whitespace.
 
         Args:
             slide_ind: Zero-based index of the slide holding the chart.
@@ -2238,11 +2225,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for a chart")
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("Chart rendering via LibreOffice failed: %s", exc)

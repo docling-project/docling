@@ -20,29 +20,34 @@ from PIL import Image, ImageChops
 if TYPE_CHECKING:
     from docx.document import Document
 
-# pypdfium2 ships with the PDF extras, not with format-docx/pptx/xlsx, but this
-# module is imported eagerly by the Word, PowerPoint, and Excel backends. A
-# module-level import therefore breaks those backends on installs that omit the
-# PDF extras. Guard it here and report the absence once from
-# `get_docx_to_pdf_converter`, which every caller goes through.
-# See https://github.com/docling-project/docling/issues/3613.
-_PYPDFIUM2_AVAILABLE: bool = False
+# docling-parse ships with the format-pdf-docling extra, not with
+# format-docx/pptx/xlsx, but this module is imported eagerly by the Word,
+# PowerPoint, and Excel backends. A module-level import therefore breaks those
+# backends on installs that omit the extra. Guard it here and report the
+# absence once from `get_docx_to_pdf_converter`, which every caller goes
+# through. See https://github.com/docling-project/docling/issues/3613.
+_DOCLING_PARSE_AVAILABLE: bool = False
+_DOCLING_PARSE_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
-    import pypdfium2
+    from docling_parse.pdf_parser import (
+        DoclingThreadedPdfParser,
+        RenderConfig,
+        ThreadedPdfParserConfig,
+    )
 
-    _PYPDFIUM2_AVAILABLE = True
-except ImportError:  # pragma: no cover - import-time guard
-    pass
+    _DOCLING_PARSE_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _DOCLING_PARSE_IMPORT_ERROR = e
 
-_PYPDFIUM2_INSTALL_HINT = (
-    "The 'pypdfium2' package is required to rasterize the PDF that LibreOffice "
-    "produces, so charts and EMF/WMF pictures will be skipped. Install it with "
-    "`pip install 'docling-slim[format-pdf-pypdfium2]'`."
+_DOCLING_PARSE_INSTALL_HINT = (
+    "The 'docling-parse' package is required to rasterize the PDF that "
+    "LibreOffice produces, so charts and EMF/WMF pictures will be skipped. "
+    "Install it with `pip install 'docling-slim[format-pdf-docling]'`."
 )
 
 _log = logging.getLogger(__name__)
 
-_pypdfium2_warning_emitted = False
+_docling_parse_warning_emitted = False
 
 LIBREOFFICE_TIMEOUT_S: Final[int] = 60
 """Maximum seconds to wait for a single LibreOffice conversion.
@@ -341,16 +346,17 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     """
     Detects the best available DOCX to PDF tool and returns a conversion function.
     The returned function accepts (input_path, output_path).
-    Returns None if no tool is available, or if pypdfium2 is missing: every caller
-    rasterizes the resulting PDF with it, so the conversion would be useless.
+    Returns None if no tool is available, or if docling-parse is missing: every
+    caller rasterizes the resulting PDF with it, so the conversion would be
+    useless.
     """
-    # Every consumer feeds the LibreOffice PDF straight into pypdfium2, so report
-    # the missing package here once rather than in each backend.
-    global _pypdfium2_warning_emitted
-    if not _PYPDFIUM2_AVAILABLE:
-        if not _pypdfium2_warning_emitted:
-            _log.warning(_PYPDFIUM2_INSTALL_HINT)
-            _pypdfium2_warning_emitted = True
+    # Every consumer feeds the LibreOffice PDF straight into docling-parse, so
+    # report the missing package here once rather than in each backend.
+    global _docling_parse_warning_emitted
+    if not _DOCLING_PARSE_AVAILABLE:
+        if not _docling_parse_warning_emitted:
+            _log.warning(_DOCLING_PARSE_INSTALL_HINT)
+            _docling_parse_warning_emitted = True
         return None
 
     # Try LibreOffice
@@ -419,6 +425,48 @@ def crop_whitespace(image: Image.Image, bg_color=None, padding=0) -> Image.Image
         return image
 
 
+def render_pdf_page_as_pil(pdf_path: Path, scale: float = 2.0) -> Image.Image:
+    """Rasterize page 1 of a PDF with docling-parse and return the image.
+
+    docling-parse renders through its own native engine, which does not depend
+    on the shared PDFium state that `PyPdfiumDocumentBackend` guards with
+    `pypdfium2_lock`, so Office backends can rasterize their LibreOffice output
+    without serializing against PDF-based document backends. Callers that only
+    skip an image on failure may let errors from here bubble into their
+    existing except-handling; `get_pil_from_dml_docx` propagates them.
+    """
+    if not _DOCLING_PARSE_AVAILABLE:
+        raise ImportError(_DOCLING_PARSE_INSTALL_HINT) from _DOCLING_PARSE_IMPORT_ERROR
+
+    render_config = RenderConfig()
+    render_config.scale = scale
+    parser = DoclingThreadedPdfParser(
+        parser_config=ThreadedPdfParserConfig(
+            loglevel="fatal", render_config=render_config
+        )
+    )
+    doc_key = parser.load(pdf_path, page_numbers=[1])
+    try:
+        for result in parser.iterate_results():
+            if not result.success:
+                raise RuntimeError(
+                    f"docling-parse failed to render page {result.page_number} "
+                    f"of {pdf_path.name}: {result.error_message}"
+                )
+            if not result.has_image:
+                raise RuntimeError(
+                    f"docling-parse produced no image for page "
+                    f"{result.page_number} of {pdf_path.name}"
+                )
+            # Drop the alpha band: crop_whitespace relies on ImageChops over all
+            # channels, and pypdfium2 (the previous renderer here) handed out
+            # RGB images, so callers downstream expect exactly that.
+            return result.get_image().convert("RGB")
+        raise RuntimeError(f"docling-parse produced no page for {pdf_path.name}")
+    finally:
+        parser.unload(doc_key)
+
+
 def get_pil_from_dml_docx(
     docx: Document, converter: Optional[Callable]
 ) -> Optional[Image.Image]:
@@ -436,12 +484,8 @@ def get_pil_from_dml_docx(
         # 2) Export to PDF
         converter(temp_docx, temp_pdf)
 
-        # 3) Load PDF as PNG
-        pdf = pypdfium2.PdfDocument(temp_pdf)
-        page = pdf[0]
-        image = crop_whitespace(page.render(scale=2).to_pil())
-        page.close()
-        pdf.close()
+        # 3) Render the PDF page as PNG
+        image = crop_whitespace(render_pdf_page_as_pil(temp_pdf, scale=2.0))
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
