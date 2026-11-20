@@ -25,8 +25,11 @@ from __future__ import annotations
 import logging
 import traceback
 import warnings
+from collections.abc import Collection
+from copy import deepcopy
 from dataclasses import dataclass, replace
 from io import BytesIO
+from itertools import takewhile
 from pathlib import Path
 from typing import Final, cast
 from urllib.parse import urlsplit
@@ -39,6 +42,7 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     ImageRef,
+    ListItem,
     NodeItem,
     RichTableCell,
     TableCell,
@@ -92,10 +96,40 @@ _GRAPHIC_XPATH: Final[str] = "graphic | alternatives/graphic"
 _ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
     {"order", "alpha-lower", "alpha-upper", "roman-lower", "roman-upper"}
 )
+# Block elements that end the pending text of a paragraph that contains them.
+_FLUSH_TAGS: Final[frozenset[str]] = frozenset(
+    {
+        "ack",
+        "sec",
+        "list",
+        "def-list",
+        "boxed-text",
+        "supplementary-material",
+        "disp-formula",
+        "fig",
+        "preformat",
+        "code",
+    }
+)
+# Block elements that the walk adds as items of their own, not as inline text.
+_BLOCK_TAGS: Final[frozenset[str]] = _FLUSH_TAGS | {"table-wrap", "fn-group"}
+# Formula wrappers whose MathML is the formula when they have no tex-math.
+_FORMULA_TAGS: Final[frozenset[str]] = frozenset({"inline-formula", "disp-formula"})
 # Elements that hold a whole article inside another one, such as a decision
 # letter or an author reply, from the JATS 1.3 tag library.
 _SUB_ARTICLE_TAGS: Final[tuple[str, ...]] = ("sub-article", "response")
 _NOT_IN_SUB_ARTICLE: Final[str] = "not(ancestor::sub-article or ancestor::response)"
+# `encoding` values of a MathML annotation that holds the TeX of the formula.
+_MATHML_TEX_ENCODINGS: Final[frozenset[str]] = frozenset({"application/x-tex", "tex"})
+_MATHML_ANNOTATION_XPATH: Final[str] = (
+    "*[local-name()='semantics']/*[local-name()='annotation']"
+)
+# Alternatives of a MathML formula that are read instead of its MathML.
+_MATHML_SIBLING_XPATH: Final[str] = "tex-math | textual-form"
+_MATHML_TEXT_XPATH: Final[str] = (
+    ".//text()[not(ancestor::*[local-name()='annotation'"
+    " or local-name()='annotation-xml'])]"
+)
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -345,6 +379,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             text += child.tail.replace("\n", " ") if child.tail else ""
 
         return text
+
+    @staticmethod
+    def _get_caption_title(node: etree._Element) -> str:
+        """Return the label and caption title of `node`, joined by a space."""
+        titles = [
+            JatsDocumentBackend._normalize_whitespace(JatsDocumentBackend._get_text(t))
+            for t in node.xpath("caption/title")
+        ]
+        return " ".join(
+            part for part in (JatsDocumentBackend._get_label(node), *titles) if part
+        )
 
     @staticmethod
     def _get_label(node: etree._Element) -> str:
@@ -868,6 +913,75 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return JatsDocumentBackend._strip_tex_delimiters(node.text)
 
     @staticmethod
+    def _read_mathml(node: etree._Element) -> InlineSegment | None:
+        """Return how a MathML `math` reads, or None if it adds nothing.
+
+        A `math` next to a `tex-math` or a `textual-form`, in a formula wrapper or
+        its `alternatives`, is the alternative of that formula and adds nothing:
+        the walk reads the other one. In a formula wrapper, a TeX annotation is
+        the formula. Otherwise the math reads as the text of its tokens, as its
+        presentation markup is no formula source.
+        """
+        wrapper = node.getparent()
+        if wrapper is not None and wrapper.tag == "alternatives":
+            if wrapper.xpath(_MATHML_SIBLING_XPATH):
+                return None
+            wrapper = wrapper.getparent()
+        if wrapper is not None and wrapper.tag in _FORMULA_TAGS:
+            if wrapper.xpath(_MATHML_SIBLING_XPATH):
+                return None
+            for annotation in node.xpath(_MATHML_ANNOTATION_XPATH):
+                encoding = (annotation.get("encoding") or "").strip().lower()
+                if encoding in _MATHML_TEX_ENCODINGS:
+                    tex = JatsDocumentBackend._strip_tex_delimiters(
+                        "".join(annotation.itertext())
+                    )
+                    if tex is not None:
+                        return InlineSegment(label=DocItemLabel.FORMULA, text=tex)
+        text = JatsDocumentBackend._mathml_text(node)
+        return InlineSegment(label=DocItemLabel.TEXT, text=text) if text else None
+
+    @staticmethod
+    def _display_textual_form(node: etree._Element) -> str | None:
+        """Return the text of a `textual-form` that stands for a display formula.
+
+        It is the text of a `disp-formula`, directly or in its `alternatives`,
+        unless the formula also has a `tex-math`, which the walk reads instead.
+        """
+        wrapper = node.getparent()
+        if wrapper is not None and wrapper.tag == "alternatives":
+            if wrapper.find("tex-math") is not None:
+                return None
+            wrapper = wrapper.getparent()
+        if wrapper is None or wrapper.tag != "disp-formula":
+            return None
+        if wrapper.find("tex-math") is not None:
+            return None
+        return (
+            JatsDocumentBackend._normalize_whitespace("".join(node.itertext())) or None
+        )
+
+    @staticmethod
+    def _mathml_text(node: etree._Element) -> str:
+        """Return the text of the tokens of a MathML `math`, without annotations.
+
+        The tokens are joined as they are, except the words of an `mtext`, which
+        keep a space on each side. An `mtext` without a letter, such as one digit
+        of a number, is joined as it is too.
+        """
+        parts: list[str] = []
+        for text in node.xpath(_MATHML_TEXT_XPATH):
+            part = text.strip()
+            if (
+                any(char.isalpha() for char in part)
+                and text.is_text
+                and text.getparent().tag.endswith("}mtext")
+            ):
+                part = f" {part} "
+            parts.append(part)
+        return " ".join("".join(parts).split())
+
+    @staticmethod
     def _strip_tex_delimiters(tex: str) -> str | None:
         text = tex.strip()
         for delimiter in ("$$", "$"):
@@ -949,8 +1063,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
         for child in node:
             tag = child.tag
-            if not isinstance(tag, str) or tag.endswith("}math"):
-                # Skip comments, processing instructions, and MathML.
+            if not isinstance(tag, str):
+                # Skip comments and processing instructions.
                 pass
             elif tag == "tex-math":
                 formula = JatsDocumentBackend._extract_tex_math(child)
@@ -961,6 +1075,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                             text=formula,
                             hyperlink=hyperlink,
                         )
+                    )
+            elif tag.endswith("}math"):
+                mathml = JatsDocumentBackend._read_mathml(child)
+                if mathml is None:
+                    pass
+                elif mathml.label == DocItemLabel.FORMULA:
+                    segments.append(replace(mathml, hyperlink=hyperlink))
+                else:
+                    # the text joins the runs around it
+                    JatsDocumentBackend._append_run(
+                        segments, mathml.text, current, hyperlink
                     )
             else:
                 child_segments = JatsDocumentBackend._walk_inline_formula(
@@ -1097,11 +1222,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
-        fig_caption: TextItem | None = (
-            doc.add_text(label=DocItemLabel.CAPTION, text=fig_text)
-            if fig_text
-            else None
-        )
+        fig_caption = JatsDocumentBackend._add_caption(doc, node, fig_text)
 
         doc.add_picture(
             parent=parent,
@@ -1110,6 +1231,36 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
 
         return
+
+    @staticmethod
+    def _add_caption(
+        doc: DoclingDocument, node: etree._Element, text: str
+    ) -> TextItem | None:
+        """Add the caption of a figure or table, or nothing if `text` is empty.
+
+        `text` is the plain text of the label and the caption, which leaves out
+        inline formulas. A caption with an inline formula is one text item too:
+        its text is read again with the formula, its TeX between `$` delimiters,
+        or the text of its MathML when it has no TeX.
+        """
+        paragraphs = [
+            *node.xpath("label[1]"),
+            *(
+                par
+                for par in node.xpath("caption[1]/*")
+                if not par.xpath(".//supplementary-material")
+            ),
+        ]
+        if any(par.xpath(".//inline-formula") for par in paragraphs):
+            text = "".join(
+                f"${segment.text}$"
+                if segment.label == DocItemLabel.FORMULA
+                else segment.text
+                for segment in JatsDocumentBackend._inline_paragraph_segments(
+                    paragraphs
+                )
+            ).strip()
+        return doc.add_text(label=DocItemLabel.CAPTION, text=text) if text else None
 
     def _load_figure_image(self, node: etree._Element) -> ImageRef | None:
         """Load an explicitly enabled local JATS figure image."""
@@ -1408,7 +1559,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return data
 
     def _add_table(
-        self, doc: DoclingDocument, parent: NodeItem, table_xml_component: Table
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        table_xml_component: Table,
+        node: etree._Element,
     ) -> TableItem | None:
         soup = BeautifulSoup(table_xml_component["content"], "html.parser")
         table_tag = soup.find("table")
@@ -1419,11 +1574,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         label = table_xml_component["label"]
         caption = table_xml_component["caption"]
         table_text: str = f"{label}{' ' if label and caption else ''}{caption}"
-        table_caption: TextItem | None = (
-            doc.add_text(label=DocItemLabel.CAPTION, text=table_text)
-            if table_text
-            else None
-        )
+        table_caption = JatsDocumentBackend._add_caption(doc, node, table_text)
         # Rich cells hold their runs under the table, so it must exist first.
         table_item = doc.add_table(
             data=TableData(num_rows=0, num_cols=0, table_cells=[]),
@@ -1506,11 +1657,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Label
         if len(node.xpath("label")) > 0:
-            # lxml sets .text to None for an empty element; fall back to "".
-            table["label"] = node.xpath("label")[0].text or ""
+            table["label"] = JatsDocumentBackend._get_text(
+                node.xpath("label")[0]
+            ).strip()
 
         try:
-            table_item = self._add_table(doc, parent, table)
+            table_item = self._add_table(doc, parent, table, node)
         except Exception:
             _log.warning(f"Skipping unsupported table in {self.file!s}")
             return
@@ -1562,6 +1714,213 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             list_item = doc.add_list_item(parent=footnote_group, text="")
             JatsDocumentBackend._emit_inline(doc, list_item, segments)
 
+    @staticmethod
+    def _is_inline_paragraph(node: etree._Element) -> bool:
+        """Return whether `node` has no block element, such as a list, in it."""
+        return next(node.iterdescendants(*_BLOCK_TAGS), None) is None
+
+    @staticmethod
+    def _split_leading_inline(node: etree._Element) -> etree._Element:
+        """Split the text before the first block off a paragraph with a block in it.
+
+        When no inline paragraph comes first in a `<list-item>`, the first
+        paragraph with a block, such as a display formula or a list, would leave
+        the item without text. Return a copy of the item where that paragraph is
+        split in two: the inline content before its first block, which is then an
+        inline paragraph, and the rest, which is walked under the item. Return
+        `node` as it is when there is nothing to split.
+        """
+        for p in node.iterchildren("p"):
+            if JatsDocumentBackend._is_inline_paragraph(p):
+                return node
+            break
+        else:
+            return node
+        children = list(p)
+        split_at = next(
+            index
+            for index, child in enumerate(children)
+            if JatsDocumentBackend._has_block(child)
+        )
+        if split_at == 0 and not (p.text or "").strip():
+            return node
+        # the copy keeps a parent, as the walk reads the tag of the parent
+        holder = etree.Element(node.getparent().tag)
+        item = deepcopy(node)
+        holder.append(item)
+        lead = next(item.iterchildren("p"))
+        children = list(lead)
+        block = children[split_at]
+        resume = split_at + 1
+        inline_after: list[etree._Element] = []
+        if block.tag == "list":
+            # the inline text after a list is part of the item text, like in HTML
+            tail, block.tail = block.tail, None
+            if tail:
+                if split_at:
+                    children[split_at - 1].tail = (
+                        children[split_at - 1].tail or ""
+                    ) + tail
+                else:
+                    lead.text = (lead.text or "") + tail
+            while resume < len(children) and not JatsDocumentBackend._has_block(
+                children[resume]
+            ):
+                inline_after.append(children[resume])
+                resume += 1
+        rest = etree.Element("p")
+        rest.append(block)
+        for child in children[resume:]:
+            rest.append(child)
+        for child in inline_after:
+            lead.append(child)
+        lead.addnext(rest)
+        return item
+
+    @staticmethod
+    def _has_block(node: etree._Element) -> bool:
+        """Return whether `node` is a block or has one in it."""
+        return isinstance(node.tag, str) and (
+            node.tag in _BLOCK_TAGS
+            or next(node.iterdescendants(*_BLOCK_TAGS), None) is not None
+        )
+
+    @staticmethod
+    def _inline_paragraph_segments(
+        paragraphs: list[etree._Element],
+    ) -> list[InlineSegment]:
+        """Join the inline segments of paragraphs, one space between paragraphs."""
+        segments: list[InlineSegment] = []
+        for p in paragraphs:
+            p_segments = JatsDocumentBackend._trim_segment_edges(
+                JatsDocumentBackend._walk_inline_formula(p, resolve_ext_links=True)
+            )
+            if segments and p_segments:
+                JatsDocumentBackend._append_run(segments, " ", None)
+            JatsDocumentBackend._extend_segments(segments, p_segments)
+        return segments
+
+    @staticmethod
+    def _add_inline_list_item(
+        doc: DoclingDocument,
+        parent: NodeItem,
+        segments: list[InlineSegment],
+        enumerated: bool = False,
+        marker: str | None = None,
+    ) -> ListItem | None:
+        """Add a list item with the inline segments, or nothing if they are empty.
+
+        One text run is the text of the item; more runs, or a formula, go in an
+        inline group under an item without text.
+        """
+        segments = JatsDocumentBackend._trim_segment_edges(segments)
+        if not segments:
+            return None
+        [first, *rest] = segments
+        if not rest and first.label == DocItemLabel.TEXT:
+            return doc.add_list_item(
+                text=first.text,
+                enumerated=enumerated,
+                marker=marker,
+                formatting=first.formatting,
+                hyperlink=first.hyperlink,
+                parent=parent,
+            )
+        # an inline group, even for one formula, keeps the content on the bullet line
+        list_item = doc.add_list_item(
+            text="", enumerated=enumerated, marker=marker, parent=parent
+        )
+        inline_group = doc.add_inline_group(parent=list_item)
+        for segment in segments:
+            doc.add_text(
+                label=segment.label,
+                text=segment.text,
+                formatting=segment.formatting,
+                hyperlink=segment.hyperlink,
+                parent=inline_group,
+            )
+        return list_item
+
+    def _add_list_item(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        node: etree._Element,
+        enumerated: bool,
+    ) -> None:
+        """Add a `<list-item>` like an HTML `<li>`.
+
+        The paragraphs with only inline content are the text of the item, with
+        their styling, links and inline formulas. Other content, such as a nested
+        list or a display formula, goes under the item.
+        """
+        node = JatsDocumentBackend._split_leading_inline(node)
+        paragraphs = [
+            p
+            for p in node.iterchildren("p")
+            if JatsDocumentBackend._is_inline_paragraph(p)
+        ]
+        marker = JatsDocumentBackend._get_label(node)
+        list_item = JatsDocumentBackend._add_inline_list_item(
+            doc,
+            parent,
+            JatsDocumentBackend._inline_paragraph_segments(paragraphs),
+            enumerated=enumerated,
+            marker=marker,
+        ) or doc.add_list_item(
+            text="", enumerated=enumerated, marker=marker, parent=parent
+        )
+        self._walk_linear(doc, list_item, node, skip_children=paragraphs)
+
+    def _add_def_item(
+        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
+    ) -> None:
+        """Add a `<def-item>` like an HTML `<dt>`/`<dd>` pair.
+
+        The `<term>` is a bold list item and each `<def>` is an item of a nested
+        list under it. The paragraphs of a `<def>` are the text of its item, and
+        other content, such as a nested list, goes under the item.
+        """
+        term_item: ListItem | None = None
+        descriptions: NodeItem | None = None
+        for child in node.iterchildren("term", "def"):
+            if child.tag == "term":
+                term_item = JatsDocumentBackend._add_inline_list_item(
+                    doc,
+                    parent,
+                    JatsDocumentBackend._walk_inline_formula(
+                        child, Formatting(bold=True), resolve_ext_links=True
+                    ),
+                )
+                descriptions = None
+                continue
+            if descriptions is None:
+                descriptions = (
+                    doc.add_group(
+                        label=GroupLabel.LIST, name="descriptions", parent=term_item
+                    )
+                    if term_item is not None
+                    else parent
+                )
+            # leading paragraphs with only inline content are the text of the item
+            paragraphs = list(
+                takewhile(
+                    lambda elem: (
+                        elem.tag == "p"
+                        and JatsDocumentBackend._is_inline_paragraph(elem)
+                    ),
+                    child.iterchildren(etree.Element),
+                )
+            )
+            def_item = JatsDocumentBackend._add_inline_list_item(
+                doc,
+                descriptions,
+                JatsDocumentBackend._inline_paragraph_segments(paragraphs),
+            )
+            self._walk_linear(
+                doc, def_item or descriptions, child, skip_children=paragraphs
+            )
+
     def _add_sub_article(
         self,
         doc: DoclingDocument,
@@ -1603,17 +1962,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         node: etree._Element,
         formatting: Formatting | None = None,
         hyperlink: AnyUrl | Path | None = None,
+        *,
+        skip_children: Collection[etree._Element] = (),
     ) -> list[InlineSegment]:
-        flush_tags = [
-            "ack",
-            "sec",
-            "list",
-            "boxed-text",
-            "disp-formula",
-            "fig",
-            "preformat",
-            "code",
-        ]
         new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         current_hyperlink = hyperlink
@@ -1631,12 +1982,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             stop_walk: bool = False
 
             # flush pending inline content before a block child in a paragraph
-            if node.tag == "p" and child.tag in flush_tags:
+            if node.tag == "p" and child.tag in _FLUSH_TAGS:
                 JatsDocumentBackend._emit_inline(doc, parent, inline_segments)
                 inline_segments = []
 
             # add elements and decide whether to stop walking
-            if child.tag in ("sec", "ack"):
+            if child in skip_children:
+                stop_walk = True
+            elif child.tag in ("sec", "ack", "glossary"):
                 header = child.xpath("title|label")
                 text: str | None = None
                 if len(header) > 0:
@@ -1652,34 +2005,29 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 new_parent = doc.add_group(
                     label=GroupLabel.LIST, name="list", parent=parent
                 )
+            elif child.tag == "def-list":
+                # only the items go into the group, not the siblings after it
+                self._walk_linear(
+                    doc,
+                    doc.add_group(
+                        label=GroupLabel.LIST, name="description list", parent=parent
+                    ),
+                    child,
+                    current,
+                    current_hyperlink,
+                )
+                stop_walk = True
+            elif child.tag == "def-item":
+                self._add_def_item(doc, parent, child)
+                stop_walk = True
             elif child.tag == "list-item":
-                # TODO: address non-paragraph, non-list content inside list-item
-                #       (e.g. disp-formula, fig, table-wrap)
-                text_parts: list[str] = []
-                nested_lists: list[etree._Element] = []
-
-                for elem in child:
-                    if elem.tag == "p":
-                        text_parts.append(JatsDocumentBackend._get_text(elem).strip())
-                    elif elem.tag == "list":
-                        nested_lists.append(elem)
-
-                text = " ".join(part for part in text_parts if part)
-
-                new_parent = doc.add_list_item(
-                    text=text,
+                self._add_list_item(
+                    doc,
+                    parent,
+                    child,
                     enumerated=node.get("list-type", "").strip().lower()
                     in _ORDERED_LIST_TYPES,
-                    marker=JatsDocumentBackend._get_label(child),
-                    parent=parent,
                 )
-
-                for nested in nested_lists:
-                    nested_group = doc.add_group(
-                        label=GroupLabel.LIST, name="list", parent=new_parent
-                    )
-                    self._walk_linear(doc, nested_group, nested)
-
                 stop_walk = True
 
             elif child.tag == "fig":
@@ -1688,8 +2036,22 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "table-wrap":
                 self._add_tables(doc, parent, child)
                 stop_walk = True
-            elif child.tag == "suplementary-material":
+            elif child.tag == "boxed-text" and (
+                box_title := JatsDocumentBackend._get_caption_title(child)
+            ):
+                # like a section, a titled box holds its content under a heading
+                self.hlevel += 1
+                self._walk_linear(
+                    doc,
+                    doc.add_heading(text=box_title, parent=parent, level=self.hlevel),
+                    child,
+                )
+                self.hlevel -= 1
                 stop_walk = True
+            elif child.tag == "supplementary-material":
+                # the caption paragraphs follow, as the walk goes on
+                if title := JatsDocumentBackend._get_caption_title(child):
+                    doc.add_text(label=DocItemLabel.TEXT, text=title, parent=parent)
             elif child.tag == "fn-group":
                 self._add_footnote_group(
                     doc,
@@ -1718,6 +2080,27 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "tex-math":
                 self._add_equation(doc, parent, child)
                 stop_walk = True
+            elif child.tag == "textual-form" and (
+                textual := JatsDocumentBackend._display_textual_form(child)
+            ):
+                # a display formula given as text is a block in place
+                doc.add_text(label=DocItemLabel.TEXT, text=textual, parent=parent)
+                stop_walk = True
+            elif isinstance(child.tag, str) and child.tag.endswith("}math"):
+                mathml = JatsDocumentBackend._read_mathml(child)
+                if mathml is None:
+                    pass
+                elif mathml.label == DocItemLabel.FORMULA or "disp-formula" in (
+                    node.tag,
+                    node.getparent().tag,
+                ):
+                    # a display formula given only as MathML is a block in place
+                    doc.add_text(label=mathml.label, text=mathml.text, parent=parent)
+                else:
+                    JatsDocumentBackend._append_run(
+                        inline_segments, mathml.text, current, current_hyperlink
+                    )
+                stop_walk = True
             elif child.tag in ("preformat", "code"):
                 self._add_code_block(doc, parent, child)
                 stop_walk = True
@@ -1736,11 +2119,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 child_segments = self._walk_linear(
                     doc, new_parent, child, current, current_hyperlink
                 )
-                if not (node.getparent().tag == "p" and node.tag in flush_tags):
+                if not (node.getparent().tag == "p" and node.tag in _FLUSH_TAGS):
                     JatsDocumentBackend._extend_segments(
                         inline_segments, child_segments
                     )
-                if child.tag in ("sec", "ack") and text:
+                if child.tag in ("sec", "ack", "glossary") and text:
                     self.hlevel -= 1
 
             # pick up the tail text

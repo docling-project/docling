@@ -746,6 +746,316 @@ def test_jats_list_item_label_becomes_marker():
     assert "(a) first" in doc.export_to_markdown()
 
 
+def _convert_list(items: str, list_type: str = "bullet") -> DoclingDocument:
+    return convert_jats_body(
+        f"""
+        <sec>
+          <title>Steps</title>
+          <list list-type="{list_type}">{items}</list>
+        </sec>
+        """
+    )
+
+
+def test_jats_list_item_keeps_inline_formatting_and_links():
+    doc = _convert_list(
+        "<list-item><p>Use <bold>bold</bold>, <italic>italic</italic> and"
+        ' <ext-link ext-link-type="uri" xlink:href="https://example.org">a link'
+        "</ext-link>.</p></list-item>"
+    )
+
+    [item] = _list_items(doc)
+    assert item.text == ""
+    [group] = [child.resolve(doc) for child in item.children]
+    assert group.label == GroupLabel.INLINE
+    runs = [child.resolve(doc) for child in group.children]
+    assert [_formatting_tuple(run) for run in runs] == [
+        (DocItemLabel.TEXT, "Use ", None),
+        (DocItemLabel.TEXT, "bold", F_BOLD),
+        (DocItemLabel.TEXT, ", ", None),
+        (DocItemLabel.TEXT, "italic", F_ITALIC),
+        (DocItemLabel.TEXT, " and ", None),
+        (DocItemLabel.TEXT, "a link", None),
+        (DocItemLabel.TEXT, ".", None),
+    ]
+    assert str(runs[5].hyperlink) == "https://example.org/"
+    assert (
+        "- Use **bold**, *italic* and [a link](https://example.org/)."
+        in doc.export_to_markdown()
+    )
+
+
+def test_jats_list_item_with_one_styled_run_stays_a_single_item():
+    doc = _convert_list("<list-item><p><bold>All bold</bold></p></list-item>")
+
+    [item] = _list_items(doc)
+    assert _formatting_tuple(item) == (DocItemLabel.LIST_ITEM, "All bold", F_BOLD)
+    assert item.children == []
+    assert "- **All bold**" in doc.export_to_markdown()
+
+
+def test_jats_list_item_keeps_inline_formula():
+    doc = _convert_list(
+        "<list-item><p>The relation <inline-formula><tex-math>$$E=mc^2$$"
+        "</tex-math></inline-formula> holds.</p></list-item>"
+    )
+
+    [item] = _list_items(doc)
+    [group] = [child.resolve(doc) for child in item.children]
+    assert group.label == GroupLabel.INLINE
+    assert [_formatting_tuple(child.resolve(doc)) for child in group.children] == [
+        (DocItemLabel.TEXT, "The relation ", None),
+        (DocItemLabel.FORMULA, "E=mc^2", None),
+        (DocItemLabel.TEXT, " holds.", None),
+    ]
+    assert "- The relation $E=mc^2$ holds." in doc.export_to_markdown()
+
+
+def test_jats_list_item_keeps_display_formula():
+    doc = _convert_list(
+        "<list-item><p>Minimize</p>"
+        "<disp-formula><tex-math>$$x^2$$</tex-math></disp-formula></list-item>"
+        "<list-item><p>next</p></list-item>"
+    )
+
+    items = _list_items(doc)
+    assert [item.text for item in items] == ["Minimize", "next"]
+    [formula] = [item for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert formula.text == "x^2"
+    assert formula.parent == items[0].get_ref()
+    assert "- Minimize\n$$x^2$$\n- next" in doc.export_to_markdown()
+
+
+def test_jats_list_item_keeps_display_formula_inside_paragraph():
+    doc = _convert_list(
+        "<list-item><p>Minimize"
+        "<disp-formula><tex-math>$$x^2$$</tex-math></disp-formula>"
+        " subject to y.</p></list-item>"
+        "<list-item><p>next</p></list-item>"
+    )
+
+    items = _list_items(doc)
+    # The text before the block is the text of the item, the rest goes under it.
+    assert [item.text for item in items] == ["Minimize", "next"]
+    assert [_formatting_tuple(child.resolve(doc)) for child in items[0].children] == [
+        (DocItemLabel.FORMULA, "x^2", None),
+        (DocItemLabel.TEXT, "subject to y.", None),
+    ]
+    markdown_lines = doc.export_to_markdown().splitlines()
+    assert "- Minimize" in markdown_lines
+    assert "- next" in markdown_lines
+    assert markdown_lines.index("- Minimize") < markdown_lines.index("- next")
+
+
+def test_jats_list_item_keeps_mathml_display_formula_inside_paragraph():
+    doc = _convert_list(
+        "<list-item><p>Minimize<disp-formula>"
+        '<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML">'
+        "<mml:mi>x</mml:mi></mml:math></disp-formula> subject to y.</p></list-item>"
+        "<list-item><p>next</p></list-item>"
+    )
+
+    assert [item.text for item in _list_items(doc)] == ["Minimize", "next"]
+    markdown_lines = doc.export_to_markdown().splitlines()
+    assert "- Minimize" in markdown_lines
+    assert "- next" in markdown_lines
+
+
+def test_jats_list_item_keeps_text_before_list_inside_paragraph():
+    doc = _convert_list(
+        "<list-item><p>Intro text"
+        "<list><list-item><p>sub a</p></list-item>"
+        "<list-item><p>sub b</p></list-item></list></p></list-item>"
+        "<list-item><p>next</p></list-item>"
+    )
+
+    outer, sub_a, sub_b, nxt = _list_items(doc)
+    assert outer.text == "Intro text"
+    assert sub_a.parent.resolve(doc).parent == outer.get_ref()
+    assert (sub_a.text, sub_b.text, nxt.text) == ("sub a", "sub b", "next")
+    markdown_lines = doc.export_to_markdown().splitlines()
+    assert markdown_lines[-4:] == [
+        "- Intro text",
+        "    - sub a",
+        "    - sub b",
+        "- next",
+    ]
+
+
+def test_jats_list_item_keeps_text_after_list_inside_paragraph():
+    doc = _convert_list(
+        "<list-item><p>Intro"
+        "<list><list-item><p>sub</p></list-item></list>"
+        " trailing</p></list-item>"
+        "<list-item><p>next</p></list-item>"
+    )
+
+    markdown_lines = doc.export_to_markdown().splitlines()
+    assert markdown_lines[-3:] == ["- Intro trailing", "    - sub", "- next"]
+
+
+_MATHML = (
+    '<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML">'
+    "<mml:mi>x</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn></mml:math>"
+)
+_TEX_AND_MATHML_FORMULA = (
+    "<inline-formula><alternatives><tex-math>$x=1$</tex-math>"
+    f"{_MATHML}</alternatives></inline-formula>"
+)
+_IMAGE_AND_MATHML_FORMULA = (
+    '<inline-formula><alternatives><graphic xmlns:xlink="http://www.w3.org/1999/xlink"'
+    f' xlink:href="e.gif"/>{_MATHML}</alternatives></inline-formula>'
+)
+
+
+@pytest.mark.parametrize(
+    ("wrap", "line"),
+    [
+        pytest.param("<p>{}</p>", "Val $x=1$ here", id="body"),
+        pytest.param(
+            "<list><list-item><p>{}</p></list-item></list>",
+            "- Val $x=1$ here",
+            id="list-item",
+        ),
+        pytest.param(
+            "<fn-group><fn><p>{}</p></fn></fn-group>",
+            "- Val $x=1$ here",
+            id="footnote",
+        ),
+    ],
+)
+def test_jats_formula_mathml_alternative_is_not_repeated(wrap, line):
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        + wrap.format(f"Val {_TEX_AND_MATHML_FORMULA} here")
+        + "</sec>"
+    )
+
+    assert line in doc.export_to_markdown().splitlines()
+
+
+@pytest.mark.parametrize(
+    ("wrap", "line"),
+    [
+        ("<p>{}</p>", "Val x=1 here"),
+        ("<list><list-item><p>{}</p></list-item></list>", "- Val x=1 here"),
+        ("<fn-group><fn><p>{}</p></fn></fn-group>", "- Val x=1 here"),
+    ],
+)
+def test_jats_mathml_alternative_to_an_image_reads_as_its_text(wrap, line):
+    # the image of the formula is not added, and MathML without TeX is text
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        + wrap.format(f"Val {_IMAGE_AND_MATHML_FORMULA} here")
+        + "</sec>"
+    )
+
+    assert line in doc.export_to_markdown().splitlines()
+
+
+def test_jats_footnote_bare_mathml_reads_as_its_text():
+    doc = convert_jats_body(
+        f"<sec><title>S</title><fn-group><fn><p>Note {_MATHML} z</p></fn></fn-group></sec>"
+    )
+
+    assert "- Note x=1 z" in doc.export_to_markdown().splitlines()
+
+
+def test_jats_list_item_bare_mathml_reads_as_its_text():
+    doc = _convert_list(
+        "<list-item><p>Value "
+        '<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML">'
+        "<mml:mi>x</mml:mi></mml:math> here</p></list-item>"
+    )
+
+    assert "- Value x here" in doc.export_to_markdown().splitlines()
+
+
+def test_jats_list_item_formatting_with_nested_list():
+    doc = _convert_list(
+        """
+        <list-item>
+          <p>outer <italic>styled</italic></p>
+          <list list-type="order">
+            <list-item><p>inner <bold>one</bold></p></list-item>
+            <list-item><p>inner two</p></list-item>
+          </list>
+        </list-item>
+        """
+    )
+
+    outer, inner_one, inner_two = _list_items(doc)
+    assert [outer.enumerated, inner_one.enumerated, inner_two.enumerated] == [
+        False,
+        True,
+        True,
+    ]
+    assert inner_two.text == "inner two"
+    nested = inner_two.parent.resolve(doc)
+    assert nested.label == GroupLabel.LIST
+    assert nested.parent == outer.get_ref()
+    assert inner_one.parent == nested.get_ref()
+    md = doc.export_to_markdown()
+    assert "- outer *styled*" in md
+    assert "1. inner **one**" in md
+    assert "2. inner two" in md
+
+
+def test_jats_ordered_list_item_with_formatting_keeps_marker():
+    doc = _convert_list(
+        "<list-item><label>(a)</label><p><bold>first</bold> step</p></list-item>"
+        "<list-item><label>(b)</label><p>second step</p></list-item>",
+        list_type="order",
+    )
+
+    first, second = _list_items(doc)
+    assert [(first.marker, first.enumerated), (second.marker, second.enumerated)] == [
+        ("(a)", True),
+        ("(b)", True),
+    ]
+    assert first.text == ""
+    assert second.text == "second step"
+    md = doc.export_to_markdown()
+    assert "(a) **first** step" in md
+    assert "(b) second step" in md
+
+
+def test_jats_plain_list_item_stays_a_single_text_item():
+    doc = _convert_list(
+        """
+        <list-item>
+          <p>first   paragraph </p>
+          <p> second paragraph</p>
+        </list-item>
+        """
+    )
+
+    [item] = _list_items(doc)
+    assert item.text == "first   paragraph second paragraph"
+    assert item.formatting is None
+    assert item.hyperlink is None
+    assert item.children == []
+
+
+def test_jats_list_item_drops_xml_indentation_like_a_paragraph():
+    doc = _convert_list("<list-item><p>first\n            line</p></list-item>")
+
+    [item] = _list_items(doc)
+    assert item.text == "first line"
+
+
+def test_jats_list_item_paragraph_after_nested_list_stays_item_text():
+    doc = _convert_list(
+        "<list-item><p>before</p>"
+        "<list><list-item><p>nested</p></list-item></list>"
+        "<p>after</p></list-item>"
+    )
+
+    outer, nested = _list_items(doc)
+    assert outer.text == "before after"
+    assert nested.text == "nested"
+
+
 @pytest.mark.parametrize(
     ("paragraph", "expected"),
     [
@@ -1053,6 +1363,169 @@ def test_jats_inline_term_keeps_its_text():
     assert texts == ["The polymerase chain reaction amplifies DNA."]
 
 
+def _def_item(term: str, *defs: str) -> str:
+    return f"<def-item><term>{term}</term>{''.join(defs)}</def-item>"
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        pytest.param(
+            "<p>Terms:<def-list>"
+            + _def_item("DNA", "<def><p>Deoxyribonucleic acid</p></def>")
+            + _def_item("RNA", "<def><p>Ribonucleic acid</p></def>")
+            + "</def-list></p>",
+            "Terms:\n\n- **DNA**\n    - Deoxyribonucleic acid\n"
+            "- **RNA**\n    - Ribonucleic acid",
+            id="in-paragraph",
+        ),
+        pytest.param(
+            "<def-list>"
+            + _def_item(
+                "T", "<def><p>one</p><p>more</p></def>", "<def><p>two</p></def>"
+            )
+            + "</def-list>",
+            "- **T**\n    - one more\n    - two",
+            id="many-defs",
+        ),
+        pytest.param(
+            "<def-list>"
+            + _def_item(
+                "A",
+                "<def><p>alpha</p><def-list>"
+                + _def_item("A1", "<def><p>sub</p></def>")
+                + "</def-list></def>",
+            )
+            + "</def-list>",
+            "- **A**\n    - alpha\n        - **A1**\n            - sub",
+            id="nested-def-list",
+        ),
+        pytest.param(
+            "<def-list>"
+            + _def_item(
+                "A",
+                "<def><p>alpha</p><list><list-item><p>x</p></list-item></list></def>",
+            )
+            + "</def-list>",
+            "- **A**\n    - alpha\n        - x",
+            id="nested-list",
+        ),
+        pytest.param(
+            "<def-list>"
+            + _def_item(
+                "<italic>E. coli</italic>",
+                "<def><p>a <bold>bug</bold> with "
+                "<inline-formula><tex-math>x</tex-math></inline-formula></p></def>",
+            )
+            + "</def-list>",
+            "- ***E. coli***\n    - a **bug** with $x$",
+            id="inline-styling",
+        ),
+        pytest.param(
+            "<def-list>"
+            + _def_item(
+                "<inline-formula><tex-math>\\alpha</tex-math></inline-formula>",
+                "<def><p>an angle</p></def>",
+            )
+            + "</def-list>",
+            "- $\\alpha$\n    - an angle",
+            id="formula-term",
+        ),
+        pytest.param(
+            "<def-list><def-item><term/><def><p>no term</p></def></def-item></def-list>",
+            "## S\n\n- no term",
+            id="empty-term",
+        ),
+    ],
+)
+def test_jats_def_list_keeps_terms(body, expected):
+    # Like an HTML <dl>, each <term> becomes a bold list item and each <def> an
+    # item of a nested list under it. Only the definitions used to come through.
+    doc = convert_jats_body(f"<sec><title>S</title>{body}</sec>")
+
+    assert expected in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize(
+    ("block", "expected"),
+    [
+        pytest.param(
+            "<list><list-item><p>x</p></list-item><list-item><p>y</p></list-item>"
+            "</list>",
+            [(DocItemLabel.LIST_ITEM, "x"), (DocItemLabel.LIST_ITEM, "y")],
+            id="list",
+        ),
+        pytest.param(
+            "<disp-formula><tex-math>y=1</tex-math></disp-formula>",
+            [(DocItemLabel.FORMULA, "y=1")],
+            id="disp-formula",
+        ),
+        pytest.param(
+            "<table-wrap><label>Table 1</label><caption><p>Cap</p></caption>"
+            "<table><tr><td>c1</td><td>c2</td></tr></table></table-wrap>",
+            [(DocItemLabel.CAPTION, "Table 1 Cap"), (DocItemLabel.TABLE, "")],
+            id="table-wrap",
+        ),
+    ],
+)
+def test_jats_def_paragraph_keeps_its_blocks(block, expected):
+    # A block in a paragraph of a <def> stays a block, as it does in a <p> elsewhere.
+    doc = convert_jats_body(
+        "<sec><title>S</title><def-list>"
+        + _def_item("A", f"<def><p>before{block}after</p></def>")
+        + "</def-list></sec>"
+    )
+
+    items = {
+        (item.label, item.text if isinstance(item, TextItem) else ""): item
+        for item, _ in doc.iterate_items()
+    }
+    assert (DocItemLabel.LIST_ITEM, "A") in items
+    for key in expected:
+        assert key in items
+        assert items[key].parent.resolve(doc).label != GroupLabel.INLINE
+    texts = " ".join(text for label, text in items if label == DocItemLabel.TEXT)
+    assert "before" in texts
+    assert "after" in texts
+
+
+def test_jats_def_paragraphs_with_edge_whitespace_are_one_text_run():
+    doc = convert_jats_body(
+        "<sec><title>S</title><def-list>"
+        + _def_item(
+            "T", "<def>\n  <p>\n    one\n  </p>\n  <p>\n    two\n  </p>\n</def>"
+        )
+        + "</def-list></sec>"
+    )
+
+    assert [item.text for item in _list_items(doc)] == ["T", "one two"]
+    assert _inline_group_items(doc) == []
+
+
+def test_jats_def_outside_def_list_is_unchanged():
+    # A <def> in an <abbrev> is not part of a definition list.
+    doc = convert_jats_body(
+        "<sec><title>S</title><p>The <abbrev>DNA<def><p>deoxyribonucleic acid</p>"
+        "</def></abbrev> is long.</p></sec>"
+    )
+
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert texts == ["deoxyribonucleic acid", "The DNA is long."]
+
+
+def test_jats_glossary_title_is_a_heading():
+    xml = JATS_WRAPPER.format(
+        content="<body><p>Text.</p></body><back><glossary><title>Glossary</title>"
+        "<def-list><def-item><term>PCR</term><def><p>Polymerase chain reaction</p>"
+        "</def></def-item></def-list></glossary></back>"
+    )
+    stream = DocumentStream(name="glossary.nxml", stream=BytesIO(xml.encode()))
+    doc = get_converter().convert(stream).document
+
+    md = doc.export_to_markdown()
+    assert "## Glossary\n\n- **PCR**\n    - Polymerase chain reaction" in md
+
+
 @pytest.mark.parametrize(
     ("body", "expected"),
     [
@@ -1096,6 +1569,435 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert "After the equation." in md
     # The empty display formula produced no FORMULA item.
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
+
+
+_MML = '<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML">{}</mml:math>'
+# a/b, written as presentation MathML
+_MML_FRAC = "<mml:mfrac><mml:mi>a</mml:mi><mml:mi>b</mml:mi></mml:mfrac>"
+_MML_FRAC_TEX = _MML.format(
+    "<mml:semantics><mml:mrow>"
+    + _MML_FRAC
+    + '</mml:mrow><mml:annotation encoding="application/x-tex">'
+    r"\frac{a}{b}</mml:annotation></mml:semantics>"
+)
+_MML_SUM = "<mml:mi>x</mml:mi><mml:mo>+</mml:mo><mml:mn>1</mml:mn>"
+
+
+def _convert_formula_shapes(formula: str) -> DoclingDocument:
+    """Convert `formula` as a display formula, and inline in a paragraph and a note."""
+    return convert_jats_body(
+        f"<sec><title>T</title><p>Before.</p>"
+        f"<disp-formula>{formula}</disp-formula>"
+        f"<p>Let <inline-formula>{formula}</inline-formula> be.</p>"
+        f'<p>Note<xref ref-type="fn" rid="fn1">1</xref>.</p>'
+        f'<fn-group><fn id="fn1"><p>See <inline-formula>{formula}</inline-formula>'
+        " here.</p></fn></fn-group></sec>"
+    )
+
+
+@pytest.mark.parametrize(
+    ("formula", "expected"),
+    [
+        pytest.param(_MML_FRAC_TEX, r"\frac{a}{b}", id="tex-annotation"),
+        pytest.param(
+            _MML.format(
+                "<mml:semantics><mml:mrow>"
+                + _MML_FRAC
+                + '</mml:mrow><mml:annotation encoding="TeX">$a/b$</mml:annotation>'
+                "</mml:semantics>"
+            ),
+            "a/b",
+            id="tex-annotation-with-delimiters",
+        ),
+        pytest.param(
+            f"<alternatives><graphic/>{_MML_FRAC_TEX}</alternatives>",
+            r"\frac{a}{b}",
+            id="tex-annotation-under-alternatives",
+        ),
+        pytest.param(
+            f"<alternatives><tex-math>y^2</tex-math>{_MML_FRAC_TEX}</alternatives>",
+            "y^2",
+            id="tex-math-wins-over-mathml",
+        ),
+    ],
+)
+def test_jats_mathml_formula_with_tex_annotation_is_kept(formula, expected):
+    doc = _convert_formula_shapes(formula)
+
+    formulas = [t for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert [t.text for t in formulas] == [expected] * 3
+    # the display formula is a block, the inline ones stay in their sentence
+    assert formulas[0].parent.resolve(doc).label != GroupLabel.INLINE
+    paragraph, footnote = _inline_group_items(doc)
+    assert [_formatting_tuple(item) for item in paragraph] == [
+        (DocItemLabel.TEXT, "Let ", None),
+        (DocItemLabel.FORMULA, expected, None),
+        (DocItemLabel.TEXT, " be.", None),
+    ]
+    assert [_formatting_tuple(item) for item in footnote] == [
+        (DocItemLabel.FOOTNOTE, "See ", None),
+        (DocItemLabel.FORMULA, expected, None),
+        (DocItemLabel.FOOTNOTE, " here.", None),
+    ]
+    md = doc.export_to_markdown()
+    assert f"Before.\n\n$${expected}$$\n\nLet ${expected}$ be." in md
+
+
+@pytest.mark.parametrize(
+    ("formula", "expected"),
+    [
+        pytest.param(_MML.format(_MML_SUM), "x+1", id="tokens"),
+        pytest.param(
+            # a/b as presentation markup has no TeX: its tokens are text, not math
+            _MML.format(
+                "<mml:semantics><mml:mrow>"
+                + _MML_FRAC
+                + '</mml:mrow><mml:annotation encoding="StarMath 5.0">a over b'
+                "</mml:annotation></mml:semantics>"
+            ),
+            "ab",
+            id="other-annotation-is-not-text",
+        ),
+        pytest.param(
+            _MML.format(
+                "<mml:mtext>if and only if</mml:mtext><mml:mi>x</mml:mi>"
+                "<mml:mtext>holds</mml:mtext>"
+            ),
+            "if and only if x holds",
+            id="mtext-keeps-its-spaces",
+        ),
+        pytest.param(
+            # one digit per mtext, as some publishers write a number
+            _MML.format(
+                "<mml:mi>v</mml:mi><mml:mo>≥</mml:mo><mml:mtext>3</mml:mtext>"
+                "<mml:mtext>0</mml:mtext><mml:mtext>mV</mml:mtext>"
+            ),
+            "v≥30 mV",
+            id="mtext-without-letter-is-not-spaced",
+        ),
+        pytest.param(
+            f"<alternatives><graphic/>{_MML.format(_MML_SUM)}</alternatives>",
+            "x+1",
+            id="tokens-under-alternatives",
+        ),
+    ],
+)
+def test_jats_mathml_formula_without_tex_reads_as_its_text(formula, expected):
+    doc = _convert_formula_shapes(formula)
+
+    assert [t for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    # the display formula is a text item in place, the inline ones are text runs
+    assert texts == ["Before.", expected, f"Let {expected} be.", "Note1."]
+    footnotes = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    assert "".join(footnotes) == f"See {expected} here."
+
+
+def test_jats_display_formula_given_as_mathml_keeps_its_place_in_a_paragraph():
+    doc = convert_jats_body(
+        f"<sec><title>T</title><p>See <disp-formula>{_MML_FRAC_TEX}</disp-formula>"
+        " done.</p></sec>"
+    )
+
+    body = [
+        (t.label, t.text)
+        for t in doc.texts
+        if t.label in (DocItemLabel.TEXT, DocItemLabel.FORMULA)
+    ]
+    assert body == [
+        (DocItemLabel.TEXT, "See"),
+        (DocItemLabel.FORMULA, r"\frac{a}{b}"),
+        (DocItemLabel.TEXT, "done."),
+    ]
+
+
+@pytest.mark.parametrize(
+    "wrap",
+    [
+        "<p>{}</p>",
+        "<list><list-item><p>{}</p></list-item></list>",
+        "<fn-group><fn><p>{}</p></fn></fn-group>",
+    ],
+)
+def test_jats_bare_mathml_text_leaves_out_its_annotation(wrap):
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        + wrap.format(
+            "A "
+            + _MML.format(
+                f"<mml:semantics><mml:mrow>{_MML_SUM}</mml:mrow>"
+                '<mml:annotation encoding="application/x-tex">x+1</mml:annotation>'
+                "</mml:semantics>"
+            )
+            + " b"
+        )
+        + "</sec>"
+    )
+
+    md = doc.export_to_markdown()
+    assert "A x+1 b" in md
+    assert "x+1x+1" not in md
+
+
+_TEXTUAL_FORM_FORMULA = (
+    "<inline-formula><alternatives>"
+    + _MML.format("<mml:mi>β</mml:mi>")
+    + "<textual-form><italic>β</italic></textual-form></alternatives>"
+    "</inline-formula>"
+)
+
+
+@pytest.mark.parametrize(
+    ("body", "line"),
+    [
+        pytest.param(
+            "<sec><title>S</title><p>where {} is temp.</p></sec>",
+            "where *β* is temp.",
+            id="paragraph",
+        ),
+        pytest.param(
+            "<list><list-item><p>where {} is temp.</p></list-item></list>",
+            "- where *β* is temp.",
+            id="list-item",
+        ),
+        pytest.param(
+            "<p>a</p><fn-group><fn><p>where {} is temp.</p></fn></fn-group>",
+            "- where *β* is temp.",
+            id="footnote",
+        ),
+        pytest.param(
+            '<fig id="f1"><label>Fig 1</label><caption><p>where {} is temp.</p>'
+            "</caption></fig>",
+            "Fig 1 where β is temp.",
+            id="caption",
+        ),
+    ],
+)
+def test_jats_textual_form_is_read_instead_of_its_mathml(body, line):
+    doc = convert_jats_body(body.format(_TEXTUAL_FORM_FORMULA))
+
+    md = doc.export_to_markdown()
+    assert line in md.splitlines()
+    assert md.count("β") == 1
+
+
+_MML_BETA = _MML.format("<mml:mi>β</mml:mi>")
+_TEXTUAL_FORM = "<textual-form><italic>β</italic></textual-form>"
+
+
+@pytest.mark.parametrize(
+    ("body", "lines"),
+    [
+        pytest.param(
+            "<sec><title>S</title><p>before</p><disp-formula><alternatives>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</alternatives></disp-formula>"
+            "<p>after</p></sec>",
+            ["before", "β", "after"],
+            id="alternatives",
+        ),
+        pytest.param(
+            "<sec><title>S</title><p>before</p><disp-formula>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</disp-formula><p>after</p></sec>",
+            ["before", "β", "after"],
+            id="in-wrapper",
+        ),
+        pytest.param(
+            f"<sec><title>S</title><p>before</p><disp-formula>{_TEXTUAL_FORM}"
+            "</disp-formula><p>after</p></sec>",
+            ["before", "β", "after"],
+            id="textual-form-only",
+        ),
+        pytest.param(
+            "<sec><title>S</title><p>Minimize<disp-formula><alternatives>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</alternatives></disp-formula>"
+            "subject to y.</p></sec>",
+            ["Minimize", "β", "subject to y."],
+            id="in-paragraph",
+        ),
+        pytest.param(
+            "<list><list-item><p>Do<disp-formula><alternatives>"
+            f"{_MML_BETA}{_TEXTUAL_FORM}</alternatives></disp-formula>"
+            "then.</p></list-item></list>",
+            ["- Do", "β", "then."],
+            id="in-list-item",
+        ),
+    ],
+)
+def test_jats_display_formula_keeps_its_textual_form(body, lines):
+    doc = convert_jats_body(body)
+
+    md_lines = [line for line in doc.export_to_markdown().splitlines() if line]
+    positions = [md_lines.index(line) for line in lines]
+    assert positions == sorted(positions)
+    assert sum(line.count("β") for line in md_lines) == 1
+
+
+def test_jats_display_formula_prefers_tex_math_over_textual_form():
+    doc = convert_jats_body(
+        "<sec><title>S</title><disp-formula><alternatives>"
+        f"<tex-math>\\beta</tex-math>{_MML_BETA}{_TEXTUAL_FORM}"
+        "</alternatives></disp-formula></sec>"
+    )
+
+    md = doc.export_to_markdown()
+    assert "$$\\beta$$" in md
+    assert "β" not in md
+
+
+@pytest.mark.parametrize(
+    ("float_xml", "text"),
+    [
+        pytest.param(
+            '<fig id="f1"><label>Fig 1</label><caption><title>Cap</title>'
+            "<p>Has <inline-formula><tex-math>x^2</tex-math></inline-formula>\n"
+            '   here</p></caption><graphic xlink:href="a.png"/></fig>',
+            "Fig 1 Cap Has $x^2$ here",
+            id="figure",
+        ),
+        pytest.param(
+            '<table-wrap id="t1"><label>Table 1</label><caption><p>Cap '
+            "<inline-formula>"
+            + _MML.format(
+                "<mml:semantics><mml:mrow><mml:mi>y</mml:mi><mml:mo>=</mml:mo>"
+                "<mml:mn>2</mml:mn></mml:mrow>"
+                '<mml:annotation encoding="application/x-tex">y=2</mml:annotation>'
+                "</mml:semantics>"
+            )
+            + "</inline-formula> z</p></caption>"
+            "<table><tr><td>a</td></tr></table></table-wrap>",
+            "Table 1 Cap $y=2$ z",
+            id="table",
+        ),
+        pytest.param(
+            '<table-wrap id="t1"><label>Table 2</label><caption><p>Img '
+            "<inline-formula><tex-math>q_1</tex-math></inline-formula> cap</p>"
+            '</caption><graphic xlink:href="t.png"/></table-wrap>',
+            "Table 2 Img $q_1$ cap",
+            id="table-as-image",
+        ),
+        pytest.param(
+            '<table-wrap id="t1"><label>Table 3</label><caption><p>Cap '
+            f"<inline-formula>{_MML.format('<mml:mi>y</mml:mi>')}</inline-formula>"
+            " z</p></caption><table><tr><td>a</td></tr></table></table-wrap>",
+            "Table 3 Cap y z",
+            id="mathml-without-tex-is-text",
+        ),
+    ],
+)
+def test_jats_caption_keeps_its_inline_formula_as_tex(float_xml, text):
+    doc = convert_jats_body(f"<sec><title>S</title>{float_xml}</sec>")
+
+    floating = (doc.pictures or doc.tables)[0]
+    [caption] = [ref.resolve(doc) for ref in floating.captions]
+    # one plain caption item, so a chunker reads the caption once
+    assert (caption.label, caption.text, caption.children) == (
+        DocItemLabel.CAPTION,
+        text,
+        [],
+    )
+    assert floating.caption_text(doc) == text
+
+
+def test_jats_caption_without_formula_stays_one_text_item():
+    doc = convert_jats_body(
+        '<sec><title>S</title><fig id="f1"><label>Fig 1</label><caption>'
+        "<title>Cap</title><p>Plain <italic>it</italic> here</p></caption>"
+        '<graphic xlink:href="a.png"/></fig></sec>'
+    )
+
+    [caption] = [ref.resolve(doc) for ref in doc.pictures[0].captions]
+    assert caption.text == "Fig 1 Cap Plain it here"
+    assert caption.children == []
+
+
+def test_jats_boxed_text_title_is_a_heading():
+    doc = convert_jats_body(
+        "<sec><title>S</title><boxed-text><label>Box 1</label><caption>"
+        "<title>Key points</title></caption><p>Boxed para</p></boxed-text>"
+        "<p>After.</p></sec>"
+    )
+
+    items = [
+        (item.label, item.text, level)
+        for item, level in doc.iterate_items()
+        if isinstance(item, TextItem)
+    ]
+    assert items[1:] == [
+        (DocItemLabel.SECTION_HEADER, "S", 2),
+        (DocItemLabel.SECTION_HEADER, "Box 1 Key points", 3),
+        (DocItemLabel.TEXT, "Boxed para", 4),
+        (DocItemLabel.TEXT, "After.", 3),
+    ]
+    assert doc.export_to_markdown().endswith(
+        "## S\n\n### Box 1 Key points\n\nBoxed para\n\nAfter."
+    )
+
+
+@pytest.mark.parametrize(
+    ("body", "texts"),
+    [
+        pytest.param(
+            '<supplementary-material id="s1"><label>Supplementary file 1.</label>'
+            "<caption><title>Primer list.</title><p>Detail.</p></caption>"
+            '<media xlink:href="a.xlsx"/></supplementary-material>',
+            ["Supplementary file 1. Primer list.", "Detail."],
+            id="in-section",
+        ),
+        pytest.param(
+            '<p>See <supplementary-material id="s2"><label>Data S1.</label>'
+            "<caption><title>Raw data.</title></caption></supplementary-material>"
+            " after.</p>",
+            ["See", "Data S1. Raw data.", "after."],
+            id="in-paragraph",
+        ),
+    ],
+)
+def test_jats_supplementary_material_keeps_its_label_and_title(body, texts):
+    doc = convert_jats_body(f"<sec><title>S</title>{body}</sec>")
+
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.TEXT] == texts
+
+
+def test_jats_boxed_text_with_a_section_nests_its_heading():
+    doc = convert_jats_body(
+        "<sec><title>S</title><boxed-text><caption><title>Box T</title></caption>"
+        "<sec><title>Inner</title><p>x</p></sec></boxed-text>"
+        "<sec><title>Sibling</title><p>y</p></sec></sec>"
+    )
+
+    headers = [
+        (t.text, t.level) for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER
+    ]
+    assert headers == [("S", 1), ("Box T", 2), ("Inner", 3), ("Sibling", 2)]
+    assert "## S\n\n### Box T\n\n#### Inner\n\nx\n\n### Sibling\n\ny" in (
+        doc.export_to_markdown()
+    )
+
+
+def test_jats_content_after_a_definition_list_stays_in_place():
+    doc = convert_jats_body(
+        "<sec><title>S</title><def-list><def-item><term>T</term><def><p>D</p>"
+        "</def></def-item></def-list><p>After.</p>"
+        '<fig id="f1"><caption><p>Fig cap</p></caption>'
+        '<graphic xlink:href="a.png"/></fig><p>Last.</p></sec>'
+    )
+
+    [heading] = [t for t in doc.texts if t.text == "S"]
+    order = [
+        getattr(child, "name", None) or getattr(child, "text", None) or child.label
+        for child in (ref.resolve(doc) for ref in heading.children)
+    ]
+    assert order == ["description list", "After.", DocItemLabel.PICTURE, "Last."]
+
+
+def test_jats_table_label_keeps_its_inline_markup():
+    doc = convert_jats_body(
+        '<sec><title>S</title><table-wrap id="t1"><label><bold>Table 9</bold>'
+        "</label><caption><p>Cap</p></caption><table><tr><td>a</td></tr></table>"
+        "</table-wrap></sec>"
+    )
+
+    assert doc.tables[0].caption_text(doc) == "Table 9 Cap"
 
 
 @pytest.mark.parametrize(
