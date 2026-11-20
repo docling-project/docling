@@ -1669,6 +1669,11 @@ def test_jats_title_with_inline_markup_is_complete():
             "Main title",
             id="tail-after-footnote-xref",
         ),
+        pytest.param(
+            "<article-title>Title<fn><p>Body</p></fn> continues</article-title>",
+            "Title continues",
+            id="tail-after-footnote-content",
+        ),
     ],
 )
 def test_jats_title_ignores_breaks_and_footnotes(title_xml, expected):
@@ -1676,6 +1681,27 @@ def test_jats_title_ignores_breaks_and_footnotes(title_xml, expected):
     titles = [t for t in doc.texts if t.label == DocItemLabel.TITLE]
     assert len(titles) == 1
     assert titles[0].text == expected
+
+
+def test_jats_list_item_inline_fn_body_is_kept():
+    doc = convert_jats_body(
+        '<list><list-item><p>Dose<fn id="f1"><p>Adjusted for weight.</p></fn> was given.</p></list-item></list>'
+    )
+    items = _list_items(doc)
+    assert len(items) == 1
+    assert items[0].text == "DoseAdjusted for weight. was given."
+
+
+def test_jats_caption_inline_fn_body_is_kept():
+    doc = convert_jats_body(
+        """<sec><p>Text.</p>
+        <fig id="f1"><label>Figure 1.</label>
+          <caption><p>Dose<fn id="fn1"><p>Adjusted for weight.</p></fn> was given.</p></caption>
+          <graphic/>
+        </fig>
+        </sec>"""
+    )
+    assert _caption_texts(doc) == ["Figure 1. DoseAdjusted for weight. was given."]
 
 
 def test_jats_citation_source_with_inline_markup_is_kept():
