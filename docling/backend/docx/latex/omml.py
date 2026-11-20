@@ -768,13 +768,16 @@ class oMath2Latex(Tag2Method):
             LaTeX n-ary operator string.
         """
         res = []
-        bo = ""
+        c_dict: dict[str, Any] = {}
         for stag, t, e in self.process_children_list(elm):
             if stag == "naryPr":
-                # if <m:naryPr> contains no <m:chr>, the n-ary represents an integral
-                bo = get_val(t.chr, default="\\int", store=CHR_BO)
+                c_dict[stag] = t
             else:
                 res.append(t)
+        pr = self._get_properties(c_dict, "naryPr")
+        # if <m:naryPr> is absent or contains no <m:chr>, the n-ary represents
+        # an integral
+        bo = get_val(pr.chr, default="\\int", store=CHR_BO)
         return bo + BLANK.join(res)
 
     _MATH_CHAR_MAP: dict[str, str] = {
