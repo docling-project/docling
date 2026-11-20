@@ -163,6 +163,45 @@ MACROS_LETTERS = frozenset(
     ["o", "O", "l", "L", "i", "j", "ss", "aa", "AA", "ae", "AE", "oe", "OE"]
 )
 
+# Text-mode symbols typed as macros without an argument, e.g. \S (§), \ldots (…).
+# latex2text drops several of these, so they are listed here. \textbullet is
+# left out: a list item's \item[\textbullet] label stands for the default marker.
+MACROS_TEXT_SYMBOLS: dict[str, str] = {
+    "ldots": "…",
+    "dots": "…",
+    "textellipsis": "…",
+    "S": "§",
+    "P": "¶",
+    "textbackslash": "\\",
+    "textasciitilde": "~",
+    "textasciicircum": "^",
+    "textless": "<",
+    "textgreater": ">",
+    "textbar": "|",
+    "textunderscore": "_",
+    "textbraceleft": "{",
+    "textbraceright": "}",
+    "textdollar": "$",
+    "copyright": "©",
+    "textcopyright": "©",
+    "textregistered": "®",
+    "texttrademark": "™",
+    "pounds": "£",
+    "textsterling": "£",
+    "euro": "€",
+    "texteuro": "€",
+    "dag": "†",
+    "ddag": "‡",
+    "textdagger": "†",
+    "textdaggerdbl": "‡",
+    "textendash": "\u2013",
+    "textemdash": "\u2014",
+    "textdegree": "°",
+    "TeX": "TeX",
+    "LaTeX": "LaTeX",
+    "LaTeXe": "LaTeX2e",
+}
+
 MACROS_SPACING = frozenset(
     [
         "newline",
