@@ -330,6 +330,16 @@ class PdfBackendOptions(BaseBackendOptions):
             "diacritics that should remain in the same text cell."
         ),
     )
+    do_char_normalization: bool = Field(
+        True,
+        description=(
+            "Passed to docling-parse `DecodeConfig.do_char_normalization`. "
+            "When enabled, docling-parse replaces U+2012 to U+2015 (figure "
+            "dash, en dash, em dash, horizontal bar) and U+2212 (minus sign) "
+            "with '-'. Disable this to keep these characters. The hyphens "
+            "U+2010 and U+2011 always become '-'."
+        ),
+    )
     include_bitmap_images: bool = Field(
         False,
         description=(

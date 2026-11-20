@@ -89,6 +89,19 @@ on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
 
+### Keeping dashes and minus signs (docling-parse)
+
+docling-parse replaces U+2012 to U+2015 and the minus sign U+2212 with `-` by
+default. To keep them, set the backend option:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+
+PdfFormatOption(backend_options=PdfBackendOptions(do_char_normalization=False))
+```
+
+U+2010 and U+2011 always become `-`. The pypdfium2 backend does not replace them.
+
 ### Choosing an OCR engine
 
 ```python
