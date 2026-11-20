@@ -112,10 +112,19 @@ def test_pptx_linked_video_records_its_link(tmp_path: Path):
     assert _media(doc.tracks[0]) == ("video", "video/mp4", link)
 
 
-def test_pptx_video_in_a_legacy_container_stays_a_picture(tmp_path: Path):
-    """A track cannot reference a .wmv yet: the shape stays a picture of its poster frame."""
+def test_pptx_video_in_a_legacy_container_is_a_track(tmp_path: Path):
+    """The containers of older decks, such as .wmv, are tracks like the others."""
     prs, _, _ = _add_media(tmp_path, "clip.wmv", "video/x-ms-wmv")
     doc = _convert(prs, tmp_path / "legacy.pptx")
+
+    assert doc.pictures == []
+    assert _media(doc.tracks[0]) == ("video", "video/x-ms-wmv", "ppt/media/media1.wmv")
+
+
+def test_pptx_video_in_an_unsupported_container_stays_a_picture(tmp_path: Path):
+    """A track cannot reference a .3gp: the shape stays a picture of its poster frame."""
+    prs, _, _ = _add_media(tmp_path, "clip.3gp", "video/3gpp")
+    doc = _convert(prs, tmp_path / "unsupported.pptx")
 
     assert doc.tracks == []
     assert len(doc.pictures) == 1

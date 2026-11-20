@@ -280,10 +280,10 @@ def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
 def test_video_container_the_video_pipeline_cannot_read_is_not_converted(
     tmp_path: Path, stub
 ):
-    """A .wmv of an older deck stays a picture, is not converted, and is no error.
+    """A .wmv of an older deck is a track, is not converted, and is no error.
 
-    A track cannot reference this container yet, and the video pipeline cannot
-    read it; the conversion of the deck still succeeds.
+    The video pipeline cannot read this container; the track keeps its media
+    without a transcript, and the conversion of the deck still succeeds.
     """
     prs, _, _ = _deck(tmp_path, file_name="clip.wmv")
     deck = tmp_path / "wmv.pptx"
@@ -294,8 +294,10 @@ def test_video_container_the_video_pipeline_cannot_read_is_not_converted(
     assert result.status == ConversionStatus.SUCCESS
     assert result.errors == []
     assert stub.calls == []
-    assert result.document.tracks == []
-    assert len(result.document.pictures) == 1
+    (track,) = result.document.tracks
+    assert track.video is not None and track.video.mimetype == "video/x-ms-wmv"
+    assert track.children == []
+    assert result.document.pictures == []
 
 
 def test_odp_audio_is_converted(tmp_path: Path, stub):

@@ -72,7 +72,7 @@ def media_ref(kind: MediaKind, location: str) -> Optional[MediaRef]:
 
     Returns:
         None when the file is in a container that a track cannot reference,
-        such as the ``.wmv`` of an older deck.
+        such as a ``.3gp`` video.
     """
     mimetype = media_type_of(media_file_name(location))
     if kind == "audio" and mimetype == "video/mp4":

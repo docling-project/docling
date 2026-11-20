@@ -81,13 +81,34 @@ def test_odp_generic_media_type_falls_back_to_the_extension(tmp_path: Path):
     )
 
 
-@pytest.mark.parametrize("href", ["Media/clip.wmv", "Media/clip.m4v", "Media/note.wma"])
-def test_odp_media_in_a_legacy_container_is_no_track(tmp_path: Path, href: str):
-    """A track cannot reference the containers of older decks yet."""
+@pytest.mark.parametrize(
+    ("href", "kind", "mimetype"),
+    [
+        ("Media/clip.wmv", "video", "video/x-ms-wmv"),
+        ("Media/clip.m4v", "video", "video/x-m4v"),
+        ("Media/note.wma", "audio", "audio/x-ms-wma"),
+    ],
+)
+def test_odp_media_in_a_legacy_container_is_a_track(
+    tmp_path: Path, href: str, kind: str, mimetype: str
+):
+    """The containers of older decks are tracks like the others."""
     odf = OdfDocument("presentation")
     frame = Frame.image_frame(_preview(odf, tmp_path), size=("8cm", "4.5cm"))
     frame.append(_plugin(href, "application/vnd.sun.star.media"))
     doc = _convert(odf, frame, tmp_path / "legacy.odp")
+
+    assert doc.pictures == []
+    ref = getattr(doc.tracks[0], kind)
+    assert ref is not None and ref.mimetype == mimetype
+
+
+def test_odp_media_in_an_unsupported_container_is_no_track(tmp_path: Path):
+    """A track cannot reference a .3gp: the preview stays a picture."""
+    odf = OdfDocument("presentation")
+    frame = Frame.image_frame(_preview(odf, tmp_path), size=("8cm", "4.5cm"))
+    frame.append(_plugin("Media/clip.3gp", "application/vnd.sun.star.media"))
+    doc = _convert(odf, frame, tmp_path / "unsupported.odp")
 
     assert doc.tracks == []
     assert len(doc.pictures) == 1
