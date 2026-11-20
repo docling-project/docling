@@ -544,7 +544,8 @@ poster frame as cover; the track's `video` or `audio` references the media file.
 On `PowerpointFormatOption` or `OdpFormatOption`, `ConvertPipelineOptions(keep_media=True)`
 holds the file in the track (a DocLang archive then stores it), and
 `do_media_conversion=True` transcribes it: the transcript (and the frames of a
-video) goes in the track. `media_asr_options` picks the Whisper model. Linked
+video) goes in the track. `media_asr_options` picks the Whisper model. The CLI
+flags are `--keep-media` and `--convert-media` (which uses the `--asr-*` options). Linked
 media files load only with the backend options `enable_remote_fetch` /
 `enable_local_fetch`.
 

@@ -299,6 +299,12 @@ print(result.document.export_to_markdown())
 
 `media_asr_options` selects the Whisper model (default: `WHISPER_TINY`). Frames are sampled with the default settings of the video pipeline.
 
+On the CLI, `--convert-media` does the same. It transcribes with the model of the `--asr-*` options, like audio and video inputs:
+
+```bash
+docling convert slides.pptx --convert-media --asr-model whisper_base --keep-media --to dclx
+```
+
 Docling loads a linked media file only when the backend options allow it: `enable_remote_fetch=True` for a URL, and `enable_local_fetch=True` for a local file. A local file must be in the folder of the presentation or below it, and the presentation must be given as a `Path`. PowerPoint stores links to local files as absolute paths, so Docling does not load them.
 
 Each media file is loaded and converted once, also when several slides show it. Media in a container that a track does not support yet (for example the `.wmv` or `.mpg` of an older deck) stays a picture of its poster frame or icon, and is neither kept nor converted. A video without an audio track gives only its sampled frames.

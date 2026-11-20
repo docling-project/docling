@@ -550,6 +550,27 @@ def _resolve_asr_options(
         raise ValueError(f"{asr_model} is not known")
 
 
+def _cli_asr_options(
+    asr_model: AsrModelType | None,
+    device: AcceleratorDevice | str,
+    language: str | None,
+    timestamps: bool,
+    speakers: bool,
+) -> InlineAsrOptions:
+    """The ASR options of the CLI's ``--asr-*`` options, for audio and video inputs and slide media."""
+    # Auto-selecting models (choose best implementation for hardware)
+    options = _resolve_asr_options(
+        asr_model if asr_model is not None else DEFAULT_ASR_MODEL, device
+    )
+    if isinstance(options, (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions)):
+        options = options.model_copy(update={"language": language})
+        if options.model_family == "granite_plus":
+            options = options.model_copy(
+                update={"word_timestamps": timestamps, "speaker_attribution": speakers}
+            )
+    return options
+
+
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
@@ -1167,6 +1188,17 @@ def convert(  # noqa: C901
                 "--to dclx stores them in the archive. The document then holds the "
                 "input's local path. The video and audio that slides play (PPTX, "
                 "ODP) are kept as well."
+            ),
+        ),
+    ] = False,
+    convert_media: Annotated[
+        bool,
+        typer.Option(
+            "--convert-media/--no-convert-media",
+            help=(
+                "Transcribe the video and audio that slides play (PPTX, ODP), and "
+                "sample the frames of their videos, into the track of each media "
+                "object. Uses the --asr-* options like audio and video inputs."
             ),
         ),
     ] = False,
@@ -2055,7 +2087,12 @@ def convert(  # noqa: C901
                 do_chart_extraction=enrich_chart_extraction,
                 chart_extraction_options=chart_extraction_options,
                 keep_media=keep_media,
+                do_media_conversion=convert_media,
             )
+            if convert_media:
+                simple_format_option.media_asr_options = _cli_asr_options(
+                    asr_model, device, asr_language, asr_timestamps, asr_speakers
+                )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
             if picture_description_max_new_tokens is not None:
@@ -2263,38 +2300,22 @@ def convert(  # noqa: C901
             # artifacts_path = artifacts_path
         )
 
+        transcribed_formats = (InputFormat.AUDIO, InputFormat.VIDEO) + (
+            (InputFormat.PPTX, InputFormat.ODP) if convert_media else ()
+        )
         if asr_model is not None and not any(
             _name_matches_format(str(path), input_format)
             for path in input_doc_paths
-            for input_format in (InputFormat.AUDIO, InputFormat.VIDEO)
+            for input_format in transcribed_formats
         ):
             _log.warning(
                 "--asr-model has no effect because no input has an audio or "
-                "video file extension."
+                "video file extension, nor is a presentation with --convert-media."
             )
 
-        # Auto-selecting models (choose best implementation for hardware)
-        asr_pipeline_options.asr_options = _resolve_asr_options(
-            asr_model if asr_model is not None else DEFAULT_ASR_MODEL, device
+        asr_pipeline_options.asr_options = _cli_asr_options(
+            asr_model, device, asr_language, asr_timestamps, asr_speakers
         )
-        if isinstance(
-            asr_pipeline_options.asr_options,
-            (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions),
-        ):
-            asr_pipeline_options.asr_options = (
-                asr_pipeline_options.asr_options.model_copy(
-                    update={"language": asr_language}
-                )
-            )
-            if asr_pipeline_options.asr_options.model_family == "granite_plus":
-                asr_pipeline_options.asr_options = (
-                    asr_pipeline_options.asr_options.model_copy(
-                        update={
-                            "word_timestamps": asr_timestamps,
-                            "speaker_attribution": asr_speakers,
-                        }
-                    )
-                )
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 

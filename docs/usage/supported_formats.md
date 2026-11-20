@@ -44,7 +44,7 @@ Video and audio on PPTX and ODP slides become tracks, with their poster frame or
 icon as the cover. The `video` or `audio` of the track gives the path of the media
 file inside the package, or the link of a linked file. Set `keep_media=True` in the
 pipeline options to hold the media file in the track, and `do_media_conversion=True`
-to also transcribe it
+to also transcribe it (`--keep-media` and `--convert-media` on the CLI)
 (see [Video and audio in slides](processing_audio_media.md#video-and-audio-in-slides)).
 
 Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,

@@ -718,6 +718,33 @@ def test_cli_default_pipeline_stays_standard_without_model(
     )
 
 
+@pytest.mark.parametrize("convert_media", [False, True])
+def test_cli_convert_media_transcribes_slide_media(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    convert_media: bool,
+) -> None:
+    """--convert-media transcribes slide media with the model of --asr-model."""
+    source = "./tests/data/pptx/sources/powerpoint_sample.pptx"
+    args = [source, "--asr-model", "whisper_base", "--output", str(tmp_path)]
+    if convert_media:
+        args.append("--convert-media")
+    result, captured = _invoke_cli_with_fake_converter(monkeypatch, args)
+
+    assert result.exit_code == 0, result.output
+    format_options = captured["format_options"]
+    for input_format in (InputFormat.PPTX, InputFormat.ODP):
+        options = format_options[input_format].pipeline_options
+        assert options.do_media_conversion is convert_media
+        if convert_media:
+            assert options.media_asr_options == (
+                format_options[InputFormat.AUDIO].pipeline_options.asr_options
+            )
+    # without --convert-media, --asr-model is not used for a presentation
+    assert ("--asr-model has no effect" in caplog.text) is not convert_media
+
+
 def test_cli_asr_pipeline_accepts_only_audio_and_video(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
