@@ -35,6 +35,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     ProvenanceItem,
     Size,
+    TableData,
 )
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -264,10 +265,20 @@ def _add_block(
                 heading_level = markdown_level
         doc.add_heading(text=text, level=heading_level, prov=prov)
     elif label == "table":
-        if _add_html_table(doc, text, prov) is None:
-            raise ValueError(
-                f"Invalid table HTML for PaddleOCR-VL block {block.block_id}"
+        try:
+            table = _add_html_table(doc, text, prov)
+        except ValueError as exc:
+            # Like the dots and Chandra mappers: drop the grid, keep the page.
+            _log.warning(
+                "PaddleOCR-VL table is too large to map (%s); preserving an empty table",
+                exc,
             )
+            doc.add_table(data=TableData(num_rows=0, num_cols=0), prov=prov)
+        else:
+            if table is None:
+                raise ValueError(
+                    f"Invalid table HTML for PaddleOCR-VL block {block.block_id}"
+                )
     elif label in _FORMULA_LABELS:
         doc.add_formula(text=text, prov=prov)
     elif label in _PICTURE_LABELS:
