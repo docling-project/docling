@@ -5877,8 +5877,8 @@
           ]
         }
       ],
-      "orig": "2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
-      "text": "Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
+      "orig": "2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \u2192 HR_SCHEMA\u2192 Tables, right-click the EMPLOYEES table, and click Definition.",
+      "text": "Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \u2192 HR_SCHEMA\u2192 Tables, right-click the EMPLOYEES table, and click Definition.",
       "enumerated": true,
       "marker": "2."
     },
