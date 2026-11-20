@@ -492,6 +492,21 @@ def _clean_odf_text_lines(text: str) -> list[str]:
     return [line for line in (line.strip() for line in text.splitlines()) if line]
 
 
+def _odf_text_without_notes(element: Any) -> str:
+    """Return the recursive text of an element without its footnotes and endnotes.
+
+    odfdo reads a ``text:note`` as its citation and body. The body is added as
+    its own footnote item (see ``_OdfBaseBackend._add_footnotes``), and the text
+    runs of a paragraph skip the note, so it is left out here too.
+    """
+    if element.get_element("descendant::text:note") is None:
+        return element.text_recursive
+    clone = element.clone
+    for note in clone.get_elements("descendant::text:note"):
+        Element.delete(note)
+    return clone.text_recursive
+
+
 def _formatting_or_none(formatting: Formatting) -> Formatting | None:
     return None if formatting == Formatting() else formatting
 
@@ -865,10 +880,10 @@ def _odf_element_text_lines(element: Any) -> list[str]:
             lines.extend(_odf_element_text_lines(child))
         if lines:
             return lines
-        return _clean_odf_text_lines(element.text_recursive)
+        return _clean_odf_text_lines(_odf_text_without_notes(element))
 
     if isinstance(element, (Header, Paragraph)):
-        return _clean_odf_text_lines(element.text_recursive)
+        return _clean_odf_text_lines(_odf_text_without_notes(element))
 
     child_lines: list[str] = []
     for child in getattr(element, "children", []):
@@ -876,7 +891,7 @@ def _odf_element_text_lines(element: Any) -> list[str]:
     if child_lines:
         return child_lines
 
-    return _clean_odf_text_lines(element.text_recursive)
+    return _clean_odf_text_lines(_odf_text_without_notes(element))
 
 
 def _odf_list_item_content(
@@ -1046,10 +1061,10 @@ def _odf_cell_has_rich_content(cell: Any) -> bool:
             if _odf_list_has_renderable_content(child):
                 return True
         elif isinstance(child, Header):
-            if _clean_odf_text_lines(child.text_recursive):
+            if _clean_odf_text_lines(_odf_text_without_notes(child)):
                 return True
         elif isinstance(child, Paragraph):
-            if _clean_odf_text_lines(child.text_recursive):
+            if _clean_odf_text_lines(_odf_text_without_notes(child)):
                 non_empty_paragraphs += 1
             if child.get_images():
                 return True
