@@ -3215,6 +3215,30 @@ def test_sym_with_invalid_char_is_skipped(tmp_path):
     assert texts == ["abc"]
 
 
+def test_ruby_base_text_is_kept(tmp_path):
+    """The base text of a ``w:ruby`` (Phonetic Guide in Word) is run text.
+
+    Word puts the guided text and its reading in ``w:ruby`` inside the run, not
+    in ``w:t``, so the text was dropped. The reading aid is left out.
+    """
+    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    document = Document()
+    paragraph = document.add_paragraph("首都は")
+    paragraph._p.append(
+        parse_xml(
+            f"<w:r {w}><w:ruby><w:rubyPr/>"
+            "<w:rt><w:r><w:t>とうきょう</w:t></w:r></w:rt>"
+            "<w:rubyBase><w:r><w:t>東京</w:t></w:r></w:rubyBase>"
+            "</w:ruby></w:r>"
+        )
+    )
+    paragraph.add_run("です。")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == ["首都は東京です。"]
+
+
 def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
     """An inline equation is kept when its paragraph or cell has Symbol text."""
     omath = (
