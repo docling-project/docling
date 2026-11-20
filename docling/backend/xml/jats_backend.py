@@ -23,6 +23,7 @@ Security Note:
 from __future__ import annotations
 
 import logging
+import re
 import traceback
 import warnings
 from dataclasses import dataclass, replace
@@ -487,6 +488,35 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return abs_list
 
+    @staticmethod
+    def _affiliation_text(node: etree._Element) -> str:
+        """Join the text of an <aff>, leaving out its label and institution ids.
+
+        Text is kept as written, so inline markup such as <italic> does not split
+        a name. A comma is added only where one element follows another with
+        nothing but whitespace between them.
+        """
+        elem_start, elem_end = "\x01", "\x02"
+        parts: list[str] = []
+
+        def collect(elem: etree._Element) -> None:
+            parts.append(elem.text or "")
+            for child in elem:
+                has_text = bool("".join(parts).strip(f"{elem_start}{elem_end} \n\t"))
+                is_leading_sup = child.tag == "sup" and elem is node and not has_text
+                skipped = child.tag in ("label", "institution-id") or is_leading_sup
+                if isinstance(child.tag, str) and not skipped:
+                    parts.append(elem_start)
+                    collect(child)
+                    parts.append(elem_end)
+                parts.append(child.tail or "")
+
+        collect(node)
+        text = re.sub(f"{elem_end}\\s*{elem_start}", ", ", "".join(parts))
+        text = text.replace(elem_start, "").replace(elem_end, "")
+        text = re.sub(r"\s*,(?:\s*,)*", ",", text)
+        return JatsDocumentBackend._normalize_whitespace(text).strip(" ,;")
+
     def _parse_authors(self) -> list[Author]:
         # Get mapping between affiliation ids and names
         authors: list[Author] = []
@@ -496,13 +526,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         affiliation_names = []
         for affiliation_node in meta.xpath(".//aff[@id]"):
-            aff = ", ".join([t for t in affiliation_node.itertext() if t.strip()])
-            aff = aff.replace("\n", " ")
-            label = affiliation_node.xpath("label")
-            if label:
-                # TODO: once superscript is supported, add label with formatting
-                aff = aff.removeprefix(f"{label[0].text}, ")
-            affiliation_names.append(aff)
+            affiliation_names.append(
+                JatsDocumentBackend._affiliation_text(affiliation_node)
+            )
         affiliation_ids_names = dict(
             zip(meta.xpath(".//aff[@id]/@id"), affiliation_names)
         )
@@ -523,6 +549,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             for id in affiliation_ids:
                 if id in affiliation_ids_names:
                     author["affiliation_names"].append(affiliation_ids_names[id])
+
+            # Affiliations given in place instead of by reference: inside the
+            # contrib, or, for authors without any, shared by the contrib-group
+            own_affs = author_node.xpath("aff")
+            group_node = author_node.getparent()
+            if (
+                not author["affiliation_names"]
+                and not own_affs
+                and group_node is not None
+            ):
+                own_affs = group_node.xpath("aff[not(@id)]")
+            for aff_node in own_affs:
+                aff = JatsDocumentBackend._affiliation_text(aff_node)
+                if aff and aff not in author["affiliation_names"]:
+                    author["affiliation_names"].append(aff)
 
             # Name
             author["name"] = JatsDocumentBackend._parse_contrib_name(author_node)

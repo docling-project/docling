@@ -1857,6 +1857,120 @@ def test_jats_copyright_and_each_license_paragraph_are_kept_in_order():
     assert superscripts == ["3"]
 
 
+def _affiliation_paragraph(doc: DoclingDocument) -> str:
+    """Return the paragraph that follows the author names."""
+    texts = [item.text for item in doc.texts]
+    return texts[texts.index("Jane Doe") + 1] if "Jane Doe" in texts else ""
+
+
+def test_jats_affiliation_leaves_out_ids_and_empty_parts():
+    """Institution ids and the punctuation between elements are not text."""
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff" rid="aff1"/></contrib>""",
+        """<aff id="aff1"><label>1</label><institution-wrap>"""
+        """<institution-id institution-id-type="ror">https://ror.org/03yrm5c26"""
+        """</institution-id><institution-id institution-id-type="Ringgold">12345"""
+        """</institution-id><institution>Univ Three</institution></institution-wrap>, """
+        """<addr-line>Paris</addr-line>, <country>France</country></aff>""",
+    )
+
+    assert _affiliation_paragraph(doc) == "Univ Three, Paris, France"
+
+
+def test_jats_affiliation_leaves_out_a_superscript_label():
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff" rid="aff1">"""
+        """<sup>1</sup></xref></contrib>""",
+        """<aff id="aff1"><sup>1</sup><institution>Department of Biology"""
+        """</institution>, <addr-line>Boston, MA</addr-line></aff>""",
+    )
+
+    assert _affiliation_paragraph(doc) == "Department of Biology, Boston, MA"
+
+
+def test_jats_affiliation_inside_the_contrib_is_kept():
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><aff>Department of Physics, """
+        """<institution-wrap><institution-id institution-id-type="ror">"""
+        """https://ror.org/014weej12</institution-id><institution>Middle East """
+        """Technical University</institution></institution-wrap>, """
+        """<addr-line>Ankara</addr-line></aff></contrib>"""
+    )
+
+    assert (
+        _affiliation_paragraph(doc)
+        == "Department of Physics, Middle East Technical University, Ankara"
+    )
+
+
+def test_jats_affiliation_of_the_group_goes_to_authors_without_one():
+    """An <aff> without id in a contrib-group belongs to its authors only."""
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name></contrib>"""
+        """<contrib contrib-type="editor"><name><given-names>Ed</given-names>"""
+        """<surname>Itor</surname></name></contrib>"""
+        """<aff>Single Univ, Rome, Italy</aff>"""
+    )
+
+    assert _affiliation_paragraph(doc) == "Single Univ, Rome, Italy"
+
+
+def test_jats_affiliation_keeps_inline_markup_inside_a_name():
+    """Inline elements do not split the text, only adjacent fields get a comma."""
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff" rid="aff1"/>"""
+        """<xref ref-type="aff" rid="aff2"/><xref ref-type="aff" rid="aff3"/>"""
+        """</contrib>""",
+        """<aff id="aff1"><italic>Institut</italic> Pasteur</aff>"""
+        """<aff id="aff2">University of <named-content>Oxford</named-content> """
+        """Medical School</aff>"""
+        """<aff id="aff3"><institution>X</institution><addr-line>Y</addr-line>"""
+        """</aff>""",
+    )
+
+    assert (
+        _affiliation_paragraph(doc)
+        == "Institut Pasteur; University of Oxford Medical School; X, Y"
+    )
+
+
+def test_jats_affiliation_does_not_double_the_comma_between_fields():
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff" rid="aff1"/></contrib>""",
+        """<aff id="aff1"><institution>X</institution>, <addr-line>Y</addr-line>"""
+        """</aff>""",
+    )
+
+    assert _affiliation_paragraph(doc) == "X, Y"
+
+
+def test_jats_affiliation_of_the_group_is_used_when_the_xref_finds_nothing():
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff" rid="missing"/>"""
+        """</contrib><aff>Group Univ</aff>"""
+    )
+
+    assert _affiliation_paragraph(doc) == "Group Univ"
+
+
+def test_jats_affiliation_of_the_group_is_not_given_to_a_contrib_with_its_own():
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff" rid="aff1"/></contrib>"""
+        """<aff>Group Univ</aff>""",
+        """<aff id="aff1">Own Univ</aff>""",
+    )
+
+    assert _affiliation_paragraph(doc) == "Own Univ"
+
+
 @pytest.mark.parametrize("use_stream", [False, True])
 def test_e2e_jats_conversions(use_stream: bool):
     jats_paths = get_jats_paths()
