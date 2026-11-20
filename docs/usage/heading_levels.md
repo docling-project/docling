@@ -111,6 +111,82 @@ rest of the document: if unambiguous Roman markers (`II.`, `III.`) appear elsewh
 Roman, if unambiguous letters (`B.`, `F.`) appear it reads as alpha, and with no evidence either
 way `I`/`i` default to Roman, which is the common legal case.
 
+#### Keywords in other languages
+
+The built-in keywords are English. Digits, Roman numerals and `§` work in any language, but a
+heading such as `Rozdział 1` or `Art. 5` carries its level in a word that Docling does not know.
+`numbering_keywords` adds words to the scheme families:
+
+```python
+HeadingHierarchyOptions(
+    enabled=True,
+    numbering_keywords={"chapter": ["rozdział"], "article": ["art.", "artykuł"]},
+)
+```
+
+The added words follow the rules of the built-in ones:
+
+- Letter case does not matter, and accented letters match in composed and decomposed form.
+- A word is a marker when it stands alone (`Załącznik`) or when an enumerator follows
+  (`Rozdział 1`, `ROZDZIAŁ II`). `Rozdział ogólny` is not a marker.
+- A word added to `division` or `subdivision` is a marker only when an enumerator follows. Use
+  these two families for words that are also common nouns.
+- Write the dot of an abbreviation as part of the word. `art.` reads `Art. 5` and `Art.5` as
+  keyword plus enumerator, and it does not read `Art. Deco` as a marker.
+
+Many legal traditions have more keyword levels than the five built-in families. A key that is not
+a built-in family defines a new one, and `numbering_schemes` gives it a place:
+
+```python
+HeadingHierarchyOptions(
+    enabled=True,
+    numbering_keywords={
+        "tytul": ["tytuł"],
+        "dzial": ["dział"],
+        "rozdzial": ["rozdział"],
+        "oddzial": ["oddział"],
+        "article": ["art.", "artykuł"],
+    },
+    numbering_schemes=[
+        "tytul", "dzial", "rozdzial", "oddzial", "article",
+        "roman_u", "arabic", "alpha_u", "alpha_l", "roman_l",
+    ],
+)
+```
+
+A new family that `numbering_schemes` does not list is an error, because it would have no place
+in the hierarchy.
+
+A word that you list replaces its built-in family. `Section` is built into the `article` family,
+but in EU acts a Section holds Articles. Move the word to a family of its own:
+
+```python
+HeadingHierarchyOptions(
+    enabled=True,
+    numbering_keywords={"section": ["section"]},
+    numbering_schemes=[
+        "part", "chapter", "section", "article",
+        "roman_u", "arabic", "alpha_u", "alpha_l", "roman_l",
+    ],
+)
+```
+
+Some documents spell the number (`DZIAŁ PIERWSZY`, `TÍTULO PRIMERO`, `Article premier`). The
+built-in number words are English, so add the ones your documents use:
+
+```python
+HeadingHierarchyOptions(
+    enabled=True,
+    numbering_keywords={"part": ["dział"]},
+    numbering_number_words=["pierwszy", "drugi", "trzeci"],
+)
+```
+
+!!! note "Enumerator before the keyword"
+
+    A keyword marker starts with the keyword. Headings that put the enumerator first, such as
+    `Erster Teil` or `第一章`, are not read as keyword markers.
+
 ### Visual style
 
 Headings with neither a bookmark match nor a recognizable marker fall back to how they look on the
@@ -179,6 +255,8 @@ All of these live on `HeadingHierarchyOptions`, set as
 | `use_font_style` | `True` | Refine the style fallback with font weight, slant and all-caps detection. Ignored when `use_style` is off. |
 | `style_size_tolerance` | `0.05` | Relative difference below which two font sizes count as one. Higher merges more sizes into a single level. |
 | `numbering_schemes` | `None` | Override the scheme precedence, highest level first. |
+| `numbering_keywords` | `{}` | Extra keyword markers, as a mapping from a scheme family to its words. A new family name must be in `numbering_schemes`. |
+| `numbering_number_words` | `[]` | Extra number words that count as the enumerator after a keyword. |
 | `max_level` | `6` | Deepest level assigned; anything deeper is clamped. |
 | `bookmark_match_threshold` | `0.8` | Minimum title similarity (0–1) for a bookmark to claim a heading. Higher is stricter. |
 

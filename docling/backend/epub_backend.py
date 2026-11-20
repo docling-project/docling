@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
@@ -316,7 +316,8 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             image_path = posixpath.normpath(
                 posixpath.join(content_dir, unquote(parts.path))
             )
-            return 'src="{}"'.format(image_path.replace('"', "&quot;"))
+            # Encode it again: the HTML backend reads "src" as a URL.
+            return f'src="{quote(image_path)}"'
 
         # Group 1: the opening quote (" or '). Group 2: the value, up to the
         # matching closing quote. The lookbehind skips attributes that only end

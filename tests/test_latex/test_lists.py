@@ -690,3 +690,24 @@ def test_latex_list_nested():
     # Nested items appear in the outer item text
     assert any("Inner item A" in t or "Inner item B" in t for t in item_texts)
     assert any("Numbered inner 1" in t or "Numbered inner 2" in t for t in item_texts)
+
+
+def test_latex_list_items_from_input_file(tmp_path):
+    """An ``\\item`` in an ``\\input`` file starts a new item of the open list."""
+    main_file = tmp_path / "main.tex"
+    main_file.write_text(
+        "\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        "\\item Paper A\n\\input{items}\n\\item Paper D\n"
+        "\\end{enumerate}\n\\end{document}\n"
+    )
+    # The file also inputs itself: the cycle must be skipped, not expanded.
+    (tmp_path / "items.tex").write_text(
+        "\\item Paper B\n\\item Paper C\n\\input{items}\n"
+    )
+
+    doc = DocumentConverter().convert(main_file).document
+
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert [t.text for t in list_items] == ["Paper A", "Paper B", "Paper C", "Paper D"]
+    assert all(t.enumerated for t in list_items)
+    assert "4. Paper D" in doc.export_to_markdown()

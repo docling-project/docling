@@ -53,6 +53,7 @@ from odfdo import (
     Bookmark,
     Cell,
     Document as OdfDocument,
+    DrawGroup,
     DrawPage,
     Element,
     Frame,
@@ -1642,6 +1643,52 @@ def test_odp_nested_textbox_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odp_grouped_shapes_keep_their_text(tmp_path: Path):
+    path = tmp_path / "grouped_shapes.odp"
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+
+    def shape(text: str) -> Element:
+        return Element.from_tag(
+            '<draw:custom-shape svg:width="6cm" svg:height="2cm">'
+            f"<text:p>{text}</text:p>"
+            '<draw:enhanced-geometry draw:type="rectangle"/></draw:custom-shape>'
+        )
+
+    page = DrawPage("page1", name="Slide One")
+    page.append(
+        Frame.text_frame("Before", size=("10cm", "2cm"), position=("1cm", "1cm"))
+    )
+    group = DrawGroup()
+    group.append(shape("Grouped shape"))
+    group.append(
+        Frame.text_frame("Grouped frame", size=("6cm", "2cm"), position=("1cm", "4cm"))
+    )
+    inner = DrawGroup()
+    inner.append(shape("Nested group"))
+    group.append(inner)
+    page.append(group)
+    page.append(shape("After"))
+    body.append(page)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    texts = [
+        item.text
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "text"
+    ]
+
+    assert texts == [
+        "Before",
+        "Grouped shape",
+        "Grouped frame",
+        "Nested group",
+        "After",
+    ]
+
+
 def test_odp_presentation_with_mixed_slide_content():
     path = Path("tests/data/odf/sources/odf_presentation_02.odp")
 
@@ -2108,6 +2155,57 @@ def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
         ["a", "1"],
         ["b", "2"],
     ]
+
+
+@pytest.mark.parametrize("axis", ["rows", "columns"])
+def test_ods_repeated_content_is_limited(
+    tmp_path: Path, axis: str, caplog: pytest.LogCaptureFixture
+):
+    """Test a sheet that repeats a cell with content ten million times.
+
+    The trailing padding is removed, but a repetition with content is not. The
+    backend expanded each copy several times, so a file of less than 1 KB used
+    minutes of CPU time and gigabytes of memory. The copies over
+    ``max_repeated_cells`` are not converted, and the cells written after the
+    repetition are kept.
+    """
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    path = tmp_path / f"repeated_{axis}.ods"
+    doc = OdfDocument("spreadsheet")
+    doc.body.clear()
+    sheet = Table("Sheet1")
+    if axis == "rows":
+        repeated = Row(repeated=10_000_000)
+        repeated.append_cell(Cell("A"))
+        sheet.append_row(repeated)
+        last = Row()
+        last.append_cell(Cell("end"))
+        sheet.append_row(last)
+    else:
+        row = Row()
+        row.append_cell(Cell("A", repeated=10_000_000))
+        row.append_cell(Cell("end"))
+        sheet.append_row(row)
+    doc.body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(max_repeated_cells=100)
+            )
+        },
+    )
+    with caplog.at_level(logging.WARNING):
+        tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    cells = [cell.text for row in tables[0].data.grid for cell in row]
+    assert cells == ["A"] * 101 + ["end"]
+    assert "max_repeated_cells" in caplog.text
 
 
 @pytest.mark.parametrize("hidden", [False, True], ids=["visible", "hidden"])

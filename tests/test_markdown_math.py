@@ -28,6 +28,27 @@ from docling.utils.markdown_math import create_markdown_parser
             "See www.example.com and $x$.",
             "See www.example.com and <math>x</math>.",
         ),
+        (
+            r"Cite \[9\] and \[Smith et al., 2020\]; \[x_1\].",
+            'Cite [9] and [Smith et al., 2020]; <math display="block">x_1</math>.',
+        ),
+        (
+            r"Cite \[12-14\]; \[n - 1\] and \[a-b\].",
+            "Cite [12-14]; "
+            '<math display="block">n - 1</math> and '
+            '<math display="block">a-b</math>.',
+        ),
+        (
+            r"Cite \[Smith-Jones et al., 2020\] and \[RFC-2119\]; \[2n-12\].",
+            "Cite [Smith-Jones et al., 2020] and [RFC-2119]; "
+            '<math display="block">2n-12</math>.',
+        ),
+        (
+            "Use \\[\u03b1\u03b2\\], \\[r\u00b2\\], and \\[\nE\n\\].",
+            'Use <math display="block">\u03b1\u03b2</math>, '
+            '<math display="block">r\u00b2</math>, and '
+            '<math display="block">E</math>.',
+        ),
     ],
 )
 def test_inline_math_preserves_native_text_syntax(source: str, expected: str) -> None:

@@ -100,7 +100,7 @@ Dass 20 Minuten einen gesellschaftlichen Mehrwert schafft: das Publikum gut info
 
 DÉSIRÉE POMPER
 
-«In unseren Pausen räumen wird sehr oft 20 Minuten gelesen prüfen wir gerade, o den QR-Code für die lineausgabe an den Wänden aufhängen sollen, damit alle Mitarbeitenden Zugang haben». Anna Hug, nft . Hier ob wir e Onn
+«In unseren Pausen räumen wird sehr oft 20 Minuten gelesen prüfen wir gerade, o den QR-Code für die lineausgabe an den Wänden aufhängen sollen, damit alle Mitarbeitenden Zugang haben». Anna Hug, n-ft . Hier ob wir e Onn
 
 Co-Geschäftsleiterin Hug AG
 

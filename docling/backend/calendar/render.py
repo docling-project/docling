@@ -230,7 +230,8 @@ def _time_fields(entry: Component) -> list[str]:
     start_label = "Date" if entry.name == "VJOURNAL" else "Start"
 
     if start_prop is None:
-        pass
+        if end_prop is not None:
+            fields.append(f"End: {format_property_time(end_prop)}")
     elif start is None:
         fields.append(f"{start_label}: {start_prop.value}")
     elif start.all_day and entry.name == "VEVENT":
