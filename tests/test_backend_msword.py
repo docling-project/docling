@@ -964,6 +964,35 @@ def test_inline_sdt_references(tmp_path):
     assert "(Standalone citation)" in markdown
 
 
+def test_inline_sdt_keeps_tabs_and_line_breaks(tmp_path):
+    """An inline content control keeps the tabs and line breaks of its runs.
+
+    The same runs outside a control keep them, so the words on either side of
+    a tab or a line break must not be joined, in the body or in a table cell.
+    """
+    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    control = (
+        f"<w:sdt {w}><w:sdtPr/><w:sdtContent>"
+        "<w:r><w:t>Name:</w:t><w:tab/><w:t>Jane Doe</w:t></w:r>"
+        "<w:r><w:br/><w:t>Second line</w:t></w:r>"
+        "</w:sdtContent></w:sdt>"
+    )
+    document = Document()
+    document.add_paragraph()._p.append(etree.fromstring(control))
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "Contact"
+    table.cell(0, 1).paragraphs[0]._p.append(etree.fromstring(control))
+
+    doc = _convert_built(document, tmp_path)
+
+    expected = "Name:\tJane Doe\nSecond line"
+    assert [item.text for item in doc.texts] == [expected]
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Contact",
+        expected,
+    ]
+
+
 def test_block_sdt_tables_are_extracted():
     """Test tables wrapped in block-level SDT content controls."""
     docx_path = Path("./tests/data/docx/sources/docx_rich_tables_01.docx")
