@@ -1590,6 +1590,67 @@ def test_pipe_in_lazy_continuation_line_does_not_hang():
     assert "|x| y" in result[0].document.export_to_markdown().replace("\\", "")
 
 
+def test_inline_html_formatting_tags():
+    """Inline HTML formatting tags set the same formatting as in the HTML backend.
+
+    Marko parses ``<b>`` and ``</b>`` as ``InlineHTML`` siblings of the text
+    between them, so the formatting must carry across siblings, through nested
+    Markdown emphasis, and stop at the closing tag.
+    """
+    markdown = (
+        "a <b>bold</b> and <em>italic</em> c\n\n"
+        "E = mc<sup>2</sup> and H<sub>2</sub>O\n\n"
+        "<u>under *both*</u> <del>gone</del> after\n\n"
+        "- <strong>item</strong> text\n\n"
+        "# Title <i>v2</i>\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    formats = {}
+    for item, _ in conv_result.document.iterate_items():
+        fmt = getattr(item, "formatting", None)
+        if getattr(item, "text", ""):
+            formats[item.text.strip()] = (
+                fmt.model_dump(mode="json", exclude_defaults=True) if fmt else {}
+            )
+
+    assert formats["a"] == {}
+    assert formats["bold"] == {"bold": True}
+    assert formats["and"] == {}
+    assert formats["italic"] == {"italic": True}
+    assert formats["c"] == {}
+    assert formats["O"] == {}
+    assert formats["under"] == {"underline": True}
+    assert formats["both"] == {"underline": True, "italic": True}
+    assert formats["gone"] == {"strikethrough": True}
+    assert formats["after"] == {}
+    assert formats["item"] == {"bold": True}
+    assert formats["text"] == {}
+    assert formats["v2"] == {"italic": True}
+
+    scripts = [
+        (item.text, item.formatting.script.value)
+        for item, _ in conv_result.document.iterate_items()
+        if getattr(item, "formatting", None) and item.text == "2"
+    ]
+    assert scripts == [("2", "super"), ("2", "sub")]
+
+
+def test_inline_html_formatting_tag_left_open_ends_with_its_block():
+    """An unclosed inline tag formats the rest of its paragraph only."""
+    markdown = "start <b>open\n\nnext paragraph\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    formats = {
+        item.text.strip(): bool(item.formatting and item.formatting.bold)
+        for item, _ in conv_result.document.iterate_items()
+        if getattr(item, "text", "")
+    }
+    assert formats == {"start": False, "open": True, "next paragraph": False}
+
+
 @pytest.mark.parametrize(
     ("markdown", "expected_items"),
     [
