@@ -423,6 +423,8 @@ class _ReadingOrderPredictorState:
 
 
 GRAPHIC_LABELS = {DocItemLabel.TABLE, DocItemLabel.PICTURE, DocItemLabel.CODE}
+# Headings that, centred alone in their row, belong to the whole text column.
+COLUMN_HEADING_LABELS = {DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE}
 
 
 def _is_graphic(element: PageElement) -> bool:
@@ -458,6 +460,7 @@ class ReadingOrderPredictor:
     _NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM: ClassVar[float] = 0.0025
     _LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM: ClassVar[float] = 0.01
     _INTERRUPTION_QUERY_PADDING: ClassVar[float] = 1.0
+    _CENTRED_HEADING_TOLERANCE_NORM: ClassVar[float] = 0.05
 
     def __init__(self):
         self.dilated_page_element = True
@@ -896,6 +899,82 @@ class ReadingOrderPredictor:
             ):
                 state.dn_map[i].append(j)
                 state.up_map[j].append(i)
+
+        self._link_lone_centred_headings(page_elems, state)
+
+    def _link_lone_centred_headings(
+        self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
+    ) -> None:
+        """
+        Link each heading that sits alone in its row, centred on the text
+        column, to its neighbours above and below as if it spanned the column.
+
+        Such a heading often overlaps neither a short left-aligned line above it
+        nor one below it. Those lines do overlap the wide blocks further up and
+        down, so they interrupt the heading's links to these blocks. The heading
+        then has no link at all, starts a chain of its own, and is read after
+        the chain that passes it. Only links are added; existing links stay.
+        """
+        text_elems = [elem for elem in page_elems if isinstance(elem, PageElement)]
+        if not text_elems:
+            return
+
+        left = min(elem.l for elem in text_elems)
+        right = max(elem.r for elem in text_elems)
+        tolerance = text_elems[0].page_size.width * self._CENTRED_HEADING_TOLERANCE_NORM
+        headings = [
+            index
+            for index, elem in enumerate(page_elems)
+            if isinstance(elem, PageElement)
+            and elem.label in COLUMN_HEADING_LABELS
+            and abs((elem.l + elem.r) / 2 - (left + right) / 2) <= tolerance
+            and not any(
+                other is not elem and other.overlaps_vertically(elem)
+                for other in page_elems
+            )
+        ]
+        if not headings:
+            return
+
+        link_elems = list(page_elems)
+        for index in headings:
+            link_elems[index] = page_elems[index].model_copy(
+                update={"l": left, "r": right}
+            )
+
+        if _RTREE_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _RTREE_IMPORT_ERROR
+        spatial_idx = rtree_index.Index()
+        for index, elem in enumerate(link_elems):
+            spatial_idx.insert(index, (elem.l, elem.b, elem.r, elem.t))
+
+        for heading in headings:
+            for other in range(len(link_elems)):
+                if link_elems[heading].is_strictly_above(link_elems[other]):
+                    upper, lower = heading, other
+                elif link_elems[other].is_strictly_above(link_elems[heading]):
+                    upper, lower = other, heading
+                else:
+                    continue
+
+                if not link_elems[upper].overlaps_horizontally(
+                    link_elems[lower]
+                ) or self._has_sequence_interruption(
+                    spatial_idx,
+                    link_elems,
+                    upper,
+                    lower,
+                    link_elems[upper],
+                    link_elems[lower],
+                ):
+                    continue
+
+                while upper in state.l2r_map:
+                    upper = state.l2r_map[upper]
+
+                if lower not in state.dn_map[upper]:
+                    state.dn_map[upper].append(lower)
+                    state.up_map[lower].append(upper)
 
     def _has_sequence_interruption(
         self,
