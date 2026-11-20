@@ -68,6 +68,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
 | `script_position_options` | Mark superscript and subscript runs; off by default |
+| `table_continuation_options` | Merge tables split over consecutive pages when nothing sits between them and their columns line up; other tables stay split. Off by default (CLI `--table-continuation`) |
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
