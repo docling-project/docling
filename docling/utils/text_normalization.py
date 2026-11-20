@@ -16,7 +16,6 @@ _TYPOGRAPHIC_MAP: dict[str, str] = {
     "‘": "'",  # noqa: RUF001
     "“": '"',
     "”": '"',
-    "•": "·",
 }
 
 # Ligature normalization map.

@@ -2018,10 +2018,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 We propose TableFormer, a transformer based model that predicts tables structure and bounding boxes for the table content simultaneously in an end-to-end approach.",
+      "orig": "\u2022 We propose TableFormer, a transformer based model that predicts tables structure and bounding boxes for the table content simultaneously in an end-to-end approach.",
       "text": "We propose TableFormer, a transformer based model that predicts tables structure and bounding boxes for the table content simultaneously in an end-to-end approach.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "\u2022"
     },
     {
       "self_ref": "#/texts/43",
@@ -2047,10 +2047,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Across all benchmark datasets TableFormer significantly outperforms existing state-of-the-art metrics, while being much more efficient in training and inference to existing works.",
+      "orig": "\u2022 Across all benchmark datasets TableFormer significantly outperforms existing state-of-the-art metrics, while being much more efficient in training and inference to existing works.",
       "text": "Across all benchmark datasets TableFormer significantly outperforms existing state-of-the-art metrics, while being much more efficient in training and inference to existing works.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "\u2022"
     },
     {
       "self_ref": "#/texts/44",
@@ -2076,10 +2076,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 We present SynthTabNet a synthetically generated dataset, with various appearance styles and complexity.",
+      "orig": "\u2022 We present SynthTabNet a synthetically generated dataset, with various appearance styles and complexity.",
       "text": "We present SynthTabNet a synthetically generated dataset, with various appearance styles and complexity.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "\u2022"
     },
     {
       "self_ref": "#/texts/45",
@@ -2105,10 +2105,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 An augmented dataset based on PubTabNet [37], FinTabNet [36], and TableBank [17] with generated ground-truth for reproducibility.",
+      "orig": "\u2022 An augmented dataset based on PubTabNet [37], FinTabNet [36], and TableBank [17] with generated ground-truth for reproducibility.",
       "text": "An augmented dataset based on PubTabNet [37], FinTabNet [36], and TableBank [17] with generated ground-truth for reproducibility.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "\u2022"
     },
     {
       "self_ref": "#/texts/46",
@@ -13289,10 +13289,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 TableFormer output does not include the table cell content.",
+      "orig": "\u2022 TableFormer output does not include the table cell content.",
       "text": "TableFormer output does not include the table cell content.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "\u2022"
     },
     {
       "self_ref": "#/texts/451",
@@ -13318,10 +13318,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 There are occasional inaccuracies in the predictions of the bounding boxes.",
+      "orig": "\u2022 There are occasional inaccuracies in the predictions of the bounding boxes.",
       "text": "There are occasional inaccuracies in the predictions of the bounding boxes.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "\u2022"
     },
     {
       "self_ref": "#/texts/452",
