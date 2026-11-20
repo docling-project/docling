@@ -1404,6 +1404,39 @@ def test_legacy_table_reads_the_value_of_each_kind_of_cell(
     assert [item.text for item in doc.tables[0].data.grid[0]] == [expected, "After"]
 
 
+_NESTED_POPUPS = 2_000
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        '<sf:pm sfa:ID="self"><sf:proxied-cell-ref sfa:IDREF="self"/></sf:pm>',
+        "".join(
+            f'<sf:pm sfa:ID="menu-{level}">'
+            f'<sf:proxied-cell-ref sfa:IDREF="menu-{level + 1}"/>'
+            for level in range(_NESTED_POPUPS)
+        )
+        + "</sf:pm>" * _NESTED_POPUPS,
+    ],
+    ids=["points at itself", "points at a nested pop-up"],
+)
+def test_a_pop_up_menu_that_selects_a_pop_up_leaves_only_its_cell_empty(
+    tmp_path: Path, cell: str
+):
+    """A pop-up menu cell selects one of its choices by ID. A choice is a value
+    cell, so the reader does not follow a pop-up menu that a cell selects. If it
+    did, a cell that selects itself, or a chain of nested pop-up menus, would
+    recurse until the whole document failed to convert.
+
+    The same reader serves the iWork '09 tables of Pages, Keynote and Numbers.
+    """
+    after = '<sf:t><sf:ct sfa:s="After"/></sf:t>'
+    source = _with_legacy_table(tmp_path / "popup.pages", cell + after, 2)
+    doc = _backend(source).convert()
+
+    assert [item.text for item in doc.tables[0].data.grid[0]] == ["", "After"]
+
+
 @pytest.mark.parametrize("source", CONVERTIBLE, ids=lambda path: path.name)
 def test_conversion_matches_the_groundtruth(source: Path):
     """Pin the whole conversion of every fixture, so a change in any part of the

@@ -379,7 +379,12 @@ def text_value(cell: Element) -> str | None:
 
 
 def popup_text(cell: Element) -> str | None:
-    """Read a pop-up menu cell, which points at whichever choice is selected."""
+    """Read a pop-up menu cell, which points at whichever choice is selected.
+
+    A choice is a value cell, so a pop-up menu is never followed as one. This
+    includes the cell itself. A cell that selected itself, or a chain of nested
+    pop-up menus, would otherwise recurse until the whole document failed.
+    """
     reference = cell.find(SF_PROXIED_CELL)
     if reference is None:
         return None
@@ -387,7 +392,7 @@ def popup_text(cell: Element) -> str | None:
     if chosen is None:
         return None
     for choice in cell.iter():
-        if choice.get(SFA_ATTR_ID) == chosen:
+        if choice.tag != POPUP_CELL and choice.get(SFA_ATTR_ID) == chosen:
             return legacy_cell_value(choice)
     return None
 
