@@ -93,7 +93,7 @@ def test_keep_media_skips_a_stream(caplog):
 
 
 def test_keep_media_skips_an_unsupported_type(tmp_path, caplog):
-    path = tmp_path / "talk.wma"
+    path = tmp_path / "talk.amr"
     path.write_bytes(b"not decoded")
     track = _convert(path, keep_media=True).document.tracks[0]
 
