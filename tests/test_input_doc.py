@@ -490,10 +490,26 @@ def test_guess_format_marker_past_sniff_window(
         ("paper", b"% \\documentclass{article}\n", None),
         ("chapter", b"\\section{Intro}\nText.\n", None),
         ("notes.txt", b"\\documentclass{article}\n", InputFormat.MD),
+        (
+            "chapter.tex",
+            b"%!TEX root = main.tex\n\\section{Methods}\n",
+            InputFormat.LATEX,
+        ),
+        (
+            "main",
+            b"%!TEX program = xelatex\n\\documentclass{article}\n",
+            InputFormat.LATEX,
+        ),
+        ("figure.eps", b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 72 72\n", None),
     ],
 )
 def test_guess_format_latex_without_tex_extension(tmp_path, name, content, expected):
-    """A LaTeX document without a .tex name is recognized by its preamble."""
+    """A LaTeX document without a .tex name is recognized by its preamble.
+
+    A TeX magic comment such as `%!TEX root` is not a PostScript header, although
+    `filetype` reports PostScript for all content that starts with `%!`. A real
+    PostScript header such as `%!PS-Adobe-3.0` still gives no format.
+    """
     doc_path = tmp_path / name
     doc_path.write_bytes(content)
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
