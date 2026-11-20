@@ -343,6 +343,34 @@ def test_letter_spaced_standard_heading_is_kept():
     assert _RUNNING_HEADER[0] not in headings
 
 
+def test_demotion_reads_the_configured_keywords():
+    # "Unit" is a configured keyword marker. The bookmark matcher strips "Unit 1" to match
+    # "Introduction"; the demotion strips "Unit 3" the same way, so "Unit 3 References" is the
+    # standard heading "References" and is kept.
+    doc, pages = _paged_doc(
+        [
+            _section("Unit 1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _section("Unit 2 Method"),
+            _PARA,
+            _section("Unit 3 References"),
+            _PARA,
+        ]
+    )
+    outline = _outline(("Introduction", 0), ("Background", 1), ("Method", 0))
+
+    _model(
+        demote_unmatched_headings=True, numbering_keywords={"chapter": ["unit"]}
+    ).assign_heading_levels(doc, parsed_pages=pages, outline=outline)
+
+    headings = _headings(doc)
+    assert "Unit 3 References" in headings
+    assert _RUNNING_HEADER[0] not in headings
+
+
 def test_heading_with_the_number_of_an_unmatched_bookmark_is_kept():
     # The bookmark of section 2 carries unresolved LaTeX references, so its title matches no
     # heading. The printed heading with the same number stays a heading. A false header whose

@@ -537,11 +537,11 @@ _SECTION_NUMBER = re.compile(
 )
 
 
-def _is_standard_heading(text: str) -> bool:
+def _is_standard_heading(text: str, lexicon: KeywordLexicon = _DEFAULT_LEXICON) -> bool:
     unspaced = re.sub(r"\s+", "", text) if _LETTER_SPACED.match(text) else text
     return any(
         _STANDARD_HEADING.match(_norm(variant))
-        for variant in (text, _strip_marker(text), unspaced)
+        for variant in (text, _strip_marker(text, lexicon), unspaced)
     )
 
 
@@ -659,6 +659,7 @@ def _demote_unmatched_headings(
     outline: list[_PdfOutlineItem],
     parsed_pages: dict[int, SegmentedPdfPage],
     options: HeadingHierarchyOptions,
+    lexicon: KeywordLexicon,
 ) -> int:
     """Demote headings that match no bookmark to text, when the outline looks complete.
 
@@ -687,7 +688,7 @@ def _demote_unmatched_headings(
     demotable = [
         heading
         for heading in unmatched
-        if not heading.children and not _is_standard_heading(heading.text)
+        if not heading.children and not _is_standard_heading(heading.text, lexicon)
     ]
     if not demotable or not _outline_looks_complete(
         headings, unmatched, demotable, outline, parsed_pages, options
@@ -826,6 +827,7 @@ class HeadingHierarchyModel:
                     outline=outline,
                     parsed_pages=parsed_pages or {},
                     options=self.options,
+                    lexicon=self._lexicon,
                 )
 
         headings = [
