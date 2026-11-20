@@ -4,6 +4,7 @@
 import base64
 import json
 import logging
+from collections.abc import Iterable
 from io import BytesIO
 from typing import Any
 
@@ -17,9 +18,10 @@ from docling.datamodel.base_models import (
     ApiImageRequestResult,
     ApiImageStreamingRequestResult,
     OpenAiApiResponse,
-    OpenAiChatMessage,
+    OpenAiFunctionCall,
     OpenAiResponseLogprobs,
     OpenAiTokenLogprob,
+    OpenAiToolCall,
     VlmStopReason,
 )
 from docling.models.utils.generation_utils import GenerationStopper
@@ -78,51 +80,15 @@ def _failed_streaming_request(reason: str) -> ApiImageStreamingRequestResult:
     )
 
 
-def _extract_text_from_tool_arguments(arguments: str | None) -> str:
-    if arguments is None:
-        return ""
-
-    try:
-        payload = json.loads(arguments)
-    except json.JSONDecodeError:
-        return arguments.strip()
-
-    fragments: list[str] = []
-
-    def _collect_text(obj: Any) -> None:
-        if isinstance(obj, list):
-            for item in obj:
-                _collect_text(item)
-        elif isinstance(obj, dict):
-            text = obj.get("text")
-            if isinstance(text, str) and text.strip():
-                fragments.append(text.strip())
-            for value in obj.values():
-                _collect_text(value)
-
-    _collect_text(payload)
-    return "\n".join(fragments)
-
-
-def _extract_generated_text(message: OpenAiChatMessage) -> str:
-    if message.content:
-        return message.content.strip()
-
-    # Fall back to reasoning_content when content is empty: some OpenAI-compatible
-    # servers (e.g. LM Studio serving chandra-ocr-2) route the whole answer there.
-    if message.reasoning_content:
-        return message.reasoning_content.strip()
-
-    for tool_call in message.tool_calls or []:
-        function = tool_call.get("function")
-        if not isinstance(function, dict):
-            continue
-
-        generated_text = _extract_text_from_tool_arguments(function.get("arguments"))
-        if generated_text:
-            return generated_text
-
-    return ""
+def _extract_generated_text(
+    content: str | None, tool_calls: Iterable[OpenAiToolCall]
+) -> str:
+    if content and content.strip():
+        return content
+    for call in tool_calls:
+        if call.function.arguments.strip():
+            return call.function.arguments
+    return content or ""
 
 
 def _map_stop_reason(finish_reason: str | None) -> VlmStopReason:
@@ -278,18 +244,28 @@ def api_image_request(
             usage = _extract_response_usage(response_payload, usage_key)
 
             api_resp = OpenAiApiResponse.model_validate(response_payload)
-            generated_text = _extract_generated_text(api_resp.choices[0].message)
+            choice = api_resp.choices[0]
+            message = choice.message
+            generated_text = _extract_generated_text(
+                message.content, message.tool_calls or []
+            ).strip()
+            stop_reason = _map_stop_reason(choice.finish_reason)
+            error = None
+            if not generated_text and message.refusal and message.refusal.strip():
+                error = f"The model refused: {_response_preview(message.refusal)}"
+                stop_reason = VlmStopReason.INFERENCE_ERROR
             num_tokens = _extract_total_tokens(usage)
             if num_tokens is None and api_resp.usage is not None:
                 num_tokens = api_resp.usage.total_tokens
-            stop_reason = _map_stop_reason(api_resp.choices[0].finish_reason)
 
             return ApiImageRequestResult(
                 text=generated_text,
                 num_tokens=num_tokens,
                 stop_reason=stop_reason,
                 usage=usage,
-                logprobs=api_resp.choices[0].logprobs,
+                logprobs=choice.logprobs,
+                error=error,
+                tool_calls=tuple(message.tool_calls or []),
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
@@ -313,7 +289,8 @@ def api_image_request_streaming(
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
-    Accumulates text and calls stopper.should_stop(window) as chunks arrive.
+    Accumulates content and raw tool-call arguments. Stoppers watch the answer
+    as chunks arrive.
     If stopper triggers, the HTTP connection is closed to abort server-side generation.
 
     A failed request (HTTP error, timeout, dropped connection) does not raise:
@@ -381,7 +358,10 @@ def api_image_request_streaming(
                             f"HTTP {r.status_code}: {_response_preview(r.text)}"
                         )
 
-                    full_text = []
+                    content = ""
+                    refusal = ""
+                    tool_calls: dict[int, OpenAiToolCall] = {}
+                    text = ""
                     usage_payload = None
                     num_tokens = None
                     finish_reason = None
@@ -403,12 +383,19 @@ def api_image_request_streaming(
                                 content=logprob_content or None,
                                 refusal=logprob_refusal or None,
                             )
+                        generated_text = text.strip()
+                        error = None
+                        if not generated_text and refusal.strip():
+                            error = f"The model refused: {_response_preview(refusal)}"
+                            stop_reason = VlmStopReason.INFERENCE_ERROR
                         return ApiImageStreamingRequestResult(
-                            text="".join(full_text),
+                            text=generated_text,
                             num_tokens=num_tokens,
                             usage=usage_payload,
                             logprobs=logprobs,
+                            error=error,
                             stop_reason=stop_reason,
+                            tool_calls=tuple(tool_calls[i] for i in sorted(tool_calls)),
                         )
 
                     for raw_line in r.iter_lines(decode_unicode=True):
@@ -428,20 +415,18 @@ def api_image_request_streaming(
                             _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
                             continue
 
-                        # OpenAI-compatible delta format
-                        # obj["choices"][0]["delta"]["content"] may be None or missing
-                        # (e.g., tool calls)
+                        # OpenAI-compatible delta format; the final usage chunk
+                        # has empty choices.
                         try:
                             choice = obj["choices"][0]
                             delta = choice.get("delta") or {}
-                            piece = delta.get("content") or ""
                             raw_logprobs = choice.get("logprobs")
                             # finish_reason is null until the server stops; keep the
                             # last value it sets.
                             finish_reason = choice.get("finish_reason") or finish_reason
                         except (KeyError, IndexError) as e:
                             _log.debug("Unexpected SSE chunk shape: %s", e)
-                            piece = ""
+                            delta = {}
                             raw_logprobs = None
 
                         usage = _extract_response_usage(obj, usage_key)
@@ -460,21 +445,39 @@ def api_image_request_streaming(
                                 logprob_content.extend(chunk_logprobs.content or [])
                                 logprob_refusal.extend(chunk_logprobs.refusal or [])
 
-                        if piece:
-                            full_text.append(piece)
-                            for stopper in generation_stoppers:
-                                # Respect stopper's lookback window. We use a simple string window
-                                # which works with the GenerationStopper interface.
-                                lookback = max(1, stopper.lookback_tokens())
-                                window = "".join(full_text)[-lookback:]
-                                if stopper.should_stop(window):
-                                    # Break out of the loop cleanly. The context manager will handle
-                                    # closing the connection when we exit the 'with' block.
-                                    # vLLM/OpenAI-compatible servers will detect the client
-                                    # disconnect and abort the request server-side.
-                                    if stopper.is_valid_end():
-                                        return _result(VlmStopReason.END_OF_SEQUENCE)
-                                    return _result(VlmStopReason.STOP_SEQUENCE)
+                        content += delta.get("content") or ""
+                        refusal += delta.get("refusal") or ""
+                        for fragment in delta.get("tool_calls") or []:
+                            index = fragment.get("index", 0)
+                            if index not in tool_calls:
+                                tool_calls[index] = OpenAiToolCall(
+                                    function=OpenAiFunctionCall()
+                                )
+                            call = tool_calls[index]
+                            function = fragment.get("function") or {}
+                            if fragment.get("id"):
+                                call.id = (call.id or "") + fragment["id"]
+                            if fragment.get("type"):
+                                call.type = fragment["type"]
+                            if function.get("name"):
+                                call.function.name = (
+                                    call.function.name or ""
+                                ) + function["name"]
+                            call.function.arguments += function.get("arguments") or ""
+
+                        previous_text = text
+                        text = _extract_generated_text(
+                            content, (tool_calls[i] for i in sorted(tool_calls))
+                        )
+                        if text == previous_text:
+                            continue
+                        for stopper in generation_stoppers:
+                            lookback = max(1, stopper.lookback_tokens())
+                            if stopper.should_stop(text[-lookback:]):
+                                # Closing the connection aborts server-side generation.
+                                if stopper.is_valid_end():
+                                    return _result(VlmStopReason.END_OF_SEQUENCE)
+                                return _result(VlmStopReason.STOP_SEQUENCE)
 
                     return _result(_map_stop_reason(finish_reason))
         except Exception as e:
