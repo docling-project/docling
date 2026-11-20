@@ -328,7 +328,7 @@
       "orig": "First step",
       "text": "First step",
       "enumerated": true,
-      "marker": ""
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/11",
@@ -342,7 +342,7 @@
       "orig": "Second step",
       "text": "Second step",
       "enumerated": true,
-      "marker": ""
+      "marker": "2."
     },
     {
       "self_ref": "#/texts/12",
