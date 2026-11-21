@@ -81,3 +81,4 @@ uvx --from docling docling report.pdf --to md --output /tmp/
 - If the user does not specify a format, ask whether they want **Markdown** (readable) or **JSON / DoclingDocument** (structured, lossless).
 - For tables, prefer `export_to_markdown()` / `export_to_dataframe()` on the table item (Python) — see [references/python-sdk.md](references/python-sdk.md).
 - If a converted PDF comes back near-empty, repeated, or full of `�`, the source is likely scanned or complex layout — retry with OCR or `--pipeline vlm` (see [references/cli.md](references/cli.md)).
+- If a born-digital PDF loses its text or tables and the log says the rendered page image has no ink, the host has no font for the PDF's non-embedded fonts. Install Liberation and DejaVu, or set `DOCLING_PARSE_FALLBACK_FONT`. See the installation guide.
