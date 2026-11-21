@@ -114,6 +114,9 @@ _INVISIBLE_RENDERING_MODES = frozenset(
 )
 
 
+# A cell shorter than this fraction of the median line height is flat (see `_overlap_boxes`)
+_FLAT_CELL_RATIO = 0.25
+
 # Flag to control if the OCR cells post-processing will use all PDF cells or only the visible ones
 _PDF_CELLS_POST_PROCESSING_SEGREGATION = True
 
@@ -134,6 +137,32 @@ def segregate_by_visibility(
         else:
             visible.append(cell)
     return visible, invisible
+
+
+def _overlap_boxes(
+    cells: list[TextCell], other_cells: list[TextCell]
+) -> list[BoundingBox]:
+    """Boxes for the merge overlap test, with flat cells raised to a line height.
+
+    Some text layers (e.g. a scan's OCR layer) give glyphs a zero-height box on the
+    baseline, which sits below the OCR box of the same text and overlaps nothing.
+    """
+    boxes = [cell.rect.to_bounding_box() for cell in cells]
+    other_boxes = (c.rect.to_bounding_box() for c in other_cells)
+    heights = [b.height for b in (*boxes, *other_boxes) if b.height > 0]
+    if not heights:
+        return boxes
+    line_height = float(np.median(heights))
+    raised: list[BoundingBox] = []
+    for box in boxes:
+        if box.height < _FLAT_CELL_RATIO * line_height:
+            # Grow toward the top of the page, where the glyphs above the baseline are
+            up = (
+                -line_height if box.coord_origin == CoordOrigin.TOPLEFT else line_height
+            )
+            box = box.model_copy(update={"t": box.t + up})
+        raised.append(box)
+    return raised
 
 
 def is_invisible(cell: TextCell) -> bool:
@@ -743,6 +772,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Keep every prioritized cell, plus the secondary cells that overlap none of them.
         """
         idx = BoundingBoxSpatialIndex()
+        prio_boxes = _overlap_boxes(prioritized_cells, secondary_cells)
+        sec_boxes = _overlap_boxes(secondary_cells, prioritized_cells)
 
         # The R-tree bbox intersection is a weak criterion but it works.
         merged_cells = list(prioritized_cells)
@@ -750,22 +781,19 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if len(prioritized_cells) <= len(secondary_cells):
             # Index the (smaller) prioritized cells; keep each secondary cell that
             # doesn't overlap any of them.
-            for i, cell in enumerate(prioritized_cells):
-                idx.insert(i, cell.rect.to_bounding_box())
-            for cell in secondary_cells:
-                overlaps = any(
-                    True for _ in idx.intersection(cell.rect.to_bounding_box())
-                )
-                if not overlaps:
+            for i, box in enumerate(prio_boxes):
+                idx.insert(i, box)
+            for cell, box in zip(secondary_cells, sec_boxes):
+                if not any(True for _ in idx.intersection(box)):
                     merged_cells.append(cell)
         else:
             # Index the (smaller) secondary cells; drop the ones overlapping any
             # prioritized cell and keep the rest.
-            for i, cell in enumerate(secondary_cells):
-                idx.insert(i, cell.rect.to_bounding_box())
+            for i, box in enumerate(sec_boxes):
+                idx.insert(i, box)
             overlapping_ids: set[int] = set()
-            for cell in prioritized_cells:
-                overlapping_ids.update(idx.intersection(cell.rect.to_bounding_box()))
+            for box in prio_boxes:
+                overlapping_ids.update(idx.intersection(box))
             merged_cells.extend(
                 cell
                 for i, cell in enumerate(secondary_cells)
