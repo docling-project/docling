@@ -256,6 +256,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         """
         assert page.size is not None
 
+        if self._skips_ocr(page):
+            return []
+
         # Compute the OCR rects according to the mode
         ocr_rects: list[BoundingBox]
 
@@ -285,6 +288,39 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         elif self.options.mode == OcrMode.LAYOUT_REGIONS:
             ocr_rects = self._find_layout_ocr_rects(page)
         return ocr_rects
+
+    def _skips_ocr(self, page: Page) -> bool:
+        r"""
+        Whether `page_bitmap_area_threshold` keeps the page from OCR. A page whose
+        broken text layer `replace_broken_text_layer` replaces is always OCR'd.
+        """
+        if self.options.replace_broken_text_layer and page._broken_text_layer:
+            return False
+        return not self._has_enough_bitmap_area(page)
+
+    def _has_enough_bitmap_area(self, page: Page) -> bool:
+        r"""
+        Whether bitmaps cover at least `page_bitmap_area_threshold` of the page.
+        True without a threshold, or without a backend to measure the bitmaps.
+        """
+        threshold = self.options.page_bitmap_area_threshold
+        if threshold is None or page._backend is None:
+            return True
+        assert page.size is not None
+
+        coverage, _ = self._deduplicate_rects(
+            page.size, page._backend.get_bitmap_rects()
+        )
+        if coverage < threshold:
+            _log.debug(
+                "Page %s: bitmaps cover %.3f of the page, below "
+                "page_bitmap_area_threshold=%.3f; skipping OCR.",
+                page.page_no,
+                coverage,
+                threshold,
+            )
+            return False
+        return True
 
     def _find_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
@@ -630,6 +666,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
           broken (`is_broken_text_layer`):
           Any existing PDF cells are ignored and only the OCR cells are used.
           A page replaced for `replace_broken_text_layer` keeps its invisible cells.
+          A FULL_PAGE page that `page_bitmap_area_threshold` skipped keeps its PDF cells.
         - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS and the priority parameter is None,
           the priority is auto-selected based on the OcrMode:
               - OCR_FIRST when LAYOUT_REGIONS
@@ -640,7 +677,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
-        full_page = _ocr_full_page(self.options, page)
+        # False on a page that `page_bitmap_area_threshold` kept from OCR
+        full_page = _ocr_full_page(self.options, page) and not self._skips_ocr(page)
         # A replaced broken text layer keeps its invisible cells, as in the merge
         keep_invisible = full_page and self.options.mode != OcrMode.FULL_PAGE
         if full_page:
@@ -650,6 +688,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 final_cells = self._merge_cells_by_priority(
                     final_cells, invisible_cells
                 )
+        elif self.options.mode == OcrMode.FULL_PAGE:
+            final_cells = existing_cells
         else:
             if priority is None:
                 priority = (
