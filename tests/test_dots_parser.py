@@ -271,6 +271,26 @@ class TestParseMalformedJsonTruncated:
         item, _ = items[0]
         assert "OK" in item.text
 
+    @pytest.mark.parametrize(
+        "cut_element",
+        [
+            # A `}` of the LaTeX before the cut
+            '{"bbox": [0,110,100,140], "category": "Formula", "text": "\\\\frac{1}{N',
+            # A `]` of a citation right at the cut
+            '{"bbox": [0,110,100,140], "category": "Text", "text": "see [12]',
+        ],
+        ids=["latex-brace", "citation-bracket"],
+    )
+    def test_cut_inside_a_string_with_brackets(self, page_size: Size, cut_element: str):
+        complete = [
+            {"bbox": [0, 0, 100, 40], "category": "Title", "text": "Results"},
+            {"bbox": [0, 50, 100, 100], "category": "Text", "text": "Loss below."},
+        ]
+        raw = json.dumps(complete)[:-1] + ", " + cut_element
+        doc = parse_dots_json(raw, page_size, page_no=1)
+
+        assert [item.text for item in doc.texts] == ["Results", "Loss below."]
+
     def test_leading_garbage(self, page_size: Size):
         raw = 'some preamble text [{"bbox": [10,20,30,40], "category": "Text", "text": "hi"}]'
         doc = parse_dots_json(raw, page_size, page_no=1)
@@ -391,6 +411,18 @@ class TestCleanJson:
     def test_closes_truncated_array(self):
         result = _clean_json('[{"a":1}, {"b":2')
         assert result == '[{"a":1}]'
+
+    def test_cut_after_a_brace_in_a_string(self):
+        assert _clean_json('[{"a":"x"}, {"b":"\\\\frac{1}{2') == '[{"a":"x"}]'
+
+    def test_cut_after_a_bracket_in_a_string(self):
+        assert _clean_json('[{"a":"x"}, {"b":"see [12]') == '[{"a":"x"}]'
+
+    def test_cut_before_any_complete_element(self):
+        assert _clean_json('[{"a":"x}') == "[]"
+
+    def test_drops_text_after_the_array(self):
+        assert _clean_json('[{"a":1}]\n```') == '[{"a":1}]'
 
     def test_no_bracket(self):
         assert _clean_json("no json here") == "[]"
