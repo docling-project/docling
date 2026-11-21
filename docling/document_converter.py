@@ -350,14 +350,17 @@ class PdfFormatOption(FormatOption):
         if (
             isinstance(self.pipeline_options, PdfPipelineOptions)
             and self.pipeline_options.use_embedded_picture_images
-            and self.backend is ThreadedDoclingParseDocumentBackend
+            and issubclass(self.backend, ThreadedDoclingParseDocumentBackend)
         ):
             if self.backend_options is None:
                 self.backend_options = ThreadedDoclingParseBackendOptions(
                     include_bitmap_images=True
                 )
-            elif isinstance(self.backend_options, PdfBackendOptions):
-                self.backend_options.include_bitmap_images = True
+            elif not self.backend_options.include_bitmap_images:
+                # Copy, so that the caller's options object is not changed.
+                self.backend_options = self.backend_options.model_copy(
+                    update={"include_bitmap_images": True}
+                )
         return self
 
 
