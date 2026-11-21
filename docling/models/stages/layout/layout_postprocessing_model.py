@@ -90,5 +90,7 @@ class LayoutPostprocessingModel(BaseLayoutPostprocessingModel):
         clusters: List[Cluster],
     ) -> None:
         conv_res.confidence.pages[page.page_no].layout_score = (
-            float(np.mean([c.confidence for c in clusters])) if clusters else 0.0
+            float(np.mean([c.confidence for c in clusters]))
+            if clusters
+            else float("nan")
         )

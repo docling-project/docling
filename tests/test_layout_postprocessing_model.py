@@ -121,3 +121,41 @@ def test_invalid_page_passes_through_without_scoring() -> None:
     assert len(out_pages) == 1
     # No score written for invalid pages -> stays at the NaN default.
     assert np.isnan(conv_res.confidence.pages[1].layout_score)
+
+
+def test_page_with_no_clusters_leaves_layout_score_as_nan() -> None:
+    page = _page_with_raw_clusters([], valid=True)
+    model = LayoutPostprocessingModel(
+        options=LayoutPostprocessorOptions(run_postprocessor=True)
+    )
+    conv_res = _conv_res()
+
+    out_pages = list(model(conv_res, [page]))
+
+    assert len(out_pages) == 1
+    # Zero clusters on page -> layout_score remains NaN instead of 0.0
+    assert np.isnan(conv_res.confidence.pages[1].layout_score)
+    assert np.isnan(conv_res.confidence.pages[1].mean_score)
+
+
+def test_postprocessor_dropping_all_empty_clusters_leaves_layout_score_as_nan() -> None:
+    from docling.models.base_ocr_model import _empty_segmented_page
+
+    # A page with an empty cluster; with keep_empty_clusters=False (default),
+    # cell assignment leaves the cluster empty and postprocessing removes it.
+    page = _page_with_raw_clusters([_cluster(0, 0.75, (10, 10, 50, 50))], valid=True)
+    page.parsed_page = _empty_segmented_page(page)
+    model = LayoutPostprocessingModel(
+        options=LayoutPostprocessorOptions(
+            run_postprocessor=True,
+            keep_empty_clusters=False,
+        )
+    )
+    conv_res = _conv_res()
+
+    out_pages = list(model(conv_res, [page]))
+
+    assert len(out_pages) == 1
+    assert len(out_pages[0].predictions.layout.clusters) == 0
+    assert np.isnan(conv_res.confidence.pages[1].layout_score)
+    assert np.isnan(conv_res.confidence.pages[1].mean_score)
