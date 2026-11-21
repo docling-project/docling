@@ -1716,7 +1716,7 @@ def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
         ),
         pytest.param(
             '| h |\n|---|\n| ![alt](http://x.y/a.png "&copy a &copy;") |',
-            [("caption", "&copy a ©"), ("cell", "h"), ("cell", "alt")],
+            [("caption", "&copy a ©"), ("text", "alt"), ("cell", "h"), ("cell", "alt")],
             id="table-cell-image-title",
         ),
     ],
@@ -1732,6 +1732,26 @@ def test_character_reference_is_decoded_only_when_terminated(
         ("cell", cell.text) for table in doc.tables for cell in table.data.table_cells
     ]
     assert items == expected_items
+
+
+def test_table_cell_image_keeps_its_alt_text():
+    """The alt text of an image in a table cell stays in the cell content.
+
+    It is already part of the cell text, and outside a table it is kept as text
+    after the picture. The Markdown export dropped it, so a feature table with
+    check-mark images lost its values.
+    """
+    markdown = (
+        "| Feature | Supported |\n"
+        "| --- | --- |\n"
+        "| Search | ![Yes](check.png) |\n"
+        "| Export | ![No](cross.png) |\n"
+    )
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    search_row, export_row = doc.export_to_markdown().splitlines()[2:]
+    assert "Yes" in search_row
+    assert "No" in export_row
 
 
 def test_image_caption_is_parented_under_its_picture():
