@@ -337,10 +337,42 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 or self.model_config.extra_config.get("torch_dtype")
             )
 
-        # Resolve the attention backend: an explicit override in the model
-        # config wins, then model-specific requirements (Falcon-OCR does not
-        # support SDPA yet), then the engine defaults.
-        attn_implementation = self._resolve_attn_implementation(repo_id)
+        # Load model
+        # NOTE: the per-model resolution below is upstream's code, restored
+        # verbatim (review feedback on #5493): Falcon-OCR support must not
+        # change how any other VLM model resolves its attention backend.
+        attn_implementation: Optional[str] = (
+            "flash_attention_2"
+            if self.device.startswith("cuda")  # type: ignore[union-attr]
+            and self.accelerator_options.cuda_use_flash_attention2
+            else "sdpa"
+        )
+        if is_dots_model:
+            attn_implementation = "sdpa"
+        elif is_granite_vision_4 and attn_implementation == "sdpa":
+            # The native granite4_vision Q-Former rejects an explicit sdpa
+            # request before transformers 5.13; the transformers default
+            # selects sdpa where the model supports it.
+            attn_implementation = None
+
+        if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
+            attn_implementation = "eager"
+
+        if repo_id == _FALCON_OCR_REPO_ID:
+            # Falcon-OCR only: an explicit attn_implementation override in
+            # the model config wins over the eager default (the legacy
+            # private _attn_implementation key is accepted and normalized
+            # to the public spelling). No other model reaches this branch.
+            extra_config = (
+                self.model_config.extra_config
+                if self.model_config is not None
+                else {}
+            )
+            explicit_attn = extra_config.get("attn_implementation")
+            if explicit_attn is None:
+                explicit_attn = extra_config.get("_attn_implementation")
+            if explicit_attn is not None:
+                attn_implementation = str(explicit_attn)
 
         # Falcon-OCR ships a custom config class whose attention backend must
         # be set on the config object itself before model construction.
@@ -408,43 +440,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             f"Loaded model {repo_id} (revision: {revision}) in "
             f"{time.monotonic() - load_start_time:.2f} sec."
         )
-
-    def _resolve_attn_implementation(self, repo_id: str) -> Optional[str]:
-        """Resolve the attention backend for model loading.
-
-        Precedence: an explicit ``attn_implementation`` override in the model
-        config (the legacy private ``_attn_implementation`` key is accepted
-        and normalized to the public spelling), then model-specific
-        requirements, then the engine defaults.
-        """
-        extra_config = (
-            self.model_config.extra_config if self.model_config is not None else {}
-        )
-        explicit_attn = extra_config.get("attn_implementation")
-        if explicit_attn is None:
-            explicit_attn = extra_config.get("_attn_implementation")
-        if explicit_attn is not None:
-            return str(explicit_attn)
-
-        if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
-            return "eager"
-
-        attn_implementation: Optional[str] = (
-            "flash_attention_2"
-            if self.device is not None
-            and self.device.startswith("cuda")
-            and self.accelerator_options.cuda_use_flash_attention2
-            else "sdpa"
-        )
-        if repo_id in _DOTS_REPO_IDS:
-            attn_implementation = "sdpa"
-        elif repo_id == GRANITE_VISION_4_REPO_ID and attn_implementation == "sdpa":
-            # The native granite4_vision Q-Former rejects an explicit sdpa
-            # request before transformers 5.13; the transformers default
-            # selects sdpa where the model supports it.
-            attn_implementation = None
-
-        return attn_implementation
 
     def _load_generation_config(
         self,
