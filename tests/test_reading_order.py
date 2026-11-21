@@ -1223,6 +1223,33 @@ def test_consecutive_text_overlapping_slightly_stays_in_sequence() -> None:
     assert [element.cid for element in result] == [0, 1, 2]
 
 
+@pytest.mark.parametrize(
+    ("page_no", "left", "right"),
+    [(0, 320, 550), (1, 40, 280)],
+    ids=["across_pages", "across_columns"],
+)
+def test_merge_chain_stops_at_the_continuation(
+    page_no: int, left: float, right: float
+) -> None:
+    # A paragraph continues at the top of the next page or column; the
+    # paragraphs stacked below the continuation must not join the chain.
+    head = _text(0, 60, 100, left, right).model_copy(
+        update={"page_no": page_no, "text": "a paragraph continues on"}
+    )
+    below = [
+        _text(cid, b, b + 40, 320, 550).model_copy(update={"page_no": 1, "text": text})
+        for cid, b, text in [
+            (1, 700, "the next page and ends with a list such as"),
+            (2, 640, "a second paragraph below it,"),
+            (3, 580, "and a third one further down"),
+        ]
+    ]
+
+    merges = ReadingOrderPredictor().predict_merges(sorted_elements=[head, *below])
+
+    assert merges == {0: [1]}
+
+
 def test_upward_walk_stops_on_up_map_cycle() -> None:
     from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,
