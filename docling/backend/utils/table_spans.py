@@ -49,10 +49,12 @@ def table_width(row_cell_spans: Iterable[Sequence[tuple[int, int]]]) -> int:
     that, the shifted cells start at or past the table's last column and the
     grid drops them.
 
-    A cell covers the columns it holds inside the declared width, the same way
-    the grid trims a colspan that sticks out of the table: a declared span that
-    is already wider than the table cannot also push the rows below it sideways,
-    which would widen the grid for every row it reaches.
+    A cell that starts inside the declared width covers only the columns it
+    holds there, the same way the grid trims a colspan that sticks out of the
+    table: a declared span that is already wider than the table cannot also
+    push the rows below it sideways. A cell that a rowspan has already shifted
+    past that width still covers its own columns, so a second shift on a later
+    row is not placed back into columns the first shifted cell still holds.
     """
     rows = list(row_cell_spans)
     declared = declared_table_width(rows)
@@ -65,7 +67,13 @@ def table_width(row_cell_spans: Iterable[Sequence[tuple[int, int]]]) -> int:
             while covered_until.get(col, 0) > row_idx:
                 col += 1
             last_start = max(last_start, col)
-            for c in range(col, min(col + col_span, declared)):
+            # A colspan that starts inside the declared width stops at its
+            # edge. A cell shifted past that edge covers the columns it
+            # actually occupies, or the next row lands on top of it.
+            cover_end = col + col_span
+            if col < declared:
+                cover_end = min(cover_end, declared)
+            for c in range(col, cover_end):
                 covered_until[c] = max(covered_until.get(c, 0), row_idx + row_span)
             col += col_span
     return max(declared, last_start + 1)
