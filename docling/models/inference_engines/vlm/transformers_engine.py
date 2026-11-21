@@ -364,9 +364,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             # private _attn_implementation key is accepted and normalized
             # to the public spelling). No other model reaches this branch.
             extra_config = (
-                self.model_config.extra_config
-                if self.model_config is not None
-                else {}
+                self.model_config.extra_config if self.model_config is not None else {}
             )
             explicit_attn = extra_config.get("attn_implementation")
             if explicit_attn is None:
