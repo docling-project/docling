@@ -2495,9 +2495,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> Formatting | None:
         """Extract a `Formatting` instance from a python-docx `Run`.
 
-        Bold detection uses a three-step fallback because `run.bold` only
-        reports formatting that is set explicitly on the run or its character
-        style; it returns `None` (not `False`) when the property is inherited:
+        Bold detection reads `run.bold` first. `False` explicitly disables bold;
+        only `None` allows the fallback checks for inherited formatting:
 
         1. `run.bold` — reads `<w:b>` via the python-docx API.
         2. Raw XPath on the run element — catches edge cases where `<w:b>` is
@@ -2538,7 +2537,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         is_bold = run.bold
 
-        if not is_bold:
+        if is_bold is None:
             try:
                 if run._element is not None:
                     b_tags = run._element.xpath(".//w:b")
