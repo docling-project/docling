@@ -183,15 +183,10 @@ doc_converter = DocumentConverter(
     pip install --no-binary :all: tesserocr
     ```
 
-    On Windows, PyPI has no prebuilt Tesserocr wheels, so pip tries to compile Tesserocr from
-    source. Instead, you can install a community-built wheel from
-    [tesserocr-windows_build](https://github.com/simonflueckiger/tesserocr-windows_build/releases).
-    The Docling and Tesserocr projects do not maintain these wheels. Download the wheel for your
-    Python version (for example `cp312` for Python 3.12) from a release built with Tesseract 5,
-    install it, and then install Docling with the `tesserocr` extra:
+    On 64-bit Windows, Tesserocr 2.12.0 and later have prebuilt wheels on PyPI, so the
+    `tesserocr` extra installs without a compiler:
 
     ```console
-    pip install tesserocr-<version>-cp312-cp312-win_amd64.whl
     pip install "docling[tesserocr]"
     ```
 
