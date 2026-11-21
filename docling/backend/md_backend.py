@@ -511,7 +511,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             is_header_row = row_idx == 0  # first row is the header in GFM
             cells = row.children
             for col_idx, cell in enumerate(cells):
-                cell_text = MarkdownDocumentBackend._cell_plain_text(cell).strip()
+                cell_text = MarkdownDocumentBackend._cell_plain_text(cell)
 
                 if MarkdownDocumentBackend._cell_has_rich_content(cell):
                     group_name = (
@@ -558,7 +558,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         doc.add_table_cell(
                             table_item=docling_table,
                             cell=TableCell(
-                                text=cell_text,
+                                text=cell_text.strip(),
                                 row_span=1,
                                 col_span=1,
                                 start_row_offset_idx=row_idx,
@@ -573,7 +573,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_table_cell(
                         table_item=docling_table,
                         cell=TableCell(
-                            text=cell_text,
+                            text=cell_text.strip(),
                             row_span=1,
                             col_span=1,
                             start_row_offset_idx=row_idx,
@@ -657,7 +657,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         elif isinstance(element, marko.inline.CodeSpan):
-            snippet = str(element.children).strip()
+            # Marko already applies CommonMark's code-span space normalization.
+            snippet = str(element.children)
             if snippet:
                 item = doc.add_code(
                     parent=inline_parent,
@@ -1076,7 +1077,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.CodeSpan):
             _log.debug(" - Code Span: %s", element.children)
-            snippet_text = str(element.children).strip()
+            # Remaining edge whitespace is code content, not block padding.
+            snippet_text = str(element.children)
             # If this CodeSpan is the only content of a list item / heading, Marko won't
             # emit RawText. Flush pending creations here to avoid leaking payloads.
             if creation_stack and snippet_text:
