@@ -19,7 +19,10 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import DoclingDocument, GraphCellLabel, GraphLinkLabel
 
-from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
+from docling.backend.xml.xbrl_backend import (
+    XBRLDocumentBackend,
+    _absolutize_missing_refs,
+)
 from docling.datamodel.backend_options import XBRLBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
@@ -309,6 +312,22 @@ def test_xbrl_source_uri_does_not_rewrite_other_origins(
     assert "fetch options: //other.example/x.xsd (" in message
 
 
+def test_xbrl_source_uri_keeps_malformed_references(tmp_path):
+    content = (
+        b'<link:schemaRef xlink:href="http://[broken/x.xsd"/>'
+        b'<link:linkbaseRef xlink:href="relative.xml"/>'
+    )
+
+    result = _absolutize_missing_refs(
+        content, tmp_path, "https://example.com/reports/report.xbrl"
+    )
+
+    assert result == (
+        b'<link:schemaRef xlink:href="http://[broken/x.xsd"/>'
+        b'<link:linkbaseRef xlink:href="https://example.com/reports/relative.xml"/>'
+    )
+
+
 def test_xbrl_source_uri_keeps_local_taxonomy_files(
     no_taxonomy_packages, local_server, tmp_path
 ):
@@ -432,6 +451,18 @@ def no_taxonomy_packages() -> None:
     from arelle import PackageManager  # type: ignore
 
     PackageManager.reset()
+
+
+@pytest.mark.parametrize("source_uri", [None, "https://example.com/dir/report.xbrl"])
+def test_xbrl_remote_fetch_refuses_malformed_url(no_taxonomy_packages, source_uri):
+    url = "http://[broken/x.xsd"
+
+    message = _load_refused(
+        _instance_with_schema_ref(url),
+        XBRLBackendOptions(enable_remote_fetch=True, source_uri=source_uri),
+    )
+
+    assert f"{url} (Malformed URL)" in message
 
 
 @pytest.fixture
