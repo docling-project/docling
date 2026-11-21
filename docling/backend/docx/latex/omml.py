@@ -302,7 +302,6 @@ class Pr(Tag2Method):
 class oMath2Latex(Tag2Method):
     """Convert OMML oMath elements to LaTeX format."""
 
-    _t_dict: dict[str, str] = T
     __direct_tags: tuple[str, ...] = ("box", "num", "den", "deg", "e")
 
     def __init__(self, element: _Element):

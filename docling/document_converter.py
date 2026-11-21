@@ -567,8 +567,6 @@ class DocumentConverter:
             (pipeline class, options hash).
     """
 
-    _default_download_filename = "file"
-
     def __init__(
         self,
         allowed_formats: Optional[list[InputFormat]] = None,
