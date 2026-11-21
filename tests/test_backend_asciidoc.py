@@ -1115,6 +1115,45 @@ def test_links_in_block_titles_strip_inline_marks() -> None:
     assert bold == ["The main step"]
 
 
+def test_inline_marks_and_links_in_list_items() -> None:
+    # List items used to keep links and inline marks as literal markup, such
+    # as "https://example.com[Docs]" and "*bold*", while paragraphs parse them.
+    doc = _convert_adoc(
+        b"* See https://example.com[Docs] for *more* info\n"
+        b"* link:install.html[Install]\n"
+        b"* Use `make` or _make all_\n"
+    )
+
+    items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert len(items) == 3
+    runs = [
+        (item.text, None if item.hyperlink is None else str(item.hyperlink))
+        for item in doc.texts
+        if item.parent is not None
+        and item.parent.resolve(doc).label == GroupLabel.INLINE
+    ]
+    assert ("Docs", "https://example.com/") in runs
+    assert items[1].text == "Install"
+    assert str(items[1].hyperlink) == str(Path("install.html"))
+    assert doc.export_to_markdown() == (
+        "- See [Docs](https://example.com/) for **more** info\n"
+        "- [Install](install.html)\n"
+        "- Use `make` or *make all*"
+    )
+
+
+def test_inline_marks_in_ordered_and_nested_list_items() -> None:
+    doc = _convert_adoc(
+        b". *Bold only*\n.. nested with https://example.com[Docs]\n. plain 2 * 3\n"
+    )
+
+    assert doc.export_to_markdown() == (
+        "1. **Bold only**\n"
+        "    1. nested with [Docs](https://example.com/)\n"
+        "2. plain 2 * 3"
+    )
+
+
 @pytest.mark.parametrize(
     "target",
     [
