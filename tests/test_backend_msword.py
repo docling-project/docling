@@ -5,7 +5,10 @@ import logging
 import os
 import re
 import threading
+import time
+import zipfile
 from contextlib import nullcontext
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,25 +17,29 @@ from docling_core.types.doc import (
     CodeItem,
     ContentLayer,
     DocItemLabel,
+    Formatting,
     GroupItem,
     ListGroup,
     ListItem,
     PictureClassificationLabel,
     PictureItem,
+    TableData,
     TableItem,
 )
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
 from PIL import Image
+from pydantic import AnyUrl
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.utils.archive_limits import ArchiveLimitError, ArchiveLimits
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
@@ -185,10 +192,12 @@ def test_text_after_image_anchors(documents):
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
+    # paragraph stay on the left run.
     for expected in (
-        "This is test 1",
+        "This is test 1   ",
         "0:08\nCorrect, he is not.",
-        "This is test 2",
+        "This is test 2 ",
         "0:16\nYeah, exactly.",
     ):
         assert expected in texts
@@ -403,6 +412,52 @@ def test_chart_caption_is_parented_to_the_chart_container():
     container = picture.parent.resolve(doc)
     assert caption.self_ref in [child.cref for child in container.children]
     assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+
+def _docx_with_chart_xml(rewrite) -> BytesIO:
+    """Build a copy of CHART_DOCX whose chart part is changed by ``rewrite``."""
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    entries["word/charts/chart1.xml"] = rewrite(chart).encode("utf-8")
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def _declare_huge_point_count(chart: str) -> str:
+    return re.sub(r'<c:ptCount val="\d+"/>', f'<c:ptCount val="{10**11}"/>', chart)
+
+
+def _add_point_at_huge_index(chart: str) -> str:
+    far_point = f'<c:pt idx="{10**9}"><c:v>9</c:v></c:pt>'
+    return chart.replace('<c:ptCount val="4"/>', '<c:ptCount val="4"/>' + far_point, 1)
+
+
+@pytest.mark.parametrize(
+    "rewrite", [_declare_huge_point_count, _add_point_at_huge_index]
+)
+def test_chart_table_is_sized_by_the_cached_points(rewrite):
+    """The chart table follows the cached points, not the declared indexes.
+
+    Before, a list entry was made for each index up to ``c:ptCount`` or the
+    highest ``c:pt@idx``, so a small chart part could use gigabytes of memory.
+    Now a large point count adds no rows, and a point at an index past the
+    table size limit is dropped.
+    """
+    stream = DocumentStream(name="chart.docx", stream=_docx_with_chart_xml(rewrite))
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    chart = _single_chart_picture(doc)
+
+    assert chart.meta.tabular_chart is not None
+    assert (
+        _grid_from_table_data(chart.meta.tabular_chart.chart_data)
+        == EXPECTED_CHART_GRID
+    )
 
 
 def test_is_rich_table_cell(docx_paths):
@@ -837,27 +892,26 @@ def test_strict_ooxml_rejects_zip_slip(evil_name):
     with zipfile.ZipFile(buffer) as archive:
         assert msword_backend_module._is_strict_ooxml(archive) is True
         with pytest.raises(SecurityError, match="ZIP slip"):
-            msword_backend_module._normalize_strict_ooxml(archive)
+            msword_backend_module._normalize_strict_ooxml(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
 
 
 @pytest.mark.parametrize(
-    ("cap_attr", "message"),
+    ("limits", "message"),
     [
-        ("_MAX_TOTAL_UNCOMPRESSED_SIZE", "uncompressed size"),
-        ("_MAX_MEMBER_UNCOMPRESSED_SIZE", "oversized OOXML part"),
+        (ArchiveLimits(4096, 1024, 10), "max_total_bytes"),
+        (ArchiveLimits(1024, 1 << 20, 10), "max_file_bytes"),
     ],
 )
-def test_strict_ooxml_rejects_zip_bomb(monkeypatch, cap_attr, message):
+def test_strict_ooxml_rejects_oversized_package(limits, message):
     """A Strict package exceeding the per-member or total budget is rejected."""
     import zipfile
 
-    from docling.exceptions import SecurityError
-
-    monkeypatch.setattr(msword_backend_module, cap_attr, 128)
     buffer = _make_strict_zip({"word/document.xml": b"A" * 4096})
     with zipfile.ZipFile(buffer) as archive:
-        with pytest.raises(SecurityError, match=message):
-            msword_backend_module._normalize_strict_ooxml(archive)
+        with pytest.raises(ArchiveLimitError, match=message):
+            msword_backend_module._normalize_strict_ooxml(archive, limits)
 
 
 def test_load_msword_file_propagates_security_error():
@@ -946,6 +1000,87 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
+    """A table cell keeps the text of runs nested in inline wrappers.
+
+    The wrappers are content controls, simple fields, smart tags and tracked
+    insertions. Deleted text stays out, and each paragraph is one line.
+    """
+    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    wrapped_runs = {
+        "Name": (
+            f"<w:sdt {w}><w:sdtPr/><w:sdtContent>"
+            "<w:r><w:t>Jane Doe</w:t></w:r></w:sdtContent></w:sdt>"
+        ),
+        "Customer": (
+            f'<w:fldSimple {w} w:instr=" MERGEFIELD Customer ">'
+            "<w:r><w:t>ACME Corp</w:t></w:r></w:fldSimple>"
+        ),
+        "City": (
+            f'<w:smartTag {w} w:uri="urn:schemas-microsoft-com:office:smarttags" '
+            'w:element="City"><w:r><w:t>Paris</w:t></w:r></w:smartTag>'
+        ),
+        "Amount": (
+            f'<w:ins {w} w:id="1" w:author="Reviewer">'
+            "<w:r><w:t>1200</w:t></w:r></w:ins>"
+        ),
+        "Removed": (
+            f'<w:del {w} w:id="2" w:author="Reviewer">'
+            "<w:r><w:delText>Old value</w:delText></w:r></w:del>"
+        ),
+    }
+
+    document = Document()
+    table = document.add_table(rows=len(wrapped_runs) + 1, cols=2)
+    for row_idx, (label, wrapped_run) in enumerate(wrapped_runs.items()):
+        table.cell(row_idx, 0).text = label
+        table.cell(row_idx, 1).paragraphs[0]._p.append(etree.fromstring(wrapped_run))
+
+    last_row = len(wrapped_runs)
+    table.cell(last_row, 0).text = "Two paragraphs"
+    table.cell(last_row, 1).paragraphs[0].add_run("First")
+    table.cell(last_row, 1).add_paragraph()._p.append(
+        etree.fromstring(wrapped_runs["Name"])
+    )
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Jane Doe",
+        "Customer",
+        "ACME Corp",
+        "City",
+        "Paris",
+        "Amount",
+        "1200",
+        "Removed",
+        "",
+        "Two paragraphs",
+        "First\nJane Doe",
+    ]
+
+
+def test_table_cell_text_reads_symbols_like_a_paragraph(tmp_path):
+    """A table cell reads ``w:sym`` and Symbol font text like a body paragraph."""
+    document = Document()
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 1).text = "sym"
+    table.cell(1, 1).text = "font"
+    sym_paragraph = table.cell(0, 0).paragraphs[0]
+    sym_paragraph.add_run("20")
+    _append_sym(sym_paragraph, "Symbol", "F0B0")
+    table.cell(1, 0).paragraphs[0].add_run("a").font.name = "Symbol"
+    document.add_paragraph("20")
+    _append_sym(document.paragraphs[-1], "Symbol", "F0B0")
+
+    doc = _convert_built(document, tmp_path)
+
+    cells = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cells[0::2] == ["20\N{DEGREE SIGN}", "\N{GREEK SMALL LETTER ALPHA}"]
+    assert doc.texts[0].text == "20\N{DEGREE SIGN}"
+
+
 def _table_with_grid_before(
     tmp_path,
     *,
@@ -1021,6 +1156,61 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
     assert (b1.start_row_offset_idx, b1.start_col_offset_idx) == (0, 1)
     assert (b2.start_row_offset_idx, b2.start_col_offset_idx) == (1, 1)
     assert b1.column_header and not b2.column_header
+
+
+@pytest.mark.parametrize("declared_cols", [0, 1, 2], ids=["missing", "one", "two"])
+def test_table_with_incomplete_grid(tmp_path: Path, declared_cols: int) -> None:
+    source = Document()
+    table = source.add_table(rows=1, cols=3)
+    table.cell(0, 0).merge(table.cell(0, 1)).text = "Merged"
+    table.cell(0, 2).text = "Last"
+
+    grid = table._tbl.tblGrid
+    if declared_cols == 0:
+        table._tbl.remove(grid)
+    else:
+        for column in list(grid)[declared_cols:]:
+            grid.remove(column)
+
+    path = tmp_path / "incomplete-grid.docx"
+    source.save(path)
+    doc = _convert(path)
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (1, 3)
+    assert [
+        (cell.text, cell.start_col_offset_idx, cell.end_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("Merged", 0, 2), ("Last", 2, 3)]
+
+
+def test_table_with_short_grid_and_omitted_trailing_cells(tmp_path: Path) -> None:
+    source = Document()
+    table = source.add_table(rows=2, cols=3)
+    table.cell(0, 0).text = "A1"
+    table.cell(1, 0).text = "A2"
+    for row in table.rows:
+        tr = row._tr
+        grid_after = OxmlElement("w:gridAfter")
+        grid_after.set(qn("w:val"), "2")
+        tr.get_or_add_trPr().append(grid_after)
+        for cell in tr.tc_lst[1:]:
+            tr.remove(cell)
+
+    grid = table._tbl.tblGrid
+    grid.remove(grid[-1])
+    path = tmp_path / "short-grid-with-grid-after.docx"
+    source.save(path)
+
+    doc = _convert(path)
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 3)
+    assert [
+        (cell.text, cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("A1", 0, 0), ("A2", 1, 0)]
 
 
 def test_vertical_merge_survives_grid_before_row(tmp_path):
@@ -1116,6 +1306,111 @@ def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
     assert build((2,)) == row
     # Two wrapped cells in the same row, one of them not the first.
     assert build((0, 2)) == row
+
+
+def _tc(text: str, vmerge: str | None = None) -> str:
+    """Return the XML of a ``w:tc`` holding one paragraph with ``text``."""
+    merge = f'<w:vMerge w:val="{vmerge}"/>' if vmerge else ""
+    return (
+        f'<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/>{merge}</w:tcPr>'
+        f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
+    )
+
+
+def _convert_table_xml(tmp_path: Path, rows_xml: str, grid_cols: int = 2) -> TableData:
+    """Convert a ``w:tbl`` built from ``rows_xml`` and return its table data.
+
+    Args:
+        tmp_path: Directory for the generated DOCX file.
+        rows_xml: The children of ``w:tbl`` that follow ``w:tblGrid``.
+        grid_cols: Number of ``w:gridCol`` entries to declare.
+
+    Returns:
+        The data of the first table in the converted document.
+    """
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    grid = '<w:gridCol w:w="2000"/>' * grid_cols
+    tbl = parse_xml(
+        f'<w:tbl xmlns:w="{w_ns}">'
+        '<w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>'
+        f"<w:tblGrid>{grid}</w:tblGrid>{rows_xml}</w:tbl>"
+    )
+    doc = Document()
+    body = doc.element.body
+    body.insert(len(body) - 1, tbl)
+    path = tmp_path / "table.docx"
+    doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    return converter.convert(path).document.tables[0].data
+
+
+def test_table_rows_and_cells_wrapped_in_custom_xml_or_content_control(tmp_path):
+    """Wrapped rows and cells are read at their grid position.
+
+    Both ``w:customXml`` and ``w:sdt`` may wrap a row, and ``w:customXml`` may
+    wrap a cell (``EG_ContentRowContent`` and ``EG_ContentCellContent``). Row
+    order: a plain row, a ``w:customXml`` row, a ``w:sdt`` row, and a plain row
+    whose second cell is inside ``w:customXml``.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}{_tc('A2')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>'
+        f"<w:sdt><w:sdtPr/><w:sdtContent><w:tr>{_tc('C1')}{_tc('C2')}</w:tr></w:sdtContent></w:sdt>"
+        f'<w:tr>{_tc("D1")}<w:customXml w:element="Tagged">{_tc("D2")}</w:customXml></w:tr>',
+    )
+
+    assert data.num_rows == 4
+    assert data.num_cols == 2
+    grid = [[""] * data.num_cols for _ in range(data.num_rows)]
+    for cell in data.table_cells or []:
+        grid[cell.start_row_offset_idx][cell.start_col_offset_idx] = cell.text or ""
+    assert grid == [["A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["D1", "D2"]]
+
+
+def test_vertical_merge_continues_into_a_wrapped_row(tmp_path):
+    """A ``vMerge="continue"`` cell inside a ``w:customXml`` row extends the merge.
+
+    Row order: restart row, wrapped continuation row, plain row.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('merged', 'restart')}{_tc('A2')}</w:tr>"
+        '<w:customXml w:element="Tagged">'
+        f"<w:tr>{_tc('', 'continue')}{_tc('B2')}</w:tr>"
+        "</w:customXml>"
+        f"<w:tr>{_tc('C1')}{_tc('C2')}</w:tr>",
+    )
+
+    assert data.num_rows == 3
+    merged = next(c for c in data.table_cells if c.text == "merged")
+    assert merged.row_span == 2
+    assert merged.start_row_offset_idx == 0
+    assert merged.end_row_offset_idx == 2
+    texts = {c.text for c in data.table_cells}
+    assert {"A2", "B2", "C1", "C2"} <= texts
+
+
+def test_wrapped_row_wider_than_the_declared_grid_widens_the_table(tmp_path):
+    """The column count includes a ``w:customXml`` row wider than ``w:tblGrid``.
+
+    The grid declares one column and the plain row uses one, but the wrapped
+    row has two cells.
+    """
+    data = _convert_table_xml(
+        tmp_path,
+        f"<w:tr>{_tc('A1')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{_tc("B1")}{_tc("B2")}</w:tr></w:customXml>',
+        grid_cols=1,
+    )
+
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    positions = {
+        c.text: (c.start_row_offset_idx, c.start_col_offset_idx)
+        for c in data.table_cells
+    }
+    assert positions == {"A1": (0, 0), "B1": (1, 0), "B2": (1, 1)}
 
 
 def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):
@@ -1386,14 +1681,18 @@ def test_handle_equations_in_text_returns_original_text_on_mismatch(
 def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
     equation = backend.equation_bookends.format(EQ="x")
 
-    element = etree.Element("p")
-    empty_run = etree.SubElement(element, "r")
-    empty_text = etree.SubElement(empty_run, "t")
+    element = OxmlElement("w:p")
+    empty_run = OxmlElement("w:r")
+    empty_text = OxmlElement("w:t")
     empty_text.text = ""
-    etree.SubElement(element, "oMath")
-    tail_run = etree.SubElement(element, "r")
-    tail_text = etree.SubElement(tail_run, "t")
+    empty_run.append(empty_text)
+    element.append(empty_run)
+    etree.SubElement(element, qn("m:oMath"))
+    tail_run = OxmlElement("w:r")
+    tail_text = OxmlElement("w:t")
     tail_text.text = "tail"
+    tail_run.append(tail_text)
+    element.append(tail_run)
 
     monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
 
@@ -1543,6 +1842,60 @@ def test_checkbox_labels_in_tables(documents):
     ), "No checkboxes found in table cells"
 
 
+def test_checkbox_paragraph_keeps_interior_run_whitespace(tmp_path):
+    """Only the leading checkbox symbol and the block edges are stripped."""
+    document = Document()
+    para = document.add_paragraph()
+    sdt = etree.SubElement(para._p, qn("w:sdt"))
+    sdt_pr = etree.SubElement(sdt, qn("w:sdtPr"))
+    etree.SubElement(
+        sdt_pr, "{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+    )
+    para.add_run("☐ Buy ")
+    para.add_run("milk").bold = True
+    para.add_run(" now ")
+
+    doc = _convert_built(document, tmp_path)
+
+    runs = [
+        item for item in doc.texts if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+    assert [run.text for run in runs] == ["Buy ", "milk", " now"]
+
+
+def test_skip_empty_text_keeps_interior_whitespace_runs(tmp_path):
+    """A whitespace-only run between two runs is text; only an all-empty block is skipped."""
+    document = Document()
+    document.add_paragraph("x")
+    path = tmp_path / "case.docx"
+    document.save(str(path))
+    backend = InputDocument(
+        path_or_stream=path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
+    )._backend
+
+    doc = DoclingDocument(name="test")
+    elements = [
+        ("See ", None, None),
+        ("docs", None, AnyUrl("https://example.com/")),
+        (" ", None, None),
+        ("now", Formatting(bold=True), None),
+    ]
+    backend._add_body_text_items(
+        doc=doc, paragraph_elements=elements, checkbox_label=None, skip_empty_text=True
+    )
+    assert [item.text for item in doc.texts] == ["See ", "docs", " ", "now"]
+
+    empty = DoclingDocument(name="empty")
+    refs = backend._add_body_text_items(
+        doc=empty,
+        paragraph_elements=[("", None, None)],
+        checkbox_label=None,
+        skip_empty_text=True,
+    )
+    assert refs == []
+    assert empty.texts == []
+
+
 def test_text_after_drawingml_images(documents):
     """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
     name = "drawingml.docx"
@@ -1576,6 +1929,42 @@ def test_invisible_spacer_logic():
         backend._is_invisible_spacer(Image.new("RGB", (50, 50), (100, 150, 200)))
         is False
     )  # coloured
+
+
+@pytest.mark.parametrize(
+    "address, fragment, expected",
+    [
+        (
+            "https://example.org/guide",
+            "installation",
+            "https://example.org/guide#installation",
+        ),
+        ("manual.docx", "Installation", "manual.docx#Installation"),
+        (
+            "https://example.org/guide#installation",
+            "",
+            "https://example.org/guide#installation",
+        ),
+    ],
+)
+def test_hyperlink_preserves_external_fragment(
+    tmp_path: Path, address: str, fragment: str, expected: str
+):
+    source = Document()
+    paragraph = source.add_paragraph()
+    rel_id = source.part.relate_to(address, RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(paragraph._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), rel_id)
+    hyperlink.set(qn("w:anchor"), fragment)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "Install"
+
+    doc = _convert_built(source, tmp_path)
+
+    assert [(item.text, str(item.hyperlink)) for item in doc.texts] == [
+        ("Install", expected)
+    ]
+    assert doc.export_to_markdown() == f"[Install]({expected})"
 
 
 def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
@@ -1975,6 +2364,22 @@ def test_docx_code_detection(tmp_path):
     assert not _code_items(doc), "A code-styled checkbox must not become a CodeItem"
     design = next(it for it in doc.texts if it.text == "Design")
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
+
+
+def test_docx_code_call_pattern_is_bounded():
+    pattern = MsWordDocumentBackend._CODE_CALL_PATTERN
+    assert pattern.search("x = foo(1, 2)") is not None
+    assert pattern.search("party(ies)") is None
+
+    # Many unclosed calls in one paragraph must not take quadratic time.
+    for unit in ("a(", "a(,"):
+        text = unit * (64_000 // len(unit))
+        start = time.perf_counter()
+        assert pattern.search(text) is None
+        assert time.perf_counter() - start < 2.0
+
+    # Argument lists past the bound no longer count as a call.
+    assert pattern.search("foo(" + "a" * 300 + ", 1)") is None
 
 
 # ------ Content control (w:sdt) holding a picture ------
@@ -2382,7 +2787,9 @@ _PLAIN_FOOTNOTE_BODY = (
 )
 
 
-def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
+def _docx_with_notes(
+    footnote_body: str = _PLAIN_FOOTNOTE_BODY, footnote_rels: str = ""
+):
     """Build a minimal DOCX with a real footnote and endnote, each preceded by
     Word's own separator/continuationSeparator placeholders (present in every
     Word-authored document, holding no user content).
@@ -2396,6 +2803,7 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
         footnote_body: The XML of the footnote body. Override it to place the
             footnote text inside markup that ``python-docx`` does not descend
             into.
+        footnote_rels: ``Relationship`` elements of the footnotes part.
     """
     import zipfile
     from io import BytesIO
@@ -2419,8 +2827,9 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
         entries = {name: src.read(name) for name in src.namelist()}
 
     w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    r_ns = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
     footnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:footnotes xmlns:w="{w_ns}">
+<w:footnotes xmlns:w="{w_ns}" xmlns:r="{r_ns}">
   <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
   <w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>
   <w:footnote w:id="2">{footnote_body}</w:footnote>
@@ -2433,6 +2842,11 @@ def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
 </w:endnotes>"""
     entries["word/footnotes.xml"] = footnotes_xml.encode("utf-8")
     entries["word/endnotes.xml"] = endnotes_xml.encode("utf-8")
+    if footnote_rels:
+        entries["word/_rels/footnotes.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+            f'relationships">{footnote_rels}</Relationships>'
+        ).encode()
 
     ct_key = "[Content_Types].xml"
     content_types = entries[ct_key].decode("utf-8")
@@ -2544,6 +2958,68 @@ def test_footnote_body_text_is_not_dropped_outside_plain_paragraphs(
         if item.label == DocItemLabel.FOOTNOTE
     ]
     assert expected in footnote_items
+
+
+def test_hidden_footnote_paragraph_is_left_out():
+    """A hidden paragraph in a footnote is left out of the footnote text.
+
+    python-docx loads the footnotes part as a plain part, so this also checks
+    that ``w:vanish`` there is found when the body has none.
+    """
+    note_body = (
+        "<w:p><w:r><w:t>Shown note.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>Hidden note.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_items == ["Shown note.", "An endnote body."]
+
+
+def test_footnote_hyperlink_keeps_its_target():
+    """A hyperlink in a footnote keeps the target from the footnotes part.
+
+    Regression test: note paragraphs were read against the document part's
+    relationships and joined into plain text, so the link target was lost.
+    """
+    note_body = (
+        "<w:p><w:r><w:t xml:space='preserve'>See </w:t></w:r>"
+        "<w:hyperlink r:id='rIdNote1'><w:r><w:t>the source</w:t></w:r>"
+        "</w:hyperlink></w:p><w:p><w:r><w:t>Second line.</w:t></w:r></w:p>"
+    )
+    note_rels = (
+        f'<Relationship Id="rIdNote1" Type="{RT.HYPERLINK}" '
+        'Target="https://example.org/note" TargetMode="External"/>'
+    )
+    stream = DocumentStream(
+        name="notes.docx",
+        stream=_docx_with_notes(footnote_body=note_body, footnote_rels=note_rels),
+    )
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.DOCX])
+        .convert(stream, raises_on_error=True)
+        .document
+    )
+
+    linked = [
+        (item.text, str(item.hyperlink))
+        for item in doc.texts
+        if item.label == DocItemLabel.FOOTNOTE and item.hyperlink is not None
+    ]
+    assert linked == [("the source", "https://example.org/note")]
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert "See [the source](https://example.org/note) Second line." in markdown
 
 
 _MC_BODY_BLOCK = """
@@ -2664,3 +3140,315 @@ def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_pat
         "Paragraph before AlternateContent",
         "Paragraph after AlternateContent",
     ]
+
+
+def test_symbol_font_glyphs(docx_paths):
+    """w:sym characters are kept and Symbol font text is mapped to Unicode."""
+    name = "docx_symbol_font_glyphs.docx"
+    path = next(item for item in docx_paths if item.name == name)
+    doc = get_converter().convert(path).document
+
+    # each paragraph is "<label>: <payload> end"
+    payloads = {
+        label: payload.removesuffix(" end")
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+        for label, payload in [item.text.split(": ", 1)]
+    }
+
+    # Symbol font text, stored as the PUA code point or as the plain byte
+    assert payloads["T1 Symbol F0B7"] == "\N{BULLET}"
+    assert payloads["T5 Symbol PUA greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA}\N{GREEK SMALL LETTER BETA}\N{GREEK SMALL LETTER PI}"
+    )
+    assert payloads["T6 Symbol ASCII greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA} \N{GREEK SMALL LETTER BETA} \N{GREEK SMALL LETTER PI}"
+    )
+    # w:sym is no longer dropped: mapped for Symbol, kept unchanged otherwise
+    assert payloads["S2 sym Symbol F061"] == "\N{GREEK SMALL LETTER ALPHA}"
+    assert payloads["S1 sym Wingdings F06C"] == "\uf06c"
+    assert payloads["S3 sym Wingdings F0E8"] == "\uf0e8"
+    # text in other fonts is unchanged
+    assert payloads["T2 Wingdings F0A7"] == "\uf0a7"
+    assert payloads["C1 Arial"] == "\N{LATIN SMALL LETTER E WITH ACUTE} a b p"
+
+
+def _append_sym(paragraph, font: str, char: str) -> None:
+    """Append a run with a ``w:sym`` element (Insert > Symbol in Word)."""
+    run = paragraph.add_run()
+    sym = OxmlElement("w:sym")
+    sym.set(qn("w:font"), font)
+    sym.set(qn("w:char"), char)
+    run._r.append(sym)
+
+
+def test_symbol_only_header_footer_is_kept(tmp_path):
+    """A header or footer that holds only w:sym characters is not dropped."""
+    docx_path = tmp_path / "symbol_only_header_footer.docx"
+    document = Document()
+    _append_sym(document.sections[0].header.paragraphs[0], "Symbol", "F0D3")
+    _append_sym(document.sections[0].footer.paragraphs[0], "Wingdings", "F0FC")
+    document.add_paragraph("body text")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    header_texts, footer_texts = _header_footer_texts(doc)
+
+    assert header_texts == ["\N{COPYRIGHT SIGN}"]
+    assert footer_texts == ["\uf0fc"]
+
+
+def test_sym_with_invalid_char_is_skipped(tmp_path):
+    """A w:sym with a missing or invalid w:char is skipped, not an error."""
+    docx_path = tmp_path / "invalid_sym.docx"
+    document = Document()
+    paragraph = document.add_paragraph("a")
+    _append_sym(paragraph, "Symbol", "zz")
+    paragraph.add_run("b")
+    paragraph.add_run()._r.append(OxmlElement("w:sym"))
+    paragraph.add_run("c")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+
+    assert texts == ["abc"]
+
+
+def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
+    """An inline equation is kept when its paragraph or cell has Symbol text."""
+    omath = (
+        '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+    )
+    docx_path = tmp_path / "equation_next_to_symbol.docx"
+    document = Document()
+    paragraph = document.add_paragraph("sym ")
+    _append_sym(paragraph, "Symbol", "F061")
+    paragraph._p.append(parse_xml(omath))
+    sym_only_paragraph = document.add_paragraph()
+    _append_sym(sym_only_paragraph, "Symbol", "F062")
+    sym_only_paragraph._p.append(parse_xml(omath))
+    table = document.add_table(rows=1, cols=2)
+    cell_paragraph = table.cell(0, 0).paragraphs[0]
+    cell_paragraph.add_run("a").font.name = "Symbol"
+    cell_paragraph._p.append(parse_xml(omath))
+    table.cell(0, 1).text = "b"
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    texts = [(item.text, item.label) for item in doc.texts]
+    assert ("sym \N{GREEK SMALL LETTER ALPHA}", DocItemLabel.TEXT) in texts
+    assert ("\N{GREEK SMALL LETTER BETA}", DocItemLabel.TEXT) in texts
+    formulas = [text for text, label in texts if label == DocItemLabel.FORMULA]
+    assert formulas == ["x=1", "x=1"]
+    cell_texts = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
+
+
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        ("d", r"\left(x\right)"),
+        ("acc", r"\hat{x}"),
+        ("bar", r"\overline{x}"),
+        ("groupChr", r"\underbrace{x}"),
+    ],
+)
+def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expected):
+    """An OMML element without its optional properties child uses the defaults."""
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:{tag}><m:e><m:r><m:t>x</m:t></m:r></m:e></m:{tag}></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / f"equation_without_{tag}_properties.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
+def test_symbol_font_case_and_whitespace_resilience(tmp_path):
+    """Symbol font detection handles case and whitespace variations defensively."""
+    docx_path = tmp_path / "symbol_font_casing.docx"
+    document = Document()
+    p1 = document.add_paragraph()
+    r1 = p1.add_run("a")
+    r1.font.name = " symbol "
+    p2 = document.add_paragraph()
+    _append_sym(p2, " SYMBOL ", "F061")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert texts == ["\N{GREEK SMALL LETTER ALPHA}", "\N{GREEK SMALL LETTER ALPHA}"]
+
+
+def _docx_with_xml_node(insert):
+    """Build a DOCX with a heading, a two-run paragraph and a 1x2 table, then let
+    ``insert`` add an XML comment or processing instruction to word/document.xml."""
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    doc.add_heading("Title", 1)
+    paragraph = doc.add_paragraph("first run ")
+    paragraph.add_run("second run")
+    table = doc.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "cell A"
+    table.cell(0, 1).text = "cell B"
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    out = BytesIO()
+    with zipfile.ZipFile(buf) as src, zipfile.ZipFile(out, "w") as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == "word/document.xml":
+                changed = insert(data)
+                assert changed != data
+                data = changed
+            dst.writestr(info, data)
+    out.seek(0)
+    return out
+
+
+_COMMENT = b"<!-- Created by docx4j 8.2.8 (Apache licensed) -->"
+
+
+@pytest.mark.parametrize(
+    "insert",
+    [
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1), id="body"
+        ),
+        pytest.param(
+            lambda x: re.sub(rb"(<w:p>|<w:p [^>]*>)", rb"\1" + _COMMENT, x, count=1),
+            id="paragraph",
+        ),
+        pytest.param(lambda x: x.replace(b"<w:r>", b"<w:r>" + _COMMENT, 1), id="run"),
+        pytest.param(
+            lambda x: x.replace(b"<w:tc>", b"<w:tc>" + _COMMENT, 1), id="table-cell"
+        ),
+        pytest.param(
+            lambda x: re.sub(
+                rb"(<w:tr[ >][^>]*>|<w:tr>)", rb"\1" + _COMMENT, x, count=1
+            ),
+            id="table-row",
+        ),
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body><?producer note?>", 1),
+            id="processing-instruction",
+        ),
+    ],
+)
+def test_xml_comments_and_processing_instructions_keep_body_text(insert):
+    """Regression test: an XML comment or processing instruction in the document
+    part (docx4j writes one at the start of the body) used to fail the whole
+    conversion with ``ValueError: Invalid input tag``, or drop the text of the
+    table it was in."""
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+    markdown = result.document.export_to_markdown()
+    for text in ("Title", "first run", "second run", "cell A", "cell B"):
+        assert text in markdown
+
+
+def test_xml_comment_text_goes_to_notes():
+    """XML comments in the document part are kept in the NOTES layer, out of the
+    body; blank comments and processing instructions are dropped."""
+
+    def insert(data):
+        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT + b"<!--   -->", 1)
+        # indented, in a paragraph that keeps its whitespace, so the comment has a tail
+        data = re.sub(
+            rb"<w:p( [^>]*)?>",
+            rb'<w:p\1 xml:space="preserve"><!-- indented -->\n  ',
+            data,
+            count=1,
+        )
+        data = data.replace(b">first run <", b">first <!-- inline -->run <", 1)
+        return data.replace(b"<w:tc>", b"<w:tc><?producer note?>", 1)
+
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    notes = [
+        item.text
+        for item, _ in doc.iterate_items(included_content_layers={ContentLayer.NOTES})
+        if isinstance(item, TextItem)
+    ]
+    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "indented", "inline"]
+    markdown = doc.export_to_markdown()
+    assert "# Title" in markdown
+    assert "first run second run" in markdown
+    assert "docx4j" not in markdown
+    assert "indented" not in markdown
+    assert "inline" not in markdown
+    assert "producer" not in markdown
+
+
+def test_xml_comments_in_footnotes_are_removed():
+    """python-docx loads footnotes and endnotes as plain parts, which the backend
+    parses itself: their XML comments and processing instructions are removed
+    too, and dropped like those of the other parts."""
+    body = (
+        "<w:p><!-- note --><w:r><w:t>Smith, J. <!-- inline -->(2020).</w:t></w:r>"
+        "<?producer note?><w:r><w:t> Example Study.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(name="notes.docx", stream=_docx_with_notes(body))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    footnotes = [item.text for item in doc.texts if item.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Smith, J. (2020). Example Study.", "An endnote body."]
+    assert not [item for item in doc.texts if item.content_layer == ContentLayer.NOTES]
+
+
+def test_xml_comments_in_charts_are_removed(monkeypatch):
+    """python-docx loads a chart as a plain part, which the backend parses itself:
+    its XML comments and processing instructions do not stop the chart's
+    classification or drop its data."""
+    import zipfile
+    from io import BytesIO
+
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart_xml = entries["word/charts/chart1.xml"]
+    for old, new in [
+        (b"<c:plotArea>", b"<c:plotArea><!-- x --><?producer note?>"),
+        (b"<c:v>4.3</c:v>", b"<c:v>4<!-- x -->.3</c:v>"),
+    ]:
+        assert chart_xml.count(old) == 1
+        chart_xml = chart_xml.replace(old, new)
+    entries["word/charts/chart1.xml"] = chart_xml
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+
+    stream = DocumentStream(name="chart.docx", stream=buffer)
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+    chart = _single_chart_picture(doc)
+
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.LINE_CHART
+    )
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
+        EXPECTED_CHART_GRID
+    )

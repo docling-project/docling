@@ -45,6 +45,16 @@ docling-tools models download whisper_distil_small_en --output-dir /models
 docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
 ```
 
+The WhisperS2T presets use their `--asr-model` names. Each one downloads its
+CTranslate2 model in `float16` (for CUDA) and `float32` (for CPU), plus the
+small word-alignment model that word timestamps use if the preset needs one,
+into the output directory in the Hugging Face cache layout:
+
+```sh
+docling-tools models download whisper_small_en_s2t --output-dir /models
+docling --asr-model whisper_small_en_s2t --artifacts-path /models audio.wav
+```
+
 `docling-tools models download --all` does not include ASR models. Add `--asr`
 to prefetch all native Whisper model sizes, English-only variants, and
 Distil-Whisper presets:
@@ -53,8 +63,9 @@ Distil-Whisper presets:
 docling-tools models download --all --asr --output-dir /models
 ```
 
-This requires the `asr` extra and downloads OpenAI-format checkpoints. It does
-not prefetch Transformers-format, MLX, or WhisperS2T models.
+This requires the `audio` extra and downloads OpenAI-format checkpoints. It does
+not prefetch Transformers-format, MLX, `mlx-audio`, or WhisperS2T models. Prefetch a
+WhisperS2T preset by its name, as shown above.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
@@ -100,7 +111,7 @@ python my_docling_script.py
 The main purpose of Docling is to run local models which are not sharing any user data with remote services.
 Anyhow, there are valid use cases for processing part of the pipeline using remote services, for example invoking OCR engines from cloud vendors or the usage of hosted LLMs.
 
-In Docling we decided to allow such models, but we require the user to explicitly opt-in in communicating with external services.
+In Docling we decided to allow such models, but we require the user to explicitly opt in to communicating with external services.
 
 ```py
 from docling.datamodel.base_models import InputFormat
@@ -135,6 +146,48 @@ The options in this list require the explicit `enable_remote_services=True` when
 
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
+
+### Page backend lifetime and page images
+
+Page backends are temporary conversion resources. The internal pipeline attribute
+`keep_backend` preserves them for processing stages that still need them, such as
+enrichment. It is not a `PipelineOptions` field and does not keep backends available
+after conversion. Final pipeline cleanup unloads remaining page backends, clears
+their references, and unloads the input document backend before returning the
+conversion result. Do not use the private `page._backend` to render images after
+conversion.
+
+The threaded `StandardPdfPipeline` releases page backends after page assembly when
+`keep_backend` is false. Enrichments that require backends keep them until final
+cleanup. This early release reduces memory use, but does not guarantee constant
+memory usage: retained backends, requested images, and the converted document can
+grow with the number of pages.
+
+To use page images after PDF conversion, set `generate_page_images=True` and choose
+`images_scale` before converting:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(generate_page_images=True, images_scale=2.0)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = converter.convert("document.pdf")
+for page_no, page in result.document.pages.items():
+    if page.image is not None:
+        page.image.pil_image.save(f"page-{page_no}.png")
+```
+
+`images_scale=1.0` corresponds to 72 DPI; `2.0` produces 144 DPI page images.
+These are images generated during conversion. They do not provide later rendering
+at arbitrary resolutions. To request another resolution, convert the source again
+with a different `images_scale`. See the [figure export example](../examples/export_figures.py)
+for page and element image export.
 
 ### Extract native PDF form fields
 
@@ -173,7 +226,7 @@ export.
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
-determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+determines the physical page size; missing DPI, `(1, 1)` DPI and `(0, 0)` DPI are treated as 72 DPI.
 Rendering at scale `n` produces `n` pixels per document point.
 
 ### Control PDF table extraction options
@@ -333,7 +386,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
-pipeline_options.generate_parsed_pages = True  # required by the font-style signal
 
 doc_converter = DocumentConverter(
     format_options={
@@ -343,6 +395,76 @@ doc_converter = DocumentConverter(
 ```
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
+
+### Recover superscript and subscript in PDFs
+
+A PDF draws superscript and subscript text as smaller glyphs moved off the baseline, so by
+default "E = mc²" comes out as "E = mc 2". Docling can mark these runs with
+`formatting.script`, which the HTML export renders as `<sup>` and `<sub>`:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    ScriptPositionOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.script_position_options = ScriptPositionOptions(enabled=True)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+A text item holding superscript or subscript text keeps its place, and its text moves into
+an inline group of runs that the item holds.
+
+The runs keep a space beside a script only where the PDF shows a gap, so that "On the 21 st of
+June" becomes `21<sup>st</sup> of June`. Markdown and plain text have no script marks, so they
+give "21st of June".
+
+
+### Use embedded PDF images for picture items
+
+The standard PDF pipeline normally creates `PictureItem` images by cropping
+the corresponding region from the rendered page. For PDF files, enable
+`PdfPipelineOptions(use_embedded_picture_images=True)` to use the embedded
+PDF image directly when the picture region contains one safe image object.
+The extracted image keeps its native pixel dimensions.
+
+Docling uses the rendered crop as a fallback when the region contains multiple
+images, text, vector shapes, masks, or other content, or when the embedded
+image cannot be matched safely. This option affects picture images only. It
+does not change page images or the image used by the layout model.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    generate_picture_images=True,
+    use_embedded_picture_images=True,
+)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = doc_converter.convert("document.pdf")
+```
+
+The equivalent CLI option is:
+
+```sh
+docling convert document.pdf --use-embedded-picture-images
+```
+
 
 ### PowerPoint and Excel charts
 
@@ -369,6 +491,17 @@ for picture in deck.pictures:
 The picture itself is empty unless you set `render_chart_images=True` in
 `MsPowerpointBackendOptions` or `MsExcelBackendOptions`. That draws each chart
 with LibreOffice.
+
+The chart types that Office 2016 added (waterfall, treemap, sunburst, funnel,
+Pareto, histogram, and box and whisker) also become classified pictures on a
+PowerPoint slide. Their data is the data that the chart is drawn from, as the
+file stores it. Each level of a treemap or sunburst gets a category column, outer
+level first. A histogram has no categories, so its data has only the value
+column. Office calculates histogram bins, quartiles and Pareto percentages each
+time it draws the chart, and the file does not store them, so they are not in
+the data. The picture shows the image that PowerPoint stores for these charts,
+when the file has one. LibreOffice does not draw them, so `render_chart_images`
+has no effect on them.
 
 ### Apple iWork options
 
@@ -416,7 +549,7 @@ print(budget.export_to_markdown(
 A chart on a Keynote slide or a Numbers sheet becomes a picture classified by
 its kind, with the data it plots in the picture's `meta.tabular_chart` and its
 title as the caption, which is the shape the PowerPoint backend gives a chart. Neither app keeps
-a picture of a chart, so the picture itself is empty unless you opt into
+a picture of a chart, so the picture itself is empty unless you opt in to
 `render_chart_images`. That rebuilds each chart from its data as an Office chart
 and draws it with LibreOffice, so it needs a LibreOffice installation. The image
 has the chart's kind, data and title but not its colours or fonts, and a mixed,
@@ -561,6 +694,32 @@ Relative image paths are resolved against the current working directory. The
 in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
 through the CLI again with its images.
 
+### Load local JATS figure images
+
+JATS figure images require both `fetch_images=True` and
+`enable_local_fetch=True` on `JatsBackendOptions`. For a `DocumentStream`, set
+`source_uri` to the source document path or its `file://` URI. The source
+document need not exist, but its directory must contain the referenced images.
+Relative figure paths stay within that directory. Remote image references and
+remote source URIs do not enable downloads, even with `enable_remote_fetch=True`.
+
+File URIs with no authority or with `localhost` work on all supported platforms.
+Other authorities, such as `file://server/share/article.nxml`, require Windows
+UNC paths. JATS skips file URIs that identify only a filesystem root or a UNC
+share root, including empty file URIs normalized to `file:///`. Use a document
+location such as `file:///path/to/article.nxml` instead.
+
+Missing or damaged images produce a warning. The figure, its caption, and the
+rest of the article remain in the converted document. SVG figures are skipped.
+
+### Fetch HTML images from local files
+
+Set `fetch_images=True` and `enable_local_fetch=True` on `HTMLBackendOptions`.
+For stream inputs, set `source_uri` to the HTML file path or its `file://` URI.
+Relative image URLs are decoded once: `figure%20one.png` refers to `figure one.png`.
+The URL query and fragment are not part of the filename. Files outside the
+source document's directory are still blocked by the directory-confinement check.
+
 ### Fetch HTML images from remote hosts
 
 The HTML backend only downloads images referenced by a page when you opt in with
@@ -568,7 +727,9 @@ The HTML backend only downloads images referenced by a page when you opt in with
 `--html-image-fetch remote`). Downloads connect only to public, globally
 routable addresses: every address of a host is checked, every redirect is
 checked again before it is followed (up to `max_redirects`), and downloads stop
-at `max_remote_image_bytes`. When `render_page=True`, the browser requests
+at `max_remote_image_bytes`. An image larger than `max_image_pixels` (width x
+height, default 89,478,485) is skipped with a warning, and the rest of the
+document converts; the Markdown backend has the same option. When `render_page=True`, the browser requests
 remote resources through the same download path, and navigating the page away
 from the source document is refused.
 
@@ -607,6 +768,43 @@ environment variables, downloads go through the proxy and Docling does not check
 the destination addresses; the proxy is then responsible for restricting which
 destinations it connects to.
 
+### XBRL taxonomy references
+
+The XBRL backend reads the schemas and linkbases that an instance document
+references. It needs `enable_local_fetch=True`, `enable_remote_fetch=True`, or
+both, and applies them to every reference:
+
+- Local paths and `file:` URLs are read only with `enable_local_fetch=True`. The
+  instance document and the `taxonomy` folder (including its taxonomy packages)
+  are always read.
+- `http(s)` URLs are downloaded only with `enable_remote_fetch=True`. Without
+  it, they resolve from the Arelle web cache only. Downloads connect only to
+  public, globally routable addresses, and every redirect is checked again.
+  With a proxy, the destination address is checked before the request goes to
+  the proxy.
+- Other URL schemes are refused.
+
+A refused reference stops the conversion with an error that lists it.
+
+The same options apply to inline XBRL (iXBRL) reports. Docling recognizes them
+by the inline XBRL namespace that the root `html` element declares, and converts
+them with the XBRL backend instead of the HTML backend. Without the `xbrl`
+extra, converting such a report raises an error that asks you to install it.
+
+Reports from SEC EDGAR reference their company-specific extension taxonomy with
+a relative path. When you convert from a URL with `enable_remote_fetch=True`,
+Docling resolves these references against the URL of the report. For a local
+file or a stream, put the extension taxonomy in the `taxonomy` folder, or set
+`XBRLBackendOptions.source_uri` to the URL where the report was published. A
+file in the `taxonomy` folder takes precedence over a remote one.
+
+Docling takes the value of an iXBRL fact from Arelle, which applies the inline
+XBRL transformation named in the `format` attribute of the fact. If Arelle does
+not implement the transformation (for example `ixt-sec:numwordsen`, which turns
+the text "one" into the number 1), the value of the fact is
+`(ixTransformValueError)`. The value of the same fact in the XBRL instance of the
+filing is the number.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
@@ -618,6 +816,123 @@ from docling.document_converter import DocumentConverter
 source = "https://arxiv.org/pdf/2408.09869"
 converter = DocumentConverter()
 result = converter.convert(source, max_num_pages=100, max_file_size=20971520)
+```
+
+## Convert ZIP archives
+
+Docling expands generic ZIP archives into separate documents. Use
+`convert_all()` to convert every supported archive member:
+
+```python
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter()
+results = list(converter.convert_all(["documents.zip"]))
+```
+
+`convert()` returns one result. It raises `ConversionError` when its source
+contains multiple documents. Use `convert_all()` for a ZIP archive with more
+than one member. By default, `convert_all()` raises on the first failed member.
+Pass `raises_on_error=False` to receive failure results and continue with later
+members. The configured file-size limit applies to each member and to the total
+size of successfully read members.
+For image inputs, the page count is checked against `max_num_pages` before any
+page is decoded, and each page (for example each frame of a multi-page TIFF) is
+decoded only when it is processed. The `max_image_pixels` backend option limits
+the pixels (width x height) of one page; the default, 89,478,485, is the default
+of Pillow's `Image.MAX_IMAGE_PIXELS`. A larger first page rejects the document,
+and a larger later page fails that page. Image inputs are decoded only as PNG,
+JPEG, TIFF, GIF, BMP or WEBP. The METS-GBS backend (`MetsGbsBackendOptions`)
+applies the same limit to each page image and to the page size in the hOCR, and
+skips a larger page with a warning:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, ImageFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.IMAGE: ImageFormatOption(
+            backend_options=PdfBackendOptions(max_image_pixels=50_000_000)
+        )
+    }
+)
+```
+
+### Limits on the decompressed size of DOCX, XLSX, PPTX and EPUB files
+
+DOCX, XLSX, PPTX and EPUB files are ZIP archives, so a small file can decompress to a
+much larger size. Docling checks the decompressed sizes that the archive declares
+before it parses the file, and stops each read once the decompressed bytes go
+above the limit. A file that exceeds a limit fails to convert with an
+`ArchiveLimitError`, which is a `DocumentLoadError`.
+
+| Option | `MsWordBackendOptions` / `MsExcelBackendOptions` / `MsPowerpointBackendOptions` | `EpubBackendOptions` |
+| --- | --- | --- |
+| `max_file_bytes` | 128 MiB per member | 10 MB per content document |
+| `max_total_bytes` | 512 MiB for all members | 100 MB for all content documents |
+| `max_member_count` | 10,000 members | 1,000 content documents |
+
+The DOCX, XLSX and PPTX limits apply to every member of the package, because
+python-docx, openpyxl and python-pptx load the package members into memory. The EPUB limits
+apply to the container, the package document and the content documents in the
+spine, and also to the members extracted for image processing. Raise the limits
+for large trusted files:
+
+```python
+from docling.datamodel.backend_options import (
+    MsExcelBackendOptions,
+    MsPowerpointBackendOptions,
+    MsWordBackendOptions,
+)
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import (
+    DocumentConverter,
+    ExcelFormatOption,
+    PowerpointFormatOption,
+    WordFormatOption,
+)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.DOCX: WordFormatOption(
+            backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
+        ),
+        InputFormat.XLSX: ExcelFormatOption(
+            backend_options=MsExcelBackendOptions(max_total_bytes=2 * 1024**3)
+        ),
+        InputFormat.PPTX: PowerpointFormatOption(
+            backend_options=MsPowerpointBackendOptions(max_file_bytes=256 * 1024 * 1024)
+        ),
+    }
+)
+```
+
+### Limit on repeated cells in ODS files
+
+An ODS sheet can repeat a row or a cell many times with one attribute
+(`table:number-rows-repeated` or `table:number-columns-repeated`). The ODS
+backend processes each copy, so a small file can declare millions of cells.
+`OdsBackendOptions.max_repeated_cells` limits the cells that repetition adds to
+a workbook, in addition to the cells written in the file. The default is
+100,000. Trailing empty rows and cells do not count. When a workbook goes over
+the limit, each repetition keeps only the copies that fit, Docling logs a
+warning, and the cells written in the file are kept. Raise the limit for large
+trusted files:
+
+```python
+from docling.datamodel.backend_options import OdsBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, OdsFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.ODS: OdsFormatOption(
+            backend_options=OdsBackendOptions(max_repeated_cells=1_000_000)
+        ),
+    }
+)
 ```
 
 ## Convert from binary PDF streams

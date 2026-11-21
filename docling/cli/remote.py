@@ -25,7 +25,7 @@ from docling.cli.export_utils import (
     _parse_page_range,
     _split_list,
 )
-from docling.cli.main import ChunkerType
+from docling.cli.main import FAIL_ON_HELP, ChunkerType, FailOn
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import ProcessingPipeline
 from docling.datamodel.service.options import (
@@ -79,8 +79,9 @@ Authentication (precedence: flag > environment variable > .env file):
   A .env file in the working directory is loaded automatically when present.
 
 Exit codes:
-  0  success
+  0  success; partially converted documents are written too (see --fail-on)
   1  runtime or connection failure (service unreachable, conversion error)
+     or a failed document (see --fail-on)
   2  usage/config error (no service URL resolved from flag, env, or .env)
 
 Examples:
@@ -163,7 +164,8 @@ def convert_remote(
         typer.Option(
             "--from",
             help="Input formats to accept; filters directories and is sent as the "
-            "server allow-list. Defaults to all supported formats.",
+            "server allow-list. When omitted, all formats are accepted when "
+            "filtering directories and the service applies its own default.",
         ),
     ] = None,
     to_formats: Annotated[
@@ -207,6 +209,14 @@ def convert_remote(
             help="If enabled, the service extracts table structure.",
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help="If enabled, the service infers section-header levels for PDF and "
+            "image inputs.",
+        ),
+    ] = False,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(help="Pipeline the service uses to process PDF or image files."),
@@ -276,6 +286,10 @@ def convert_remote(
             help="If enabled, the service aborts the batch on the first error.",
         ),
     ] = False,
+    fail_on: Annotated[
+        FailOn,
+        typer.Option("--fail-on", help=FAIL_ON_HELP),
+    ] = FailOn.FAILURE,
     max_concurrency: Annotated[
         int,
         typer.Option(
@@ -327,6 +341,9 @@ def convert_remote(
         )
         raise typer.Exit(2)
 
+    # Forward --from only when set: the default list can contain formats an
+    # older service rejects.
+    requested_from_formats = from_formats
     if from_formats is None:
         from_formats = list(InputFormat)
     if to_formats is None:
@@ -339,12 +356,12 @@ def convert_remote(
 
     # 3. Map flags -> ConvertDocumentsOptions (only fields the service honors).
     option_kwargs = {
-        "from_formats": from_formats,
         "to_formats": to_formats,
         "do_ocr": ocr,
         "force_ocr": force_ocr,
         "ocr_lang": _canonicalize_ocr_lang(ocr_lang),
         "do_table_structure": tables,
+        "do_pdf_heading_hierarchy": heading_hierarchy,
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,
         "do_formula_enrichment": enrich_formula,
@@ -354,6 +371,8 @@ def convert_remote(
         "document_timeout": document_timeout,
         "abort_on_error": abort_on_error,
     }
+    if requested_from_formats is not None:
+        option_kwargs["from_formats"] = requested_from_formats
     # Only send image_export_mode when the user set it, so the service/datamodel
     # default applies otherwise.
     if image_export_mode is not None:
@@ -382,7 +401,7 @@ def convert_remote(
         output.mkdir(parents=True, exist_ok=True)
         conv_results = client.convert_all(source=sources, options=options)
         try:
-            export_documents(
+            summary = export_documents(
                 conv_results,
                 output_dir=output,
                 **_export_flags_from_formats(to_formats),
@@ -398,6 +417,8 @@ def convert_remote(
             raise
         except Exception as e:
             err_console.print(f"[red]Conversion failed: {e}[/red]")
+            raise typer.Exit(1)
+        if summary.should_fail(fail_on):
             raise typer.Exit(1)
 
 

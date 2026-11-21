@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 from io import BytesIO
-from unittest.mock import MagicMock
 
 import pytest
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from PIL import Image, TiffImagePlugin
 
+from docling.backend import image_backend
 from docling.backend.image_backend import ImageDocumentBackend, _ImagePageBackend
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
     InputDocument,
@@ -16,9 +17,11 @@ from docling.datamodel.document import (
     _DummyBackend,
     get_input_rejection_cause,
 )
+from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.document_extractor import DocumentExtractor
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import to_rgb
 
 _EXIF_ORIENTATION_TAG = 0x0112
 
@@ -216,6 +219,56 @@ def test_transparent_background_is_flattened_onto_white(mode):
     assert image.getpixel((2, 2)) == (0, 0, 0)
 
 
+@pytest.mark.parametrize("image_format", ["PNG", "TIFF"])
+def test_16_bit_grayscale_is_scaled_to_8_bits(image_format):
+    """16-bit samples are scaled to 8 bits instead of being clipped to white.
+
+    A plain ``convert("RGB")`` clips every sample above 255, so dark text on a
+    16-bit grayscale scan became a blank white page.
+    """
+    img = Image.new("I", (64, 48), 60000)
+    img.paste(4000, (0, 0, 16, 12))
+    buf = BytesIO()
+    img.convert("I;16").save(buf, format=image_format)
+    buf.seek(0)
+
+    page_backend = _get_backend_from_stream(
+        DocumentStream(name=f"test.{image_format.lower()}", stream=buf)
+    ).load_page(0)
+    image = page_backend.get_page_image()
+
+    assert image.getpixel((63, 47)) == (234, 234, 234)
+    assert image.getpixel((2, 2)) == (15, 15, 15)
+
+
+def test_to_rgb_keeps_8_bit_range_integer_images():
+    """A mode ``I`` image already in the 0..255 range is not scaled down."""
+    img = Image.new("I", (4, 1))
+    img.putdata([0, 100, 200, 255])
+
+    assert list(to_rgb(img).convert("L").getdata()) == [0, 100, 200, 255]
+    assert to_rgb(Image.new("I", (8, 8), 100)).getpixel((0, 0)) == (100, 100, 100)
+
+
+@pytest.mark.parametrize("mode", ["I", "I;16"])
+def test_to_rgb_scales_16_bit_integer_images(mode):
+    """Samples above 255 are scaled from the 16-bit range to 8 bits."""
+    img = Image.new("I", (4, 1))
+    img.putdata([0, 255, 256, 65535])
+
+    scaled = to_rgb(img.convert(mode) if mode != "I" else img)
+
+    assert list(scaled.convert("L").getdata()) == [0, 0, 1, 255]
+
+
+def test_to_rgb_scales_the_transparency_key_of_16_bit_images():
+    """The ``tRNS`` key is scaled with the samples, so it still matches them."""
+    img = Image.new("I", (4, 4), 60000).convert("I;16")
+    img.info["transparency"] = 60000
+
+    assert to_rgb(img).getpixel((0, 0)) == (255, 255, 255)
+
+
 def test_get_page_image_full():
     """Test getting full page image."""
     width, height = 100, 80
@@ -406,6 +459,14 @@ def test_multipage_access():
         assert size.height == 64
 
 
+def test_zero_dpi_defaults_to_72_dpi():
+    # A PNG pHYs chunk with zero pixels per unit: Pillow reports dpi=(0.0, 0.0).
+    stream = _make_png_stream(width=64, height=48, dpi=(0, 0))
+    page_backend = _get_backend_from_stream(stream).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == (64, 48)
+
+
 def test_invalid_explicit_dpi_rejects_document():
     stream = _make_png_stream(dpi=(0, 300))
     in_doc = InputDocument(
@@ -419,36 +480,17 @@ def test_invalid_explicit_dpi_rejects_document():
     assert isinstance(get_input_rejection_cause(in_doc), DocumentLoadError)
 
 
-def test_source_image_is_closed_after_backend_init(tmp_path, monkeypatch):
+def test_source_image_is_closed_on_unload(tmp_path, monkeypatch):
     image_path = tmp_path / "test.png"
     Image.new("RGB", (32, 32), (10, 20, 30)).save(image_path)
 
     opened_images = []
     original_open = Image.open
 
-    class TrackingImage:
-        def __init__(self, image):
-            self._image = image
-            self.closed = False
-
-        def __getattr__(self, attr):
-            return getattr(self._image, attr)
-
-        def close(self):
-            self.closed = True
-            return self._image.close()
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self.close()
-            return False
-
     def tracking_open(*args, **kwargs):
-        tracked_image = TrackingImage(original_open(*args, **kwargs))
-        opened_images.append(tracked_image)
-        return tracked_image
+        image = original_open(*args, **kwargs)
+        opened_images.append(image)
+        return image
 
     input_doc = InputDocument(
         path_or_stream=image_path,
@@ -462,25 +504,72 @@ def test_source_image_is_closed_after_backend_init(tmp_path, monkeypatch):
         in_doc=input_doc,
         path_or_stream=image_path,
     )
-
-    assert len(opened_images) == 1
-    assert opened_images[0].closed is True
+    page_image = backend.load_page(0).get_page_image()
     backend.unload()
 
+    assert len(opened_images) == 1
+    assert opened_images[0].fp is None
+    # The decoded page stays usable after the source is closed.
+    assert page_image.getpixel((0, 0)) == (10, 20, 30)
 
-def test_unload_closes_cached_frames():
-    stream = _make_multipage_tiff_stream(num_pages=3, size=(32, 32))
-    doc_backend = _get_backend_from_stream(stream)
 
-    tracked_closers = []
-    for frame in doc_backend._frames:
-        closer = MagicMock(wraps=frame.close)
-        frame.close = closer
-        tracked_closers.append(closer)
+def test_frame_count_over_max_num_pages_is_rejected_before_decoding(monkeypatch):
+    decoded = []
+    original_to_rgb = image_backend.to_rgb
 
+    def counting_to_rgb(image):
+        decoded.append(image.size)
+        return original_to_rgb(image)
+
+    monkeypatch.setattr(image_backend, "to_rgb", counting_to_rgb)
+    stream = _make_multipage_tiff_stream(num_pages=5, size=(16, 16))
+    in_doc = InputDocument(
+        path_or_stream=stream.stream,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        filename=stream.name,
+        limits=DocumentLimits(max_num_pages=2),
+    )
+
+    assert in_doc.valid is False
+    assert in_doc.page_count == 5
+    assert "max_num_pages limit of 2" in in_doc._rejection.message
+    assert decoded == []
+    in_doc._backend.unload()
+
+
+def test_image_over_pixel_limit_is_rejected():
+    stream = _make_png_stream(width=64, height=48)
+    in_doc = InputDocument(
+        path_or_stream=stream.stream,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        backend_options=PdfBackendOptions(max_image_pixels=64 * 48 - 1),
+        filename=stream.name,
+    )
+
+    assert in_doc.valid is False
+    cause = get_input_rejection_cause(in_doc)
+    assert isinstance(cause, DocumentLoadError)
+    assert "exceeds the limit of 3071 pixels" in str(cause)
+
+
+def test_tiff_frame_over_pixel_limit_is_rejected_on_load():
+    frames = [Image.new("RGB", (16, 16)), Image.new("RGB", (64, 64))]
+    buf = BytesIO()
+    frames[0].save(buf, format="TIFF", save_all=True, append_images=frames[1:])
+    buf.seek(0)
+    in_doc = InputDocument(
+        path_or_stream=buf,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        backend_options=PdfBackendOptions(max_image_pixels=1000),
+        filename="test.tiff",
+    )
+    doc_backend = in_doc._backend
+
+    assert in_doc.valid is True
+    assert doc_backend.load_page(0).get_size().width == 16
+    with pytest.raises(ValueError, match="64x64 pixels exceeds the limit"):
+        doc_backend.load_page(1)
     doc_backend.unload()
-
-    assert doc_backend._frames == []
-    assert doc_backend._frame_dpi == []
-    for closer in tracked_closers:
-        closer.assert_called_once()

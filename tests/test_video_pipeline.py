@@ -17,7 +17,13 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument, PictureItem, TextItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    DoclingDocument,
+    PictureItem,
+    TextItem,
+    TrackItem,
+)
 from PIL import Image
 
 from docling.backend.noop_backend import NoOpBackend
@@ -30,7 +36,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import VideoPipelineOptions
-from docling.pipeline.asr_transcriber import _ConversationItem
+from docling.pipeline.asr_transcriber import _ConversationItem, _merge_into_sentences
 from docling.utils.speaker_diarization import DiarizationResult, SpeakerSegment
 from docling.utils.video_frame_sampling import (
     FfmpegRunner,
@@ -344,13 +350,50 @@ def test_process_video_interleaves_frames_before_later_transcript(
     video_pipeline._process_video(conv_res)
 
     assert conv_res.document is not None
-    ordered = [item for item, _level in conv_res.document.iterate_items()]
+    track, *ordered = [item for item, _level in conv_res.document.iterate_items()]
+    assert isinstance(track, TrackItem)
     assert [type(item) for item in ordered] == [PictureItem, TextItem]
+    assert all(item.parent.cref == track.self_ref for item in ordered)
+    assert ordered[0].source[0].end_time == ordered[0].source[0].start_time
     assert ordered[0].source[0].start_time == 0.5
     assert ordered[0].source[0].identifier == "scene:3"
     assert ordered[1].text == "hello world."
     assert ordered[1].source[0].start_time == 1.0
     assert ordered[1].source[0].end_time == 2.0
+
+
+@pytest.mark.parametrize("keep_media", [False, True])
+def test_keep_media_sets_the_video_of_the_track(
+    video_pipeline,
+    video_pipeline_module,
+    mock_asr_factory,
+    tmp_path: Path,
+    monkeypatch,
+    keep_media: bool,
+) -> None:
+    mock_asr_factory.transcribe.return_value = [
+        _ConversationItem(text="hello world.", start_time=1.0, end_time=2.0),
+    ]
+    _stub_ffmpeg(video_pipeline_module, monkeypatch)
+    monkeypatch.setattr(video_pipeline_module, "_extract_audio", _fake_extract_audio)
+    _stub_sampler(
+        video_pipeline_module,
+        monkeypatch,
+        video_pipeline_module.FixedIntervalFrameSampler,
+        [],
+    )
+    video_pipeline.pipeline_options.keep_media = keep_media
+
+    conv_res = video_pipeline._build_document(_make_video_conv_res(tmp_path))
+
+    track = conv_res.document.tracks[0]
+    assert track.audio is None
+    if keep_media:
+        assert track.video is not None
+        assert track.video.mimetype == "video/mp4"
+        assert track.video.uri == (tmp_path / "clip.mp4").resolve()
+    else:
+        assert track.video is None
 
 
 def test_process_video_skips_whitespace_only_transcript(
@@ -498,3 +541,21 @@ def test_process_video_runs_diarization_when_enabled(
     assert conv_res.document is not None
     assert conv_res.document.texts[0].text == "hello"
     assert conv_res.document.texts[0].source[0].voice == "SPEAKER_00"
+
+
+def test_merge_into_sentences_splits_on_full_width_punctuation() -> None:
+    items = [
+        _ConversationItem(text="こんにちは。", start_time=0.0, end_time=1.0),
+        _ConversationItem(text="元気ですか？", start_time=1.0, end_time=2.0),  # noqa: RUF001
+        _ConversationItem(text="我很好", start_time=2.0, end_time=3.0),
+        _ConversationItem(text="谢谢！", start_time=3.0, end_time=4.0),  # noqa: RUF001
+    ]
+
+    merged = _merge_into_sentences(items)
+
+    assert [m.text for m in merged] == ["こんにちは。", "元気ですか？", "我很好 谢谢！"]  # noqa: RUF001
+    assert [(m.start_time, m.end_time) for m in merged] == [
+        (0.0, 1.0),
+        (1.0, 2.0),
+        (2.0, 4.0),
+    ]

@@ -182,7 +182,7 @@ def main():
     except ImportError as e:
         print(f"Error: {e}")
         print("Please install mlx-whisper: pip install mlx-whisper")
-        print("Or install with uv: uv sync --extra asr")
+        print("Or install with uv: uv sync --extra format-audio")
         sys.exit(1)
     except Exception as e:
         print(f"Error during transcription: {e}")

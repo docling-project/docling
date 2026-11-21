@@ -821,10 +821,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 70.57,
+            "l": 70.56,
             "t": 243.07,
             "r": 310.07,
-            "b": 79.23,
+            "b": 79.21,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -877,9 +877,9 @@
           "page_no": 1,
           "bbox": {
             "l": 320.55,
-            "t": 352.24,
+            "t": 352.23,
             "r": 559.54,
-            "b": 80.58,
+            "b": 80.59,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

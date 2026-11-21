@@ -133,16 +133,6 @@ class TestSanitizeTextLigatures:
         # "IJ is een rivier" — IJ appears as a standalone word
         assert model.sanitize_text(["\u0132 is"]) == "IJ is"
 
-    def test_regex_matches_new_codepoints(self, model):
-        """Verify the regex actually matches U+0132, U+0133, U+F0A0."""
-        import re
-
-        from docling.models.stages.page_assemble.page_assemble_model import _LIGATURE_RE
-
-        assert _LIGATURE_RE.search("\u0132") is not None, "U+0132 not matched by regex"
-        assert _LIGATURE_RE.search("\u0133") is not None, "U+0133 not matched by regex"
-        assert _LIGATURE_RE.search("\uf0a0") is not None, "U+F0A0 not matched by regex"
-
 
 class TestSanitizeTextHyphenation:
     """Tests for end-of-line hyphen handling in sanitize_text()."""
@@ -161,6 +151,24 @@ class TestSanitizeTextHyphenation:
     def test_attached_hyphen_on_non_alnum_token_is_kept(self, model):
         """An underscore-bearing token is not treated as a split word (unchanged)."""
         assert model.sanitize_text(["foo_bar-", "baz"]) == "foo_bar-baz"
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            # Chemical nomenclature, as reported: the prefix is one character.
+            (
+                ["undecanal or n-", "tridecanal, from each blend"],
+                "undecanal or n-tridecanal, from each blend",
+            ),
+            (["i-", "butyric acid"], "i-butyric acid"),
+            # A locant opens the continuation.
+            (["6-methyl-", "5-hepten-2-one"], "6-methyl-5-hepten-2-one"),
+            (["COVID-", "19 cases"], "COVID-19 cases"),
+        ],
+    )
+    def test_attached_hyphen_belonging_to_word_is_kept(self, model, lines, expected):
+        """A hyphen no hyphenation rule could have placed is part of the word."""
+        assert model.sanitize_text(list(lines)) == expected
 
     @pytest.mark.parametrize(
         ("lines", "expected"),
@@ -308,3 +316,50 @@ class TestMatchHyperlink:
         page.parsed_page = pp
         bbox = BoundingBox(l=10, t=10, r=90, b=20)
         assert PageAssembleModel._match_hyperlink(bbox, page) is None
+
+
+class TestSanitizeTextArabicPresentationForms:
+    """Tests for Arabic presentation-form normalization in sanitize_text()."""
+
+    def test_isolated_and_shaped_letters_are_folded(self, model):
+        """Shaped Arabic (U+FE70-U+FEFF) folds to the canonical U+0600 letters."""
+        # meem initial, alef final, reh final, seen isolated -> "مارس" (March)
+        shaped = "ﻣﺎﺮﺱ"
+        assert model.sanitize_text([shaped]) == "مارس"
+
+    def test_lam_alef_ligature_expands_to_two_letters(self, model):
+        """U+FEFB (lam-alef ligature) expands to lam + alef, not a single glyph."""
+        assert model.sanitize_text(["ﻻ"]) == "لا"
+
+    def test_forms_a_range_is_folded(self, model):
+        """Presentation Forms-A (U+FB50-U+FDFF) is normalized too."""
+        # U+FEDF is lam initial form; U+FB58 is peh initial form.
+        assert model.sanitize_text(["ﭘ"]) == "پ"
+
+    def test_shaped_text_becomes_searchable(self, model):
+        """The fold makes extracted Arabic match normally-encoded Arabic."""
+        # alef isolated, lam initial, hah medial, reh final, seen isolated
+        shaped = "ﺍﻟﺤﺮﺱ"
+        assert "الحرس" in model.sanitize_text([shaped])
+
+    def test_canonical_arabic_is_unchanged(self, model):
+        """Arabic already in the U+0600 block passes through untouched."""
+        assert model.sanitize_text(["مرحبا"]) == "مرحبا"
+
+    def test_superscript_is_not_normalized(self, model):
+        """NFKC is scoped to Arabic runs: superscripts must survive."""
+        assert model.sanitize_text(["x²"]) == "x²"
+
+    def test_subscript_is_not_normalized(self, model):
+        """NFKC is scoped to Arabic runs: subscripts must survive."""
+        assert model.sanitize_text(["H₂O"]) == "H₂O"
+
+    def test_fullwidth_is_not_normalized(self, model):
+        """NFKC is scoped to Arabic runs: full-width forms must survive."""
+        # FULLWIDTH LATIN SMALL LETTERS F, U, L, L (U+FF46, U+FF55, U+FF4C)
+        fullwidth = "".join(chr(cp) for cp in (0xFF46, 0xFF55, 0xFF4C, 0xFF4C))
+        assert model.sanitize_text([fullwidth]) == fullwidth
+
+    def test_mixed_arabic_and_latin(self, model):
+        """Only the Arabic run is folded; surrounding Latin is untouched."""
+        assert model.sanitize_text(["2024 ﻣﺎﺮﺱ x²"]) == "2024 مارس x²"

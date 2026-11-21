@@ -514,5 +514,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         for p in conv_res.pages:
             if p._backend is not None:
                 p._backend.unload()
+                p._backend = None
         if conv_res.input._backend:
             conv_res.input._backend.unload()

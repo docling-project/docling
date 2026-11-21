@@ -48,6 +48,12 @@ class PdfPageBackend(ABC):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         """Return bitmap bounds in 72-DPI document coordinates, scaled by ``scale``."""
 
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Optional[Image.Image]:
+        """Return a directly extracted image when ``bbox`` contains one safe image."""
+        return None
+
     def has_content_in(
         self,
         *,

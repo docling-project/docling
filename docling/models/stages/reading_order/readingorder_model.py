@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import re
 import time
 from collections import defaultdict
 from collections.abc import Iterator
@@ -58,6 +59,10 @@ from docling.models.postprocessing.reading_order_rb import (
 )
 from docling.utils.form_fields import text_slots, without_whitespace
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+from docling.utils.text_normalization import (
+    cell_text_lines,
+    normalize_extracted_text,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -71,6 +76,7 @@ class ReadingOrderOptions(BaseModel):
 
 class ReadingOrderModel:
     _RICH_CELL_PICTURE_COVERAGE_THRESHOLD = 0.8
+    _TOKEN_BEFORE_HYPHEN_RE = re.compile(r"(\w+)-$")
 
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
@@ -115,13 +121,9 @@ class ReadingOrderModel:
             c_bbox = child.bbox.to_bottom_left_origin(
                 doc.pages[element.page_no].size.height
             )
-            c_text = " ".join(
-                [
-                    cell.text.replace("\x02", "-").strip()
-                    for cell in child.cells
-                    if len(cell.text.strip()) > 0
-                ]
-            )
+            c_text = normalize_extracted_text(
+                " ".join(cell_text_lines(child.cells))
+            ).strip()
 
             c_prov = ProvenanceItem(
                 page_no=element.page_no, charspan=(0, len(c_text)), bbox=c_bbox
@@ -1066,8 +1068,15 @@ class ReadingOrderModel:
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
         continuation_text = merged_elem.text.lstrip()
+        token_before_hyphen = self._TOKEN_BEFORE_HYPHEN_RE.search(new_item.text)
+        # A hyphen no hyphenation rule could have placed -- after a
+        # single-character token, or before a digit -- belongs to the word.
+        hyphen_belongs_to_word = token_before_hyphen is not None and (
+            len(token_before_hyphen.group(1)) == 1 or continuation_text[:1].isdigit()
+        )
         if new_item.text.endswith("\u00ad") or (
             new_item.text.endswith("-")
+            and not hyphen_belongs_to_word
             and continuation_text
             and continuation_text[0].islower()
         ):
@@ -1076,6 +1085,9 @@ class ReadingOrderModel:
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
             )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        elif hyphen_belongs_to_word:
+            new_item.text += continuation_text
+            new_item.orig += continuation_text
         else:
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.

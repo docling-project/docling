@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+import threading
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -125,3 +127,64 @@ def test_cell_confidence_is_scaled_to_unit_range(monkeypatch, tmp_path):
     assert [cell.confidence for cell in cells] == [pytest.approx(0.42)]
     assert conv_res.confidence.pages[0].ocr_score == pytest.approx(0.42)
     del model
+
+
+class _LastImageReader(_OcrReader):
+    """Like one tesserocr reader: it reads text from the image set last."""
+
+    def SetImage(self, image):
+        self._image = image
+        # Give a concurrent call time to set its own image.
+        time.sleep(0.05)
+
+    def GetUTF8Text(self):
+        return f"width {self._image.width}\n"
+
+
+def _image_page(tmp_path, name, width):
+    image_path = tmp_path / f"{name}.png"
+    Image.new("RGB", (width, 100), "white").save(image_path)
+    in_doc = InputDocument(
+        path_or_stream=image_path,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+    )
+    page_backend = in_doc._backend.load_page(0)
+    page = Page(page_no=0, size=page_backend.get_size())
+    page._backend = page_backend
+    return ConversionResult(input=in_doc), page
+
+
+def test_concurrent_calls_read_their_own_page(monkeypatch, tmp_path):
+    # Conversions that run at the same time share one cached pipeline, so they
+    # call the same model, and with it the same tesserocr readers.
+    monkeypatch.setitem(
+        sys.modules,
+        "tesserocr",
+        _fake_tesserocr(
+            lambda **kwargs: ("/tessdata", ["eng", "osd"]), _LastImageReader
+        ),
+    )
+    model = TesseractOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=TesseractOcrOptions(lang=["eng"], mode=OcrMode.FULL_PAGE),
+        accelerator_options=AcceleratorOptions(),
+    )
+    inputs = [_image_page(tmp_path, "narrow", 200), _image_page(tmp_path, "wide", 300)]
+    start = threading.Barrier(len(inputs))
+
+    def run_ocr(conv_res, page):
+        start.wait()
+        list(model(conv_res, [page]))
+
+    threads = [threading.Thread(target=run_ocr, args=item) for item in inputs]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    texts = [
+        [cell.text for cell in page.parsed_page.textline_cells] for _, page in inputs
+    ]
+    assert texts == [["width 600"], ["width 900"]]

@@ -25,6 +25,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    InlineGroup,
     ListGroup,
     ListItem,
     NodeItem,
@@ -52,13 +53,30 @@ from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
     get_pil_from_dml_docx,
 )
-from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.docx.latex.omml import OMML_NS, oMath2Latex
+from docling.backend.utils.archive_limits import (
+    ArchiveLimits,
+    check_archive_limits,
+    read_member,
+)
+from docling.backend.utils.charts import (
+    build_chart_table,
+    chart_points_to_list,
+    max_chart_data_rows,
+)
 from docling.backend.utils.image import normalize_image_for_png
+from docling.backend.utils.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    is_known_picture,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -69,13 +87,14 @@ try:  # pragma: no cover - import-time guard
     from docx.document import Document as DocxDocument
     from docx.enum.style import WD_STYLE_TYPE
     from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
+    from docx.opc.part import XmlPart
     from docx.oxml import parse_xml as docx_parse_xml
     from docx.oxml.ns import qn
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
     from docx.styles.style import BaseStyle, CharacterStyle, ParagraphStyle
-    from docx.table import Table, _Cell
+    from docx.table import Table, _Cell, _Row
     from docx.text.hyperlink import Hyperlink
     from docx.text.paragraph import Paragraph
     from docx.text.run import Run
@@ -181,11 +200,10 @@ _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 _MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024
 """Read cap (64 KiB) for ``_rels/.rels`` during Strict detection (the part is typically ~500 bytes)."""
 
-_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024
-"""Per-member uncompressed size cap (512 MiB) applied during Strict-to-Transitional rewriting."""
-
-_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024
-"""Total uncompressed size cap (2 GiB) for all members during Strict-to-Transitional rewriting."""
+_DEFAULT_ARCHIVE_LIMITS: Final[ArchiveLimits] = ArchiveLimits.from_options(
+    MsWordBackendOptions()
+)
+"""Decompressed size limits for a .docx package, from the ``MsWordBackendOptions`` defaults."""
 
 _STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
     "http://purl.oclc.org/ooxml/descriptions/base": "http://descriptions.openxmlformats.org/description/base",
@@ -244,6 +262,78 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (4, "IV"),
     (1, "I"),
 )
+
+_RUN_TEXT_XPATH: Final[str] = (
+    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+)
+"""Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+
+_SYMBOL_FONT: Final[str] = "symbol"
+
+
+def _is_symbol_font(font_name: str | None) -> bool:
+    """Return True if ``font_name`` resolves to the Symbol font."""
+    return (font_name or "").strip().lower() == _SYMBOL_FONT
+
+
+def _map_symbol_font_char(char: str) -> str:
+    """Map a Symbol font code point to Unicode.
+
+    Word stores the font byte either as is or shifted to ``U+F000``-``U+F0FF``.
+    Characters without a mapping are kept unchanged.
+
+    Args:
+        char: The character or single code point to map.
+
+    Returns:
+        The mapped Unicode character string, or the input character if unmapped.
+    """
+    code = ord(char)
+    if 0xF000 <= code <= 0xF0FF:
+        code -= 0xF000
+    return SYMBOL_FONT_TO_UNICODE.get(code, char)
+
+
+def _get_sym_text(sym: BaseOxmlElement) -> str:
+    """Return the character of a ``w:sym`` element (Insert > Symbol in Word).
+
+    Args:
+        sym: The ``w:sym`` oxml element.
+
+    Returns:
+        The extracted (and possibly mapped) character string.
+    """
+    try:
+        char = chr(int(sym.get(f"{_W_NS_CLARK}char", ""), 16))
+    except ValueError:
+        return ""
+    if _is_symbol_font(sym.get(f"{_W_NS_CLARK}font")):
+        return _map_symbol_font_char(char)
+    return char
+
+
+def _get_run_text(run: Run) -> str:
+    """Return the text of a run, including its ``w:sym`` characters.
+
+    python-docx ``Run.text`` skips ``w:sym``, so these characters are lost.
+    Text set in the Symbol font is mapped to Unicode.
+
+    Args:
+        run: The docx Run object.
+
+    Returns:
+        The full extracted text of the run including symbols.
+    """
+    symbol_font = _is_symbol_font(run.font.name)
+    parts: list[str] = []
+    for child in run._r.xpath(_RUN_TEXT_XPATH):
+        if child.tag == f"{_W_NS_CLARK}sym":
+            parts.append(_get_sym_text(child))
+        elif symbol_font and child.tag == f"{_W_NS_CLARK}t":
+            parts.append("".join(map(_map_symbol_font_char, str(child))))
+        else:
+            parts.append(str(child))
+    return "".join(parts)
 
 
 def _int_to_letter_marker(value: int) -> str:
@@ -488,6 +578,17 @@ def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
     return str(counter)
 
 
+def _trim_run_edges(
+    runs: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
+) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+    """Trim the outer edges of a paragraph's runs, leaving interior whitespace intact."""
+    return trim_run_edges(
+        runs,
+        get_text=lambda run: run[0],
+        with_text=lambda run, text: (text, run[1], run[2]),
+    )
+
+
 def _strict_ns_to_transitional(strict_ns: str) -> str:
     """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
     if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
@@ -528,7 +629,7 @@ def _is_safe_zip_member(name: str) -> bool:
     return not any(part == ".." for part in normalized.split("/"))
 
 
-def _has_fragment_only_rels(archive: zipfile.ZipFile) -> bool:
+def _has_fragment_only_rels(archive: zipfile.ZipFile, limits: ArchiveLimits) -> bool:
     """Return True if any ``*.rels`` part contains a fragment-only relationship target.
 
     A fragment-only target (e.g. ``Target="#_Procédures_spéciales"``) is an
@@ -540,8 +641,8 @@ def _has_fragment_only_rels(archive: zipfile.ZipFile) -> bool:
     for info in archive.infolist():
         if not info.filename.endswith(".rels"):
             continue
+        content = read_member(archive, info, limits.max_file_bytes)
         try:
-            content = archive.read(info.filename)
             root = etree.fromstring(content, _SAFE_XML_PARSER)
             for rel in root.iter(rels_tag):
                 target = rel.get("Target", "")
@@ -575,7 +676,44 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
-def _sanitize_docx(archive: zipfile.ZipFile) -> BytesIO:
+def _strip_xml_comment_nodes(root: etree._Element) -> None:
+    """Remove the XML comment nodes and processing instructions under ``root``.
+
+    The backend walks element children and reads their tag, which a comment does
+    not have, so a single one fails the conversion or drops the content of the
+    table it sits in. Text following a removed node is kept: lxml moves it, since
+    python-docx makes ``text`` read-only on paragraphs and hyperlinks, and clears
+    the run when it is set on a run.
+    """
+    etree.strip_elements(
+        root, etree.Comment, etree.ProcessingInstruction, with_tail=False
+    )
+
+
+def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
+    """Remove XML comment nodes and processing instructions from every XML part.
+
+    Word comments (``w:comment`` elements) are not affected. Returns the text of
+    the XML comments found in the main document part, in document order.
+
+    Some producers write them into the document body (docx4j adds
+    ``<!-- Created by docx4j ... -->``). python-docx loads footnotes, endnotes
+    and charts as plain parts: the backend parses those itself and strips them
+    there.
+    """
+    texts: list[str] = []
+    for part in docx_obj.part.package.iter_parts():
+        if not isinstance(part, XmlPart):
+            continue
+        if part is docx_obj.part:
+            for node in part.element.iter(etree.Comment):
+                if text := (node.text or "").strip():
+                    texts.append(text)
+        _strip_xml_comment_nodes(part.element)
+    return texts
+
+
+def _sanitize_docx(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
     """Rewrite a DOCX archive in memory, removing fragment-only relationship targets.
 
     Fragment-only targets (``Target="#anchor"``) are internal bookmark references
@@ -583,25 +721,18 @@ def _sanitize_docx(archive: zipfile.ZipFile) -> BytesIO:
     offending ``Relationship`` elements from every ``*.rels`` part so that
     ``python-docx`` can load the document without raising ``KeyError``.
 
-    The archive is validated against zip-slip and zip-bomb attacks while it is
-    read.  Non-``.rels`` members are copied through unchanged.
+    The archive is validated against zip-slip and checked against the
+    decompressed size ``limits`` before it is read.  Non-``.rels`` members are
+    copied through unchanged.
     """
+    for info in archive.infolist():
+        if not _is_safe_zip_member(info.filename):
+            raise SecurityError(f"ZIP slip attempt: {info.filename}")
+    check_archive_limits(archive, limits)
     sanitized = BytesIO()
-    total_uncompressed = 0
     with zipfile.ZipFile(sanitized, "w", zipfile.ZIP_DEFLATED) as target:
         for info in archive.infolist():
-            if not _is_safe_zip_member(info.filename):
-                raise SecurityError(f"ZIP slip attempt: {info.filename}")
-            if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
-                raise SecurityError(
-                    f"Refusing to expand oversized OOXML part: {info.filename}"
-                )
-            total_uncompressed += info.file_size
-            if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED_SIZE:
-                raise SecurityError(
-                    "Refusing to expand OOXML package exceeding the uncompressed size limit"
-                )
-            content = archive.read(info.filename)
+            content = read_member(archive, info, limits.max_file_bytes)
             if info.filename.endswith(".rels"):
                 content = _remove_fragment_only_rels(content)
             target.writestr(info, content)
@@ -609,35 +740,28 @@ def _sanitize_docx(archive: zipfile.ZipFile) -> BytesIO:
     return sanitized
 
 
-def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
+def _normalize_strict_ooxml(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
     """Rewrite an open Strict OOXML package to Transitional namespaces in memory.
 
     Only XML/relationship parts that actually carry a Strict namespace are
     decoded and rewritten; every other member (images, fonts, ...) is copied
     through with its original compression, avoiding a needless decode pass. Each
     member is decompressed exactly once. The archive is validated against
-    zip-slip and zip-bomb attacks while it is read.
+    zip-slip and checked against the decompressed size ``limits`` before it is
+    read.
 
     Fragment-only relationship targets are also removed in this pass (see
     ``_remove_fragment_only_rels``), so a combined Strict + fragment-only
     document is handled in a single archive traversal.
     """
+    for info in archive.infolist():
+        if not _is_safe_zip_member(info.filename):
+            raise SecurityError(f"ZIP slip attempt: {info.filename}")
+    check_archive_limits(archive, limits)
     normalized = BytesIO()
-    total_uncompressed = 0
     with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
         for info in archive.infolist():
-            if not _is_safe_zip_member(info.filename):
-                raise SecurityError(f"ZIP slip attempt: {info.filename}")
-            if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
-                raise SecurityError(
-                    f"Refusing to expand oversized OOXML part: {info.filename}"
-                )
-            total_uncompressed += info.file_size
-            if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED_SIZE:
-                raise SecurityError(
-                    "Refusing to expand OOXML package exceeding the uncompressed size limit"
-                )
-            content = archive.read(info.filename)
+            content = read_member(archive, info, limits.max_file_bytes)
             if info.filename.endswith((".xml", ".rels")) and (
                 _STRICT_OOXML_MARKER in content
             ):
@@ -678,6 +802,25 @@ class _NestedList(NamedTuple):
     outer_numid: int
     outer_ilevel: int | None
     outer_left_indent: int
+
+
+class _NumberingLevel(NamedTuple):
+    """A level of a numbering instance (``w:num``).
+
+    ``lvl`` is the ``w:lvl`` that defines the level: the one in the
+    ``w:lvlOverride`` of the instance for this level, else the one of the
+    abstract numbering definition. ``start_override`` is the
+    ``w:startOverride`` in that ``w:lvlOverride``, if there is one.
+    """
+
+    lvl: BaseOxmlElement
+    start_override: BaseOxmlElement | None
+
+
+_MAX_START_OVERRIDE: Final = 32767
+"""The largest ``w:startOverride`` value that is applied. Letter and Roman markers
+grow with the number, so a larger value would build very long markers. 32767 is
+also the largest ``startAt`` that PowerPoint allows (``ST_TextBulletStartAtNum``)."""
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
@@ -773,13 +916,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """
 
     _CODE_CALL_PATTERN: Final[re.Pattern[str]] = re.compile(
-        r"[A-Za-z_]\((?:\s*\)|[^)]*[\d,._='\"][^)]*\))"
+        r"[A-Za-z_]\((?:\s*\)|[^)\d,._='\"]{0,200}[\d,._='\"][^)]{0,200}\))"
     )
     """Matches a function/method call whose arguments look code-like.
 
     Accepts an empty call (``set()``) or one whose arguments carry code-ish
     characters (``print(sys.argv)``). Plain ``word(word)`` shapes like
     ``party(ies)`` are intentionally excluded.
+
+    The argument runs are bounded, and the first run stops at the first
+    code-ish character, so the search stays linear in time on long paragraphs
+    with many unclosed ``(``. Longer argument lists do not count as a call.
     """
 
     _CODE_DEF_PATTERN: Final[re.Pattern[str]] = re.compile(
@@ -816,6 +963,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 path_or_stream, in_doc.format.value, "docx"
             )
         super().__init__(in_doc, path_or_stream, options)
+        self._archive_limits = ArchiveLimits.from_options(options)
         self.XML_KEY = f"{_W_NS_CLARK}val"
         self.blip_xpath_expr = etree.XPath(".//a:blip", namespaces=_OOXML_NAMESPACES)
         self.vml_imagedata_xpath_expr = etree.XPath(
@@ -845,6 +993,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._last_paragraph_content: (
             tuple[Any, list[tuple[str, Formatting | None, AnyUrl | Path | None]]] | None
         ) = None
+        self._xml_comments: list[str] = []
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -895,14 +1044,30 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._pending_code_blank_lines: int = 0
         # The document default style's font is not evidence of code.
         self._default_paragraph_style: BaseStyle | None = None
+        # Whether any part uses w:vanish; most documents do not, and then the
+        # per-run hidden checks are skipped.
+        self._uses_hidden_text = False
+        # The layer around a hidden paragraph while it is added. List groups
+        # stay on it, so a hidden item does not hide the shown items with it.
+        self._layer_around_hidden: ContentLayer | None = None
 
         self.docx_obj = self.load_msword_file(
-            path_or_stream=self.path_or_stream, document_hash=self.document_hash
+            path_or_stream=self.path_or_stream,
+            document_hash=self.document_hash,
+            limits=self._archive_limits,
         )
         if self.docx_obj:
+            self._xml_comments = _remove_xml_comment_nodes(self.docx_obj)
             self.valid = True
             self.current_part = self.docx_obj.part
             _normalize_list_style_types(self.docx_obj)
+            self._uses_hidden_text = any(
+                part.element.xpath(".//w:vanish")
+                if isinstance(part, XmlPart)
+                # python-docx loads footnotes and endnotes as plain parts.
+                else part.content_type.endswith("+xml") and b"vanish" in part.blob
+                for part in self.docx_obj.part.package.iter_parts()
+            )
             self._default_paragraph_style = self.docx_obj.styles.default(
                 WD_STYLE_TYPE.PARAGRAPH
             )
@@ -961,6 +1126,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
             self._add_comments(self.docx_obj, doc)
+            for text in self._xml_comments:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    content_layer=ContentLayer.NOTES,
+                )
             # Add footnotes and endnotes (their body text lives in a separate part;
             # the in-body reference is otherwise silently empty, see docstring below)
             self._add_footnotes_and_endnotes(self.docx_obj, doc)
@@ -974,35 +1145,50 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def load_msword_file(
-        path_or_stream: BytesIO | Path, document_hash: str
+        path_or_stream: BytesIO | Path,
+        document_hash: str,
+        limits: ArchiveLimits = _DEFAULT_ARCHIVE_LIMITS,
     ) -> DocxDocument:
+        """Load a .docx package with python-docx.
+
+        The package is checked against the decompressed size ``limits`` before
+        any member is read. Strict OOXML packages and packages with
+        fragment-only relationship targets are rewritten in memory first.
+
+        Raises:
+            ArchiveLimitError: If the package exceeds the ``limits``.
+            SecurityError: If a rewritten package has an unsafe member name.
+            DocumentLoadError: If python-docx cannot load the package.
+        """
         try:
             if isinstance(path_or_stream, Path):
                 with zipfile.ZipFile(path_or_stream) as archive:
+                    check_archive_limits(archive, limits)
                     is_strict = _is_strict_ooxml(archive)
                     has_fragment_rels = not is_strict and _has_fragment_only_rels(
-                        archive
+                        archive, limits
                     )
                     if is_strict:
-                        return Document(_normalize_strict_ooxml(archive))
+                        return Document(_normalize_strict_ooxml(archive, limits))
                     if has_fragment_rels:
-                        return Document(_sanitize_docx(archive))
+                        return Document(_sanitize_docx(archive, limits))
                 return Document(str(path_or_stream))
             elif isinstance(path_or_stream, BytesIO):
                 with zipfile.ZipFile(path_or_stream) as archive:
+                    check_archive_limits(archive, limits)
                     is_strict = _is_strict_ooxml(archive)
                     has_fragment_rels = not is_strict and _has_fragment_only_rels(
-                        archive
+                        archive, limits
                     )
                     if is_strict:
-                        return Document(_normalize_strict_ooxml(archive))
+                        return Document(_normalize_strict_ooxml(archive, limits))
                     if has_fragment_rels:
-                        return Document(_sanitize_docx(archive))
+                        return Document(_sanitize_docx(archive, limits))
                 path_or_stream.seek(0)
                 return Document(path_or_stream)
             else:
                 return None
-        except SecurityError:
+        except (SecurityError, DocumentLoadError):
             raise
         except Exception as e:
             raise DocumentLoadError(
@@ -1115,7 +1301,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         list_gr = doc.add_list_group(
             name="list",
             parent=parent,
-            content_layer=self.content_layer,
+            content_layer=self._layer_around_hidden or self.content_layer,
         )
         elem_ref.append(list_gr.get_ref())
 
@@ -1138,6 +1324,35 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # delete_items raises ValueError when it cannot find an item in the
             # document tree; keep the paragraphs rather than fail the conversion
             _log.warning(f"Kept the empty paragraphs before resumed list items: {err}")
+
+    def _close_list_before_table(self) -> None:
+        """Close a list that is still open when a table starts.
+
+        Without this, a table that directly follows a list item is added as a
+        child of the ``ListGroup`` (next to its list items), and the Markdown
+        export glues the table onto the last list item.
+        """
+        if self._prev_numid() is None:
+            return
+        self.last_numid = (
+            self.nested_lists[0].outer_numid
+            if self.nested_lists and self.level_at_new_list is not None
+            else self._prev_numid()
+        )
+        self.nested_lists = []
+        # A table breaks list continuity, like substantive body text.
+        self._clear_list_group_cache()
+        if self.level_at_new_list:
+            for key in range(len(self.parents)):
+                if key >= self.level_at_new_list:
+                    self.parents[key] = None
+            self.level = self.level_at_new_list - 1
+            self.level_at_new_list = None
+        else:
+            for key in range(len(self.parents)):
+                self.parents[key] = None
+            self.level = 0
+        self._update_history("Table", None, None, None)
 
     def _clear_list_group_cache(self) -> None:
         """Clear the cached list group to prevent reuse across contexts."""
@@ -1546,7 +1761,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return numId, ilvl
 
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
-        """Find a numbering level, following linked numbering styles."""
+        """Find a numbering level, following level overrides and linked styles."""
+        level = self._get_numbering_level(numid, ilvl)
+        return level.lvl if level is not None else None
+
+    def _get_numbering_level(self, numid: int, ilvl: int) -> _NumberingLevel | None:
+        """Find a level of a numbering instance, following linked numbering styles.
+
+        The ``w:lvlOverride`` of the instance for the level can contain a
+        ``w:lvl`` and a ``w:startOverride`` (ECMA-376 Part 1, 17.9.9). Its
+        ``w:lvl`` replaces the level of the abstract numbering definition. Its
+        ``w:startOverride`` is returned with the level.
+        """
         try:
             numbering_part = None
             styles_part = None
@@ -1566,6 +1792,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             if num_element is None:
                 return None
+
+            start_override = None
+            level_override = num_element.find(
+                f"w:lvlOverride[@w:ilvl='{ilvl}']", namespaces=namespaces
+            )
+            if level_override is not None:
+                start_override = level_override.find(
+                    "w:startOverride", namespaces=namespaces
+                )
+                override_level = level_override.find("w:lvl", namespaces=namespaces)
+                if override_level is not None:
+                    return _NumberingLevel(override_level, start_override)
 
             visited_abstract_ids: set[str] = set()
             for _ in range(self._MAX_STYLE_INHERITANCE_DEPTH):
@@ -1591,7 +1829,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     f"w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
                 )
                 if level_element is not None:
-                    return level_element
+                    return _NumberingLevel(level_element, start_override)
 
                 style_link = abstract_element.find(
                     "w:numStyleLink", namespaces=namespaces
@@ -1702,11 +1940,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return left or 0
 
     def _get_start_value(self, numid: int, ilvl: int) -> int:
-        """Read the start value from the abstractNum definition."""
-        lvl_element = self._get_level_element(numid, ilvl)
-        if lvl_element is not None:
+        """Read the start value of a numbering level.
+
+        The ``w:startOverride`` of the numbering instance has priority over the
+        ``w:start`` of the level (ECMA-376 Part 1, 17.9.27). An override without
+        an integer value from 0 to ``_MAX_START_OVERRIDE`` is ignored, and the
+        ``w:start`` of the level applies.
+        """
+        level = self._get_numbering_level(numid, ilvl)
+        if level is not None:
+            if level.start_override is not None:
+                start = self._str_to_int(
+                    level.start_override.get(self.XML_KEY), default=None
+                )
+                if start is not None and 0 <= start <= _MAX_START_OVERRIDE:
+                    return start
             namespaces = _OOXML_NAMESPACES
-            start_element = lvl_element.find(".//w:start", namespaces=namespaces)
+            start_element = level.lvl.find(".//w:start", namespaces=namespaces)
             if start_element is not None:
                 val = start_element.get(self.XML_KEY)
                 if val is not None:
@@ -1889,6 +2139,36 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return numid is not None and self._has_visible_numbering_format(
             numid, ilvl or 0
         )
+
+    def _get_outline_level_from_paragraph(self, paragraph: Paragraph) -> int | None:
+        """Extract outlineLvl from a paragraph's direct formatting.
+
+        In OOXML, outlineLvl is 0-indexed: 0-8 are heading levels 1-9 and 9 is
+        the "body text" sentinel. This method returns the 1-indexed value
+        (outlineLvl + 1), so heading levels are 1-9 and body text is 10.
+        """
+
+        if paragraph is None:
+            return None
+
+        p_pr = paragraph._p.pPr
+        if p_pr is None:
+            return None
+
+        # Look for outlineLvl in the paragraph properties
+        outline_elem = p_pr.find(f"{_W_NS_CLARK}outlineLvl")
+        val = (
+            outline_elem.get(f"{_W_NS_CLARK}val") if outline_elem is not None else None
+        )
+
+        if val is not None:
+            try:
+                # Convert 0-indexed outlineLvl to 1-indexed heading level
+                return int(val) + 1
+            except ValueError:
+                pass
+
+        return None
 
     def _get_outline_level_from_style(self, style: ParagraphStyle | None) -> int | None:
         """Extract outlineLvl from a paragraph style definition.
@@ -2155,7 +2435,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # 1-9 are real heading levels; 10 is the "body text" sentinel.
-        outline_level = self._get_outline_level_from_style(style)
+        outline_level = self._get_outline_level_from_paragraph(paragraph)
+        if outline_level is None:
+            outline_level = self._get_outline_level_from_style(style)
         if outline_level is not None and not 1 <= outline_level <= 9:
             outline_level = None
 
@@ -2302,10 +2584,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
     def _get_hyperlink_target(self, hyperlink: Hyperlink) -> AnyUrl | Path | None:
-        """Resolve a hyperlink's address to a URL or a local path.
+        """Resolve a hyperlink's address and fragment to a URL or a local path.
+
+        The result includes the ``w:anchor`` fragment, which Word stores
+        separately from the address, e.g. ``https://example.com/page#section``.
 
         Addresses without a URL scheme are treated as (relative) filesystem
-        paths. Addresses with a scheme are parsed as URLs.
+        paths. Such a ``Path`` can carry a ``#fragment`` suffix, e.g.
+        ``Path("manual.docx#Installation")``, which does not point to a real
+        file. Addresses with a scheme are parsed as URLs.
 
         Malformed URLs (e.g. an address containing spaces) are handled
         gracefully: the invalid target is dropped and ``None`` is returned so
@@ -2321,11 +2608,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             or ``None`` when there is no address, the URL is malformed, or the
             hyperlink's relationship has been removed from the part.
         """
+        # Resolve the relationship in the part being read: header, footer and
+        # note paragraphs are attached to the document part, but their
+        # hyperlink relationships live in their own part.
+        rid = hyperlink._hyperlink.rId
         try:
-            address = hyperlink.address
+            address = self.current_part.rels[rid].target_ref if rid is not None else ""
         except KeyError:
             # Relationship removed from the part (e.g. by _sanitize_docx); drop target.
             return None
+        if address and hyperlink.fragment:
+            address = f"{address}#{hyperlink.fragment}"
         if address:
             if not urlparse(address).scheme:
                 return Path(address)
@@ -2337,10 +2630,70 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None
 
+    def _is_hidden_run(
+        self, run: Run, paragraph_style_chain: Sequence[CharacterStyle]
+    ) -> bool:
+        """Return True if Word hides ``run`` (the Hidden font property, ``w:vanish``).
+
+        The first explicit setting wins: the run's own formatting, then its
+        character style chain, then the paragraph style chain.
+        """
+        fonts = (
+            run.font,
+            *(style.font for style in self._get_style_chain(run.style)),
+            *(style.font for style in paragraph_style_chain),
+        )
+        for font in fonts:
+            if font.hidden is not None:
+                return font.hidden
+        return False
+
+    def _is_hidden_paragraph(self, paragraph: Paragraph) -> bool:
+        """Return True if ``paragraph`` has text and Word hides all of it.
+
+        An equation counts as shown: its runs are math runs, not ``w:r``.
+        """
+        if not self._uses_hidden_text or (
+            paragraph._p.find(f".//{OMML_NS}oMath") is not None
+        ):
+            return False
+        runs = [
+            Run(r_el, paragraph)
+            for r_el in paragraph._p.iter(f"{_W_NS_CLARK}r")
+            if r_el.find(f"{_W_NS_CLARK}t") is not None
+        ]
+        style_chain = self._get_style_chain(paragraph.style)
+        return bool(runs) and all(self._is_hidden_run(run, style_chain) for run in runs)
+
     def _iter_paragraph_content(
-        self, paragraph: Paragraph
+        self, paragraph: Paragraph, *, with_format: bool = True
     ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+        """Return the shown text of a paragraph with its formatting and links.
+
+        Args:
+            paragraph: The paragraph to read.
+            with_format: Whether to resolve the run formatting and the hyperlink
+                targets. When False, they are None, which is cheaper for callers
+                that only need the text.
+
+        Returns:
+            One ``(text, formatting, hyperlink)`` tuple per run or hyperlink.
+        """
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
+        # A fully hidden paragraph keeps its text; it goes to the invisible layer.
+        show_all = not self._uses_hidden_text or self._is_hidden_paragraph(paragraph)
+
+        def _is_shown(run: Run) -> bool:
+            return show_all or not self._is_hidden_run(
+                run, self._get_style_chain(paragraph.style)
+            )
+
+        def _get_format(run: Run) -> Formatting | None:
+            if not with_format:
+                return None
+            return self._get_format_from_run(
+                run, paragraph, self._get_style_chain(paragraph.style)
+            )
 
         def _get_children_recursive(node):
             for child in node:
@@ -2354,29 +2707,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             tag_name = etree.QName(child).localname
 
             if tag_name == "sdt":
-                text = "".join(
-                    child.xpath(
-                        ".//w:sdtContent//w:t/text()",
-                        namespaces=_OOXML_NAMESPACES,
+                runs = [
+                    run
+                    for run in (
+                        Run(r_el, paragraph)
+                        for r_el in child.xpath(
+                            ".//w:sdtContent//w:r",
+                            namespaces=_OOXML_NAMESPACES,
+                        )
                     )
-                )
+                    if _is_shown(run)
+                ]
+                text = "".join(t for run in runs for t in run._r.xpath("./w:t/text()"))
                 if len(text) == 0:
                     continue
 
-                runs = child.xpath(
-                    ".//w:sdtContent//w:r",
-                    namespaces=_OOXML_NAMESPACES,
-                )
-                fmt = (
-                    self._get_format_from_run(
-                        Run(runs[0], paragraph),
-                        paragraph,
-                        self._get_style_chain(paragraph.style),
-                    )
-                    if runs
-                    else None
-                )
-                content.append((text, fmt, None))
+                content.append((text, _get_format(runs[0]) if runs else None, None))
                 continue
 
             if tag_name not in {"r", "hyperlink"}:
@@ -2392,33 +2738,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Hyperlink.text and Hyperlink.runs only read the direct w:r
                 # children, so also read the runs nested in the same wrappers
                 # as above (e.g. a tracked insertion inside the link).
-                runs = [
+                all_runs = [
                     Run(r_el, paragraph)
                     for r_el in _get_children_recursive(child)
                     if r_el.tag == f"{_W_NS_CLARK}r"
                 ]
+                runs = [run for run in all_runs if _is_shown(run)]
+                if all_runs and not runs:
+                    continue  # a fully hidden link
                 content.append(
                     (
-                        "".join(run.text for run in runs),
-                        (
-                            self._get_format_from_run(
-                                runs[0],
-                                paragraph,
-                                self._get_style_chain(paragraph.style),
-                            )
-                            if runs
-                            else None
-                        ),
-                        self._get_hyperlink_target(item),
+                        "".join(_get_run_text(run) for run in runs),
+                        _get_format(runs[0]) if runs else None,
+                        self._get_hyperlink_target(item) if with_format else None,
                     )
                 )
-            elif isinstance(item, Run):
+            elif _is_shown(item):
                 content.append(
                     (
-                        item.text,
-                        self._get_format_from_run(
-                            item, paragraph, self._get_style_chain(paragraph.style)
-                        ),
+                        _get_run_text(item),
+                        _get_format(item),
                         None,
                     )
                 )
@@ -2448,6 +2787,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             text for text, _format, _hyperlink in self._get_paragraph_content(paragraph)
         )
 
+    def _get_cell_text(self, cell: _Cell) -> str:
+        """Return a table cell's visible text, one line per paragraph.
+
+        ``_Cell.text`` only reads runs and hyperlinks that are direct children
+        of a paragraph, so it misses the text nested in content controls, simple
+        fields, smart tags and tracked insertions. A cell has no content layer of
+        its own, so fully hidden paragraphs are left out.
+        """
+        return "\n".join(
+            "".join(
+                text
+                for text, _format, _hyperlink in self._iter_paragraph_content(
+                    paragraph, with_format=False
+                )
+            )
+            for paragraph in cell.paragraphs
+            if not self._is_hidden_paragraph(paragraph)
+        )
+
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
         Extract paragraph elements along with their formatting and hyperlink
@@ -2464,21 +2822,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         group_text = ""
         previous_format = None
 
-        # Iterate over the runs of the paragraph and group them by format
+        # Group the runs by format and concatenate them as they are: in DOCX the boundary
+        # space very often lives inside a formatted run, and it is the run's own text (see
+        # `DoclingDocument.add_inline_group`).
         for text, format, hyperlink in content:
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
                 # If the style changes for a non empty text, add the previous group
-                if len(group_text.strip()) > 0:
-                    paragraph_elements.append(
-                        (group_text.strip(), previous_format, None)
-                    )
+                if group_text:
+                    paragraph_elements.append((group_text, previous_format, None))
                 group_text = ""
 
                 # If there is a hyperlink, add it immediately
                 if hyperlink is not None:
-                    paragraph_elements.append((text.strip(), format, hyperlink))
+                    paragraph_elements.append((text, format, hyperlink))
                     text = ""
                 else:
                     previous_format = format
@@ -2486,10 +2844,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             group_text += text
 
         # Format the last group
-        if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), previous_format, None))
+        if group_text:
+            paragraph_elements.append((group_text, previous_format, None))
 
-        return paragraph_elements
+        return _trim_run_edges(paragraph_elements)
 
     def _has_checkbox(self, element: BaseOxmlElement) -> bool:
         """Check if a paragraph element contains a checkbox.
@@ -2562,10 +2920,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Common checkbox symbols in docx documents
         checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
 
-        text = text.strip()
+        # Only the leading edge: the text may be the first of several inline runs.
+        text = text.lstrip()
         for symbol in checkbox_symbols:
             if text.startswith(symbol):
-                text = text[len(symbol) :].strip()
+                text = text[len(symbol) :].lstrip()
                 break
 
         return text
@@ -2824,10 +3183,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.parents[level] = original_parent
         return elem_ref
 
+    def _get_hidden_run_elements(self, element: BaseOxmlElement) -> set[etree._Element]:
+        """Return the ``w:r`` elements of the hidden runs in ``element``.
+
+        Only an element with an equation needs them, so for any other element
+        the result is empty.
+        """
+        hidden: set[etree._Element] = set()
+        if not self._uses_hidden_text or element.find(f".//{OMML_NS}oMath") is None:
+            return hidden
+        for p_el in element.iter(f"{_W_NS_CLARK}p"):
+            paragraph = Paragraph(p_el, self.docx_obj)
+            style_chain = self._get_style_chain(paragraph.style)
+            for r_el in p_el.iter(f"{_W_NS_CLARK}r"):
+                if self._is_hidden_run(Run(r_el, paragraph), style_chain):
+                    hidden.add(r_el)
+        return hidden
+
     def _handle_equations_in_text(self, element, text):
         only_texts = []
         only_equations = []
         texts_and_equations = []
+        # ``text`` has no hidden text, so leave it out here too.
+        hidden_runs = self._get_hidden_run_elements(element)
 
         # Collect oMath elements and text runs from the paragraph.
         # Use direct children iteration first; fall back to deep iteration
@@ -2853,21 +3231,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Collect text from non-math children (e.g. <w:r> runs)
-                    for t_elem in child.iter():
-                        t_tag = etree.QName(t_elem).localname
-                        if t_tag == "t" and "math" not in t_elem.tag:
-                            if isinstance(t_elem.text, str):
-                                only_texts.append(t_elem.text)
-                                texts_and_equations.append(t_elem.text)
+                    for run in child.iter(f"{_W_NS_CLARK}r"):
+                        if run not in hidden_runs:
+                            run_text = _get_run_text(Run(run, None))
+                            only_texts.append(run_text)
+                            texts_and_equations.append(run_text)
         else:
             # Original deep-iteration fallback for nested oMath (e.g.
             # inside oMathPara or other wrapper elements).
             for subt in element.iter():
-                tag_name = etree.QName(subt).localname
-                if tag_name == "t" and "math" not in subt.tag:
-                    if isinstance(subt.text, str):
-                        only_texts.append(subt.text)
-                        texts_and_equations.append(subt.text)
+                if subt.tag == f"{_W_NS_CLARK}r" and subt not in hidden_runs:
+                    run_text = _get_run_text(Run(subt, None))
+                    only_texts.append(run_text)
+                    texts_and_equations.append(run_text)
                 elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                     latex_equation = str(oMath2Latex(subt)).strip()
                     if len(latex_equation) > 0:
@@ -2933,6 +3309,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
         paragraph = Paragraph(element, self.docx_obj)
+        if self.content_layer != ContentLayer.INVISIBLE and self._is_hidden_paragraph(
+            paragraph
+        ):
+            # Word does not show it: keep it, like a hidden slide or sheet,
+            # but out of the default exports.
+            self._layer_around_hidden = self.content_layer
+            self.content_layer = ContentLayer.INVISIBLE
+            try:
+                return self._handle_text_elements(element, doc, skip_empty_text)
+            finally:
+                self.content_layer = self._layer_around_hidden
+                self._layer_around_hidden = None
         paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
             element=element, text=self._get_paragraph_text(paragraph)
@@ -3058,9 +3446,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
-            if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
-                text
-            ) > 0:
+            # The paragraph's text without equations or hidden runs.
+            if not self._get_paragraph_text(paragraph).strip() and len(text) > 0:
                 # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
                 parent = self.parents[level - 1]
@@ -3178,6 +3565,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         skip_empty_text: bool,
     ) -> list[RefItem]:
         """Add ordinary paragraph text items under the current parent."""
+        if checkbox_label and paragraph_elements:
+            text, formatting, hyperlink = paragraph_elements[0]
+            first = (self._clean_checkbox_symbols(text), formatting, hyperlink)
+            paragraph_elements = _trim_run_edges([first, *paragraph_elements[1:]]) or [
+                ("", formatting, hyperlink)
+            ]
+        # Runs are already edge-trimmed: whitespace-only runs left are interior and significant.
+        if skip_empty_text and not any(
+            text.strip() for text, _, _ in paragraph_elements
+        ):
+            return []
+
         level = self._get_level()
         parent = self._create_or_reuse_parent(
             doc=doc,
@@ -3187,14 +3586,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref: list[RefItem] = []
 
         for text, formatting, hyperlink in paragraph_elements:
-            clean_text = self._clean_checkbox_symbols(text) if checkbox_label else text
-            if skip_empty_text and (not clean_text or not clean_text.strip()):
-                continue
-
             text_item = doc.add_text(
                 label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                 parent=parent,
-                text=clean_text,
+                text=text,
                 formatting=formatting,
                 hyperlink=hyperlink,
                 content_layer=self.content_layer,
@@ -3308,6 +3703,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent=self.parents[parent_level],
             text=text,
             level=add_level,
+            content_layer=self.content_layer,
         )
         self.parents[current_level] = hd
         elem_ref.append(hd.get_ref())
@@ -3341,6 +3737,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    content_layer=self.content_layer,
                 )
         else:
             new_item = doc.add_list_item(
@@ -3348,8 +3745,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 enumerated=enumerated,
                 parent=self.parents[level],
                 text="",
+                content_layer=self.content_layer,
             )
-            new_parent = doc.add_inline_group(parent=new_item)
+            new_parent = doc.add_inline_group(
+                parent=new_item, content_layer=self.content_layer
+            )
             for text, format, hyperlink in elements:
                 if text:
                     doc.add_text(
@@ -3402,6 +3802,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
             elem_ref: Optional list to append created element references to.
         """
+        runs: list[tuple[DocItemLabel, str]] = []
         text_tmp = text
         for eq in equations:
             if len(text_tmp) == 0:
@@ -3413,33 +3814,32 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
 
             if len(pre_eq_text) > 0:
-                e1 = doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent,
-                    text=pre_eq_text,
-                    content_layer=self.content_layer,
-                )
-                if elem_ref is not None:
-                    elem_ref.append(e1.get_ref())
-
-            e2 = doc.add_text(
-                label=DocItemLabel.FORMULA,
-                parent=parent,
-                text=eq.replace("<eq>", "").replace("</eq>", ""),
-                content_layer=self.content_layer,
+                runs.append((DocItemLabel.TEXT, pre_eq_text))
+            runs.append(
+                (DocItemLabel.FORMULA, eq.replace("<eq>", "").replace("</eq>", ""))
             )
-            if elem_ref is not None:
-                elem_ref.append(e2.get_ref())
 
         if len(text_tmp) > 0:
-            e3 = doc.add_text(
-                label=DocItemLabel.TEXT,
+            runs.append((DocItemLabel.TEXT, text_tmp))
+
+        # Trim the paragraph's outer edges only. The whitespace around an inline equation is a
+        # significant run boundary (`$A=\pi r^{2}$ is the area formula`).
+        if runs and runs[0][0] == DocItemLabel.TEXT:
+            runs[0] = (DocItemLabel.TEXT, runs[0][1].lstrip())
+        if runs and runs[-1][0] == DocItemLabel.TEXT:
+            runs[-1] = (DocItemLabel.TEXT, runs[-1][1].rstrip())
+
+        for label, run_text in runs:
+            if label == DocItemLabel.TEXT and not run_text:
+                continue
+            item = doc.add_text(
+                label=label,
                 parent=parent,
-                text=text_tmp.strip(),
+                text=run_text,
                 content_layer=self.content_layer,
             )
             if elem_ref is not None:
-                elem_ref.append(e3.get_ref())
+                elem_ref.append(item.get_ref())
 
     def _slot_for(self, word_ilevel: int) -> int:
         """Map a Word ``w:ilvl`` value to the internal parents-slot index.
@@ -3577,7 +3977,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 list_gr1 = doc.add_list_group(
                     name="list",
                     parent=self._sub_list_parent(doc, self.parents.get(i - 1)),
-                    content_layer=self.content_layer,
+                    content_layer=self._layer_around_hidden or self.content_layer,
                 )
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
@@ -3727,6 +4127,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             enumerated=is_numbered,
             parent=self.parents[use_level],
             text="",
+            content_layer=self.content_layer,
         )
 
         inline_group = doc.add_inline_group(
@@ -3758,9 +4159,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             content_layer=content_layer,
         )
         for prov in provs_in_cell:
-            group_element.children.append(prov)
             pr_item = prov.resolve(doc)
             item_parent = pr_item.parent.resolve(doc)
+            # Runs stay in their inline group, which moves into the cell as a whole.
+            if isinstance(item_parent, InlineGroup):
+                pr_item = item_parent
+                item_parent = pr_item.parent.resolve(doc)
+            if pr_item.get_ref() in group_element.children:
+                continue
+            group_element.children.append(pr_item.get_ref())
             if pr_item.get_ref() in item_parent.children:
                 item_parent.children.remove(pr_item.get_ref())
             pr_item.parent = group_element.get_ref()
@@ -3768,34 +4175,57 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return ref_for_rich_cell
 
     @staticmethod
-    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
-        """Return a row's ``w:tc`` cells in document order.
+    def _unwrapped_children(
+        parent: BaseOxmlElement, target: str
+    ) -> list[BaseOxmlElement]:
+        """Return the ``target`` elements under ``parent``, looking through wrappers.
 
-        Word wraps a cell in a content control (``w:sdt``) for date pickers and
-        for fields bound to document properties, so the cell then sits at
-        ``w:tr/w:sdt/w:sdtContent/w:tc``. ``CT_Row.tc_lst`` only yields direct
-        ``w:tc`` children, so such a cell would be skipped entirely and every
-        later cell in the row would take its grid column.
+        ``w:customXml`` and content controls (``w:sdt/w:sdtContent``) may wrap
+        rows and cells. Elements inside them are returned in document order, as
+        if they were direct children. Use this instead of python-docx accessors
+        such as ``CT_Tbl.tr_lst`` and ``CT_Row.tc_lst``, which only see direct
+        children.
 
         Args:
-            row_element: The ``w:tr`` element, or a ``w:sdtContent`` inside one.
+            parent: The element to search, or a wrapper inside it.
+            target: The local name of the elements to return, e.g. ``"tc"``.
 
         Returns:
-            The row's cells, with content-control wrappers unwrapped.
+            The matching elements, with the wrappers unwrapped.
         """
-        cells: list[BaseOxmlElement] = []
-        for child in row_element:
+        found: list[BaseOxmlElement] = []
+        for child in parent:
             tag_name = etree.QName(child).localname
-            if tag_name == "tc":
-                cells.append(child)
+            if tag_name == target:
+                found.append(child)
+            elif tag_name == "customXml":
+                found.extend(MsWordDocumentBackend._unwrapped_children(child, target))
             elif tag_name == "sdt":
                 sdt_content = child.find(
                     "./w:sdtContent",
                     namespaces=_OOXML_NAMESPACES,
                 )
                 if sdt_content is not None:
-                    cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
-        return cells
+                    found.extend(
+                        MsWordDocumentBackend._unwrapped_children(sdt_content, target)
+                    )
+        return found
+
+    @staticmethod
+    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
+        """Return a row's ``w:tc`` cells in document order.
+
+        Cells inside ``w:customXml`` or a content control, such as a date
+        picker or a field bound to a document property, are included at their
+        position in the row.
+
+        Args:
+            row_element: The ``w:tr`` element.
+
+        Returns:
+            The row's cells, with the wrappers unwrapped.
+        """
+        return MsWordDocumentBackend._unwrapped_children(row_element, "tc")
 
     def _handle_tables(
         self,
@@ -3820,12 +4250,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
-        num_rows = len(table.rows)
-        num_cols = len(table.columns)
+        rows = [
+            _Row(tr, table)
+            for tr in MsWordDocumentBackend._unwrapped_children(element, "tr")
+        ]
+        num_rows = len(rows)
+        # Some producers omit the grid or declare fewer columns than the rows use.
+        grid = element.find(qn("w:tblGrid"))
+        declared_cols = len(grid.findall(qn("w:gridCol"))) if grid is not None else 0
+        max_row_cols = max(
+            (
+                row.grid_cols_before
+                + sum(tc.grid_span for tc in self._row_cells(row._tr))
+                + row.grid_cols_after
+                for row in rows
+            ),
+            default=0,
+        )
+        num_cols = max(declared_cols, max_row_cols)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:
-            single_row_cells = MsWordDocumentBackend._row_cells(table.rows[0]._tr)
+            single_row_cells = MsWordDocumentBackend._row_cells(rows[0]._tr)
             if not single_row_cells:
                 return elem_ref
             cell_element = _Cell(single_row_cells[0], table)
@@ -3835,11 +4281,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Still a code-block boundary: outside code must not merge with
             # code inside the cell.
             self._force_new_code_block = True
-            self._walk_linear(cell_element._element, doc)
+            # Return the items made from the cell so that a container holding
+            # this table (a rich table cell, a text box, a content control)
+            # groups them inside itself instead of leaving them in the body.
+            _, elem_ref = self._walk_linear(cell_element._element, doc)
             self._force_new_code_block = True
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
+        self._close_list_before_table()
         level = self._get_level()
         docling_table = doc.add_table(
             data=data, parent=self.parents[level - 1], content_layer=self.content_layer
@@ -3847,7 +4297,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref.append(docling_table.get_ref())
 
         open_cells: dict[int, TableCell] = {}
-        for row_idx, row in enumerate(table.rows):
+        for row_idx, row in enumerate(rows):
             grid_col = row.grid_cols_before
             for tc in MsWordDocumentBackend._row_cells(row._tr):
                 if grid_col >= num_cols:
@@ -3864,14 +4314,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue
 
                 cell = _Cell(tc, table)
+                cell_text = self._get_cell_text(cell)
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
-                    element=cell._element, text=cell.text
+                    element=cell._element, text=cell_text
                 )
-                if len(equations) == 0:
-                    text = cell.text
-                else:
+                if len(equations) > 0:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
@@ -3961,7 +4410,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         A docx cell can hold rich content and be parsed with a Docling RichTableCell.
         However, this requires walking through the lxml elements and creating
         node items. If the cell holds only plain text, a TableCell, the parsing
-        is simpler and using a TableCell is prefered.
+        is simpler and using a TableCell is preferred.
 
         Plain text means:
         - The cell has only one paragraph
@@ -4107,7 +4556,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Loaded once per backend instance; del body[:] clears cheaply on every call.
             if self._empty_docx_template is None:
                 self._empty_docx_template = self.load_msword_file(
-                    self.path_or_stream, self.document_hash
+                    self.path_or_stream,
+                    self.document_hash,
+                    self._archive_limits,
                 )
             render_doc = self._empty_docx_template
             body = render_doc._element.body
@@ -4173,24 +4624,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "image",
                 )
                 pil_image: Image.Image | None = None
+                # LibreOffice can still draw a metafile, or a known picture
+                # format that Pillow cannot decode. Other data, for example
+                # PostScript, is skipped.
+                can_render = False
 
                 if image_data is None:
                     _log.warning("Warning: image cannot be found")
                 else:
                     try:
-                        image_bytes = BytesIO(image_data)
-                        pil_image = normalize_image_for_png(Image.open(image_bytes))
+                        pil_image = normalize_image_for_png(
+                            open_image(image_data, PICTURE_IMAGE_FORMATS)
+                        )
                         # Try to ensure the image is usable by converting to PNG
                         # This will fail for WMF/EMF files that PIL can't render
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
-                        pil_image = Image.open(test_bytes)
-                    except (UnidentifiedImageError, OSError) as e:
+                        pil_image = Image.open(test_bytes, formats=["PNG"])
+                    except (
+                        Image.DecompressionBombError,
+                        UnidentifiedImageError,
+                        OSError,
+                        ValueError,
+                    ) as e:
+                        # Pillow 13 reports truncated PNG chunks as ValueError.
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
+                        can_render = is_known_picture(image_data) or not isinstance(
+                            e, UnidentifiedImageError
+                        )
 
-                if pil_image is None and image is not None and image_data is not None:
+                if pil_image is None and image is not None and can_render:
                     _log.debug(
                         "Direct PIL loading failed, trying DOCX conversion via LibreOffice"
                     )
@@ -4246,24 +4711,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "VML image",
                 )
                 pil_image: Image.Image | None = None
+                can_render = False
 
                 if image_data is None:
                     _log.warning("Warning: VML image cannot be found")
                 else:
                     try:
-                        image_bytes = BytesIO(image_data)
-                        pil_image = normalize_image_for_png(Image.open(image_bytes))
+                        pil_image = normalize_image_for_png(
+                            open_image(image_data, PICTURE_IMAGE_FORMATS)
+                        )
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
-                        pil_image = Image.open(test_bytes)
-                    except (UnidentifiedImageError, OSError, Exception) as e:
-                        _log.debug(
-                            f"Direct PIL loading failed: {e}, trying DOCX conversion"
-                        )
+                        pil_image = Image.open(test_bytes, formats=["PNG"])
+                    except Exception as e:
+                        _log.debug(f"Direct PIL loading failed: {e}")
                         pil_image = None
+                        # LibreOffice can still draw a metafile, or a known
+                        # picture format that Pillow cannot decode. Other
+                        # data, for example PostScript, is skipped.
+                        can_render = is_known_picture(image_data) or not isinstance(
+                            e, UnidentifiedImageError
+                        )
+                        if not can_render:
+                            _log.warning(
+                                "Warning: VML image cannot be loaded by Pillow."
+                            )
 
-                    if pil_image is None and image_data is not None:
+                    if pil_image is None and can_render:
                         pil_image = self._convert_elements_via_docx(
                             imagedata, ["object", "pict"]
                         )
@@ -4339,10 +4814,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug("chart relationship %r not found in document part", rid)
             return None
         try:
-            return etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
+            chart_root = etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
         except etree.XMLSyntaxError:
             _log.debug("could not parse chart part for relationship %r", rid)
             return None
+        _strip_xml_comment_nodes(chart_root)
+        return chart_root
 
     def _classify_chart(self, chart_root: Any) -> PictureClassificationLabel:
         """Classify a chart from the first plot element under ``c:plotArea``.
@@ -4380,12 +4857,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return str(int(number))
         return str(number)
 
-    def _read_chart_cache(self, node: Any | None) -> list[str]:
+    def _read_chart_cache(
+        self, node: Any | None, max_rows: int, *, warn: bool = True
+    ) -> list[str]:
         """Read the cached ``c:pt`` values under a chart data source.
 
         Handles both cached references (``c:numCache``/``c:strCache``) and inline
         literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
         gaps are filled with empty strings so every series aligns to the same rows.
+        The list is sized by the points that are present and holds at most
+        ``max_rows`` entries; the declared ``c:ptCount`` is not used (see
+        ``chart_points_to_list``).
         """
         if node is None:
             return []
@@ -4408,25 +4890,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             points[idx] = self._chart_cell_text(
                 value.text if value is not None else None
             )
-        if not points:
-            return []
-
-        count = 0
-        count_el = cache.find("c:ptCount", namespaces=ns)
-        if count_el is not None and count_el.get("val"):
-            try:
-                count = int(count_el.get("val"))
-            except ValueError:
-                count = 0
-        length = max([count] + [idx + 1 for idx in points])
-        return [points.get(idx, "") for idx in range(length)]
+        return chart_points_to_list(points, max_rows, warn=warn)
 
     def _chart_series_name(self, series: Any) -> str:
         """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
         tx = series.find("c:tx", namespaces=_OOXML_NAMESPACES)
         if tx is None:
             return ""
-        cached = self._read_chart_cache(tx)
+        cached = self._read_chart_cache(tx, max_rows=1, warn=False)
         if cached:
             return cached[0]
         literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
@@ -4448,7 +4919,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         runs = [t.text for t in title.findall(".//a:t", namespaces=ns) if t.text]
         text = "".join(runs).strip()
         if not text:
-            cached = self._read_chart_cache(title)
+            cached = self._read_chart_cache(title, max_rows=1, warn=False)
             text = cached[0].strip() if cached else ""
         return text or None
 
@@ -4464,25 +4935,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         The plotted numbers and labels come from each series' inline cache
         (``c:numCache``/``c:strCache``), so no workbook reference resolution is
         needed. Scatter charts use ``c:xVal``/``c:yVal`` in place of ``c:cat``/
-        ``c:val``.
+        ``c:val``. ``build_chart_table`` lays the table out, so it has the same
+        size limit as the charts of the other backends.
 
         Args:
             chart_root: The parsed root of a ``chartN.xml`` part.
 
         Returns:
-            A TableData, or None if the chart exposes no usable series.
+            A TableData, or None if the chart exposes no usable series or no
+            populated data row.
         """
         ns = _OOXML_NAMESPACES
         series_list = chart_root.findall(".//c:ser", namespaces=ns)
         if not series_list:
             return None
+        max_rows = max_chart_data_rows(1 + len(series_list))
 
         categories: list[str] = []
         for series in series_list:
             cat = series.find("c:cat", namespaces=ns)
             if cat is None:
                 cat = series.find("c:xVal", namespaces=ns)
-            resolved = self._read_chart_cache(cat)
+            resolved = self._read_chart_cache(cat, max_rows)
             if resolved:
                 categories = resolved
                 break
@@ -4492,55 +4966,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             val = series.find("c:val", namespaces=ns)
             if val is None:
                 val = series.find("c:yVal", namespaces=ns)
-            values = self._read_chart_cache(val)
+            values = self._read_chart_cache(val, max_rows)
             columns.append((self._chart_series_name(series), values))
 
-        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
-        if num_data_rows == 0:
-            return None
-
-        num_rows = num_data_rows + 1
-        num_cols = 1 + len(columns)
-        cells: list[TableCell] = []
-
-        header_labels = [""] + [name for name, _ in columns]
-        for col_idx, label in enumerate(header_labels):
-            cells.append(
-                TableCell(
-                    text=label,
-                    row_span=1,
-                    col_span=1,
-                    start_row_offset_idx=0,
-                    end_row_offset_idx=1,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + 1,
-                    column_header=True,
-                    row_header=False,
-                )
-            )
-        for data_row in range(num_data_rows):
-            row_idx = data_row + 1
-            category = categories[data_row] if data_row < len(categories) else ""
-            row_texts = [category] + [
-                (values[data_row] if data_row < len(values) else "")
-                for _, values in columns
-            ]
-            for col_idx, text in enumerate(row_texts):
-                cells.append(
-                    TableCell(
-                        text=text,
-                        row_span=1,
-                        col_span=1,
-                        start_row_offset_idx=row_idx,
-                        end_row_offset_idx=row_idx + 1,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + 1,
-                        column_header=False,
-                        row_header=(col_idx == 0),
-                    )
-                )
-
-        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+        return build_chart_table(categories, columns)
 
     def _render_chart_image(self, drawing_el: Any) -> Image.Image | None:
         """Render a charted drawing to an image via LibreOffice.
@@ -4660,7 +5089,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return
             emitted_partnames.add(partname)
 
-            par = [txt for txt in (p.text.strip() for p in part.paragraphs) if txt]
+            # python-docx ``Paragraph.text`` skips ``w:sym``, so check for it too
+            par = [
+                p for p in part.paragraphs if p.text.strip() or p._p.xpath(".//w:sym")
+            ]
             tables = part.tables
             has_blip = self._has_blip(part._element)
             has_txbx = len(txbx_xpath(part._element)) > 0
@@ -4758,24 +5190,56 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             except Exception:
                 _log.warning(f"Failed to parse {tag_name}s part")
                 continue
+            _strip_xml_comment_nodes(root)
 
-            for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
-                if note.get(f"{_W_NS_CLARK}type") in skip_types:
-                    continue
-                texts = [
-                    text
-                    for p_elm in note.findall(f".//{_W_NS_CLARK}p")
-                    if (
-                        text := self._get_paragraph_text(
-                            Paragraph(p_elm, docx_obj)
-                        ).strip()
-                    )
-                ]
-                if not texts:
-                    continue
+            # Hyperlink relationships of a note live in the note part.
+            self.current_part = matches[0].target_part
+            try:
+                for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
+                    if note.get(f"{_W_NS_CLARK}type") not in skip_types:
+                        self._add_note(note, docx_obj, doc)
+            finally:
+                self.current_part = docx_obj.part
+
+    def _add_note(
+        self, note: BaseOxmlElement, docx_obj: DocxDocument, doc: DoclingDocument
+    ) -> None:
+        """Add one footnote/endnote body as a ``FOOTNOTE`` item.
+
+        A note with a hyperlink becomes an inline group of ``FOOTNOTE`` items,
+        so that each linked span keeps its target.
+        """
+        # A note has no layer per paragraph, so hidden ones are left out.
+        paragraphs = [
+            paragraph
+            for paragraph in (
+                Paragraph(p_elm, docx_obj)
+                for p_elm in note.findall(f".//{_W_NS_CLARK}p")
+            )
+            if not self._is_hidden_paragraph(paragraph)
+            and self._get_paragraph_text(paragraph).strip()
+        ]
+        if not paragraphs:
+            return
+        elements = [self._get_paragraph_elements(p) for p in paragraphs]
+        if not any(link for para in elements for _text, _fmt, link in para):
+            doc.add_text(
+                label=DocItemLabel.FOOTNOTE,
+                text=" ".join(self._get_paragraph_text(p).strip() for p in paragraphs),
+                content_layer=ContentLayer.FURNITURE,
+            )
+            return
+
+        group = doc.add_inline_group(content_layer=ContentLayer.FURNITURE)
+        for p_idx, para in enumerate(elements):
+            for e_idx, (text, formatting, hyperlink) in enumerate(para):
                 doc.add_text(
                     label=DocItemLabel.FOOTNOTE,
-                    text=" ".join(texts),
+                    parent=group,
+                    # Paragraphs of a note are joined by a space, as above.
+                    text=f" {text}" if p_idx and not e_idx else text,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
                     content_layer=ContentLayer.FURNITURE,
                 )
 

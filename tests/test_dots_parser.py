@@ -12,6 +12,7 @@ from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
     DoclingDocument,
+    FormulaItem,
     InlineGroup,
     RichTableCell,
     Script,
@@ -93,10 +94,7 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         },
     ]
     doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
-    assert any(
-        item.text == "Bold $x_1 * y_2 < 2$" and item.formatting.bold
-        for item in doc.texts
-    )
+    assert any(item.text == "Bold " and item.formatting.bold for item in doc.texts)
     assert any(
         item.text == "2" and item.formatting.script == Script.SUB for item in doc.texts
     )
@@ -106,22 +104,26 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         "_literal_",
         "'**literal**'",
     ]
-    assert (
-        next(item.text for item in doc.texts if item.label == DocItemLabel.FORMULA)
-        == r"x_1 * y_2 * z_3"
-    )
+    assert [item.text for item in doc.texts if isinstance(item, FormulaItem)] == [
+        "x_1 * y_2 < 2",
+        "x_1 * y_2 * z_3",
+    ]
+    assert "$x_1 * y_2 < 2$" in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
         ("snake_case and a_b_c", "snake_case and a_b_c"),
+        (r"Price $5\_x-$10", "Price $5_x-$10"),
         (r"\*literal\*", "*literal*"),
-        (r"a\_b, $x\_1 \* y$, `c\_d` and \\*", r"a_b, $x\_1 \* y$, `c\_d` and \\*"),
+        (r"a\_b, `c\_d` and \\*", r"a_b, `c\_d` and \\*"),
         ("unmatched **bold", "unmatched **bold"),
-        ("$x_1 * y_2 * z_3$", "$x_1 * y_2 * z_3$"),
         ("______", "______"),
         ("a *\n=\nb", "a *\n=\nb"),
+        (r"``a\_b` c`` and d\_e", r"``a\_b` c`` and d_e"),
+        # An unclosed run took cubic time before the code-span match was atomic.
+        ("`" * 5000 + r" a\_b", "`" * 5000 + " a_b"),
     ],
 )
 def test_literal_markers_stay_literal(text: str, expected: str, page_size: Size):
@@ -200,6 +202,25 @@ class TestParseTableElement:
         # Table should have parsed cells
         assert item.data.num_rows == 2
         assert item.data.num_cols == 2
+
+    def test_oversized_table_keeps_the_page(self, page_size: Size):
+        # 100 x 11 is over the shared mapper's 1000-grid-cell limit.
+        rows = "".join("<tr>" + "<td>x</td>" * 11 + "</tr>" for _ in range(100))
+        data = [
+            {"bbox": [0, 0, 100, 10], "category": "Text", "text": "before"},
+            {
+                "bbox": [0, 20, 100, 90],
+                "category": "Table",
+                "text": f"<table>{rows}</table>",
+            },
+            {"bbox": [0, 95, 100, 100], "category": "Text", "text": "after"},
+        ]
+        doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+
+        assert [item.text for item in doc.texts] == ["before", "after"]
+        table = doc.tables[0]
+        assert (table.data.num_rows, table.data.num_cols) == (0, 0)
+        assert table.prov
 
     def test_rich_cells_and_caption(self, page_size: Size):
         html = (
@@ -357,9 +378,10 @@ class TestParseMultipleCategories:
             item.text == "2" and item.formatting.script == Script.SUB
             for item in doc.texts
         )
-        assert any(
-            item.text == "Keep the inequality $0<a<2$ literal." for item in doc.texts
-        )
+        assert [item.text for item in doc.texts if isinstance(item, FormulaItem)] == [
+            "0<a<2"
+        ]
+        assert "Keep the inequality $0<a<2$ literal." in doc.export_to_markdown()
 
 
 class TestCleanJson:
@@ -397,3 +419,14 @@ class TestParseFormulaAndFootnote:
         assert len(items) == 1
         item, _ = items[0]
         assert item.label == DocItemLabel.FOOTNOTE
+
+
+def test_standalone_math_becomes_formula_without_inheriting_block_box(page_size: Size):
+    data = [
+        {"bbox": [10, 20, 300, 50], "category": "Text", "text": "$x_1 * y_2 * z_3$"}
+    ]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    assert doc.texts[0].prov
+    assert isinstance(doc.texts[1], FormulaItem)
+    assert doc.texts[1].text == "x_1 * y_2 * z_3"
+    assert not doc.texts[1].prov

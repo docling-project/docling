@@ -13,6 +13,12 @@
 # - Uses the GraniteDocling model with custom repetition stopping criteria injected
 # - Processes a PDF document or image and monitors for repetitive coordinate patterns
 # - Stops generation early when repetitive patterns are detected
+#
+# A repetition stop cuts the output, so `DocTagsRepetitionStopper` keeps the
+# default `is_valid_end() -> False`. A custom `GenerationStopper` that detects the
+# expected end of the output (for example a closing `</doctag>`) can return True
+# from `is_valid_end()`. The API, MLX and Transformers engines then report the
+# stop as `end_of_sequence` instead of `stop_sequence`.
 
 
 # %%

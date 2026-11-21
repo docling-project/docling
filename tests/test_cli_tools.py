@@ -126,12 +126,14 @@ def test_download_all_selects_every_available_model(tmp_path, recorded_download)
         len(_AvailableModels)
         - len(models_cli._WHISPER_MODELS)
         - len(models_cli._WHISPER_DISTIL_MODELS)
+        - len(models_cli._WHISPER_S2T_MODELS)
     )
     assert all(selection.values()), (
         f"not selected by --all: {_enabled(recorded_download) ^ set(selection)}"
     )
     assert recorded_download["whisper_models"] == []
     assert recorded_download["whisper_distil_models"] == []
+    assert recorded_download["whisper_s2t_models"] == []
 
 
 def test_download_all_with_asr_includes_native_whisper(tmp_path, recorded_download):
@@ -146,6 +148,7 @@ def test_download_all_with_asr_includes_native_whisper(tmp_path, recorded_downlo
     assert set(recorded_download["whisper_distil_models"]) == set(
         _DISTIL_WHISPER_OPENAI_CHECKPOINTS
     )
+    assert recorded_download["whisper_s2t_models"] == []
 
 
 def test_download_one_native_whisper_model(tmp_path, recorded_download):
@@ -166,6 +169,18 @@ def test_download_one_distil_whisper_model(tmp_path, recorded_download):
     assert result.exit_code == 0
     assert recorded_download["whisper_distil_models"] == ["distil-small.en"]
     assert recorded_download["whisper_models"] == []
+    assert _enabled(recorded_download) == set()
+
+
+def test_download_one_whisper_s2t_model(tmp_path, recorded_download):
+    result = runner.invoke(
+        app, ["models", "download", "-o", str(tmp_path), "whisper_small_en_s2t"]
+    )
+
+    assert result.exit_code == 0
+    assert recorded_download["whisper_s2t_models"] == ["small.en"]
+    assert recorded_download["whisper_models"] == []
+    assert recorded_download["whisper_distil_models"] == []
     assert _enabled(recorded_download) == set()
 
 

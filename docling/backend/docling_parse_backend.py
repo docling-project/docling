@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from collections.abc import Iterable, Iterator
 from io import BytesIO
@@ -161,12 +162,17 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         if self._seg_page is None:
             seg_page = self._result.get_page()
             page_height = seg_page.dimension.height
-            for tc in seg_page.textline_cells:
+            for tc in (
+                *seg_page.textline_cells,
+                *seg_page.char_cells,
+                *seg_page.word_cells,
+            ):
                 tc.to_top_left_origin(page_height)
-            for tc in seg_page.char_cells:
-                tc.to_top_left_origin(page_height)
-            for tc in seg_page.word_cells:
-                tc.to_top_left_origin(page_height)
+                # docling-parse emits U+0000 for a glyph it cannot map to Unicode.
+                # U+FFFD keeps the loss visible and counted by is_broken_text_layer,
+                # and does not truncate text in C-string based storage.
+                tc.text = tc.text.replace("\x00", "\ufffd")
+                tc.orig = tc.orig.replace("\x00", "\ufffd")
             self._seg_page = seg_page
         return self._seg_page
 
@@ -196,6 +202,56 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             if cropbox.area() > 0:
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
+
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Image.Image | None:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return None
+
+        page_height = self.get_size().height
+        probe = bbox.to_top_left_origin(page_height)
+        resources = [
+            (
+                resource,
+                resource.rect.to_bounding_box().to_top_left_origin(page_height),
+            )
+            for resource in segmented_page.bitmap_resources
+        ]
+        candidates = [
+            (resource, resource_bbox)
+            for resource, resource_bbox in resources
+            if probe.intersection_over_self(resource_bbox) >= overlap_threshold
+            and resource_bbox.intersection_over_self(probe) >= overlap_threshold
+        ]
+        if len(candidates) != 1:
+            return None
+
+        resource, resource_bbox = candidates[0]
+        # Reject text and vector content painted over the candidate image.
+        if self._result.intersects_with(
+            bbox=resource.rect.to_bounding_box(),
+            chars=True,
+            shapes=True,
+            bitmaps=False,
+        ):
+            return None
+        for other_resource, other_bbox in resources:
+            if other_resource is resource:
+                continue
+            # A second overlapping bitmap makes the native image ambiguous.
+            if max(resource_bbox.l, other_bbox.l) < min(
+                resource_bbox.r, other_bbox.r
+            ) and max(resource_bbox.t, other_bbox.t) < min(
+                resource_bbox.b, other_bbox.b
+            ):
+                return None
+
+        image_ref = resource.image
+        if image_ref is None or image_ref.pil_image is None:
+            return None
+        return image_ref.pil_image.copy()
 
     def has_content_in(
         self,
@@ -357,10 +413,13 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             # whole document.
             if isinstance(self.path_or_stream, BytesIO):
                 self.path_or_stream.seek(0)
+            # The native binding only accepts int64 values, so clamp the range in
+            # case the limits were built without validation.
+            start, end = in_doc.limits.page_range
             self.doc_key = self.parser.load(
                 self.path_or_stream,
                 password=password,
-                page_range=in_doc.limits.page_range,
+                page_range=(min(start, sys.maxsize), min(end, sys.maxsize)),
             )
         except (RuntimeError, ValueError) as e:
             # The threaded parser surfaces native parse failures on unreadable bytes

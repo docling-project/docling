@@ -63,19 +63,63 @@ def test_chandra_simple_parsing():
 
 
 @pytest.mark.parametrize(
-    ("label", "html", "texts"),
+    ("label", "html", "texts", "markdown"),
     [
-        ("Text", "Hello<br/>World", ["Hello\nWorld"]),
-        # A break between runs goes to a plain run; outer breaks are dropped.
-        ("Text", "<br>Hello<br><b>World</b>", ["Hello\n", "World"]),
-        ("Text", "<b>Hello</b><br>World<br>", ["Hello", "\nWorld"]),
-        ("Text", "<b>Hello</b> <br> <b>World</b>", ["Hello", "World"]),
-        ("Section-Header", "<b>Hello</b><br>World", ["", "Hello", "World"]),
-        ("Section-Header", "<b>Hello</b> big<br>World", ["", "Hello", "big World"]),
+        ("Text", "Hello<br/>World", ["Hello\nWorld"], "Hello  \nWorld"),
+        # Runs keep their boundary whitespace; only the block's outer edges are trimmed.
+        (
+            "Text",
+            "<br>Hello<br><b>World</b>",
+            ["Hello\n", "World"],
+            "Hello  \n**World**",
+        ),
+        (
+            "Text",
+            "<b>Hello</b><br>World<br>",
+            ["Hello", "\nWorld"],
+            "**Hello**  \nWorld",
+        ),
+        (
+            "Text",
+            "<b>Hello</b> <br> <b>World</b>",
+            ["Hello", " \n", "World"],
+            "**Hello**   \n**World**",
+        ),
+        (
+            "Section-Header",
+            "<b>Hello</b><br>World",
+            ["", "Hello", " World"],
+            "## **Hello** World",
+        ),
+        (
+            "Section-Header",
+            "<b>Hello</b> big<br>World",
+            ["", "Hello", " big World"],
+            "## **Hello** big World",
+        ),
+        # A boundary space never goes inside a code or formula run.
+        (
+            "Text",
+            "Install with <code>pip install x</code> first.",
+            ["Install with ", "pip install x", " first."],
+            "Install with `pip install x` first.",
+        ),
+        (
+            "Text",
+            "A <b>bold </b> <i> it</i> <math>x</math> <math>y</math> end",
+            ["A ", "bold ", "it", " ", "x", " ", "y", " end"],
+            "A **bold** *it* $x$ $y$ end",
+        ),
+        (
+            "Text",
+            "Run<code> make </code>now, <b>then </b> <i> rest</i>",
+            ["Run ", "make", " now, ", "then ", "rest"],
+            "Run `make` now, **then** *rest*",
+        ),
     ],
 )
-def test_chandra_br_spacing(label: str, html: str, texts: list[str]):
-    """Test that br tags preserve spacing between text."""
+def test_chandra_br_spacing(label: str, html: str, texts: list[str], markdown: str):
+    """Test that br tags and run boundaries keep their whitespace."""
     content = f'<div data-bbox="0 0 1000 1000" data-label="{label}">{html}</div>'
 
     doc = parse_chandra_html(
@@ -86,6 +130,28 @@ def test_chandra_br_spacing(label: str, html: str, texts: list[str]):
     )
 
     assert [item.text for item in doc.texts] == texts
+    assert doc.export_to_markdown() == markdown
+
+
+@pytest.mark.parametrize("label", ["Text", "Form"])
+def test_chandra_br_ignores_source_indentation(label: str):
+    """Test that whitespace around br tags is HTML layout, not text."""
+    content = (
+        f'<div data-bbox="0 0 1000 1000" data-label="{label}"><p>Contact:  <br/>\n'
+        "    Phone: 555-0100<br/>\n"
+        "    Email: info@example.com</p></div>"
+    )
+
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=1000, height=1000),
+        page_no=1,
+        filename="br.html",
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "Contact:\nPhone: 555-0100\nEmail: info@example.com"
+    ]
 
 
 def test_chandra_multiblock_parsing():
@@ -318,6 +384,12 @@ def test_chandra_nested_lists_preserve_parent_order_and_markers():
     assert doc.validate_tree(doc.body)
 
 
+def test_chandra_list_item_text_keeps_boundary_before_inline_paragraph():
+    # The item text is one more run before its leading inline group (joined with "").
+    doc = _parse_fragment("<ul><li>Intro<p>more <b>x</b> y</p></li></ul>", "List-Group")
+    assert doc.export_to_markdown() == "- Intro more **x** y"
+
+
 def test_chandra_paragraph_list_and_form_controls():
     doc = _parse_fragment(
         "<p><input type='checkbox' checked>Yes</p><p><input type='radio'>No</p>",
@@ -341,6 +413,18 @@ def test_chandra_paragraph_list_and_form_controls():
     ]
     assert form.field_regions[0].prov
     assert all(not value.prov for value in values)
+
+
+@pytest.mark.parametrize("separator", ["", "\n", "\n    "])
+def test_chandra_paragraph_list_ignores_whitespace_between_items(separator: str):
+    """Test that whitespace between list paragraphs is HTML layout, not an item."""
+    doc = _parse_fragment(
+        separator + separator.join(["<p>One</p>", "<p>Two</p>"]) + separator,
+        "List-Group",
+    )
+
+    items = [t.text for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert items == ["One", "Two"]
 
 
 @pytest.mark.parametrize("kind", ["checkbox", "radio"])
@@ -405,7 +489,7 @@ def test_chandra_inline_math_formatting_and_code_whitespace():
         str(next(t.hyperlink for t in doc.texts if t.text == "link"))
         == "https://example.org/"
     )
-    assert doc.texts[-1].level == 3
+    assert doc.texts[-1].level == 2
 
 
 def test_chandra_nested_math_does_not_inherit_table_bbox():
@@ -552,11 +636,24 @@ def test_chandra_table_row_groups_and_optional_end_tags():
     assert table.table_cells[-2].start_col_offset_idx == 0
 
 
-def test_chandra_rejects_runaway_table_grids():
-    with pytest.raises(ValueError, match="exceeds 1000 grid cells"):
-        _parse_fragment(
-            "<table><tr><td>Header</td></tr><tr>" + "<td></td>" * 501 + "</tr></table>"
-        )
+def test_chandra_runaway_table_grid_keeps_the_page(caplog):
+    """Test that an oversized table grid is not built, without losing the page."""
+    doc = parse_chandra_html(
+        "<div data-label='Text' data-bbox='0 0 1000 100'><p>Before</p></div>"
+        "<div data-label='Table' data-bbox='0 100 1000 900'><table>"
+        "<caption>Cap</caption><tr><td>Header</td></tr><tr>"
+        + "<td></td>" * 501
+        + "</tr></table></div>",
+        Size(width=1000, height=1000),
+        page_no=3,
+    )
+
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (0, 0)
+    assert table.prov[0].bbox.t == 100
+    assert [c.resolve(doc).text for c in table.captions] == ["Cap"]
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.TEXT] == ["Before"]
+    assert "exceeds 1000 grid cells" in caplog.text
 
 
 def test_chandra_malformed_overlapping_spans_do_not_shift_the_grid():
@@ -597,10 +694,11 @@ def test_chandra_equation_block_with_prose_becomes_text():
         "1. Compute <math>\\int_0^1 x\\,dx</math> .", "Equation-Block"
     )
     assert [(t.label, t.text) for t in doc.texts] == [
-        (DocItemLabel.TEXT, "1. Compute"),
+        (DocItemLabel.TEXT, "1. Compute "),
         (DocItemLabel.FORMULA, "\\int_0^1 x\\,dx"),
-        (DocItemLabel.TEXT, "."),
+        (DocItemLabel.TEXT, " ."),
     ]
+    assert doc.export_to_markdown() == "1. Compute $\\int_0^1 x\\,dx$ ."
     dclg = doc.export_to_doclang()
     assert dclg.count("<formula>") == 1
     assert dclg.count("<location") == 4

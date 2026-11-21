@@ -1,30 +1,46 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import sys
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, AnyUrl, BaseModel, ConfigDict, Field
 from typing_extensions import deprecated
-
-try:
-    from transformers import StoppingCriteria
-except ImportError:
-    # `transformers` is optional for slim installs (e.g. `service-client`
-    # extra). The placeholder keeps the `custom_stopping_criteria` field
-    # annotation valid; pydantic accepts it via `arbitrary_types_allowed`.
-    class StoppingCriteria:  # type: ignore[no-redef]
-        pass
-
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper
 
 if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
+    from transformers import StoppingCriteria
 
     from docling.datamodel.base_models import Page
+
+
+def _validate_stopping_criterion(value: Any) -> Any:
+    """Accept a GenerationStopper or a Hugging Face StoppingCriteria instance.
+
+    `transformers` is optional, and importing it here costs every `import docling`
+    (it loads torch, or warns that torch is missing). An existing StoppingCriteria
+    instance means that its module is already loaded, so look it up without an import.
+    """
+    if isinstance(value, GenerationStopper):
+        return value
+    hf_module = sys.modules.get("transformers.generation.stopping_criteria")
+    if hf_module is not None and isinstance(value, hf_module.StoppingCriteria):
+        return value
+    raise ValueError(
+        "Expected a GenerationStopper or a transformers StoppingCriteria instance, "
+        f"got {type(value).__name__}"
+    )
+
+
+if TYPE_CHECKING:
+    _StoppingCriterion = Union[StoppingCriteria, GenerationStopper]
+else:
+    _StoppingCriterion = Annotated[Any, AfterValidator(_validate_stopping_criterion)]
 
 
 class BaseVlmOptions(BaseModel):
@@ -107,10 +123,13 @@ class ResponseFormat(str, Enum):
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
     UNLIMITED_OCR_MARKDOWN = "unlimited_ocr_markdown"
+    UNLIMITED_OCR2 = "unlimited_ocr2"
+    LIGHTONOCR_MARKDOWN = "lightonocr_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
     CHANDRA_HTML = "chandra_html"
+    SURYA_HTML = "surya_html"
     DOTS_JSON = "dots_json"
     NEMOTRON_PARSE_V2 = "nemotron_parse_v2"
     NEMOTRON_PARSE_V3_5 = "nemotron_parse_v3_5"
@@ -279,12 +298,16 @@ class InlineVlmOptions(BaseVlmOptions):
         ),
     ] = []
     custom_stopping_criteria: Annotated[
-        list[Union[StoppingCriteria, GenerationStopper]],
+        list[_StoppingCriterion],
         Field(
             description=(
                 "Custom stopping criteria objects for fine-grained control "
                 "over generation termination. Allows implementing complex "
-                "stopping logic beyond simple string matching."
+                "stopping logic beyond simple string matching. A "
+                "GenerationStopper declares with is_valid_end() whether its "
+                "stop marks the valid end of the output (stop reason "
+                "end_of_sequence) or cuts the output (stop reason "
+                "stop_sequence, the default)."
             )
         ),
     ] = []
@@ -442,7 +465,10 @@ class ApiVlmOptions(BaseVlmOptions):
             description=(
                 "Custom stopping criteria objects for client-side generation "
                 "control. Applied after receiving API responses for additional "
-                "filtering or termination logic."
+                "filtering or termination logic. A GenerationStopper declares "
+                "with is_valid_end() whether its stop marks the valid end of "
+                "the output (stop reason end_of_sequence) or cuts the output "
+                "(stop reason stop_sequence, the default)."
             )
         ),
     ] = []
