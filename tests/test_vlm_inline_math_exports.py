@@ -2,12 +2,42 @@
 # SPDX-License-Identifier: MIT
 
 import json
+from pathlib import PurePath
+from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc import CodeItem, FormulaItem, Size
 
+from docling.datamodel.base_models import Page, PagePredictions, VlmPrediction
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.dots_utils import parse_dots_json
 from docling.utils.nemotron_parse_utils import parse_nemotron_parse_v2
+
+
+def test_markdown_vlm_preserves_math() -> None:
+    pipeline = VlmPipeline.__new__(VlmPipeline)
+    pipeline.pipeline_options = VlmPipelineOptions(
+        vlm_options=VlmConvertOptions.from_preset("glm_ocr")
+    )
+    pipeline.force_backend_text = False
+    source = "Before $x_i$ after.\n\n\\[y_j = x_i^2\\]"
+    page = Page(
+        page_no=5,
+        size=Size(width=600, height=800),
+        predictions=PagePredictions(vlm_response=VlmPrediction(text=source)),
+    )
+    result = SimpleNamespace(
+        input=SimpleNamespace(file=PurePath("formulas.pdf")), errors=[]
+    )
+    page_document = pipeline._finalize_page_document(result, page)
+    document = pipeline._concatenate_page_documents([(5, page_document)])
+    formulas = [item for item in document.texts if isinstance(item, FormulaItem)]
+    assert [item.text for item in formulas] == ["x_i", "y_j = x_i^2"]
+    assert all(item.prov[0].page_no == 5 for item in formulas)
+    assert sorted(document.pages) == [5]
+    assert document.export_to_markdown() == "Before $x_i$ after.\n\n$$y_j = x_i^2$$"
+    assert not result.errors
 
 
 @pytest.mark.parametrize("parser", ["dots", "nemotron"])

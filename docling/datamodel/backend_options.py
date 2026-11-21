@@ -237,6 +237,14 @@ class MarkdownBackendOptions(TextBackendOptions):
     """Options specific to the Markdown backend."""
 
     kind: Literal["md"] = Field("md", exclude=True, repr=False)
+    enable_latex_math: bool = Field(
+        False,
+        description=(
+            "Preserve LaTeX math delimited by $, $$, \\(\\), or \\[\\] as formulas. "
+            "Disabled by default to retain ordinary Markdown escaping. "
+            "Enabled for Markdown VLM responses."
+        ),
+    )
     fetch_images: bool = Field(
         False,
         description=(

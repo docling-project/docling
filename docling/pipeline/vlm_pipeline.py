@@ -35,6 +35,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
+from docling.datamodel.backend_options import MarkdownBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -919,13 +920,21 @@ class VlmPipeline(PaginatedPipeline):
             text=f"{response.text}\n\n" if response is not None else ""
         )
         response_bytes = BytesIO(predicted_text.encode("utf8"))
+        backend_options = (
+            MarkdownBackendOptions(enable_latex_math=True)
+            if input_format == InputFormat.MD
+            else None
+        )
         out_doc = InputDocument(
             path_or_stream=response_bytes,
             filename=conv_res.input.file.name,
             format=input_format,
             backend=backend_class,
+            backend_options=backend_options,
         )
-        backend = backend_class(in_doc=out_doc, path_or_stream=response_bytes)
+        backend = backend_class(
+            in_doc=out_doc, path_or_stream=response_bytes, options=backend_options
+        )
         try:
             document = backend.convert()
         finally:
