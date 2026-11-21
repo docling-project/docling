@@ -217,6 +217,23 @@ def test_heading_keeps_only_formatting_of_all_its_text(
     assert (str(header.hyperlink) if header.hyperlink else None) == hyperlink
 
 
+@pytest.mark.parametrize("tag", ["s", "del", "strike"])
+def test_strikethrough_tags_set_strikethrough(tag: str):
+    html = f"<html><body><h1>T</h1><p>a <{tag}>old</{tag}> b</p></body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html.encode()),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    struck = [item for item in doc.texts if item.text.strip() == "old"]
+    assert len(struck) == 1
+    assert struck[0].formatting is not None
+    assert struck[0].formatting.strikethrough
+    assert "~~old~~" in doc.export_to_markdown()
+
+
 def test_caption_with_partial_link_has_no_hyperlink():
     html = (
         b"<html><body><figure><img src='a.png' alt=''>"
