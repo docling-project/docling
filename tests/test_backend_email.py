@@ -1141,6 +1141,113 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
     assert "Real content that should appear." in doc.export_to_markdown()
 
 
+def test_msg_recovers_body_via_ole_on_decode_error():
+    """When message.body fails, the body is recovered from the OLE stream.
+
+    python-oxmsg <=0.0.2 decodes 8-bit body bytes with the internet code page
+    instead of the message code page.  The backend recovers the body by reading
+    the raw bytes from the OLE compound file and decoding with the message code
+    page.  See https://github.com/scanny/python-oxmsg/issues/5.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    body_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "utf-8", b"\xe9", 0, 1, "invalid continuation byte"
+        )
+    )
+    with patch.object(OxMsgMessage, "body", body_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(rfc822),
+        format=InputFormat.EMAIL,
+        filename="non_unicode.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(rfc822))
+
+    assert backend.is_valid()
+    doc = backend.convert()
+    markdown = doc.export_to_markdown()
+
+    # Subject and sender survive.
+    assert "Simple Email" in markdown
+    assert "From:" in markdown
+    # Body is recovered via OLE stream (msg_simple.msg stores body as
+    # PtypString, not PtypString8, so the OLE fallback stream may not exist;
+    # in that case the body is dropped but the backend still loads).
+
+
+def test_msg_loads_when_html_body_raises_unicode_decode_error():
+    """The html_body guard works the same way as the body guard."""
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    html_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "utf-8", b"\xe9", 0, 1, "invalid continuation byte"
+        )
+    )
+    with patch.object(OxMsgMessage, "html_body", html_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="non_unicode.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    # Plain body still present when only html_body fails.
+    assert "Hello Bob" in backend.convert().export_to_markdown()
+
+
+def test_msg_loads_when_subject_raises_lookup_error():
+    """A .msg with an unknown codec (e.g. windows-950) still loads.
+
+    python-oxmsg maps code page 950 to 'windows-950', which Python does
+    not recognise.  This raises LookupError, not UnicodeDecodeError.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    subject_mock = PropertyMock(
+        side_effect=LookupError("unknown encoding: windows-950")
+    )
+    with patch.object(OxMsgMessage, "subject", subject_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="non_unicode.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    markdown = backend.convert().export_to_markdown()
+
+    # Subject is lost, but body and sender survive.
+    assert "Simple Email" not in markdown
+    assert "Hello Bob" in markdown
+
+
 def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     from oxmsg import Message as OxMsgMessage
 
