@@ -216,6 +216,33 @@ def test_malformed_json_chunks_are_skipped(api, endpoint, image):
     assert result.text == "good"
 
 
+def test_streamed_utf8_survives_a_content_type_without_charset(api, endpoint, image):
+    """Ollama and llama.cpp send a bare ``text/event-stream`` and raw UTF-8.
+
+    SSE is always UTF-8, but ``requests`` decodes a ``text/*`` body that names
+    no charset as ISO-8859-1. That garbles every non-ASCII character, and the
+    byte 0x85 inside characters such as Cyrillic U+0445 decodes to U+0085, which
+    splits the data line, so its whole chunk is dropped.
+    """
+    api.stream_chunks = ["Café “naïve” ", "東京 ", "хорошо"]
+    api.stream_content_type = "text/event-stream"
+    api.stream_ascii_json = False
+
+    result = api_image_request_streaming(image, "describe", endpoint, model="m")
+
+    assert result.text == "Café “naïve” 東京 хорошо"
+
+
+def test_a_unicode_line_separator_in_a_chunk_does_not_split_it(api, endpoint, image):
+    """SSE lines end only at CR, LF or CRLF; a raw U+2028 is part of the text."""
+    api.stream_chunks = ["line one\u2028line two"]
+    api.stream_ascii_json = False
+
+    result = api_image_request_streaming(image, "describe", endpoint, model="m")
+
+    assert result.text == "line one\u2028line two"
+
+
 def test_streamed_logprobs_are_collected_in_order(api, endpoint, image):
     api.stream_chunks = ["Hel", "lo"]
     api.stream_logprobs = [-0.25, -1.5]
