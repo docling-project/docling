@@ -1045,7 +1045,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             binary_hash=self.document_hash,
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+        self.convert_into(doc)
+        return doc
 
+    def convert_into(self, doc: DoclingDocument) -> None:
+        """Append the converted content to the body of `doc`."""
         if cast(HTMLBackendOptions, self.options).render_page:
             self._render_with_browser()
             if self._rendered_html:
@@ -1145,7 +1149,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.ctx = _Context()
         self._captioned_figure_ids.clear()
         self._walk(content, doc)
-        return doc
 
     @staticmethod
     def _is_header_in_cell_or_item(header: Tag) -> bool:
@@ -3523,7 +3526,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         Docling's HTML export writes the original marker of a list item this way,
         so reading it back keeps markers such as `3.` when the HTML is converted
-        again (the Markdown backend does this for files with HTML blocks).
+        again.
         """
         style = li.get("style")
         if not isinstance(style, str):
