@@ -253,16 +253,6 @@ class OcrLanguageResolver:
             if not bcp47_tobe:
                 raise OcrLanguageResolver._invalid(bcp47_tobe, "the tag is empty.")
 
-            if bcp47_tobe == OcrLanguageResolver._MULTIPLE:
-                # No BCP-47 tag names a multilingual recognizer
-                raise OcrLanguageResolver._invalid(
-                    bcp47_tobe,
-                    "it names 'multiple languages', which is not a language docling "
-                    "can recognize. An engine that ships a multilingual model names "
-                    "it with its own code, so write that code without the prefix "
-                    "(`multilingual` for nemotron-OCR).",
-                )
-
             try:
                 parsed = langcodes.Language.get(bcp47_tobe, normalize=True)
             except langcodes.LanguageTagError as err:
@@ -273,7 +263,19 @@ class OcrLanguageResolver:
                     bcp47_tobe, "the tag is not registered with IANA."
                 )
 
-            if bcp47_tobe == OcrLanguageResolver._NO_LINGUISTIC_CONTENT:
+            # `mul` and `zxx` name no recognizer whichever script or region they
+            # carry: the primary subtag decides, not the whole tag.
+            if parsed.language == OcrLanguageResolver._MULTIPLE:
+                # No BCP-47 tag names a multilingual recognizer
+                raise OcrLanguageResolver._invalid(
+                    bcp47_tobe,
+                    "it names 'multiple languages', which is not a language docling "
+                    "can recognize. An engine that ships a multilingual model names "
+                    "it with its own code, so write that code without the prefix "
+                    "(`multilingual` for nemotron-OCR).",
+                )
+
+            if parsed.language == OcrLanguageResolver._NO_LINGUISTIC_CONTENT:
                 # Docling has no recognizer for "no linguistic content"
                 raise OcrLanguageResolver._invalid(
                     bcp47_tobe,
