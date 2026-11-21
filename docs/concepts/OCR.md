@@ -193,6 +193,17 @@ Docling cannot detect a page whose text uses the right alphabet but the wrong le
 letters in the wrong order, for example `Cartifecita` instead of `Certificate`. Such pages keep
 their PDF text. To read every page with OCR, set `mode=OcrMode.FULL_PAGE` (`--ocr-mode full_page`).
 
+For Indian scripts (Bengali, Devanagari, Gujarati, Gurmukhi, Kannada, Malayalam, Odia, Sinhala,
+Tamil, Telugu), set `check_indic_scripts=True` as well. Broken text layers in these scripts often
+hold valid letters in the wrong places, for example from Microsoft Word's PDF export. The check
+flags a page when words start with a vowel sign or hold two vowel signs in a row, which real text
+does not do. It only judges pages with at least 20 words mostly in one of these scripts.
+Wrong-but-valid letters, such as one consonant in place of a vowel sign, stay undetected.
+
+```bash
+docling report.pdf --replace-broken-text-layer --ocr-option check_indic_scripts=true
+```
+
 
 ## RapidOCR
 
