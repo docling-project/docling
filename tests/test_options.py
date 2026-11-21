@@ -298,6 +298,28 @@ def test_invalid_input_unreachable_source():
     assert result.errors[0].category == FailureCategory.SOURCE_UNAVAILABLE
 
 
+@pytest.mark.parametrize("name", ["missing.pdf", "folder.pdf"])
+def test_unreadable_path_source_does_not_abort_batch(tmp_path: Path, name: str):
+    """A Path that cannot be read fails alone, the same as the same source as a str."""
+    from docling.datamodel.base_models import FailureCategory
+
+    (tmp_path / "folder.pdf").mkdir()
+    readable = tmp_path / "readable.md"
+    readable.write_text("# Title\n\nText.\n", encoding="utf-8")
+
+    results = list(
+        DocumentConverter().convert_all(
+            [tmp_path / name, readable], raises_on_error=False
+        )
+    )
+
+    assert [(r.input.file.name, r.status) for r in results] == [
+        (name, ConversionStatus.FAILURE),
+        ("readable.md", ConversionStatus.SUCCESS),
+    ]
+    assert results[0].errors[0].category == FailureCategory.SOURCE_UNAVAILABLE
+
+
 def test_convert_unsupported_format_with_exception_surfaces_error_details():
     from io import BytesIO
 
