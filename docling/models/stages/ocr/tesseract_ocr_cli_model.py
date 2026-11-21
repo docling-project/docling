@@ -272,9 +272,10 @@ class TesseractOcrCliModel(BaseOcrModel):
             "0",
             "-l",
             "osd",
-            self._sanitize_filename(ifilename),
-            "stdout",
         ]
+        if self._safe_tessdata_path is not None:
+            cmd.extend(["--tessdata-dir", self._safe_tessdata_path])
+        cmd.extend([self._sanitize_filename(ifilename), "stdout"])
         _log.info("command: {}".format(" ".join(cmd)))
         output = subprocess.run(
             cmd, capture_output=True, stdin=DEVNULL, check=True, shell=False
@@ -313,6 +314,8 @@ class TesseractOcrCliModel(BaseOcrModel):
         """
         # Get all languages
         cmd = [self._safe_tesseract_cmd, "--list-langs"]
+        if self._safe_tessdata_path is not None:
+            cmd.extend(["--tessdata-dir", self._safe_tessdata_path])
         _log.info("command: {}".format(" ".join(cmd)))
         output = subprocess.run(
             cmd, stdout=PIPE, stderr=DEVNULL, stdin=DEVNULL, check=True, shell=False
