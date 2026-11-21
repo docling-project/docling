@@ -2,7 +2,7 @@
 
 Heute lest ihr die letzte Ausgabe der Pendlerzeitung 20 Minuten. Damit geht ein Stück Mediengeschichte zu Ende. 26 Jahre lang hat euch diese Zeitung Gesprächsstoff geliefert. Auch wenn viele 20-MinutenFans uns schon lange ausschliesslich digital nutzen: Noch heute greifen mehr als 1,3 Millionen Leserinnen und Leser täglich in die blaue Box. Unser Blatt tritt als klare Nummer 1 der Schweizer Tageszeitungen ab. Danke für eure Treue!
 
-Der Dank gilt ebenso unserenWerbekunden, die 20 Minuten erst möglich gemacht haben. Mittlerweile hat sich der Werbemarkt radikal verändert - insbesondere seit der Pandemie. Aufgrund des Medienwandels fliessen Werbegelder vom Print hin zu vielfältigen Werbemöglichkeiten im digitalen Raum. Heute ist es nicht mehr möglich, die hohen Kosten für Druck und Verteilung unserer Gratiszeitung zu tragen. Darum konzentrieren wir uns jetzt auf unser digitales Angebot, das schweizweit täglich mehr als 4 Millionen Mal besucht wird - am häufigsten über die App. Damit ist 20 Minuten die mit Abstand reichweitenstärkste digitale Medienmarke in allen Landesteilen.
+Der Dank gilt ebenso unseren Werbekunden, die 20 Minuten erst möglich gemacht haben. Mittlerweile hat sich der Werbemarkt radikal verändert - insbesondere seit der Pandemie. Aufgrund des Medienwandels fliessen Werbegelder vom Print hin zu vielfältigen Werbemöglichkeiten im digitalen Raum. Heute ist es nicht mehr möglich, die hohen Kosten für Druck und Verteilung unserer Gratiszeitung zu tragen. Darum konzentrieren wir uns jetzt auf unser digitales Angebot, das schweizweit täglich mehr als 4 Millionen Mal besucht wird - am häufigsten über die App. Damit ist 20 Minuten die mit Abstand reichweitenstärkste digitale Medienmarke in allen Landesteilen.
 
 Am Anfang dieser Erfolgsgeschichte stand unsere einzigartige Zeitung. In dieser Ausgabe würdigen wir die Medienrevolution 20 Minuten nochmals. Viel Vergnügen mit dem Blick in die Vergangenheit. Und so weh der Abschied von der Zeitung tut: Wir freuen uns auf unsere gemeinsame Zukunft auf den digitalen Kanälen. In diesem Sinne: Jetzt App downloaden!
 
@@ -10,7 +10,7 @@ Am Anfang dieser Erfolgsgeschichte stand unsere einzigartige Zeitung. In dieser 
 
 DÉSIRÉE POMPER, CHEFREDAKTORIN BERNHARD BRECHBÜHL, CEO 20-MINUTEN-GRUPPE
 
-20-Minuten-CEO Bernhard Brechbühl und ChefredaktorinDésiréePomper. 20min
+20-Minuten-CEO Bernhard Brechbühl und Chefredaktorin Désirée Pomper. 20min
 
 <!-- image -->
 
@@ -22,7 +22,7 @@ ZÜRICH Verleger Pietro Supino über das Printende, zu Big Tech abfliessende Wer
 
 ## Pietro Supino, heute endet mit der letzten Printausgabe von 20 Minuten nach 26 Jahren eine Ära. Wie fühlt sich das an?
 
-Wehmütig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Zürich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ichwar skeptisch.Wer hätte gedacht, dass 20 Minuten die grösste und wichtigste nationale Medienmarke werden könnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tatsächlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Später wurde 20 Minuten auch online zur Nummer 1. Was ist das
+Wehmütig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Zürich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ich war skeptisch. Wer hätte gedacht, dass 20 Minuten die grösste und wichtigste nationale Medienmarke werden könnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tatsächlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Später wurde 20 Minuten auch online zur Nummer 1. Was ist das
 
 ## Erfolgsgeheimnis?
 
@@ -36,7 +36,7 @@ Wehmütig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierun
 
 20 Minuten ist ein anderes Modell als Abo-Zeitungen. Darum würde ich von 20 Minuten nicht ableiten, was für Abo-Zeitungen gilt. Aber der Trend, dass Print rückläufig ist und das Digitale wächst, gilt auch für Abo-Zeitungen.
 
-20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei über politische Themen. Unterschätzt man den Beitrag, den 20 Minuten zu einer informiertenGesellschaft leistet?
+20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei über politische Themen. Unterschätzt man den Beitrag, den 20 Minuten zu einer informierten Gesellschaft leistet?
 
 Man muss unterscheiden: unterschätzt vom Publikum oder in einer elitären Betrachtung? Vom Publikum sicher nicht, darum
 
@@ -62,15 +62,15 @@ wurde es auch so ein Erfolg. Aber in einer akademischen Betrachtung wahrscheinli
 
 «Subventionierte Angebote dienen meistens dem Strukturerhalt.»
 
-Werbegelder fliessen in ungebrochenem Tempo ins Silicon Valleyab. DerAbflussvon Schweizer Werbegeldern zu den Big-Tech-Firmen betrug 2024 2,2 Milliarden Franken. Noch 176 Millionen Franken flossen zu Schweizer Newsplattformen. Was passiert, wenn diese Entwicklung so weitergeht?
+Werbegelder fliessen in ungebrochenem Tempo ins Silicon Valley ab. Der Abfluss von Schweizer Werbegeldern zu den Big-Tech-Firmen betrug 2024 2,2 Milliarden Franken. Noch 176 Millionen Franken flossen zu Schweizer Newsplattformen. Was passiert, wenn diese Entwicklung so weitergeht?
 
-Auf demWerbemarkt stehen wir am stärksten unter Druck. Wir müssen imWettbewerb mit den globalen Angeboten andere, spezielle Qualitäten bieten und diese vermarkten. Darum haben wir bei 20 Minuten den Verkauf wieder zurück ins
+Auf dem Werbemarkt stehen wir am stärksten unter Druck. Wir müssen im Wettbewerb mit den globalen Angeboten andere, spezielle Qualitäten bieten und diese vermarkten. Darum haben wir bei 20 Minuten den Verkauf wieder zurück ins
 
 ## Unternehmen geholt.
 
 Liegt es nicht auch in der Verantwortung von Schweizer Unternehmen, einen Teil ihres Mediabudgets in unabhängige Schweizer Medien zu investieren?
 
-Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbemöglichkeiten zu bieten, sodass Unternehmen gerne bei unsWerbung platzieren. Das ist bei 20 Minuten der
+Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbemöglichkeiten zu bieten, sodass Unternehmen gerne bei uns Werbung platzieren. Das ist bei 20 Minuten der
 
 Fall und der Trend ist positiv.
 
@@ -80,9 +80,9 @@ Medien leben davon, dass sie einen Mehrwert für ihr Publikum schaffen. Für die
 
 Gebührenfinanzierte Onlineangebote konkurrenzieren primachen. Der Name sagt es. Es gibt keine Notwendigkeit und keine Legitimation, darüber hinaus mit Gebührengeld Onlineangebote zu schaffen. Das muss in der Konzession geregelt werden. Wenn die Politik es nicht tut und die SRG sich nicht selbst besinnt, riskiert sie, vor dem Volk zu verlieren.
 
-ImMärz stimmen wir über die SRG-Halbierungsinitiative ab.
+Im März stimmen wir über die SRG-Halbierungsinitiative ab.
 
-ChefredaktorinPompermitVerlegerSupino. 20min/TaddeoCerletti
+Chefredaktorin Pomper mit Verleger Supino. 20min/Taddeo Cerletti
 
 <!-- image -->
 
@@ -92,7 +92,7 @@ Das Schweizer Radio und Fernsehen SRF wurde geschaffen, um Radio und Fernsehen z
 
 ## Was ist Ihre Haltung dazu?
 
-Die Eidgenössische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegenüber. Aber sie muss sich auf Radio und Fernsehen beschränken. Natürlich auch über digitale Verbreitungskanäle. Dafür kann man das Gebührengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anlässe wie den Eurovision Song Contest, an den Kulturbereich und an Sportübertragungen wie das Lauberhornrennen. Wenn die SRG mit demGebührengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gefährdet, braucht sie die Mittel offenbar nicht für Radio und Fernsehen. Das finde ich schade.
+Die Eidgenössische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegenüber. Aber sie muss sich auf Radio und Fernsehen beschränken. Natürlich auch über digitale Verbreitungskanäle. Dafür kann man das Gebührengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anlässe wie den Eurovision Song Contest, an den Kulturbereich und an Sportübertragungen wie das Lauberhornrennen. Wenn die SRG mit dem Gebührengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gefährdet, braucht sie die Mittel offenbar nicht für Radio und Fernsehen. Das finde ich schade.
 
 ## Zum Schluss: Was wünschen Sie 20 Minuten und 20 Minutes für die Zukunft?
 
@@ -106,10 +106,10 @@ Co-Geschäftsleiterin Hug AG
 
 <!-- image -->
 
-«Ein persönlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin Dési Pomper imLive-Talk, mitten in der Gemüse- und Früchteabteilung unserer Filiale am Limmatplatz.» Mario Irminger, Migros-CEO ers st irée
+«Ein persönlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin Dési Pomper im Live-Talk, mitten in der Gemüse- und Früchteabteilung unserer Filiale am Limmatplatz.» Mario Irminger, Migros-CEO ers st irée
 
 <!-- image -->
 
-«Früher habe ich au weg insGymi imme die blaue Box gegriff Vater hat auch die e andere Zeitungsaus wahrt, bei der Mujin auf der Titelseite wa Etwa nach meinem WM-Titel vor drei Monaten in Tokio.» Ditaji Kambundji, LeichtathletikWeltmeisterin uf dem Schuler wieder in ffen. Mein eine oder sgabe aufbenga oder ich aren. m
+«Früher habe ich au weg ins Gymi imme die blaue Box gegriff Vater hat auch die e andere Zeitungsaus wahrt, bei der Mujin auf der Titelseite wa Etwa nach meinem WM-Titel vor drei Monaten in Tokio.» Ditaji Kambundji, LeichtathletikWeltmeisterin uf dem Schuler wieder in ffen. Mein eine oder sgabe aufbenga oder ich aren. m
 
 <!-- image -->

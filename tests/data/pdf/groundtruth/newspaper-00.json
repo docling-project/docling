@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "name": "newspaper-00",
   "origin": {
     "mimetype": "application/pdf",
@@ -414,7 +414,7 @@
           },
           "charspan": [
             0,
-            348
+            349
           ]
         },
         {
@@ -427,13 +427,13 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            349,
-            652
+            350,
+            653
           ]
         }
       ],
-      "orig": "Der Dank gilt ebenso unserenWerbekunden, die 20 Minuten erst m\u00f6glich gemacht haben. Mittlerweile hat sich der Werbemarkt radikal ver\u00e4ndert - insbesondere seit der Pandemie. Aufgrund des Medienwandels fliessen Werbegelder vom Print hin zu vielf\u00e4ltigen Werbem\u00f6glichkeiten im digitalen Raum. Heute ist es nicht mehr m\u00f6glich, die hohen Kosten f\u00fcr Druck und Verteilung unserer Gratiszeitung zu tragen. Darum konzentrieren wir uns jetzt auf unser digitales Angebot, das schweizweit t\u00e4glich mehr als 4 Millionen Mal besucht wird - am h\u00e4ufigsten \u00fcber die App. Damit ist 20 Minuten die mit Abstand reichweitenst\u00e4rkste digitale Medienmarke in allen Landesteilen.",
-      "text": "Der Dank gilt ebenso unserenWerbekunden, die 20 Minuten erst m\u00f6glich gemacht haben. Mittlerweile hat sich der Werbemarkt radikal ver\u00e4ndert - insbesondere seit der Pandemie. Aufgrund des Medienwandels fliessen Werbegelder vom Print hin zu vielf\u00e4ltigen Werbem\u00f6glichkeiten im digitalen Raum. Heute ist es nicht mehr m\u00f6glich, die hohen Kosten f\u00fcr Druck und Verteilung unserer Gratiszeitung zu tragen. Darum konzentrieren wir uns jetzt auf unser digitales Angebot, das schweizweit t\u00e4glich mehr als 4 Millionen Mal besucht wird - am h\u00e4ufigsten \u00fcber die App. Damit ist 20 Minuten die mit Abstand reichweitenst\u00e4rkste digitale Medienmarke in allen Landesteilen."
+      "orig": "Der Dank gilt ebenso unseren Werbekunden, die 20 Minuten erst m\u00f6glich gemacht haben. Mittlerweile hat sich der Werbemarkt radikal ver\u00e4ndert - insbesondere seit der Pandemie. Aufgrund des Medienwandels fliessen Werbegelder vom Print hin zu vielf\u00e4ltigen Werbem\u00f6glichkeiten im digitalen Raum. Heute ist es nicht mehr m\u00f6glich, die hohen Kosten f\u00fcr Druck und Verteilung unserer Gratiszeitung zu tragen. Darum konzentrieren wir uns jetzt auf unser digitales Angebot, das schweizweit t\u00e4glich mehr als 4 Millionen Mal besucht wird - am h\u00e4ufigsten \u00fcber die App. Damit ist 20 Minuten die mit Abstand reichweitenst\u00e4rkste digitale Medienmarke in allen Landesteilen.",
+      "text": "Der Dank gilt ebenso unseren Werbekunden, die 20 Minuten erst m\u00f6glich gemacht haben. Mittlerweile hat sich der Werbemarkt radikal ver\u00e4ndert - insbesondere seit der Pandemie. Aufgrund des Medienwandels fliessen Werbegelder vom Print hin zu vielf\u00e4ltigen Werbem\u00f6glichkeiten im digitalen Raum. Heute ist es nicht mehr m\u00f6glich, die hohen Kosten f\u00fcr Druck und Verteilung unserer Gratiszeitung zu tragen. Darum konzentrieren wir uns jetzt auf unser digitales Angebot, das schweizweit t\u00e4glich mehr als 4 Millionen Mal besucht wird - am h\u00e4ufigsten \u00fcber die App. Damit ist 20 Minuten die mit Abstand reichweitenst\u00e4rkste digitale Medienmarke in allen Landesteilen."
     },
     {
       "self_ref": "#/texts/8",
@@ -537,12 +537,12 @@
           },
           "charspan": [
             0,
-            72
+            74
           ]
         }
       ],
-      "orig": "20-Minuten-CEO Bernhard Brechb\u00fchl und ChefredaktorinD\u00e9sir\u00e9ePomper. 20min",
-      "text": "20-Minuten-CEO Bernhard Brechb\u00fchl und ChefredaktorinD\u00e9sir\u00e9ePomper. 20min"
+      "orig": "20-Minuten-CEO Bernhard Brechb\u00fchl und Chefredaktorin D\u00e9sir\u00e9e Pomper. 20min",
+      "text": "20-Minuten-CEO Bernhard Brechb\u00fchl und Chefredaktorin D\u00e9sir\u00e9e Pomper. 20min"
     },
     {
       "self_ref": "#/texts/12",
@@ -701,12 +701,12 @@
           },
           "charspan": [
             0,
-            454
+            456
           ]
         }
       ],
-      "orig": "Wehm\u00fctig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Z\u00fcrich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ichwar skeptisch.Wer h\u00e4tte gedacht, dass 20 Minuten die gr\u00f6sste und wichtigste nationale Medienmarke werden k\u00f6nnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tats\u00e4chlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Sp\u00e4ter wurde 20 Minuten auch online zur Nummer 1. Was ist das",
-      "text": "Wehm\u00fctig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Z\u00fcrich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ichwar skeptisch.Wer h\u00e4tte gedacht, dass 20 Minuten die gr\u00f6sste und wichtigste nationale Medienmarke werden k\u00f6nnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tats\u00e4chlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Sp\u00e4ter wurde 20 Minuten auch online zur Nummer 1. Was ist das"
+      "orig": "Wehm\u00fctig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Z\u00fcrich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ich war skeptisch. Wer h\u00e4tte gedacht, dass 20 Minuten die gr\u00f6sste und wichtigste nationale Medienmarke werden k\u00f6nnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tats\u00e4chlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Sp\u00e4ter wurde 20 Minuten auch online zur Nummer 1. Was ist das",
+      "text": "Wehm\u00fctig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Z\u00fcrich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ich war skeptisch. Wer h\u00e4tte gedacht, dass 20 Minuten die gr\u00f6sste und wichtigste nationale Medienmarke werden k\u00f6nnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tats\u00e4chlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Sp\u00e4ter wurde 20 Minuten auch online zur Nummer 1. Was ist das"
     },
     {
       "self_ref": "#/texts/18",
@@ -892,12 +892,12 @@
           },
           "charspan": [
             0,
-            237
+            238
           ]
         }
       ],
-      "orig": "20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei \u00fcber politische Themen. Untersch\u00e4tzt man den Beitrag, den 20 Minuten zu einer informiertenGesellschaft leistet?",
-      "text": "20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei \u00fcber politische Themen. Untersch\u00e4tzt man den Beitrag, den 20 Minuten zu einer informiertenGesellschaft leistet?"
+      "orig": "20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei \u00fcber politische Themen. Untersch\u00e4tzt man den Beitrag, den 20 Minuten zu einer informierten Gesellschaft leistet?",
+      "text": "20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei \u00fcber politische Themen. Untersch\u00e4tzt man den Beitrag, den 20 Minuten zu einer informierten Gesellschaft leistet?"
     },
     {
       "self_ref": "#/texts/25",
@@ -1136,12 +1136,12 @@
           },
           "charspan": [
             0,
-            278
+            281
           ]
         }
       ],
-      "orig": "Werbegelder fliessen in ungebrochenem Tempo ins Silicon Valleyab. DerAbflussvon Schweizer Werbegeldern zu den Big-Tech-Firmen betrug 2024 2,2 Milliarden Franken. Noch 176 Millionen Franken flossen zu Schweizer Newsplattformen. Was passiert, wenn diese Entwicklung so weitergeht?",
-      "text": "Werbegelder fliessen in ungebrochenem Tempo ins Silicon Valleyab. DerAbflussvon Schweizer Werbegeldern zu den Big-Tech-Firmen betrug 2024 2,2 Milliarden Franken. Noch 176 Millionen Franken flossen zu Schweizer Newsplattformen. Was passiert, wenn diese Entwicklung so weitergeht?"
+      "orig": "Werbegelder fliessen in ungebrochenem Tempo ins Silicon Valley ab. Der Abfluss von Schweizer Werbegeldern zu den Big-Tech-Firmen betrug 2024 2,2 Milliarden Franken. Noch 176 Millionen Franken flossen zu Schweizer Newsplattformen. Was passiert, wenn diese Entwicklung so weitergeht?",
+      "text": "Werbegelder fliessen in ungebrochenem Tempo ins Silicon Valley ab. Der Abfluss von Schweizer Werbegeldern zu den Big-Tech-Firmen betrug 2024 2,2 Milliarden Franken. Noch 176 Millionen Franken flossen zu Schweizer Newsplattformen. Was passiert, wenn diese Entwicklung so weitergeht?"
     },
     {
       "self_ref": "#/texts/34",
@@ -1163,12 +1163,12 @@
           },
           "charspan": [
             0,
-            224
+            226
           ]
         }
       ],
-      "orig": "Auf demWerbemarkt stehen wir am st\u00e4rksten unter Druck. Wir m\u00fcssen imWettbewerb mit den globalen Angeboten andere, spezielle Qualit\u00e4ten bieten und diese vermarkten. Darum haben wir bei 20 Minuten den Verkauf wieder zur\u00fcck ins",
-      "text": "Auf demWerbemarkt stehen wir am st\u00e4rksten unter Druck. Wir m\u00fcssen imWettbewerb mit den globalen Angeboten andere, spezielle Qualit\u00e4ten bieten und diese vermarkten. Darum haben wir bei 20 Minuten den Verkauf wieder zur\u00fcck ins"
+      "orig": "Auf dem Werbemarkt stehen wir am st\u00e4rksten unter Druck. Wir m\u00fcssen im Wettbewerb mit den globalen Angeboten andere, spezielle Qualit\u00e4ten bieten und diese vermarkten. Darum haben wir bei 20 Minuten den Verkauf wieder zur\u00fcck ins",
+      "text": "Auf dem Werbemarkt stehen wir am st\u00e4rksten unter Druck. Wir m\u00fcssen im Wettbewerb mit den globalen Angeboten andere, spezielle Qualit\u00e4ten bieten und diese vermarkten. Darum haben wir bei 20 Minuten den Verkauf wieder zur\u00fcck ins"
     },
     {
       "self_ref": "#/texts/35",
@@ -1245,12 +1245,12 @@
           },
           "charspan": [
             0,
-            201
+            202
           ]
         }
       ],
-      "orig": "Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbem\u00f6glichkeiten zu bieten, sodass Unternehmen gerne bei unsWerbung platzieren. Das ist bei 20 Minuten der",
-      "text": "Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbem\u00f6glichkeiten zu bieten, sodass Unternehmen gerne bei unsWerbung platzieren. Das ist bei 20 Minuten der"
+      "orig": "Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbem\u00f6glichkeiten zu bieten, sodass Unternehmen gerne bei uns Werbung platzieren. Das ist bei 20 Minuten der",
+      "text": "Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbem\u00f6glichkeiten zu bieten, sodass Unternehmen gerne bei uns Werbung platzieren. Das ist bei 20 Minuten der"
     },
     {
       "self_ref": "#/texts/38",
@@ -1408,12 +1408,12 @@
           },
           "charspan": [
             0,
-            57
+            58
           ]
         }
       ],
-      "orig": "ImM\u00e4rz stimmen wir \u00fcber die SRG-Halbierungsinitiative ab.",
-      "text": "ImM\u00e4rz stimmen wir \u00fcber die SRG-Halbierungsinitiative ab."
+      "orig": "Im M\u00e4rz stimmen wir \u00fcber die SRG-Halbierungsinitiative ab.",
+      "text": "Im M\u00e4rz stimmen wir \u00fcber die SRG-Halbierungsinitiative ab."
     },
     {
       "self_ref": "#/texts/43",
@@ -1435,12 +1435,12 @@
           },
           "charspan": [
             0,
-            59
+            64
           ]
         }
       ],
-      "orig": "ChefredaktorinPompermitVerlegerSupino. 20min/TaddeoCerletti",
-      "text": "ChefredaktorinPompermitVerlegerSupino. 20min/TaddeoCerletti"
+      "orig": "Chefredaktorin Pomper mit Verleger Supino. 20min/Taddeo Cerletti",
+      "text": "Chefredaktorin Pomper mit Verleger Supino. 20min/Taddeo Cerletti"
     },
     {
       "self_ref": "#/texts/44",
@@ -1559,12 +1559,12 @@
           },
           "charspan": [
             140,
-            782
+            783
           ]
         }
       ],
-      "orig": "Die Eidgen\u00f6ssische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegen\u00fcber. Aber sie muss sich auf Radio und Fernsehen beschr\u00e4nken. Nat\u00fcrlich auch \u00fcber digitale Verbreitungskan\u00e4le. Daf\u00fcr kann man das Geb\u00fchrengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anl\u00e4sse wie den Eurovision Song Contest, an den Kulturbereich und an Sport\u00fcbertragungen wie das Lauberhornrennen. Wenn die SRG mit demGeb\u00fchrengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gef\u00e4hrdet, braucht sie die Mittel offenbar nicht f\u00fcr Radio und Fernsehen. Das finde ich schade.",
-      "text": "Die Eidgen\u00f6ssische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegen\u00fcber. Aber sie muss sich auf Radio und Fernsehen beschr\u00e4nken. Nat\u00fcrlich auch \u00fcber digitale Verbreitungskan\u00e4le. Daf\u00fcr kann man das Geb\u00fchrengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anl\u00e4sse wie den Eurovision Song Contest, an den Kulturbereich und an Sport\u00fcbertragungen wie das Lauberhornrennen. Wenn die SRG mit demGeb\u00fchrengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gef\u00e4hrdet, braucht sie die Mittel offenbar nicht f\u00fcr Radio und Fernsehen. Das finde ich schade."
+      "orig": "Die Eidgen\u00f6ssische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegen\u00fcber. Aber sie muss sich auf Radio und Fernsehen beschr\u00e4nken. Nat\u00fcrlich auch \u00fcber digitale Verbreitungskan\u00e4le. Daf\u00fcr kann man das Geb\u00fchrengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anl\u00e4sse wie den Eurovision Song Contest, an den Kulturbereich und an Sport\u00fcbertragungen wie das Lauberhornrennen. Wenn die SRG mit dem Geb\u00fchrengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gef\u00e4hrdet, braucht sie die Mittel offenbar nicht f\u00fcr Radio und Fernsehen. Das finde ich schade.",
+      "text": "Die Eidgen\u00f6ssische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegen\u00fcber. Aber sie muss sich auf Radio und Fernsehen beschr\u00e4nken. Nat\u00fcrlich auch \u00fcber digitale Verbreitungskan\u00e4le. Daf\u00fcr kann man das Geb\u00fchrengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anl\u00e4sse wie den Eurovision Song Contest, an den Kulturbereich und an Sport\u00fcbertragungen wie das Lauberhornrennen. Wenn die SRG mit dem Geb\u00fchrengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gef\u00e4hrdet, braucht sie die Mittel offenbar nicht f\u00fcr Radio und Fernsehen. Das finde ich schade."
     },
     {
       "self_ref": "#/texts/48",
@@ -1722,12 +1722,12 @@
           },
           "charspan": [
             0,
-            266
+            267
           ]
         }
       ],
-      "orig": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper imLive-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e",
-      "text": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper imLive-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e"
+      "orig": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper im Live-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e",
+      "text": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper im Live-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e"
     },
     {
       "self_ref": "#/texts/54",
@@ -1749,12 +1749,12 @@
           },
           "charspan": [
             0,
-            319
+            320
           ]
         }
       ],
-      "orig": "\u00abFr\u00fcher habe ich au weg insGymi imme die blaue Box gegriff Vater hat auch die e andere Zeitungsaus wahrt, bei der Mujin auf der Titelseite wa Etwa nach meinem WM-Titel vor drei Monaten in Tokio.\u00bb Ditaji Kambundji, LeichtathletikWeltmeisterin uf dem Schuler wieder in ffen. Mein eine oder sgabe aufbenga oder ich aren. m",
-      "text": "\u00abFr\u00fcher habe ich au weg insGymi imme die blaue Box gegriff Vater hat auch die e andere Zeitungsaus wahrt, bei der Mujin auf der Titelseite wa Etwa nach meinem WM-Titel vor drei Monaten in Tokio.\u00bb Ditaji Kambundji, LeichtathletikWeltmeisterin uf dem Schuler wieder in ffen. Mein eine oder sgabe aufbenga oder ich aren. m"
+      "orig": "\u00abFr\u00fcher habe ich au weg ins Gymi imme die blaue Box gegriff Vater hat auch die e andere Zeitungsaus wahrt, bei der Mujin auf der Titelseite wa Etwa nach meinem WM-Titel vor drei Monaten in Tokio.\u00bb Ditaji Kambundji, LeichtathletikWeltmeisterin uf dem Schuler wieder in ffen. Mein eine oder sgabe aufbenga oder ich aren. m",
+      "text": "\u00abFr\u00fcher habe ich au weg ins Gymi imme die blaue Box gegriff Vater hat auch die e andere Zeitungsaus wahrt, bei der Mujin auf der Titelseite wa Etwa nach meinem WM-Titel vor drei Monaten in Tokio.\u00bb Ditaji Kambundji, LeichtathletikWeltmeisterin uf dem Schuler wieder in ffen. Mein eine oder sgabe aufbenga oder ich aren. m"
     }
   ],
   "pictures": [
