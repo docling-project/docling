@@ -2520,8 +2520,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             to `<w:iCs>` (complex-script italic), but the italic path has no
             XPath fallback so `<w:iCs>` is already ignored by construction.
             Unlike bold and italic, the remaining properties (`<w:strike>`,
-            `<w:u>`, `<w:vertAlign>`) have no complex-script counterparts in
-            OOXML and are read directly from the python-docx API.
+            `<w:dstrike>`, `<w:u>`, `<w:vertAlign>`) have no complex-script
+            counterparts in OOXML and are read directly from the python-docx API.
 
         Args:
             run: The python-docx run whose formatting should be extracted.
@@ -2569,7 +2569,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         is_bold = is_bold or False
 
         is_italic = run.italic or False
-        is_strikethrough = run.font.strike or False
+        # Word draws double strikethrough (`<w:dstrike>`) as struck-through text too.
+        is_strikethrough = bool(run.font.strike or run.font.double_strike)
         is_underline = bool(run.underline is not None and run.underline)
         is_sub = run.font.subscript or False
         is_sup = run.font.superscript or False
