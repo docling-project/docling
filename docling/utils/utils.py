@@ -21,21 +21,29 @@ def chunkify(iterator, chunk_size):
 
 
 def create_file_hash(path_or_stream: Union[BytesIO, Path]) -> str:
-    """Create a stable page_hash of the path_or_stream of a file"""
+    """Create a stable page_hash of the path_or_stream of a file."""
 
     block_size = 65536
     hasher = hashlib.sha256(usedforsecurity=False)
 
     def _hash_buf(binary_stream):
-        buf = binary_stream.read(block_size)  # read and page_hash in chunks
-        while len(buf) > 0:
-            hasher.update(buf)
+        original_position = binary_stream.tell()
+
+        try:
+            binary_stream.seek(0)
             buf = binary_stream.read(block_size)
 
+            while len(buf) > 0:
+                hasher.update(buf)
+                buf = binary_stream.read(block_size)
+
+        finally:
+            binary_stream.seek(original_position)
+
     if isinstance(path_or_stream, Path):
-        with path_or_stream.open("rb") as afile:
-            _hash_buf(afile)
-    elif isinstance(path_or_stream, BytesIO):
+        with path_or_stream.open("rb") as binary_stream:
+            _hash_buf(binary_stream)
+    else:
         _hash_buf(path_or_stream)
 
     return hasher.hexdigest()
