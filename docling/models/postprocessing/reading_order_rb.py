@@ -613,6 +613,7 @@ class ReadingOrderPredictor:
                 check_ind = ind
 
                 while True:
+                    current = sorted_elements[check_ind]
                     ind_p1 = check_ind + 1
                     while (
                         ind_p1 < len(sorted_elements)
@@ -624,13 +625,11 @@ class ReadingOrderPredictor:
                         ind_p1 < len(sorted_elements)
                         and sorted_elements[ind_p1].label == elem.label
                         and (
-                            elem.page_no != sorted_elements[ind_p1].page_no
-                            or elem.is_strictly_left_of(sorted_elements[ind_p1])
+                            current.page_no != sorted_elements[ind_p1].page_no
+                            or current.is_strictly_left_of(sorted_elements[ind_p1])
                         )
                     ):
-                        m1 = re.fullmatch(
-                            r".+([a-z,\-\u00AD])(\s*)", sorted_elements[check_ind].text
-                        )
+                        m1 = re.fullmatch(r".+([a-z,\-\u00AD])(\s*)", current.text)
                         m2 = re.fullmatch(
                             r"(\s*[a-zA-Z\u00C0-\u024F])(.+)",
                             sorted_elements[ind_p1].text,
