@@ -1762,3 +1762,19 @@ def test_image_caption_is_parented_under_its_picture():
 
     assert list_picture.parent.cref != "#/body"
     assert table_picture.parent.cref != "#/body"
+
+
+@pytest.mark.parametrize("bullet", ["1.", "-"])
+def test_list_item_holding_only_a_nested_list_is_kept(bullet: str):
+    """An item with no text of its own still holds its sub-list and its number."""
+    second = "2." if bullet == "1." else "-"
+    doc = _convert_markdown(
+        f"{bullet}\n   1. a\n   2. b\n{second} c\n", MarkdownBackendOptions()
+    )
+
+    outer, a, b, c = doc.texts
+    assert [t.text for t in doc.texts] == ["", "a", "b", "c"]
+    assert a.parent.resolve(doc).parent.resolve(doc) is outer
+    assert c.parent.cref == outer.parent.cref
+    if bullet == "1.":
+        assert (outer.marker, c.marker) == ("1.", "2.")

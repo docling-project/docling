@@ -899,8 +899,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         elif (
             isinstance(element, marko.block.ListItem)
             and len(element.children) > 0
-            and isinstance((child := element.children[0]), marko.block.Paragraph)
-            and len(child.children) > 0
+            and (
+                isinstance((child := element.children[0]), marko.block.List)
+                or (
+                    isinstance(child, marko.block.Paragraph) and len(child.children) > 0
+                )
+            )
         ):
             _log.debug(" - List item")
 
@@ -923,8 +927,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # Skip the inline_group path for items whose children are plain text
             # runs separated by line breaks; the pending-line-break merge paths
             # will produce a single list_item with the correct joined text.
-            if len(non_list_children) > 1 and not _only_plain_line_breaks(
-                non_list_children
+            # An item that starts with a sub-list has no text run to create it,
+            # so create it empty now and the sub-list goes under it.
+            if isinstance(child, marko.block.List) or (
+                len(non_list_children) > 1
+                and not _only_plain_line_breaks(non_list_children)
             ):  # inline group will be created further down
                 parent_ref: str | None = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
