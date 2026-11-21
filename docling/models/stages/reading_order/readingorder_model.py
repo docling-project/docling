@@ -1015,6 +1015,8 @@ class ReadingOrderModel:
                 hyperlink=element.hyperlink,
             )
             self.list_item_processor.process_list_item(new_item)
+            # Provenance indexes text, which no longer includes the list marker.
+            new_item.prov[0].charspan = (0, len(new_item.text))
 
         elif label == DocItemLabel.SECTION_HEADER:
             current_list = None
@@ -1059,14 +1061,6 @@ class ReadingOrderModel:
         assert merged_elem.label == new_item.label, (
             "Labels of merged elements must match."
         )
-        prov = ProvenanceItem(
-            page_no=merged_elem.page_no,
-            charspan=(
-                len(new_item.text) + 1,
-                len(new_item.text) + 1 + len(merged_elem.text),
-            ),
-            bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
-        )
         continuation_text = merged_elem.text.lstrip()
         token_before_hyphen = self._TOKEN_BEFORE_HYPHEN_RE.search(new_item.text)
         # A hyphen no hyphenation rule could have placed -- after a
@@ -1081,6 +1075,11 @@ class ReadingOrderModel:
             and continuation_text[0].islower()
         ):
             # A soft hyphen or hard-hyphenated lowercase continuation is a split word.
+            start = len(new_item.text) - 1
+            if new_item.prov:
+                # Only the final source span owns the removed trailing hyphen.
+                previous = new_item.prov[-1]
+                previous.charspan = (previous.charspan[0], start)
             new_item.text = new_item.text[:-1] + merged_elem.text
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
@@ -1089,8 +1088,14 @@ class ReadingOrderModel:
             new_item.text += continuation_text
             new_item.orig += continuation_text
         else:
+            start = len(new_item.text) + 1
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        prov = ProvenanceItem(
+            page_no=merged_elem.page_no,
+            charspan=(start, len(new_item.text)),
+            bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
+        )
         new_item.prov.append(prov)
 
         if new_item.hyperlink != merged_elem.hyperlink:
