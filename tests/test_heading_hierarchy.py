@@ -22,20 +22,28 @@ from docling_core.types.doc.page import (
     PdfTextCell,
     SegmentedPdfPage,
 )
+from pydantic import ValidationError
 
 from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
     _infer_from_numbering,
+    _match_score,
     _parse_marker,
     _strip_marker,
 )
+from docling.models.stages.heading_hierarchy.numbering_lexicon import KeywordLexicon
+
+
+def _lexicon(options: HeadingHierarchyOptions) -> KeywordLexicon:
+    return KeywordLexicon(options.numbering_keywords, options.numbering_number_words)
 
 
 def _levels(texts: list[str], **opts) -> dict[int, int]:
     headings = [SimpleNamespace(text=t) for t in texts]
-    return _infer_from_numbering(headings, HeadingHierarchyOptions(**opts))
+    options = HeadingHierarchyOptions(**opts)
+    return _infer_from_numbering(headings, options, _lexicon(options))
 
 
 def test_roman_sections_outrank_arabic_subsections():
@@ -311,6 +319,138 @@ def test_omitted_scheme_family_ranks_lowest():
         numbering_schemes=["arabic", "roman_u"],
     )
     assert levels == {0: 2, 1: 1}
+
+
+def test_keywords_of_another_language():
+    """Headings that differ only in the language of their keywords get the same levels."""
+    expected = {0: 1, 1: 2, 2: 2, 3: 1, 4: 2, 5: 2}
+    english = [
+        "Chapter 1",
+        "Article 1",
+        "Article 2",
+        "Chapter 2",
+        "Article 3",
+        "Article 4",
+    ]
+    polish = ["Rozdział 1", "Art. 1", "Art. 2", "Rozdział 2", "Art. 3", "Art. 4"]
+
+    assert _levels(english) == expected
+    assert _levels(polish) == {}
+    keywords = {"chapter": ["rozdział"], "article": ["art.", "artykuł"]}
+    assert _levels(polish, numbering_keywords=keywords) == expected
+
+    doc = DoclingDocument(name="t")
+    for text in polish:
+        doc.add_heading(text=text)
+    options = HeadingHierarchyOptions(use_style=False, numbering_keywords=keywords)
+    HeadingHierarchyModel(options=options).assign_heading_levels(doc)
+    assert [heading.level for heading in doc.texts] == [1, 2, 2, 1, 2, 2]
+
+
+def test_added_keywords_follow_the_rules_of_the_built_in_ones():
+    lexicon = _lexicon(
+        HeadingHierarchyOptions(
+            numbering_keywords={
+                "chapter": ["rozdział", "capítulo"],
+                "article": ["art.", "załącznik"],
+                "division": ["oddział"],
+            }
+        )
+    )
+
+    def family(text: str) -> str | None:
+        marker = _parse_marker(text, lexicon)
+        return None if marker is None else marker.family
+
+    assert family("ROZDZIAŁ I") == "chapter"
+    assert family("Capi\u0301tulo II") == "chapter"  # accent as a combining character
+    assert family("Art. 5") == "article"
+    assert family("Art.5") == "article"
+    assert family("Załącznik") == "article"
+    assert family("Załącznik: wzór wniosku") == "article"
+    assert family("Oddział 2") == "division"
+    assert family("Chapter 1") == "chapter"
+
+    # The added words are ordinary words too.
+    assert family("Art. Deco influences") is None
+    assert family("Rozdział ogólny") is None
+    assert family("Rozdziały 1") is None
+    # A word in "division" needs an enumerator, as "Division" does.
+    assert family("Oddział") is None
+    assert family("Oddział Kardiologii") is None
+
+    # Bookmark matching strips the added markers as well.
+    assert _strip_marker("Rozdział 1 Przepisy ogólne", lexicon) == "Przepisy ogólne"
+    assert _match_score("Rozdział 1 Cel", "Cel") < 0.8
+    assert _match_score("Rozdział 1 Cel", "Cel", lexicon) == pytest.approx(1.0)
+
+
+def test_new_keyword_families_take_their_place_from_numbering_schemes():
+    # A Polish code has more keyword levels than the five built-in families.
+    levels = _levels(
+        [
+            "Tytuł I",
+            "Dział I",
+            "Rozdział 1",
+            "Oddział 1",
+            "Art. 1",
+            "Art. 2",
+            "Dział II",
+        ],
+        numbering_keywords={
+            "tytul": ["tytuł"],
+            "dzial": ["dział"],
+            "rozdzial": ["rozdział"],
+            "oddzial": ["oddział"],
+            "article": ["art."],
+        },
+        numbering_schemes=["tytul", "dzial", "rozdzial", "oddzial", "article"],
+    )
+    assert levels == {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 5, 6: 2}
+
+
+def test_keyword_option_moves_a_built_in_word():
+    # In EU acts a Section holds Articles, but "section" is built into the article family.
+    texts = ["Section 1", "Article 1", "Article 2", "Section 2"]
+    assert _levels(texts) == {0: 1, 1: 1, 2: 1, 3: 1}
+
+    levels = _levels(
+        texts,
+        numbering_keywords={"section": ["section"]},
+        numbering_schemes=["part", "chapter", "section", "article"],
+    )
+    assert levels == {0: 1, 1: 2, 2: 2, 3: 1}
+
+
+def test_number_words_of_another_language():
+    texts = ["DZIAŁ PIERWSZY", "1. Zakres", "DZIAŁ DRUGI"]
+    keywords = {"part": ["dział"]}
+    assert _levels(texts, numbering_keywords=keywords) == {1: 1}
+
+    levels = _levels(
+        texts,
+        numbering_keywords=keywords,
+        numbering_number_words=["pierwszy", "drugi"],
+    )
+    assert levels == {0: 1, 1: 2, 2: 1}
+
+
+@pytest.mark.parametrize(
+    ("options", "message"),
+    [
+        ({"numbering_keywords": {"tytul": ["tytuł"]}}, "numbering_schemes"),
+        ({"numbering_keywords": {"arabic": ["nr"]}}, "numeral scheme"),
+        ({"numbering_keywords": {"chapter": [" "]}}, "empty word"),
+        (
+            {"numbering_keywords": {"part": ["Dział"], "chapter": ["DZIAŁ"]}},
+            "in the families",
+        ),
+        ({"numbering_number_words": [""]}, "empty word"),
+    ],
+)
+def test_keyword_options_are_validated(options, message):
+    with pytest.raises(ValidationError, match=message):
+        HeadingHierarchyOptions(**options)
 
 
 def test_max_level_clamping_on_document():

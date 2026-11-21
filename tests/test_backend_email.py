@@ -755,6 +755,45 @@ def test_email_adds_an_invitation_sent_inline_and_attached_once():
     )
 
 
+def test_email_leaves_out_an_event_description_that_repeats_the_body():
+    """Outlook copies the whole plain-text body into the event DESCRIPTION.
+
+    The body must not appear a second time under the event. The comparison
+    ignores the different line breaks of the two copies.
+    """
+    message = _invitation_email(
+        "Quarter planning",
+        "Hi team,\n\nLet us plan the quarter.\n\n"
+        "Microsoft Teams meeting\nJoin: https://teams.example.com/l/1\n",
+    )
+    message.add_alternative(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "METHOD:REQUEST\r\n"
+        "BEGIN:VEVENT\r\n"
+        "UID:quarter@example.com\r\n"
+        "DTSTART:20261120T090000Z\r\n"
+        "SUMMARY:Quarter planning\r\n"
+        "DESCRIPTION:Hi team,\\n\\nLet us plan the quarter.\\n\\nMicrosoft Teams\r\n"
+        "  meeting\\nJoin: https://teams.example.com/l/1\\n\\n\r\n"
+        "END:VEVENT\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+        params={"method": "REQUEST"},
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown.count("Let us plan the quarter.") == 1
+    assert markdown.endswith(
+        "Join: https://teams.example.com/l/1\n\n"
+        "### Calendar\n\n"
+        "Message type: Invitation\n\n"
+        "#### Quarter planning\n\n"
+        "Start: 2026-11-20 09:00 UTC"
+    )
+
+
 def test_email_reads_a_calendar_attachment_from_its_bytes():
     """An .ics attachment is found by its name and unfolded before decoding.
 

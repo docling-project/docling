@@ -25,7 +25,7 @@ T_Result = TypeVar("T_Result")
 
 @dataclass(frozen=True, slots=True)
 class _WorkerDone:
-    pass
+    error: Exception | None = None
 
 
 async def _run_bounded(
@@ -52,6 +52,7 @@ async def _run_bounded(
 
     async def worker() -> None:
         nonlocal next_idx
+        error: Exception | None = None
         try:
             while True:
                 async with index_lock:
@@ -70,8 +71,10 @@ async def _run_bounded(
                     await queue.put((idx, item, exc))
                 else:
                     await queue.put((idx, item, result))
+        except Exception as exc:
+            error = exc
         finally:
-            await queue.put(_WorkerDone())
+            await queue.put(_WorkerDone(error=error))
 
     tasks = [asyncio.create_task(worker()) for _ in range(worker_count)]
     finished_workers = 0
@@ -79,6 +82,8 @@ async def _run_bounded(
         while finished_workers < worker_count:
             queue_item = await queue.get()
             if isinstance(queue_item, _WorkerDone):
+                if queue_item.error is not None:
+                    raise queue_item.error
                 finished_workers += 1
                 continue
             yield queue_item

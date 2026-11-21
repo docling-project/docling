@@ -558,6 +558,58 @@ def test_patent_uspto_grant_v2_italic_h() -> None:
     assert "\U0001d455" not in claim
 
 
+_SPLIT_TEXT = "DOCLINGLA&#66;" * 50_000
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param(
+            '<!DOCTYPE us-patent-application SYSTEM "us-patent-application-v44-2014-04-03.dtd" [ ]>\n'
+            f"<us-patent-application><description><p>{_SPLIT_TEXT}</p></description>"
+            f"<claims><claim><claim-text>{_SPLIT_TEXT}</claim-text></claim></claims>"
+            "</us-patent-application>\n",
+            id="ice",
+        ),
+        pytest.param(
+            '<!DOCTYPE PATDOC SYSTEM "ST32-US-Grant-025xml.dtd" [ ]>\n'
+            "<PATDOC><SDODE><BTEXT><PARA><PTEXT>"
+            f"<PDAT>{_SPLIT_TEXT}</PDAT></PTEXT></PARA></BTEXT></SDODE>"
+            "<SDOCL><CL><CLM><PARA><PTEXT>"
+            f"<PDAT>{_SPLIT_TEXT}</PDAT></PTEXT></PARA></CLM></CL></SDOCL>"
+            "</PATDOC>\n",
+            id="grant_v2",
+        ),
+        pytest.param(
+            '<!DOCTYPE patent-application-publication SYSTEM "pap-v15-2001-01-31.dtd" [ ]>\n'
+            "<patent-application-publication><subdoc-description>"
+            f"<paragraph>{_SPLIT_TEXT}</paragraph></subdoc-description>"
+            "<subdoc-claims><claim>"
+            f"<claim-text>{_SPLIT_TEXT}</claim-text></claim></subdoc-claims>"
+            "</patent-application-publication>\n",
+            id="app_v1",
+        ),
+    ],
+)
+def test_patent_uspto_text_in_many_chunks(source: str) -> None:
+    """Text that the parser reports in many small chunks is kept complete.
+
+    Each character reference splits the text of an element into one more chunk.
+    The handlers appended each chunk to a string, which copied the full text each
+    time, so a large paragraph took quadratic time.
+    """
+    content = f'<?xml version="1.0" encoding="UTF-8"?>\n{source}'
+    converter = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+
+    doc = converter.convert(
+        DocumentStream(name="split.xml", stream=BytesIO(content.encode("utf-8")))
+    ).document
+
+    expected = "DOCLINGLAB" * 50_000
+    texts = [item.text for item in doc.texts if item.text.startswith("DOCLINGLAB")]
+    assert texts == [expected, expected]
+
+
 def test_patent_uspto_app_v1(patents):
     """Test applications Full Text Data/XML Version 1.x."""
 

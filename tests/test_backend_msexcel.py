@@ -1022,6 +1022,55 @@ def test_hyperlink_range_is_clipped_to_data(tmp_path: Path) -> None:
     assert (docs_table.num_rows, docs_table.num_cols) == (3, 2)
 
 
+def _number_sheet(rows: int, cols: int) -> Workbook:
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in range(1, rows + 1):
+        for col in range(1, cols + 1):
+            sheet.cell(row, col, row * col)
+    return workbook
+
+
+def test_row_merged_across_the_sheet_keeps_the_data_width(tmp_path: Path) -> None:
+    # The merged range covers all 16,384 columns of the row, but only 30
+    # columns hold data. The table used to have one cell for each column.
+    workbook = _number_sheet(50, 30)
+    sheet = workbook.active
+    sheet.merge_cells("A10:XFD10")
+    sheet["A10"] = "Section"
+    file_path = tmp_path / "merged-row.xlsx"
+    workbook.save(file_path)
+
+    doc = DocumentConverter().convert(file_path).document
+
+    [table] = [item.data for item in doc.tables]
+    assert (table.num_rows, table.num_cols) == (50, 30)
+    [section] = [cell for cell in table.table_cells if cell.text == "Section"]
+    assert (section.start_col_offset_idx, section.col_span) == (0, 30)
+
+
+def test_long_row_next_to_a_narrow_table_is_split(tmp_path: Path) -> None:
+    # A hyperlink range sets its target as the value of each empty cell, so
+    # the link row holds 10,000 values next to 600 rows of 30 values. One
+    # table for the bounding box of these cells would have 6,000,000 cells.
+    workbook = _number_sheet(600, 30)
+    sheet = workbook.active
+    for col in range(1, 31):
+        sheet.cell(10, col).value = None
+    sheet["A10"].hyperlink = "https://example.com/"
+    file_path = tmp_path / "hyperlink-row.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(file_path, 'ref="A10" r:id', 'ref="A10:NTP10" r:id')
+
+    doc = DocumentConverter().convert(file_path).document
+
+    tables = [item.data for item in doc.tables]
+    assert sum(table.num_rows * table.num_cols for table in tables) < 100_000
+    assert (tables[0].num_cols, tables[-1].num_cols) == (30, 30)
+    texts = [cell.text for table in tables for cell in table.table_cells]
+    assert sum(1 for text in texts if text) == 599 * 30 + 10_000
+
+
 def test_split_leading_section_label_helper() -> None:
     backend = object.__new__(MsExcelDocumentBackend)
 

@@ -80,7 +80,7 @@ from docling.utils.code_language import (
     detect_code_language,
     normalize_code_language,
 )
-from docling.utils.image_utils import check_image_pixels
+from docling.utils.image_utils import check_image_pixels, open_image
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -5627,7 +5627,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     return None
                 try:
-                    image = Image.open(BytesIO(image_data))
+                    image = open_image(image_data)
                     check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
                     # A camera stores an orientation tag rather than rotated
