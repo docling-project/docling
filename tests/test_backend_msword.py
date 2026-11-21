@@ -3248,6 +3248,76 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("filename", "image_path"),
+    [
+        ("word_sample.docx", ".//a:blip"),
+        ("docx_vml_images.docx", ".//w:pict"),
+        ("drawingml.docx", ".//c:chart"),
+    ],
+)
+@pytest.mark.parametrize("content", ["symbol", "equation"])
+def test_image_paragraph_keeps_symbols_and_equations(
+    tmp_path, filename, image_path, content
+):
+    """An image does not hide a paragraph whose text uses no ``w:t`` nodes."""
+    document = Document(Path("tests/data/docx/sources") / filename)
+    paragraph = next(p for p in document.paragraphs if p._p.xpath(image_path))
+    # Keep the existing writer's image markup, relationship and package parts.
+    for child in list(document.element.body):
+        if child is not paragraph._p and child.tag != qn("w:sectPr"):
+            document.element.body.remove(child)
+    for node in paragraph._p.xpath(".//w:sym | .//m:oMath"):
+        node.getparent().remove(node)
+    if content == "symbol":
+        _append_sym(paragraph, "Symbol", "F061")
+        expected = (DocItemLabel.TEXT, "\N{GREEK SMALL LETTER ALPHA}")
+    else:
+        paragraph._p.append(
+            parse_xml(
+                '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+                "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+            )
+        )
+        expected = (DocItemLabel.FORMULA, "x=1")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert doc.pictures
+    assert [(item.label, item.text) for item in doc.texts].count(expected) == 1
+    text = next(item for item in doc.texts if (item.label, item.text) == expected)
+    assert text.parent.resolve(doc) is doc.body
+    items = [item for item, _ in doc.iterate_items()]
+    assert items.index(doc.pictures[-1]) < items.index(text)
+    assert expected[1] in doc.export_to_markdown()
+
+
+def test_image_paragraph_does_not_repeat_textbox_equation(tmp_path):
+    """A text box's equation belongs to its own paragraph, not its anchor."""
+    document = Document("tests/data/docx/sources/word_sample.docx")
+    paragraph = next(p for p in document.paragraphs if p._p.xpath(".//a:blip"))
+    for child in list(document.element.body):
+        if child is not paragraph._p and child.tag != qn("w:sectPr"):
+            document.element.body.remove(child)
+    paragraph._p.append(
+        parse_xml(
+            '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            'xmlns:v="urn:schemas-microsoft-com:vml" '
+            'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+            '<w:pict><v:shape id="TextBox1" style="width:144pt;height:72pt">'
+            "<v:textbox><w:txbxContent><w:p>"
+            "<m:oMath><m:r><m:t>x=1</m:t></m:r></m:oMath>"
+            "</w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r>"
+        )
+    )
+
+    doc = _convert_built(document, tmp_path)
+
+    formulas = [item for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert [item.text for item in formulas] == ["x=1"]
+    assert formulas[0].parent.resolve(doc) is not doc.body
+
+
+@pytest.mark.parametrize(
     ("tag", "expected"),
     [
         ("d", r"\left(x\right)"),
