@@ -4,6 +4,8 @@
 """Tests for api_image_request module."""
 
 import json
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,6 +13,9 @@ from PIL import Image
 from requests.adapters import HTTPAdapter
 
 from docling.datamodel.base_models import VlmStopReason
+from docling.datamodel.pipeline_options import PictureDescriptionApiOptions
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     _make_retry_session,
@@ -527,3 +532,121 @@ class TestApiImageRequest:
         assert response.text == "done"
         assert response.num_tokens == 3
         assert response.usage == {"total_tokens": 3}
+
+
+def _flaky_server(failures: int) -> tuple[ThreadingHTTPServer, list[int]]:
+    """Serve chat completions that fail with HTTP 503 ``failures`` times first."""
+    statuses: list[int] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            if len(statuses) < failures:
+                statuses.append(503)
+                self.send_response(503)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            statuses.append(200)
+            body = json.dumps(
+                {
+                    "id": "test-id",
+                    "created": 1234567890,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {"role": "assistant", "content": "Recovered"},
+                            "finish_reason": "stop",
+                        }
+                    ],
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, statuses
+
+
+@pytest.mark.parametrize(
+    ("max_retries", "expected_statuses", "expected_text"),
+    [(0, [503], ""), (1, [503, 200], "Recovered")],
+)
+def test_api_image_request_retries_up_to_max_retries(
+    max_retries, expected_statuses, expected_text
+):
+    server, statuses = _flaky_server(failures=1)
+    try:
+        response = api_image_request(
+            image=Image.new("RGB", (8, 8), color="red"),
+            prompt="Describe the image",
+            url=f"http://127.0.0.1:{server.server_port}/v1/chat/completions",
+            timeout=5,
+            max_retries=max_retries,
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert statuses == expected_statuses
+    assert response.text == expected_text
+    if expected_text:
+        assert response.error is None
+    else:
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+
+
+@pytest.mark.parametrize("total", [0, 2])
+def test_retry_session_uses_the_given_retry_count(total):
+    with _make_retry_session(total) as session:
+        retry_config = session.get_adapter("https://example.com").max_retries
+        assert retry_config.total == total
+        assert retry_config.connect == total
+        assert retry_config.status == total
+        assert retry_config.read == 0
+
+
+@patch("docling.utils.api_image_request._make_retry_session")
+def test_streaming_request_passes_max_retries_to_the_session(mock_session_factory):
+    mock_session_factory.return_value.__enter__.return_value.post.side_effect = (
+        ConnectionError("unreachable")
+    )
+
+    api_image_request_streaming(
+        image=Image.new("RGB", (8, 8), color="red"),
+        prompt="Describe the image",
+        url="http://test.api/v1/chat/completions",
+        max_retries=2,
+    )
+
+    mock_session_factory.assert_called_once_with(2)
+
+
+@pytest.mark.parametrize(
+    "options_cls, extra",
+    [
+        (PictureDescriptionApiOptions, {}),
+        (ApiVlmOptions, {"prompt": "Convert this page", "response_format": "markdown"}),
+        (
+            ApiVlmEngineOptions,
+            {
+                "engine_type": "api_openai",
+                "url": "http://localhost:8000/v1/chat/completions",
+            },
+        ),
+    ],
+)
+def test_max_retries_option_defaults_to_five_and_rejects_negative_values(
+    options_cls, extra
+):
+    assert options_cls(**extra).max_retries == 5
+    assert options_cls(**extra, max_retries=0).max_retries == 0
+    with pytest.raises(ValueError):
+        options_cls(**extra, max_retries=-1)

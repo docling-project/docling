@@ -158,6 +158,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
                     generation_stoppers=instantiated_stoppers,
+                    max_retries=self.vlm_options.max_retries,
                     **self.params,
                 )
                 page_tags = api_response.text
@@ -172,6 +173,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     url=self.vlm_options.url,
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
+                    max_retries=self.vlm_options.max_retries,
                     **self.params,
                 )
                 page_tags = api_response.text

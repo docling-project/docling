@@ -170,6 +170,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     headers=self.options.headers,
                     generation_stoppers=custom_stoppers,
                     timeout=self.options.timeout,
+                    max_retries=self.options.max_retries,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -184,6 +185,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     prompt=input_data.prompt,
                     headers=self.options.headers,
                     timeout=self.options.timeout,
+                    max_retries=self.options.max_retries,
                     **api_params,
                 )
                 generated_text = api_response.text
