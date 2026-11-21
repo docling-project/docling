@@ -24,6 +24,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.settings import settings
 from docling.exceptions import OcrLanguageNotSupportedError, SecurityError
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.utils.model_manifest import record_url_file
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.ocr_language import (
     OcrLanguage,
@@ -290,8 +291,11 @@ class EasyOcrModel(BaseOcrModel):
                 download_list.append(recognition_models_by_name[model_name])
 
         # Download models
+        # The URL serves a zip; the extracted model file is recorded.
         for model_details in download_list:
-            if (local_dir / model_details["filename"]).exists() and not force:
+            model_path = local_dir / model_details["filename"]
+            if model_path.exists() and not force:
+                record_url_file(model_details["url"], model_path)
                 continue
             buf = download_url_with_progress(model_details["url"], progress=progress)
             with zipfile.ZipFile(buf, "r") as zip_ref:
@@ -302,6 +306,7 @@ class EasyOcrModel(BaseOcrModel):
                     if not member_path.startswith(os.path.realpath(local_dir) + os.sep):
                         raise SecurityError(f"ZIP slip attempt: {member.filename}")
                     zip_ref.extract(member, local_dir)
+            record_url_file(model_details["url"], model_path)
 
         return local_dir
 

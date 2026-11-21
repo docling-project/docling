@@ -27,6 +27,7 @@ from docling.exceptions import (
     RapidOcrModelSizeNotSupportedError,
 )
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.utils.model_manifest import record_url_file
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.ocr_language import (
     OcrLanguage,
@@ -766,12 +767,14 @@ class RapidOcrModel(BaseOcrModel):
         ).values():
             for dest, url in artifact.files.items():
                 if dest.exists() and not force:
+                    record_url_file(url, dest)
                     continue
                 # paddle checkpoints are directory bundles, so dest may be nested.
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 buf = download_url_with_progress(url, progress=progress)
                 with dest.open("wb") as fw:
                     fw.write(buf.read())
+                record_url_file(url, dest)
         return local_dir
 
     def __call__(

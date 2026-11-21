@@ -8,6 +8,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from docling.models.utils.model_manifest import current_record, record_hf_snapshot
+
 _log = logging.getLogger(__name__)
 
 # A fetch faster than this was served from the local cache. Downloading even a
@@ -109,6 +111,21 @@ def download_hf_model(
     if not progress:
         disable_progress_bars()
 
+    # For models.cdx.json: download the resolved commit, and record only its
+    # files, not ones an earlier download left in local_dir.
+    files: Optional[list[str]] = None
+    if current_record() is not None:
+        from huggingface_hub import HfApi
+
+        info = HfApi().model_info(repo_id, revision=revision)
+        if not info.sha or info.siblings is None:
+            raise ValueError(
+                f"The Hugging Face Hub returned no commit or file list for "
+                f"{repo_id} at revision {revision or 'main'}"
+            )
+        revision = info.sha
+        files = [sibling.rfilename for sibling in info.siblings]
+
     # Progress bars are off by default, so without these lines a multi-gigabyte
     # download is indistinguishable from a hang.
     _log.info("Fetching model %s (revision: %s)...", repo_id, revision or "main")
@@ -128,6 +145,8 @@ def download_hf_model(
             "Downloaded model %s to %s in %.2f sec.", repo_id, download_path, elapsed
         )
 
+    if files is not None and revision is not None:
+        record_hf_snapshot(repo_id, revision, Path(download_path), files)
     return Path(download_path)
 
 

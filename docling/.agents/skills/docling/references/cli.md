@@ -226,6 +226,10 @@ docling-tools models download --output-dir /models   # fetch model artifacts
 docling report.pdf --artifacts-path /models --output /tmp/
 ```
 
+The download also writes `/models/models.cdx.json`, a CycloneDX SBOM of the
+models with their Hugging Face commit or source URL and SHA-256 digests;
+`--no-manifest` skips it.
+
 For native Whisper ASR, prefetch a selected OpenAI-format checkpoint. Plain
 `--all` excludes ASR models; `--all --asr` includes all native Whisper sizes and
 the Distil-Whisper presets. WhisperS2T presets are prefetched only by name; each

@@ -28,6 +28,7 @@ except ImportError as e:
     print("     pip install typer rich\n", file=sys.stderr)
     sys.exit(1)
 
+import docling
 from docling.datamodel.asr_model_specs import (
     _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
     _WHISPER_S2T_PRESETS,
@@ -46,6 +47,7 @@ from docling.models.stages.ocr.rapid_ocr_model import (
     _validate_rapidocr_model_size,
 )
 from docling.models.utils.hf_model_download import download_hf_model
+from docling.models.utils.model_manifest import record_downloads, write_cyclonedx
 from docling.utils.model_downloader import _DEFAULT_RAPIDOCR_MODELS, download_models
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -238,6 +240,17 @@ def download(
             ),
         ),
     ] = "small",
+    manifest: Annotated[
+        bool,
+        typer.Option(
+            "--manifest/--no-manifest",
+            help=(
+                "Write models.cdx.json, a CycloneDX SBOM of the downloaded "
+                "models (repository and commit or URL, SHA-256 of every file), "
+                "into the output directory."
+            ),
+        ),
+    ] = True,
 ):
     if models and all:
         raise typer.BadParameter(
@@ -316,47 +329,59 @@ def download(
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-model-size"
             ) from error
-    output_dir = download_models(
-        output_dir=output_dir,
-        force=force,
-        progress=(not quiet),
-        with_layout=_AvailableModels.LAYOUT in to_download,
-        with_tableformer=_AvailableModels.TABLEFORMER in to_download,
-        with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
-        with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
-        with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
-        with_smolvlm=_AvailableModels.SMOLVLM in to_download,
-        with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
-        with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
-        with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
-        with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
-        with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
-        with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
-        in to_download,
-        with_granite_chart_extraction_v3_3=_AvailableModels.GRANITE_CHART_EXTRACTION_V3_3
-        in to_download,
-        with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
-        in to_download,
-        with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
-        rapidocr_models=rapidocr_backend_lang,
-        rapidocr_model_size=rapidocr_model_size,
-        with_easyocr=_AvailableModels.EASYOCR in to_download,
-        easyocr_languages=easyocr_lang,
-        with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
-        whisper_models=[
-            _WHISPER_MODELS[model] for model in to_download if model in _WHISPER_MODELS
-        ],
-        whisper_distil_models=[
-            _WHISPER_DISTIL_MODELS[model]
-            for model in to_download
-            if model in _WHISPER_DISTIL_MODELS
-        ],
-        whisper_s2t_models=[
-            _WHISPER_S2T_MODELS[model]
-            for model in to_download
-            if model in _WHISPER_S2T_MODELS
-        ],
-    )
+    with record_downloads() as record:
+        output_dir = download_models(
+            output_dir=output_dir,
+            force=force,
+            progress=(not quiet),
+            with_layout=_AvailableModels.LAYOUT in to_download,
+            with_tableformer=_AvailableModels.TABLEFORMER in to_download,
+            with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
+            with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
+            with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
+            with_smolvlm=_AvailableModels.SMOLVLM in to_download,
+            with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
+            with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
+            with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
+            with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
+            with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
+            with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
+            in to_download,
+            with_granite_chart_extraction_v3_3=_AvailableModels.GRANITE_CHART_EXTRACTION_V3_3
+            in to_download,
+            with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
+            in to_download,
+            with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
+            rapidocr_models=rapidocr_backend_lang,
+            rapidocr_model_size=rapidocr_model_size,
+            with_easyocr=_AvailableModels.EASYOCR in to_download,
+            easyocr_languages=easyocr_lang,
+            with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
+            whisper_models=[
+                _WHISPER_MODELS[model]
+                for model in to_download
+                if model in _WHISPER_MODELS
+            ],
+            whisper_distil_models=[
+                _WHISPER_DISTIL_MODELS[model]
+                for model in to_download
+                if model in _WHISPER_DISTIL_MODELS
+            ],
+            whisper_s2t_models=[
+                _WHISPER_S2T_MODELS[model]
+                for model in to_download
+                if model in _WHISPER_S2T_MODELS
+            ],
+        )
+    if manifest:
+        if any(model in _WHISPER_S2T_MODELS for model in to_download):
+            err_console.print(
+                "WhisperS2T models are fetched by whisper-s2t itself and are "
+                "not listed in models.cdx.json."
+            )
+        manifest_path = write_cyclonedx(record, output_dir, docling.__version__)
+        if not quiet:
+            typer.secho(f"Listed the models in {manifest_path}.")
 
     if quiet:
         typer.echo(output_dir)
