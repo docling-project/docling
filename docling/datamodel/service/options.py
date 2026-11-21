@@ -58,6 +58,7 @@ class PictureDescriptionLocal(BaseModel):
             examples=[
                 "HuggingFaceTB/SmolVLM-256M-Instruct",
                 "ibm-granite/granite-vision-3.3-2b",
+                "ibm-granite/granite-vision-4.1-4b",
             ],
         ),
     ]
@@ -135,6 +136,10 @@ class PictureDescriptionApi(BaseModel):
                 },
                 {  # on vllm
                     "model": "ibm-granite/granite-vision-3.3-2b",
+                    "max_completion_tokens": 200,
+                },
+                {  # on vllm
+                    "model": "ibm-granite/granite-vision-4.1-4b",
                     "max_completion_tokens": 200,
                 },
                 {  # on ollama
@@ -263,6 +268,10 @@ class VlmModelApi(BaseModel):
                 },
                 {  # on vllm
                     "model": "ibm-granite/granite-vision-3.3-2b",
+                    "max_completion_tokens": 800,
+                },
+                {  # on vllm
+                    "model": "ibm-granite/granite-vision-4.1-4b",
                     "max_completion_tokens": 800,
                 },
             ],

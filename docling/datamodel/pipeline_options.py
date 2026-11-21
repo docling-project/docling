@@ -1026,6 +1026,7 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
             examples=[
                 "HuggingFaceTB/SmolVLM-256M-Instruct",
                 "ibm-granite/granite-vision-3.3-2b",
+                "ibm-granite/granite-vision-4.1-4b",
             ],
         ),
     ]
@@ -1131,17 +1132,6 @@ smolvlm_picture_description = PictureDescriptionVlmOptions(
 
 Uses the HuggingFace SmolVLM-256M-Instruct model, a lightweight vision-language model
 optimized for generating natural language descriptions of images.
-"""
-
-# GraniteVision
-granite_picture_description = PictureDescriptionVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.3-2b",
-    prompt="What is shown in this image?",
-)
-"""Pre-configured Granite Vision model options for picture description.
-
-Uses IBM's Granite Vision 3.3-2B model with a custom prompt for generating
-detailed descriptions of image content.
 """
 
 
@@ -1336,6 +1326,21 @@ _default_chart_extraction_options = ChartExtractionVlmEngineOptions.from_preset(
     "granite_vision_v4"
 )
 """Default chart extraction options using granite_vision_v4 with automatic runtime selection."""
+
+# =============================================================================
+# PUBLIC PRESET-BASED ALIASES
+# =============================================================================
+
+# GraniteVision (default: 4.1-4B) — preset path pins the revision and sets
+# trust_remote_code=True, safe on all supported transformers versions (>=4.42).
+granite_picture_description = PictureDescriptionVlmEngineOptions.from_preset(
+    "granite_vision"
+)
+"""Pre-configured Granite Vision options for picture description.
+
+Uses the granite_vision preset (4.1-4B) with pinned revision and trust_remote_code=True.
+Safe on all supported transformers versions (>=4.42).
+"""
 
 
 # Define an enum for the backend options
