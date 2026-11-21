@@ -6,13 +6,22 @@ from typing import Any
 import pytest
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ApiImageRequestResult, VlmStopReason
-from docling.datamodel.stage_model_specs import EngineModelConfig
+from docling.datamodel.pipeline_options import (
+    PictureDescriptionVlmEngineOptions,
+    VlmConvertOptions,
+)
+from docling.datamodel.stage_model_specs import (
+    GRANITE_VISION_MODEL_SPEC_BASE,
+    EngineModelConfig,
+)
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineInput, VlmEngineType
+from docling.models.inference_engines.vlm.factory import create_vlm_engine
 
 _API_URL = "http://localhost:11434/v1/chat/completions"
 
@@ -217,3 +226,50 @@ def test_api_vlm_engine_forwards_per_stage_sampling(
     assert captured_api_call["repetition_penalty"] == expected_penalty
     assert captured_api_call["top_k"] == 50
     assert captured_api_call["skip_special_tokens"] is False
+
+
+# -- the Granite Vision preset must send the name Ollama publishes -----------
+#
+# Ollama serves the model as ``ibm/granite3.3-vision:2b``; the bare
+# ``granite3.3-vision:2b`` is not in its library and answers with HTTP 404.
+
+
+@pytest.mark.parametrize(
+    "options_cls", [VlmConvertOptions, PictureDescriptionVlmEngineOptions]
+)
+def test_granite_vision_presets_resolve_to_the_ollama_registry_model_name(
+    options_cls,
+) -> None:
+    options = options_cls.from_preset(
+        "granite_vision",
+        engine_options=ApiVlmEngineOptions(engine_type=VlmEngineType.API_OLLAMA),
+    )
+
+    ollama_params = options.model_spec.get_api_params(VlmEngineType.API_OLLAMA)
+    assert ollama_params["model"] == "ibm/granite3.3-vision:2b"
+
+
+def test_granite_vision_ollama_request_carries_the_namespaced_model_name(
+    captured_api_call,
+) -> None:
+    options = PictureDescriptionVlmEngineOptions.from_preset(
+        "granite_vision",
+        engine_options=ApiVlmEngineOptions(engine_type=VlmEngineType.API_OLLAMA),
+    )
+    engine = create_vlm_engine(
+        options=options.engine_options,
+        model_spec=options.model_spec,
+        enable_remote_services=True,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    engine.predict_batch([_make_input(prompt="What is shown in this image?")])
+
+    assert captured_api_call["model"] == "ibm/granite3.3-vision:2b"
+    assert (
+        GRANITE_VISION_MODEL_SPEC_BASE["api_overrides"][
+            VlmEngineType.API_OLLAMA
+        ].params["model"]
+        == "ibm/granite3.3-vision:2b"
+    )
