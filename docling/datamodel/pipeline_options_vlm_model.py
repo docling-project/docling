@@ -167,7 +167,11 @@ class InlineVlmOptions(BaseVlmOptions):
                 "model. Must be a model capable of processing images and "
                 "generating text."
             ),
-            examples=["Qwen/Qwen2-VL-2B-Instruct", "ibm-granite/granite-vision-3.3-2b"],
+            examples=[
+                "Qwen/Qwen2-VL-2B-Instruct",
+                "ibm-granite/granite-vision-3.3-2b",
+                "ibm-granite/granite-vision-4.1-4b",
+            ],
         ),
     ]
     revision: Annotated[

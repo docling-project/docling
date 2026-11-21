@@ -105,7 +105,8 @@ def test_vlm_table_separates_declared_and_unrestricted_backends(
     }
     # An explicit `supported_engines` closes the other backends.
     assert _row(rows, "granite_vision").backends == {
-        "transformers": BackendState.SELECTED,
+        "mlx": BackendState.SELECTED,
+        "transformers": BackendState.SUPPORTED,
         "vllm": BackendState.SUPPORTED,
         "api": BackendState.SUPPORTED,
     }
