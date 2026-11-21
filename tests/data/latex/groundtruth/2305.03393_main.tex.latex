@@ -157,7 +157,7 @@ We have chosen the PubTabNet data set to perform HPO, since it includes a highly
 \begin{tabular}{|l|l|l|l|l|l|l|l|}
 \hline
 2*c]@c@\# enc-layers & 2*c]@c@\# dec-layers & 2*Language & 3c|TEDs & 2*mAP (0.75) & 2*Inference time (secs) &  &  \\ \hline
-4-6 &  &  & 1c|simple & 1c|complex & all &  &  \\ \hline
+ &  &  & 1c|simple & 1c|complex & all &  &  \\ \hline
 2*6 & 2*6 & OTSL & 0.965 & 0.934 & 0.955 & 0.88 & 2.73 \\ \hline
  &  & HTML & 0.969 & 0.927 & 0.955 & 0.857 & 5.39 \\ \hline
 2*4 & 2*4 & OTSL & 0.938 & 0.904 & 0.927 & 0.853 & 1.97 \\ \hline
@@ -179,7 +179,7 @@ We picked the model parameter configuration that produced the best prediction qu
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
 2*Data set & 2*Language & 3c|TEDs & 2*mAP(0.75) & 2*Inference time (secs) &  &  \\ \hline
-3-5 &  & 1c|simple & 1c|complex & all &  &  \\ \hline
+ &  & 1c|simple & 1c|complex & all &  &  \\ \hline
 2*PubTabNet & OTSL & 0.965 & 0.934 & 0.955 & 0.88 & 2.73 \\ \hline
  & HTML & 0.969 & 0.927 & 0.955 & 0.857 & 5.39 \\ \hline
 2*FinTabNet & OTSL & 0.955 & 0.961 & 0.959 & 0.862 & 1.85 \\ \hline
