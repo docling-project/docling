@@ -145,14 +145,44 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         if segmented_page is None:
             return ""
 
+        # A line that docling-parse joins across several columns is less than
+        # half inside each column, so that rule returns no text. The words of
+        # the line are still separate. Use those that lie in the rectangle.
+        # See https://github.com/docling-project/docling/issues/5136.
+        words = [
+            (index, cell, cell.rect.to_bounding_box())
+            for index, cell in enumerate(segmented_page.word_cells)
+            if cell.text.strip()
+        ]
+        used: set[int] = set()
         text_piece = ""
-        for cell in segmented_page.textline_cells:
-            cell_bbox = cell.rect.to_bounding_box()
-            overlap_frac = cell_bbox.intersection_over_self(bbox)
+        for line in segmented_page.textline_cells:
+            line_bbox = line.rect.to_bounding_box()
+            overlap_frac = line_bbox.intersection_over_self(bbox)
             if overlap_frac > 0.5:
                 if text_piece:
                     text_piece += " "
-                text_piece += cell.text
+                text_piece += line.text
+                for index, _cell, word_bbox in words:
+                    if word_bbox.intersection_over_self(line_bbox) > 0.5:
+                        used.add(index)
+                continue
+            if overlap_frac <= 0:
+                continue
+            parts: list[str] = []
+            for index, cell, word_bbox in words:
+                if index in used:
+                    continue
+                if word_bbox.intersection_over_self(line_bbox) <= 0.5:
+                    continue
+                if word_bbox.intersection_over_self(bbox) <= 0.5:
+                    continue
+                used.add(index)
+                parts.append(cell.text.strip())
+            if parts:
+                if text_piece:
+                    text_piece += " "
+                text_piece += " ".join(parts)
 
         return text_piece
 
