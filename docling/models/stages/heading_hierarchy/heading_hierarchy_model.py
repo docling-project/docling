@@ -33,6 +33,7 @@ drive the style fallback.
 """
 
 import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 from difflib import SequenceMatcher
@@ -368,8 +369,12 @@ def _infer_from_style(
 
 
 def _norm(text: str) -> str:
-    """Lower-case, collapse whitespace and trim outer punctuation for matching."""
-    s = re.sub(r"\s+", " ", (text or "").lower()).strip()
+    """Lower-case, collapse whitespace and trim outer punctuation for matching.
+
+    NFC-normalize first, so canonically equivalent spellings (a composed accent
+    vs. the same accent as a combining character) compare equal.
+    """
+    s = re.sub(r"\s+", " ", unicodedata.normalize("NFC", text or "").lower()).strip()
     # Trim leading/trailing punctuation (incl. unicode dash variants) and underscores.
     return re.sub(r"^[\W_]+|[\W_]+$", "", s)
 
