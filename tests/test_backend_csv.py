@@ -420,6 +420,10 @@ def test_utf8_bom_is_not_part_of_the_first_cell(tmp_path):
         ("Sep=;\nName;Price\nApple;1,50\n", ["Name", "Price", "Apple", "1,50"]),
         ("sep=,\r\nName,Price\r\nApple,1.50\r\n", ["Name", "Price", "Apple", "1.50"]),
         ("sep=\t\nName\tPrice\nApple\t1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=^\nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=^ \nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=^\t\nName^Price\nApple^1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep= \nName Price\nApple 1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("\ufeffsep=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
         ("\ufeffSEP=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
     ],
@@ -430,7 +434,9 @@ def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
     Excel writes and reads this line, typically for files whose values contain
     the delimiter the sniffer would otherwise pick, such as decimal commas.
     The keyword matches in any letter case, so `SEP=;` is the same instruction
-    as `sep=;` and is not kept as a header row.
+    as `sep=;` and is not kept as a header row. The hint is not limited to the
+    candidates the sniffer uses, so a custom delimiter such as `^` or a space
+    is accepted too. Spaces or tabs after the character are ignored.
     """
     conv_result = get_converter().convert(
         DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
@@ -438,6 +444,79 @@ def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
     )
     cells = conv_result.document.tables[0].data.table_cells
     assert [cell.text for cell in cells] == expected
+
+
+@pytest.mark.parametrize("hint", ["sep=a", "sep=1"])
+def test_sep_line_with_a_letter_or_digit_is_not_a_hint(hint):
+    """A letter or digit is not a separator, so the line stays a data row.
+
+    `sep=a` would split every field on `a`. That is far more likely a malformed
+    hint than a real file, and dropping the line would lose data.
+    """
+    csv_text = f"{hint}\nName,Price\nApple,1.50\n"
+
+    with pytest.warns(UserWarning, match="Inconsistent column lengths"):
+        conv_result = get_converter().convert(
+            DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
+            raises_on_error=True,
+        )
+    cells = conv_result.document.tables[0].data.table_cells
+
+    assert cells[0].text == hint
+    assert [cell.text for cell in cells[1:3]] == ["Name", "Price"]
+
+
+def test_multi_character_sep_line_is_not_a_hint():
+    """The hint names one character; a longer line stays data."""
+    csv_text = "sep=##\nName##Price\nApple##1.50\n"
+
+    conv_result = get_converter().convert(
+        DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+
+    assert [cell.text for cell in cells] == [
+        "sep=##",
+        "Name##Price",
+        "Apple##1.50",
+    ]
+
+
+_NIX_EXPORT_SAMPLE = (
+    "sep=;\n"
+    "Index;Original Library Name;Saved Collection Name;Original Color Name;"
+    "User Color Name;Scan Type;DE00 to Scan;Match Degree\n"
+    '1;"-";"Manmade";"-";"Brick";Scan;"-";"-"\n'
+)
+
+
+def test_sep_line_from_a_real_export():
+    """A public CC0 export starts with `sep=;` and quotes several values.
+
+    The sample is the first eight columns of the `Index` header and the first
+    data row of data/materials/brick/nix_export.csv in
+    https://github.com/AntonPalmqvist/physically-based-api (CC0-1.0). The full
+    file has 64 columns; the two metadata lines above the header are omitted.
+    """
+    conv_result = get_converter().convert(
+        DocumentStream(
+            name="nix_export.csv", stream=BytesIO(_NIX_EXPORT_SAMPLE.encode())
+        ),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+
+    assert len(cells) == 16
+    assert cells[0].text == "Index"
+    assert cells[1].text == "Original Library Name"
+    assert cells[7].text == "Match Degree"
+    assert cells[8].text == "1"
+    assert cells[9].text == "-"
+    assert cells[10].text == "Manmade"
+    assert cells[12].text == "Brick"
+    assert cells[13].text == "Scan"
+    assert cells[15].text == "-"
 
 
 def test_malformed_quoted_csv_is_a_load_error():
