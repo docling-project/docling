@@ -5,6 +5,7 @@
 
 import importlib
 import importlib.metadata
+import inspect
 import logging
 import sys
 import time
@@ -15,6 +16,7 @@ import torch
 from packaging import version
 from PIL.Image import Image
 from transformers import (
+    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForImageTextToText,
@@ -66,7 +68,35 @@ _log = logging.getLogger(__name__)
 
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
-_EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
+_FALCON_OCR_REPO_ID = "tiiuae/Falcon-OCR"
+_EAGER_ATTN_REQUIRED_REPO_IDS = {
+    "nvidia/NVIDIA-Nemotron-Parse-2.0",
+    _FALCON_OCR_REPO_ID,
+}
+
+# Falcon-OCR categories from the pinned remote-code model
+# (tiiuae/Falcon-OCR, modeling_falcon_ocr.py: ``CATEGORY_PROMPTS``). Docling
+# prompts name the element being read, so the category is derived from the
+# prompt text; an empty or unrecognized prompt reads as plain text.
+_FALCON_OCR_CATEGORY_BY_PROMPT_SUBSTRING = (
+    ("formula", "formula"),
+    ("table", "table"),
+    ("caption", "caption"),
+    ("footnote", "footnote"),
+    ("list-item", "list-item"),
+    ("page-footer", "page-footer"),
+    ("page-header", "page-header"),
+    ("section-header", "section-header"),
+    ("title", "title"),
+)
+
+
+def _falcon_ocr_category_from_prompt(prompt: str) -> str:
+    normalized_prompt = prompt.lower()
+    for prompt_substring, category in _FALCON_OCR_CATEGORY_BY_PROMPT_SUBSTRING:
+        if prompt_substring in normalized_prompt:
+            return category
+    return "plain"
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -308,6 +338,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             )
 
         # Load model
+        # NOTE: the per-model resolution below is upstream's code, restored
+        # verbatim (review feedback on #5493): Falcon-OCR support must not
+        # change how any other VLM model resolves its attention backend.
         attn_implementation: Optional[str] = (
             "flash_attention_2"
             if self.device.startswith("cuda")  # type: ignore[union-attr]
@@ -325,20 +358,58 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
             attn_implementation = "eager"
 
+        if repo_id == _FALCON_OCR_REPO_ID:
+            # Falcon-OCR only: an explicit attn_implementation override in
+            # the model config wins over the eager default (the legacy
+            # private _attn_implementation key is accepted and normalized
+            # to the public spelling). No other model reaches this branch.
+            extra_config = (
+                self.model_config.extra_config if self.model_config is not None else {}
+            )
+            explicit_attn = extra_config.get("attn_implementation")
+            if explicit_attn is None:
+                explicit_attn = extra_config.get("_attn_implementation")
+            if explicit_attn is not None:
+                attn_implementation = str(explicit_attn)
+
+        # Falcon-OCR ships a custom config class whose attention backend must
+        # be set on the config object itself before model construction.
+        model_config_obj = None
+        if repo_id == _FALCON_OCR_REPO_ID:
+            model_config_obj = AutoConfig.from_pretrained(
+                artifacts_path,
+                trust_remote_code=trust_remote_code,
+                revision=revision,
+            )
+            model_config_obj._attn_implementation = attn_implementation
+
+        # Transformers 5 renamed the model-loading kwarg to the public
+        # ``attn_implementation``; transformers 4 only accepts the private
+        # ``_attn_implementation`` spelling.
+        attn_kwarg = (
+            "attn_implementation"
+            if parsed_transformers_version.major >= 5
+            else "_attn_implementation"
+        )
         dtype_arg_name = (
             "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"
         )
 
         _log.info(f"Loading model {repo_id} into memory (device: {self.device})...")
         load_start_time = time.monotonic()
+        model_kwargs: dict[str, Any] = {
+            dtype_arg_name: torch_dtype,
+            attn_kwarg: attn_implementation,
+            "trust_remote_code": trust_remote_code,
+            "revision": revision,
+            "quantization_config": quantization_config,
+        }
+        if model_config_obj is not None:
+            model_kwargs["config"] = model_config_obj
         self.vlm_model = model_cls.from_pretrained(
             artifacts_path,
             device_map=self.device,
-            **{dtype_arg_name: torch_dtype},
-            _attn_implementation=attn_implementation,
-            trust_remote_code=trust_remote_code,
-            revision=revision,
-            quantization_config=quantization_config,
+            **model_kwargs,
         )
 
         self.vlm_model.eval()
@@ -358,14 +429,42 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 )
 
         # Load generation config
-        self.generation_config = GenerationConfig.from_pretrained(
-            artifacts_path, revision=revision
+        self.generation_config = self._load_generation_config(
+            artifacts_path=artifacts_path,
+            revision=revision,
         )
 
         _log.info(
             f"Loaded model {repo_id} (revision: {revision}) in "
             f"{time.monotonic() - load_start_time:.2f} sec."
         )
+
+    def _load_generation_config(
+        self,
+        *,
+        artifacts_path: Union[Path, str],
+        revision: str,
+    ) -> GenerationConfig:
+        """Load the generation config, deriving it when the repo ships none.
+
+        Falcon-OCR does not ship ``generation_config.json``; without the
+        fallback the engine fails before the first page is read.
+        """
+        try:
+            return GenerationConfig.from_pretrained(artifacts_path, revision=revision)
+        except OSError as exc:
+            if "generation_config.json" not in str(exc):
+                raise
+            if self.vlm_model is None:
+                raise
+            _log.warning(
+                "Model %s does not ship generation_config.json; deriving the "
+                "generation config from the model config instead.",
+                self.model_config.repo_id
+                if self.model_config is not None
+                else artifacts_path,
+            )
+            return GenerationConfig.from_model_config(self.vlm_model.config)
 
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
@@ -378,6 +477,77 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.processor is None:
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
+
+    def _is_falcon_ocr(self) -> bool:
+        return (
+            self.model_config is not None
+            and self.model_config.repo_id == _FALCON_OCR_REPO_ID
+        )
+
+    def _predict_falcon_batch(
+        self, input_batch: List[VlmEngineInput]
+    ) -> List[VlmEngineOutput]:
+        """Run Falcon-OCR through its native ``generate`` API.
+
+        The remote-code model (pinned revision
+        ``42ec56b72a23984ac059e7c8a6d397a8529423fe``) defines
+        ``generate(images, *, category, max_new_tokens, temperature, top_k,
+        min_dimension, max_dimension, compile, seed) -> list[str]`` and builds
+        the ``<|image|>...<|OCR_PLAIN|>`` prompt itself from the category, so
+        Docling only maps each input prompt to a category. ``compile`` is
+        disabled here because the engine's own ``compile_model`` option
+        already owns torch.compile for the loaded model. Defaults match the
+        remote model's own defaults (``max_new_tokens=4096``,
+        ``min_dimension=64``, ``max_dimension=1024``).
+
+        Limitation: the native ``generate`` returns only ``list[str]`` — no
+        token counts and no end-of-sequence flag — so ``stop_reason`` stays
+        unspecified and output truncated at ``max_new_tokens`` cannot be
+        detected as partial. ``stop_strings`` from ``VlmEngineInput`` are
+        not applied on this path.
+        """
+        if not input_batch:
+            return []
+
+        first_input = input_batch[0]
+        extra_generation_config = dict(first_input.extra_generation_config or {})
+        generate_kwargs: dict[str, Any] = {
+            "category": [
+                _falcon_ocr_category_from_prompt(input_data.prompt)
+                for input_data in input_batch
+            ],
+            "max_new_tokens": first_input.max_new_tokens,
+            "temperature": first_input.temperature,
+            "top_k": extra_generation_config.get("top_k"),
+            "min_dimension": extra_generation_config.get("min_dimension", 64),
+            "max_dimension": extra_generation_config.get("max_dimension", 1024),
+            "compile": False,
+        }
+        if "seed" in extra_generation_config:
+            generate_kwargs["seed"] = extra_generation_config["seed"]
+
+        generate = self.vlm_model.generate  # type: ignore[union-attr]
+        if "compile" not in inspect.signature(generate).parameters:
+            # Older remote-code revisions expose generate() without compile.
+            generate_kwargs.pop("compile")
+
+        generated_texts = generate(
+            [input_data.image for input_data in input_batch],
+            **generate_kwargs,
+        )
+        if len(generated_texts) != len(input_batch):
+            raise RuntimeError(
+                "Falcon-OCR returned "
+                f"{len(generated_texts)} texts for {len(input_batch)} images."
+            )
+
+        return [
+            VlmEngineOutput(
+                text=text,
+                metadata={"falcon_ocr": "native_generate"},
+            )
+            for text in generated_texts
+        ]
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
@@ -398,9 +568,20 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return []
 
         # Model should already be loaded via initialize()
-        if self.vlm_model is None or self.processor is None:
+        if self.vlm_model is None:
             raise RuntimeError(
                 "Model not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
+
+        # Falcon-OCR ships no usable chat template and its remote-code model
+        # exposes a native OCR generation API; the generic chat-template
+        # processor flow cannot run it.
+        if self._is_falcon_ocr():
+            return self._predict_falcon_batch(input_batch)
+
+        if self.processor is None:
+            raise RuntimeError(
+                "Processor not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
         # Get prompt style from first input's extra config

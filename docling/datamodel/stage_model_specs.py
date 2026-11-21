@@ -1714,6 +1714,9 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
                     "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
                     "torch_dtype": "bfloat16",
+                    # Falcon-OCR does not support SDPA yet; the Transformers
+                    # engine must load it with eager attention (see #3278).
+                    "attn_implementation": "eager",
                 },
             ),
         },

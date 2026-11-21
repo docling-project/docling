@@ -50,6 +50,7 @@ def test_falcon_ocr_preset_engine_config():
     tf_config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
     assert tf_config.repo_id == "tiiuae/Falcon-OCR"
     assert tf_config.extra_config["torch_dtype"] == "bfloat16"
+    assert tf_config.extra_config["attn_implementation"] == "eager"
     assert (
         tf_config.extra_config["transformers_model_type"]
         == TransformersModelType.AUTOMODEL_CAUSALLM
