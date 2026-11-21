@@ -80,7 +80,14 @@ _INSTALL_HINT = (
 
 _log = logging.getLogger(__name__)
 
-JATS_DTD_URL: Final[list[str]] = ["JATS-journalpublishing", "JATS-archive"]
+# JATS DTD files, and the NLM 2.x/3.x article DTD files that JATS replaced
+# (journalpublishing3.dtd, archivearticle3.dtd).
+JATS_DTD_URL: Final[list[str]] = [
+    "JATS-journalpublishing",
+    "JATS-archive",
+    "journalpublishing",
+    "archivearticle",
+]
 DEFAULT_HEADER_ACKNOWLEDGMENTS: Final[str] = "Acknowledgments"
 DEFAULT_HEADER_ABSTRACT: Final[str] = "Abstract"
 DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
@@ -253,12 +260,26 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             ):
                 self.valid = True
                 return
-            for ent in doc_info.internalDTD.iterentities():
+            # A document without a DOCTYPE has no internal DTD.
+            internal_dtd = doc_info.internalDTD
+            entities = internal_dtd.iterentities() if internal_dtd is not None else []
+            for ent in entities:
                 if ent.system_url and any(
                     kwd in ent.system_url for kwd in JATS_DTD_URL
                 ):
                     self.valid = True
                     return
+
+            # Europe PMC and some publishers serve JATS without a DOCTYPE. Accept
+            # an <article> root whose <front> holds the journal or article
+            # metadata; DocBook also has an <article> root, but no <front>.
+            root = self.tree.getroot()
+            front = root.find("front") if root.tag == "article" else None
+            if front is not None and (
+                front.find("journal-meta") is not None
+                or front.find("article-meta") is not None
+            ):
+                self.valid = True
         except Exception as exc:
             raise DocumentLoadError(
                 f"Could not initialize JATS backend for file with hash {self.document_hash}."

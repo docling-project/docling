@@ -33,7 +33,7 @@ from PIL import Image
 
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.datamodel.backend_options import JatsBackendOptions
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.document_converter import (
     DocumentConverter,
@@ -1763,6 +1763,35 @@ def test_jats_author_affiliations_still_map_from_xref():
     md = doc.export_to_markdown()
     assert "Jane Doe" in md
     assert "Example University" in md
+
+
+@pytest.mark.parametrize(
+    "doctype",
+    [
+        # Europe PMC serves JATS without a DOCTYPE.
+        "",
+        '<!DOCTYPE article PUBLIC "-//NLM//DTD Journal Archiving and Interchange '
+        'DTD v3.0 20080202//EN" "archivearticle3.dtd">',
+    ],
+)
+def test_jats_article_without_jats_doctype_converts(doctype: str):
+    """An article without a DOCTYPE or with an NLM DTD converts, not only detects."""
+    xml = (
+        f'<?xml version="1.0" encoding="UTF-8"?>{doctype}'
+        '<article article-type="research-article"><front><journal-meta/>'
+        "<article-meta><title-group><article-title>Effect of X</article-title>"
+        "</title-group></article-meta></front>"
+        "<body><sec><title>Methods</title><p>Body text.</p></sec></body></article>"
+    )
+    stream = DocumentStream(name="article.xml", stream=BytesIO(xml.encode()))
+
+    result = get_converter().convert(stream)
+
+    assert result.status == ConversionStatus.SUCCESS
+    md = result.document.export_to_markdown()
+    assert "# Effect of X" in md
+    assert "Methods" in md
+    assert "Body text." in md
 
 
 def _furniture_statements(doc: DoclingDocument) -> list[list[tuple[str, str | None]]]:
