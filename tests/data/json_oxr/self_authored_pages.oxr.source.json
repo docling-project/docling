@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "fixture": "self_authored_pages.oxr.json",
+  "fixture_type": "self-authored synthetic OXR sync response",
+  "provider": "SoMark OXR (no provider capture)",
+  "purpose": "Contract fixture for docling.utils.oxr_utils and the OXR backend.",
+  "schema_reference": {
+    "repository": "https://github.com/SoMarkAI/OXR",
+    "files": [
+      "oxr/pipeline/orchestrator.py",
+      "oxr/pipeline/postprocess/json_postprocess.py",
+      "oxr/server/schemas.py"
+    ],
+    "note": "Region and page fields follow the serialized OXR JSON output. No OXR code was copied and no OXR service was run."
+  },
+  "generated_at": "2026-11-13T05:10:00+08:00"
+}

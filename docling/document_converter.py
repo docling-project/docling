@@ -60,6 +60,7 @@ from docling.backend.opendocument_backend import (
     OdsDocumentBackend,
     OdtDocumentBackend,
 )
+from docling.backend.oxr.oxr_json_backend import OxrJSONBackend
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.backend.xml.doclang_backend import DocLangDocumentBackend
@@ -287,6 +288,20 @@ class DoclingJSONFormatOption(FormatOption):
 
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = DoclingJSONBackend
+    backend_options: DeclarativeBackendOptions | None = None
+
+
+class OxrFormatOption(FormatOption):
+    """Format option for a saved OXR parse response.
+
+    The file must be named ``*.oxr.json`` or carry the OXR response markers, so
+    it is not mistaken for a Docling JSON document. Picture files named by the
+    OXR host are dropped from the input unless ``backend_options.enable_local_fetch``
+    is set.
+    """
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OxrJSONBackend
     backend_options: DeclarativeBackendOptions | None = None
 
 
@@ -528,6 +543,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IMAGE: ImageFormatOption(),
         InputFormat.PDF: PdfFormatOption(),
         InputFormat.JSON_DOCLING: DoclingJSONFormatOption(),
+        InputFormat.OXR: OxrFormatOption(),
         InputFormat.AUDIO: AudioFormatOption(),
         InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(

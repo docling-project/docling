@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "fixture": "real_code_and_formula.oxr.json",
+  "fixture_type": "unedited official free OXR API response",
+  "provider": "SoMarkAI OXR free API",
+  "service_url": "https://free-oxr.somark.ai/api/v1",
+  "generated_at": "2026-11-13T05:18:00+08:00",
+  "input": {
+    "path": "tests/data/pdf/sources/code_and_formula.pdf",
+    "sha256": "6cb63fba2ad42dd0e0afe6a26dcf3b3bff5a86919c4c06157c71c65ebc0fc9e6",
+    "license": "same repository (MIT test data)"
+  },
+  "request": {
+    "endpoint": "POST /parse/sync",
+    "form_fields": {
+      "api_key": "dummy (the free API accepts any value)",
+      "output_formats": [
+        "json",
+        "markdown"
+      ]
+    },
+    "http_status": 200,
+    "elapsed_seconds": 6.3
+  },
+  "notes": "The response body was not edited. The source PDF has two pages, and so does the response."
+}

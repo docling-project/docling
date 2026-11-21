@@ -1,0 +1,203 @@
+{
+  "code": 0,
+  "message": "success",
+  "warnings": [],
+  "data": {
+    "task_id": "self-authored-fixture",
+    "error": null,
+    "result": {
+      "file_name": "self_authored.pdf",
+      "metadata": {
+        "page_num": 2,
+        "file_type": ".pdf",
+        "processing_time_ms": 1
+      },
+      "outputs": {
+        "markdown": "# Adapter Fixture\n\nA self-authored page for the OXR adapter.\n",
+        "json": {
+          "pages": [
+            {
+              "page_num": 0,
+              "page_size": {
+                "w": 800,
+                "h": 1000
+              },
+              "merge_content_from_pre_page": false,
+              "blocks": [
+                {
+                  "idx": 0,
+                  "type": "Page-header",
+                  "bbox": [
+                    40,
+                    20,
+                    760,
+                    40
+                  ],
+                  "content": "OXR Adapter Fixture",
+                  "format": "text"
+                },
+                {
+                  "idx": 1,
+                  "type": "Title",
+                  "bbox": [
+                    40,
+                    60,
+                    760,
+                    110
+                  ],
+                  "content": "Adapter Fixture",
+                  "format": "text"
+                },
+                {
+                  "idx": 2,
+                  "type": "Text",
+                  "bbox": [
+                    40,
+                    130,
+                    760,
+                    220
+                  ],
+                  "content": "A self-authored page for the OXR adapter.",
+                  "format": "text"
+                },
+                {
+                  "idx": 3,
+                  "type": "Table",
+                  "bbox": [
+                    40,
+                    240,
+                    760,
+                    420
+                  ],
+                  "content": "<table><tr><th>Key</th><th>Value</th></tr><tr><td>alpha</td><td>1</td></tr></table>",
+                  "format": "html"
+                },
+                {
+                  "idx": 4,
+                  "type": "Formula",
+                  "bbox": [
+                    40,
+                    440,
+                    300,
+                    500
+                  ],
+                  "content": "$$E = mc^2$$",
+                  "format": "latex"
+                },
+                {
+                  "idx": 5,
+                  "type": "Code Block",
+                  "bbox": [
+                    40,
+                    520,
+                    760,
+                    620
+                  ],
+                  "content": "```python\nprint('oxr')\n```",
+                  "format": "markdown"
+                },
+                {
+                  "idx": 6,
+                  "type": "Picture",
+                  "bbox": [
+                    40,
+                    640,
+                    300,
+                    760
+                  ],
+                  "content": "![](imgs/0_6.png)",
+                  "format": "markdown"
+                },
+                {
+                  "idx": 7,
+                  "type": "Page-footer",
+                  "bbox": [
+                    40,
+                    960,
+                    760,
+                    980
+                  ],
+                  "content": "- 1 -",
+                  "format": "text"
+                }
+              ]
+            },
+            {
+              "page_num": 1,
+              "page_size": {
+                "w": 800,
+                "h": 1000
+              },
+              "merge_content_from_pre_page": false,
+              "blocks": [
+                {
+                  "idx": 0,
+                  "type": "Text",
+                  "bbox": [
+                    40,
+                    60,
+                    760,
+                    160
+                  ],
+                  "content": "The second page keeps its own furniture.",
+                  "format": "text"
+                },
+                {
+                  "idx": 1,
+                  "type": "Chemical Equation",
+                  "bbox": [
+                    40,
+                    180,
+                    400,
+                    240
+                  ],
+                  "content": "\\ce{2H2 + O2 -> 2H2O}",
+                  "format": "latex"
+                },
+                {
+                  "idx": 2,
+                  "type": "Chemical Structure",
+                  "bbox": [
+                    40,
+                    260,
+                    400,
+                    340
+                  ],
+                  "content": "$\\smiles{CCO}$",
+                  "format": "markdown"
+                },
+                {
+                  "idx": 3,
+                  "type": "Stamp",
+                  "bbox": [
+                    40,
+                    360,
+                    400,
+                    420
+                  ],
+                  "content": "APPROVED",
+                  "format": "text"
+                },
+                {
+                  "idx": 4,
+                  "type": "Footnote",
+                  "bbox": [
+                    40,
+                    440,
+                    760,
+                    480
+                  ],
+                  "content": "Synthetic fixture, not a provider capture.",
+                  "format": "text"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "metadata": {
+      "page_num": 2
+    }
+  }
+}
