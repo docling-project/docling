@@ -1,4 +1,4 @@
-<doclang version="0.9">
+<doclang version="0.10">
   <text>
     <layer value="furniture"/>
     \documentclass[11pt, a4paper, logo, copyright, nonumbering]{deepseek}

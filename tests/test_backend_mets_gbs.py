@@ -137,6 +137,45 @@ def test_page_order_gap_keeps_later_pages_loadable(tmp_path, test_doc_path):
     doc_backend.unload()
 
 
+def test_page_larger_than_max_image_pixels_is_skipped(tmp_path, test_doc_path):
+    """The page size comes from the hOCR ``ocr_page`` bbox. A page that is larger
+    than ``max_image_pixels`` is reported as invalid before the page image is
+    resized to that size, and the other pages still load.
+    """
+    oversized_path = tmp_path / "oversized_page.tar.gz"
+    with (
+        tarfile.open(test_doc_path, "r:gz") as tar_in,
+        tarfile.open(oversized_path, "w:gz") as tar_out,
+    ):
+        for member in tar_in:
+            data = tar_in.extractfile(member).read()
+            if member.name == "00000010.html":
+                data = data.replace(b"bbox 0 0 1582 2495;", b"bbox 0 0 20000 20000;")
+                member.size = len(data)
+            tar_out.addfile(member, BytesIO(data))
+
+    doc_backend: MetsGbsDocumentBackend = _get_backend(oversized_path)
+    page_backend = doc_backend.load_page(0)
+    assert not page_backend.is_valid()
+    page_backend.unload()
+    for page_index in (1, 2):
+        page_backend = doc_backend.load_page(page_index)
+        assert page_backend.is_valid()
+        page_backend.unload()
+    doc_backend.unload()
+
+    # The option applies to pages of normal size too.
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+        backend_options=MetsGbsBackendOptions(max_image_pixels=1_000_000),
+    )
+    page_backend = in_doc._backend.load_page(0)
+    assert not page_backend.is_valid()
+    in_doc._backend.unload()
+
+
 def test_max_file_bytes_limit(test_doc_path):
     """Test that max_file_bytes limit is enforced during extraction."""
 

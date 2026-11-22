@@ -48,7 +48,11 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
         if self.enabled:
             self.device = decide_device(
                 accelerator_options.device,
-                supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
+                supported_devices=[
+                    AcceleratorDevice.CPU,
+                    AcceleratorDevice.CUDA,
+                    AcceleratorDevice.MPS,
+                ],
             )
 
             if artifacts_path is None:
@@ -154,7 +158,9 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 # Crop one image per table cluster from the page image
                 valid_pairs = []
                 for cluster in clusters:
-                    crop = page.get_image(scale=1.0, cropbox=cluster.bbox)
+                    crop = page.get_image(
+                        scale=self.options.scale, cropbox=cluster.bbox
+                    )
                     if crop is not None:
                         valid_pairs.append((cluster, crop))
 
