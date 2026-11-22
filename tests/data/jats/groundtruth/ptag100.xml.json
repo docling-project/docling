@@ -29,12 +29,9 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [
-        {
-          "$ref": "#/texts/13"
-        },
         {
           "$ref": "#/texts/14"
         },
@@ -76,6 +73,9 @@
         },
         {
           "$ref": "#/texts/27"
+        },
+        {
+          "$ref": "#/texts/28"
         }
       ],
       "content_layer": "body",
@@ -85,12 +85,9 @@
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [
-        {
-          "$ref": "#/texts/31"
-        },
         {
           "$ref": "#/texts/32"
         },
@@ -108,6 +105,9 @@
         },
         {
           "$ref": "#/texts/37"
+        },
+        {
+          "$ref": "#/texts/38"
         }
       ],
       "content_layer": "body",
@@ -117,17 +117,17 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [
-        {
-          "$ref": "#/texts/39"
-        },
         {
           "$ref": "#/texts/40"
         },
         {
           "$ref": "#/texts/41"
+        },
+        {
+          "$ref": "#/texts/42"
         }
       ],
       "content_layer": "body",
@@ -137,12 +137,9 @@
     {
       "self_ref": "#/groups/3",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/45"
-        },
         {
           "$ref": "#/texts/46"
         },
@@ -172,6 +169,9 @@
         },
         {
           "$ref": "#/texts/55"
+        },
+        {
+          "$ref": "#/texts/56"
         }
       ],
       "content_layer": "body",
@@ -181,17 +181,17 @@
     {
       "self_ref": "#/groups/4",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/56"
-        },
         {
           "$ref": "#/texts/57"
         },
         {
           "$ref": "#/texts/58"
+        },
+        {
+          "$ref": "#/texts/59"
         }
       ],
       "content_layer": "body",
@@ -201,17 +201,17 @@
     {
       "self_ref": "#/groups/5",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/60"
-        },
         {
           "$ref": "#/texts/61"
         },
         {
           "$ref": "#/texts/62"
+        },
+        {
+          "$ref": "#/texts/63"
         }
       ],
       "content_layer": "body",
@@ -221,17 +221,17 @@
     {
       "self_ref": "#/groups/6",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/64"
-        },
         {
           "$ref": "#/texts/65"
         },
         {
           "$ref": "#/texts/66"
+        },
+        {
+          "$ref": "#/texts/67"
         }
       ],
       "content_layer": "body",
@@ -241,17 +241,17 @@
     {
       "self_ref": "#/groups/7",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/68"
-        },
         {
           "$ref": "#/texts/69"
         },
         {
           "$ref": "#/texts/70"
+        },
+        {
+          "$ref": "#/texts/71"
         }
       ],
       "content_layer": "body",
@@ -261,12 +261,9 @@
     {
       "self_ref": "#/groups/8",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/72"
-        },
         {
           "$ref": "#/texts/73"
         },
@@ -296,6 +293,9 @@
         },
         {
           "$ref": "#/texts/82"
+        },
+        {
+          "$ref": "#/texts/83"
         }
       ],
       "content_layer": "body",
@@ -305,12 +305,9 @@
     {
       "self_ref": "#/groups/9",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/87"
-        },
         {
           "$ref": "#/texts/88"
         },
@@ -322,6 +319,9 @@
         },
         {
           "$ref": "#/texts/91"
+        },
+        {
+          "$ref": "#/texts/92"
         }
       ],
       "content_layer": "body",
@@ -331,12 +331,9 @@
     {
       "self_ref": "#/groups/10",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [
-        {
-          "$ref": "#/texts/93"
-        },
         {
           "$ref": "#/texts/94"
         },
@@ -348,6 +345,9 @@
         },
         {
           "$ref": "#/texts/97"
+        },
+        {
+          "$ref": "#/texts/98"
         }
       ],
       "content_layer": "body",
@@ -357,12 +357,9 @@
     {
       "self_ref": "#/groups/11",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/101"
-        },
         {
           "$ref": "#/texts/102"
         },
@@ -374,6 +371,9 @@
         },
         {
           "$ref": "#/texts/105"
+        },
+        {
+          "$ref": "#/texts/106"
         }
       ],
       "content_layer": "body",
@@ -383,12 +383,9 @@
     {
       "self_ref": "#/groups/12",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/107"
-        },
         {
           "$ref": "#/texts/108"
         },
@@ -406,6 +403,9 @@
         },
         {
           "$ref": "#/texts/113"
+        },
+        {
+          "$ref": "#/texts/114"
         }
       ],
       "content_layer": "body",
@@ -415,17 +415,17 @@
     {
       "self_ref": "#/groups/13",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/115"
-        },
         {
           "$ref": "#/texts/116"
         },
         {
           "$ref": "#/texts/117"
+        },
+        {
+          "$ref": "#/texts/118"
         }
       ],
       "content_layer": "body",
@@ -435,12 +435,9 @@
     {
       "self_ref": "#/groups/14",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/119"
-        },
         {
           "$ref": "#/texts/120"
         },
@@ -452,6 +449,9 @@
         },
         {
           "$ref": "#/texts/123"
+        },
+        {
+          "$ref": "#/texts/124"
         }
       ],
       "content_layer": "body",
@@ -461,12 +461,9 @@
     {
       "self_ref": "#/groups/15",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/127"
-        },
         {
           "$ref": "#/texts/128"
         },
@@ -508,6 +505,9 @@
         },
         {
           "$ref": "#/texts/141"
+        },
+        {
+          "$ref": "#/texts/142"
         }
       ],
       "content_layer": "body",
@@ -517,17 +517,17 @@
     {
       "self_ref": "#/groups/16",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/144"
-        },
         {
           "$ref": "#/texts/145"
         },
         {
           "$ref": "#/texts/146"
+        },
+        {
+          "$ref": "#/texts/147"
         }
       ],
       "content_layer": "body",
@@ -537,12 +537,9 @@
     {
       "self_ref": "#/groups/17",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/148"
-        },
         {
           "$ref": "#/texts/149"
         },
@@ -554,6 +551,9 @@
         },
         {
           "$ref": "#/texts/152"
+        },
+        {
+          "$ref": "#/texts/153"
         }
       ],
       "content_layer": "body",
@@ -563,12 +563,9 @@
     {
       "self_ref": "#/groups/18",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/154"
-        },
         {
           "$ref": "#/texts/155"
         },
@@ -592,6 +589,9 @@
         },
         {
           "$ref": "#/texts/162"
+        },
+        {
+          "$ref": "#/texts/163"
         }
       ],
       "content_layer": "body",
@@ -601,12 +601,9 @@
     {
       "self_ref": "#/groups/19",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/165"
-        },
         {
           "$ref": "#/texts/166"
         },
@@ -624,6 +621,9 @@
         },
         {
           "$ref": "#/texts/171"
+        },
+        {
+          "$ref": "#/texts/172"
         }
       ],
       "content_layer": "body",
@@ -633,12 +633,9 @@
     {
       "self_ref": "#/groups/20",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/173"
-        },
         {
           "$ref": "#/texts/174"
         },
@@ -674,6 +671,9 @@
         },
         {
           "$ref": "#/texts/185"
+        },
+        {
+          "$ref": "#/texts/186"
         }
       ],
       "content_layer": "body",
@@ -683,17 +683,17 @@
     {
       "self_ref": "#/groups/21",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/186"
-        },
         {
           "$ref": "#/texts/187"
         },
         {
           "$ref": "#/texts/188"
+        },
+        {
+          "$ref": "#/texts/189"
         }
       ],
       "content_layer": "body",
@@ -703,12 +703,9 @@
     {
       "self_ref": "#/groups/22",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [
-        {
-          "$ref": "#/texts/192"
-        },
         {
           "$ref": "#/texts/193"
         },
@@ -720,6 +717,9 @@
         },
         {
           "$ref": "#/texts/196"
+        },
+        {
+          "$ref": "#/texts/197"
         }
       ],
       "content_layer": "body",
@@ -729,12 +729,9 @@
     {
       "self_ref": "#/groups/23",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [
-        {
-          "$ref": "#/texts/200"
-        },
         {
           "$ref": "#/texts/201"
         },
@@ -761,6 +758,9 @@
         },
         {
           "$ref": "#/texts/209"
+        },
+        {
+          "$ref": "#/texts/210"
         }
       ],
       "content_layer": "body",
@@ -770,17 +770,17 @@
     {
       "self_ref": "#/groups/24",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [
-        {
-          "$ref": "#/texts/220"
-        },
         {
           "$ref": "#/texts/221"
         },
         {
           "$ref": "#/texts/222"
+        },
+        {
+          "$ref": "#/texts/223"
         }
       ],
       "content_layer": "body",
@@ -790,17 +790,17 @@
     {
       "self_ref": "#/groups/25",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [
-        {
-          "$ref": "#/texts/224"
-        },
         {
           "$ref": "#/texts/225"
         },
         {
           "$ref": "#/texts/226"
+        },
+        {
+          "$ref": "#/texts/227"
         }
       ],
       "content_layer": "body",
@@ -810,12 +810,9 @@
     {
       "self_ref": "#/groups/26",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [
-        {
-          "$ref": "#/texts/228"
-        },
         {
           "$ref": "#/texts/229"
         },
@@ -857,6 +854,9 @@
         },
         {
           "$ref": "#/texts/242"
+        },
+        {
+          "$ref": "#/texts/243"
         }
       ],
       "content_layer": "body",
@@ -866,12 +866,9 @@
     {
       "self_ref": "#/groups/27",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [
-        {
-          "$ref": "#/texts/243"
-        },
         {
           "$ref": "#/texts/244"
         },
@@ -943,6 +940,9 @@
         },
         {
           "$ref": "#/texts/267"
+        },
+        {
+          "$ref": "#/texts/268"
         }
       ],
       "content_layer": "body",
@@ -952,12 +952,9 @@
     {
       "self_ref": "#/groups/28",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/270"
-        },
         {
           "$ref": "#/texts/271"
         },
@@ -1011,6 +1008,9 @@
         },
         {
           "$ref": "#/texts/288"
+        },
+        {
+          "$ref": "#/texts/289"
         }
       ],
       "content_layer": "body",
@@ -1020,17 +1020,17 @@
     {
       "self_ref": "#/groups/29",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/289"
-        },
         {
           "$ref": "#/texts/290"
         },
         {
           "$ref": "#/texts/291"
+        },
+        {
+          "$ref": "#/texts/292"
         }
       ],
       "content_layer": "body",
@@ -1040,12 +1040,9 @@
     {
       "self_ref": "#/groups/30",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/293"
-        },
         {
           "$ref": "#/texts/294"
         },
@@ -1057,6 +1054,9 @@
         },
         {
           "$ref": "#/texts/297"
+        },
+        {
+          "$ref": "#/texts/298"
         }
       ],
       "content_layer": "body",
@@ -1066,12 +1066,9 @@
     {
       "self_ref": "#/groups/31",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/301"
-        },
         {
           "$ref": "#/texts/302"
         },
@@ -1107,6 +1104,9 @@
         },
         {
           "$ref": "#/texts/313"
+        },
+        {
+          "$ref": "#/texts/314"
         }
       ],
       "content_layer": "body",
@@ -1116,17 +1116,17 @@
     {
       "self_ref": "#/groups/32",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/316"
-        },
         {
           "$ref": "#/texts/317"
         },
         {
           "$ref": "#/texts/318"
+        },
+        {
+          "$ref": "#/texts/319"
         }
       ],
       "content_layer": "body",
@@ -1136,12 +1136,9 @@
     {
       "self_ref": "#/groups/33",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/320"
-        },
         {
           "$ref": "#/texts/321"
         },
@@ -1153,6 +1150,9 @@
         },
         {
           "$ref": "#/texts/324"
+        },
+        {
+          "$ref": "#/texts/325"
         }
       ],
       "content_layer": "body",
@@ -1162,17 +1162,17 @@
     {
       "self_ref": "#/groups/34",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/327"
-        },
         {
           "$ref": "#/texts/328"
         },
         {
           "$ref": "#/texts/329"
+        },
+        {
+          "$ref": "#/texts/330"
         }
       ],
       "content_layer": "body",
@@ -1182,12 +1182,9 @@
     {
       "self_ref": "#/groups/35",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/335"
-        },
         {
           "$ref": "#/texts/336"
         },
@@ -1229,6 +1226,9 @@
         },
         {
           "$ref": "#/texts/349"
+        },
+        {
+          "$ref": "#/texts/350"
         }
       ],
       "content_layer": "body",
@@ -1238,17 +1238,17 @@
     {
       "self_ref": "#/groups/36",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/351"
-        },
         {
           "$ref": "#/texts/352"
         },
         {
           "$ref": "#/texts/353"
+        },
+        {
+          "$ref": "#/texts/354"
         }
       ],
       "content_layer": "body",
@@ -1258,17 +1258,17 @@
     {
       "self_ref": "#/groups/37",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/357"
-        },
         {
           "$ref": "#/texts/358"
         },
         {
           "$ref": "#/texts/359"
+        },
+        {
+          "$ref": "#/texts/360"
         }
       ],
       "content_layer": "body",
@@ -1278,17 +1278,17 @@
     {
       "self_ref": "#/groups/38",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [
-        {
-          "$ref": "#/texts/363"
-        },
         {
           "$ref": "#/texts/364"
         },
         {
           "$ref": "#/texts/365"
+        },
+        {
+          "$ref": "#/texts/366"
         }
       ],
       "content_layer": "body",
@@ -1298,12 +1298,9 @@
     {
       "self_ref": "#/groups/39",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [
-        {
-          "$ref": "#/texts/367"
-        },
         {
           "$ref": "#/texts/368"
         },
@@ -1327,6 +1324,9 @@
         },
         {
           "$ref": "#/texts/375"
+        },
+        {
+          "$ref": "#/texts/376"
         }
       ],
       "content_layer": "body",
@@ -1336,17 +1336,17 @@
     {
       "self_ref": "#/groups/40",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [
-        {
-          "$ref": "#/texts/379"
-        },
         {
           "$ref": "#/texts/380"
         },
         {
           "$ref": "#/texts/381"
+        },
+        {
+          "$ref": "#/texts/382"
         }
       ],
       "content_layer": "body",
@@ -1356,12 +1356,9 @@
     {
       "self_ref": "#/groups/41",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [
-        {
-          "$ref": "#/texts/384"
-        },
         {
           "$ref": "#/texts/385"
         },
@@ -1379,6 +1376,9 @@
         },
         {
           "$ref": "#/texts/390"
+        },
+        {
+          "$ref": "#/texts/391"
         }
       ],
       "content_layer": "body",
@@ -1388,12 +1388,9 @@
     {
       "self_ref": "#/groups/42",
       "parent": {
-        "$ref": "#/texts/391"
+        "$ref": "#/texts/392"
       },
       "children": [
-        {
-          "$ref": "#/texts/393"
-        },
         {
           "$ref": "#/texts/394"
         },
@@ -1405,6 +1402,9 @@
         },
         {
           "$ref": "#/texts/397"
+        },
+        {
+          "$ref": "#/texts/398"
         }
       ],
       "content_layer": "body",
@@ -1414,17 +1414,17 @@
     {
       "self_ref": "#/groups/43",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/399"
-        },
         {
           "$ref": "#/texts/400"
         },
         {
           "$ref": "#/texts/401"
+        },
+        {
+          "$ref": "#/texts/402"
         }
       ],
       "content_layer": "body",
@@ -1434,17 +1434,17 @@
     {
       "self_ref": "#/groups/44",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/404"
-        },
         {
           "$ref": "#/texts/405"
         },
         {
           "$ref": "#/texts/406"
+        },
+        {
+          "$ref": "#/texts/407"
         }
       ],
       "content_layer": "body",
@@ -1454,12 +1454,9 @@
     {
       "self_ref": "#/groups/45",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/410"
-        },
         {
           "$ref": "#/texts/411"
         },
@@ -1477,6 +1474,9 @@
         },
         {
           "$ref": "#/texts/416"
+        },
+        {
+          "$ref": "#/texts/417"
         }
       ],
       "content_layer": "body",
@@ -1486,17 +1486,17 @@
     {
       "self_ref": "#/groups/46",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/418"
-        },
         {
           "$ref": "#/texts/419"
         },
         {
           "$ref": "#/texts/420"
+        },
+        {
+          "$ref": "#/texts/421"
         }
       ],
       "content_layer": "body",
@@ -1506,17 +1506,17 @@
     {
       "self_ref": "#/groups/47",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/422"
-        },
         {
           "$ref": "#/texts/423"
         },
         {
           "$ref": "#/texts/424"
+        },
+        {
+          "$ref": "#/texts/425"
         }
       ],
       "content_layer": "body",
@@ -1526,17 +1526,17 @@
     {
       "self_ref": "#/groups/48",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/426"
-        },
         {
           "$ref": "#/texts/427"
         },
         {
           "$ref": "#/texts/428"
+        },
+        {
+          "$ref": "#/texts/429"
         }
       ],
       "content_layer": "body",
@@ -1546,12 +1546,9 @@
     {
       "self_ref": "#/groups/49",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/430"
-        },
         {
           "$ref": "#/texts/431"
         },
@@ -1575,6 +1572,9 @@
         },
         {
           "$ref": "#/texts/438"
+        },
+        {
+          "$ref": "#/texts/439"
         }
       ],
       "content_layer": "body",
@@ -1584,12 +1584,9 @@
     {
       "self_ref": "#/groups/50",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [
-        {
-          "$ref": "#/texts/442"
-        },
         {
           "$ref": "#/texts/443"
         },
@@ -1631,6 +1628,9 @@
         },
         {
           "$ref": "#/texts/456"
+        },
+        {
+          "$ref": "#/texts/457"
         }
       ],
       "content_layer": "body",
@@ -1640,12 +1640,9 @@
     {
       "self_ref": "#/groups/51",
       "parent": {
-        "$ref": "#/texts/457"
+        "$ref": "#/texts/458"
       },
       "children": [
-        {
-          "$ref": "#/texts/458"
-        },
         {
           "$ref": "#/texts/459"
         },
@@ -1794,7 +1791,7 @@
           "$ref": "#/texts/507"
         },
         {
-          "$ref": "#/texts/511"
+          "$ref": "#/texts/508"
         },
         {
           "$ref": "#/texts/512"
@@ -1807,6 +1804,9 @@
         },
         {
           "$ref": "#/texts/515"
+        },
+        {
+          "$ref": "#/texts/516"
         }
       ],
       "content_layer": "body",
@@ -1816,17 +1816,17 @@
     {
       "self_ref": "#/groups/52",
       "parent": {
-        "$ref": "#/texts/507"
+        "$ref": "#/texts/508"
       },
       "children": [
-        {
-          "$ref": "#/texts/508"
-        },
         {
           "$ref": "#/texts/509"
         },
         {
           "$ref": "#/texts/510"
+        },
+        {
+          "$ref": "#/texts/511"
         }
       ],
       "content_layer": "body",
@@ -1840,13 +1840,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/517"
-        },
-        {
           "$ref": "#/texts/518"
         },
         {
           "$ref": "#/texts/519"
+        },
+        {
+          "$ref": "#/texts/520"
         }
       ],
       "content_layer": "furniture",
@@ -1860,10 +1860,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/520"
+          "$ref": "#/texts/521"
         },
         {
-          "$ref": "#/texts/521"
+          "$ref": "#/texts/522"
         }
       ],
       "content_layer": "furniture",
@@ -1885,22 +1885,25 @@
           "$ref": "#/texts/2"
         },
         {
-          "$ref": "#/texts/4"
+          "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/texts/10"
+          "$ref": "#/texts/5"
         },
         {
-          "$ref": "#/texts/391"
+          "$ref": "#/texts/11"
         },
         {
-          "$ref": "#/texts/398"
+          "$ref": "#/texts/392"
         },
         {
-          "$ref": "#/texts/457"
+          "$ref": "#/texts/399"
         },
         {
-          "$ref": "#/texts/516"
+          "$ref": "#/texts/458"
+        },
+        {
+          "$ref": "#/texts/517"
         },
         {
           "$ref": "#/groups/53"
@@ -1932,9 +1935,21 @@
       "parent": {
         "$ref": "#/texts/0"
       },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "School of Electronic Engineering, Kyonggi University, Yeongtong-gu, Suwon, Gyeonggi-do 16227, Republic of Korea; Laboratory of Physical and Chemistry Materials, Faculty of Science, University of M’sila, University Campus, Road Bourdj Bou Arreiridj, M’sila 28000, Algeria; Laboratory of Optoelectronics and Compounds (LOC), Department of Physics, Faculty of Science, Setif 1 University-Ferhat Abbas, Setif 19000, Algeria; Department of Physics, Middle East Technical University, Ankara 06531, Turkey",
+      "text": "School of Electronic Engineering, Kyonggi University, Yeongtong-gu, Suwon, Gyeonggi-do 16227, Republic of Korea; Laboratory of Physical and Chemistry Materials, Faculty of Science, University of M’sila, University Campus, Road Bourdj Bou Arreiridj, M’sila 28000, Algeria; Laboratory of Optoelectronics and Compounds (LOC), Department of Physics, Faculty of Science, Setif 1 University-Ferhat Abbas, Setif 19000, Algeria; Department of Physics, Middle East Technical University, Ankara 06531, Turkey"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
       "children": [
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/texts/4"
         }
       ],
       "content_layer": "body",
@@ -1945,9 +1960,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/texts/2"
+        "$ref": "#/texts/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1957,14 +1972,11 @@
       "text": "In this work, the dynamics of quark–antiquark pair systems is investigated by modeling them as general time-dependent 3D oscillators perturbed by a Coulomb potential. Solving this model enables the prediction of key mesonic properties such as the probability density, energy spectra, and quadrature uncertainties, offering theoretical insights into the confinement of quarks via gluon-mediated strong interactions. To tackle the mathematical difficulty raised by the time dependence of parameters in the system, special mathematical techniques, such as the invariant operator method, unitary transformation method, and the Nikiforov–Uvarov functional analysis are used. The wave functions of the system, derived using these mathematical techniques, are expressed analytically in terms of the Gauss hypergeometric function whose mathematical properties are well characterized. Our results provide the quantum-mechanical framework of quark–antiquark systems that are essential for exploring the nonperturbative aspects of quantum chromodynamics. In addition, the underlying mathematical structure may serve as a foundation for addressing broader challenges in particle physics, including the origin of mass and its connection to the Higgs mechanism."
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
-        {
-          "$ref": "#/texts/5"
-        },
         {
           "$ref": "#/texts/6"
         },
@@ -1976,6 +1988,9 @@
         },
         {
           "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -1986,9 +2001,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1998,9 +2013,9 @@
       "text": "Quark–antiquark pairs are a key concept in particle physics, essential for understanding the strong interaction and the structure of hadrons such as mesons and baryons. Typical examples of quark–antiquark pairs are bound states of a heavy quark and its antiquark, such as charmonium and bottomonium, collectively referred to as quarkonia [1]. Quarkonia can be readily produced in experiments such as the LHC, and their properties can be measured with high precision. Quarkonia’s distinct mass spectra, unique decay patterns, and relatively long lifetimes are of significant interest in the search for physics that extends past the Standard Model. As such, they may offer a promising avenue for probing potential new phenomena not accounted for by the Higgs sector [2,3]. This makes quarkonia an important topic requiring collaborative research between experimental and theoretical physicists. Indeed, they are actively studied in connection with new particle searches and dark matter theories [4–7]."
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -2010,9 +2025,9 @@
       "text": "In light of this, it is essential to establish a theoretical framework that enables systematic analysis and interpretation of quarkonium systems. In particle physics, quark–antiquark systems are commonly modeled using a potential that combines harmonic and Coulomb terms [8–10], where the harmonic component captures the long-range confinement effect and the Coulomb term accounts for the short-range interactions based on quantum chromodynamics (QCD). Motivated by this, we focus on the analysis of time-dependent 3D oscillators perturbed by a Coulomb potential throughout this work. The quantum-mechanical solutions of such systems are known to be expressible in terms of biconfluent Heun functions [11,12]. However, limited knowledge of the properties of such functions continues to make these systems difficult to analyze. At present, the characterization of these functions remains confined to their behavior in certain special cases and their connections to specific recursion relations, particularly their representations in terms of these relations [13,14]. This lack of comprehensive understanding is the reason why many researchers refer to them primarily through their defining equation, the biconfluent Heun equation, rather than treating them as fully characterized functions in their own right [15–19]."
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -2022,9 +2037,9 @@
       "text": "To overcome this limitation, the present work explores an alternative analytical treatment by expressing the solutions in terms of well-established mathematical functions, thereby providing a more accessible and rigorous theoretical understanding of the system. Deriving such solutions to fundamental equations for our general physical systems governed by time-dependent Hamiltonians [20–22] may require special mathematical techniques beyond conventional methods such as the separation of variables. One promising approach is the invariant operator method [23–26], which has proven effective in the study of time-dependent Hamiltonian systems (TDHSs). This method allows for the construction of exact quantum solutions in systems with time-dependent parameters. Specifically, if an invariant operator can be identified for a given system, the quantum wave functions, apart from phase parts, can be expressed by eigenfunctions of this operator. Consequently, solving the quantum system reduces to finding the eigenfunctions of the invariant operator, while the required phase factors can be determined with the help of the Schrödinger equation."
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -2034,9 +2049,9 @@
       "text": "Regarding coupling of potentials, as well as the system’s time dependence, the general form of the invariant operator is typically complicated. Therefore, to solve its eigenvalue equation, more advanced mathematical techniques, such as the unitary transformation method [27,28] and the Nikiforov–Uvarov functional analysis (NUFA) [29], are necessary. The NUFA method builds upon and integrates several approaches, including the original Nikiforov–Uvarov (NU) method [30], the parametric NU method [31–34], and elements of functional analysis [35]. This enhanced method enables one to obtain the solution of related equations, including those of hypergeometric type, in a systematic and elegant manner, allowing the determination of the eigenvalue spectrum and the corresponding wave functions. We demonstrate that the wave functions derived through this approach can be expressed in terms of the well-known Gauss hypergeometric function. This may provide a significantly more tractable framework for analyzing the system compared to existing solutions that are based on biconfluent Heun functions. Taking advantage of these strengths, we show that the newly obtained solutions enable a thorough investigation of the system, particularly in dynamically evolving hadronic environments where effective quark interactions may vary due to medium-induced effects and nonequilibrium processes."
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -2046,19 +2061,19 @@
       "text": "The main contributions of the present work can be summarized as follows. First, we develop an analytical treatment for a time-dependent quark–antiquark model based on a 3D oscillator perturbed by a Coulomb interaction within the framework of invariant operator theory. Second, by combining the invariant operator method, unitary transformation techniques, and the NUFA formalism, we derive analytical expressions for the eigenspectrum, quantum phases, and wave functions of the system in closed form. In contrast to several previous approaches in which the solutions are represented in terms of biconfluent Heun functions, the present treatment expresses the wave functions in terms of the Gauss hypergeometric function, whose mathematical properties are more thoroughly established. This provides a more tractable analytical framework for investigating the dynamical properties of quark–antiquark systems governed by time-dependent Hamiltonians."
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/11"
+          "$ref": "#/texts/12"
         },
         {
-          "$ref": "#/texts/197"
+          "$ref": "#/texts/198"
         },
         {
-          "$ref": "#/texts/268"
+          "$ref": "#/texts/269"
         }
       ],
       "content_layer": "body",
@@ -2069,19 +2084,19 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/texts/10"
+        "$ref": "#/texts/11"
       },
       "children": [
         {
-          "$ref": "#/texts/12"
+          "$ref": "#/texts/13"
         },
         {
-          "$ref": "#/texts/44"
+          "$ref": "#/texts/45"
         },
         {
-          "$ref": "#/texts/100"
+          "$ref": "#/texts/101"
         }
       ],
       "content_layer": "body",
@@ -2092,16 +2107,13 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/texts/11"
+        "$ref": "#/texts/12"
       },
       "children": [
         {
           "$ref": "#/groups/0"
-        },
-        {
-          "$ref": "#/texts/28"
         },
         {
           "$ref": "#/texts/29"
@@ -2110,19 +2122,22 @@
           "$ref": "#/texts/30"
         },
         {
+          "$ref": "#/texts/31"
+        },
+        {
           "$ref": "#/groups/1"
         },
         {
-          "$ref": "#/texts/38"
+          "$ref": "#/texts/39"
         },
         {
           "$ref": "#/groups/2"
         },
         {
-          "$ref": "#/texts/42"
+          "$ref": "#/texts/43"
         },
         {
-          "$ref": "#/texts/43"
+          "$ref": "#/texts/44"
         }
       ],
       "content_layer": "body",
@@ -2133,7 +2148,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2145,7 +2160,7 @@
       "text": "We consider a quark–antiquark pair with a time-dependent effective reduced mass "
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2157,7 +2172,7 @@
       "text": "\\mu (t)"
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2169,7 +2184,7 @@
       "text": " in spherical coordinates, governed by a central potential "
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2181,7 +2196,7 @@
       "text": "g(t)r^{2}-\\frac{Z(t)}{r}"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2193,7 +2208,7 @@
       "text": " where "
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2205,7 +2220,7 @@
       "text": "g(t)"
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2217,7 +2232,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2229,7 +2244,7 @@
       "text": "Z(t)"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2241,7 +2256,7 @@
       "text": " are coefficients that depend on time. While "
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2253,7 +2268,7 @@
       "text": "g(t)r^{2}"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2265,7 +2280,7 @@
       "text": " represents a confining trap potential with adjustable strength, "
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2277,7 +2292,7 @@
       "text": "-\\frac{Z(t)}{r}"
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2289,7 +2304,7 @@
       "text": " is a Coulomb perturbation with the constraint "
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2301,7 +2316,7 @@
       "text": "Z(t)\\gt 0"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -2313,9 +2328,9 @@
       "text": ". As the distance between quarks increases, the harmonic potential rises sharply, effectively prohibiting their free separation within a bound state. This potential acts as a simplified representation of the QCD confinement mechanism and dominates at large separations. Meanwhile, the Coulomb term represents the electromagnetic or color interaction mediated by the color charge of one quark acting on the other, effectively serving as a short-range attractive force between the quark and antiquark."
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2325,9 +2340,9 @@
       "text": "Time-dependent Hamiltonians naturally arise in hadron physics when quark–antiquark systems are embedded in dynamical environments, such as quark–gluon plasma or nonequilibrium hadronic media produced in high-energy collisions [20–22]. In such situations, the effective interaction between quarks may vary with time due to medium evolution, color-screening effects, confinement modifications, or changes in the effective quark mass. Consequently, the parameters appearing in phenomenological quarkonium potentials, including the confining strength and Coulomb-like coupling terms, can acquire explicit time dependence. The present model therefore provides an effective framework for investigating dynamical quark–antiquark systems within a quantum-mechanical setting."
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2337,9 +2352,9 @@
       "text": "Based on the above description, the Hamiltonian that characterizes the motion of the pair of quarks is expressed as:"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2349,7 +2364,7 @@
       "text": "\\begin{eqnarray}\nH(t)=\\frac{p^{2}}{2\\mu (t)}+g(t)r^{2}-\\frac{Z(t)}{r} .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2361,7 +2376,7 @@
       "text": "This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as "
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2373,7 +2388,7 @@
       "text": "p^{2}=p_{r}^{2}+\\frac{L^{2}}{r^{2}}"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2385,7 +2400,7 @@
       "text": ", where "
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2397,7 +2412,7 @@
       "text": "p_{r}=-i\\hbar (\\frac{\\partial }{\\partial r}+\\frac{1}{r})"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2409,7 +2424,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2428,7 +2443,7 @@
       }
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2440,9 +2455,9 @@
       "text": " is the total angular momentum, the formula for which is given by"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/39",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2452,7 +2467,7 @@
       "text": "\\begin{eqnarray}\nL^{2}=-\\hbar ^{2}\\bigg [\\frac{1}{\\sin ^{2}\\theta }\\frac{\\partial ^{2}}{\\partial \\varphi ^{2}}+\\frac{1}{\\sin \\theta }\\frac{\\partial }{\\partial \\theta }\\bigg (\\sin \\theta \\frac{\\partial }{\\partial \\theta }\\bigg )\\bigg ].\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -2464,7 +2479,7 @@
       "text": "To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as "
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -2476,7 +2491,7 @@
       "text": "|\\Psi (t)\\rangle"
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -2488,9 +2503,9 @@
       "text": ", the corresponding Schrödinger equation is of the form"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2500,9 +2515,9 @@
       "text": "\\begin{eqnarray}\ni\\hbar \\frac{\\partial }{\\partial t}|\\Psi (t)\\rangle =H(t)|\\Psi (t)\\rangle .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2512,9 +2527,9 @@
       "text": "The time dependence of the Hamiltonian requires a specialized approach to solve this equation, as will be presented subsequently."
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/texts/11"
+        "$ref": "#/texts/12"
       },
       "children": [
         {
@@ -2524,31 +2539,28 @@
           "$ref": "#/groups/4"
         },
         {
-          "$ref": "#/texts/59"
+          "$ref": "#/texts/60"
         },
         {
           "$ref": "#/groups/5"
         },
         {
-          "$ref": "#/texts/63"
+          "$ref": "#/texts/64"
         },
         {
           "$ref": "#/groups/6"
         },
         {
-          "$ref": "#/texts/67"
+          "$ref": "#/texts/68"
         },
         {
           "$ref": "#/groups/7"
         },
         {
-          "$ref": "#/texts/71"
+          "$ref": "#/texts/72"
         },
         {
           "$ref": "#/groups/8"
-        },
-        {
-          "$ref": "#/texts/83"
         },
         {
           "$ref": "#/texts/84"
@@ -2560,19 +2572,22 @@
           "$ref": "#/texts/86"
         },
         {
+          "$ref": "#/texts/87"
+        },
+        {
           "$ref": "#/groups/9"
         },
         {
-          "$ref": "#/texts/92"
+          "$ref": "#/texts/93"
         },
         {
           "$ref": "#/groups/10"
         },
         {
-          "$ref": "#/texts/98"
+          "$ref": "#/texts/99"
         },
         {
-          "$ref": "#/texts/99"
+          "$ref": "#/texts/100"
         }
       ],
       "content_layer": "body",
@@ -2583,7 +2598,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2595,7 +2610,7 @@
       "text": "Because "
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2607,7 +2622,7 @@
       "text": "H(t)"
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2619,7 +2634,7 @@
       "text": " in Eq. (1) is represented in terms of time functions, directly solving Eq. (3) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [24]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator "
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2631,7 +2646,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2643,7 +2658,7 @@
       "text": " rather than "
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2655,7 +2670,7 @@
       "text": "H(t)"
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2667,7 +2682,7 @@
       "text": " in Eq. (1), where "
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2679,7 +2694,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2691,7 +2706,7 @@
       "text": " does not involve time-derivative operators. Moreover, "
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2703,7 +2718,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -2715,7 +2730,7 @@
       "text": " is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum–classical correspondence."
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -2727,7 +2742,7 @@
       "text": "By the definition of the invariant operator, "
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -2739,7 +2754,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -2751,9 +2766,9 @@
       "text": " satisfies the equation:"
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/60",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -2763,7 +2778,7 @@
       "text": "\\begin{eqnarray}\n\\frac{dI}{dt}=\\frac{\\partial I}{\\partial t}+\\frac{1}{i\\hbar }[I,H]=0.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -2775,7 +2790,7 @@
       "text": "If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction "
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -2787,7 +2802,7 @@
       "text": "\\Phi (\\vec{r},t)"
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -2799,9 +2814,9 @@
       "text": ", such that"
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/64",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -2811,7 +2826,7 @@
       "text": "\\begin{eqnarray}\n\\Psi (\\vec{r},t)=e^{i\\alpha (t)}\\Phi (\\vec{r},t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -2823,7 +2838,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -2835,7 +2850,7 @@
       "text": "\\alpha (t)"
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -2847,9 +2862,9 @@
       "text": " is a phase function that can be obtained from"
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/68",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -2859,7 +2874,7 @@
       "text": "\\begin{eqnarray}\n\\hbar \\frac{d\\alpha (t)}{dt}=\\left\\langle \\Phi \\left|\\bigg (i\\hbar \\frac{\\partial }{\\partial t}-H\\bigg )\\right|\\Phi \\right\\rangle .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -2871,7 +2886,7 @@
       "text": "To find the expression of the invariant "
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -2883,7 +2898,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -2895,9 +2910,9 @@
       "text": " utilizing Eq. (4), we set"
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/72",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -2907,7 +2922,7 @@
       "text": "\\begin{eqnarray}\nI(t)=A(t)p^{2}+B(t)\\left( rp_{r}+p_{r}r\\right) +C(t)r^{2}-\\frac{D(t)}{r},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2919,7 +2934,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2931,7 +2946,7 @@
       "text": "A(t)"
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2943,7 +2958,7 @@
       "text": ", "
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2955,7 +2970,7 @@
       "text": "B(t)"
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2967,7 +2982,7 @@
       "text": ", "
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2979,7 +2994,7 @@
       "text": "C(t)"
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/79",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -2991,7 +3006,7 @@
       "text": ", and "
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -3003,7 +3018,7 @@
       "text": "D(t)"
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -3015,7 +3030,7 @@
       "text": " are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of "
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -3027,7 +3042,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/83",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -3039,9 +3054,9 @@
       "text": " after substituting Eqs. (1) and (7) into Eq. (4) yields"
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/84",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3051,9 +3066,9 @@
       "text": "\\begin{eqnarray}\nA(t) =A_{0}\\rho ^{2}(t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/85",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3063,9 +3078,9 @@
       "text": "\\begin{eqnarray}\nB(t) =-A_{0}\\mu (t)\\rho (t)\\dot{\\rho }(t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/86",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3075,9 +3090,9 @@
       "text": "\\begin{eqnarray}\nC(t) =A_{0}\\bigg (\\mu ^{2}(t)[\\dot{\\rho }(t)]^{2}+\\frac{\\Omega ^{2}}{4\\rho ^{2}(t)}\\bigg ),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/87",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3087,7 +3102,7 @@
       "text": "\\begin{eqnarray}\nD(t) =2A_{0}\\mu (t)Z(t)\\rho ^{2}(t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -3099,7 +3114,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/89",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -3111,7 +3126,7 @@
       "text": "A_{0}"
     },
     {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/90",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -3123,7 +3138,7 @@
       "text": " is an arbitrary real constant and "
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/91",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -3135,7 +3150,7 @@
       "text": "\\rho (t)"
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -3147,9 +3162,9 @@
       "text": " is a solution of the following equation"
     },
     {
-      "self_ref": "#/texts/92",
+      "self_ref": "#/texts/93",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3159,7 +3174,7 @@
       "text": "\\begin{eqnarray}\n\\ddot{\\rho }(t)+\\frac{\\dot{\\mu }(t)}{\\mu (t) }\\dot{\\rho }(t)+2\\frac{g(t)}{\\mu (t)}\\rho (t) =\\frac{\\Omega ^{2}}{4\\mu ^{2}(t)\\rho ^{3}(t)},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/93",
+      "self_ref": "#/texts/94",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -3171,7 +3186,7 @@
       "text": "with "
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/95",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -3183,7 +3198,7 @@
       "text": "\\Omega"
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -3195,7 +3210,7 @@
       "text": " being a real constant. The above invariant is valid under the condition that "
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/97",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -3207,7 +3222,7 @@
       "text": "Z(t)"
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/98",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -3219,9 +3234,9 @@
       "text": " follows the relation"
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/99",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3231,9 +3246,9 @@
       "text": "\\begin{eqnarray}\n\\dot{Z}(t)+\\bigg (\\frac{\\dot{\\mu }(t)}{\\mu (t)}+\\frac{\\dot{\\rho }(t)}{\\rho (t)}\\bigg )Z(t)=0.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/100",
       "parent": {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/45"
       },
       "children": [],
       "content_layer": "body",
@@ -3243,34 +3258,31 @@
       "text": "Equation (7) with Eqs. (8)–(11) constitutes the complete quadratic invariant operator of the system. This operator provides a robust analytical framework for the system, in which direct solutions are difficult to obtain due to the complicated time evolution of the Hamiltonian. It also enables a deeper understanding of dynamical properties of the system, including phase transitions and topological changes, beyond merely providing a powerful methodology for obtaining solutions."
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/101",
       "parent": {
-        "$ref": "#/texts/11"
+        "$ref": "#/texts/12"
       },
       "children": [
         {
           "$ref": "#/groups/11"
         },
         {
-          "$ref": "#/texts/106"
+          "$ref": "#/texts/107"
         },
         {
           "$ref": "#/groups/12"
         },
         {
-          "$ref": "#/texts/114"
+          "$ref": "#/texts/115"
         },
         {
           "$ref": "#/groups/13"
         },
         {
-          "$ref": "#/texts/118"
+          "$ref": "#/texts/119"
         },
         {
           "$ref": "#/groups/14"
-        },
-        {
-          "$ref": "#/texts/124"
         },
         {
           "$ref": "#/texts/125"
@@ -3279,40 +3291,43 @@
           "$ref": "#/texts/126"
         },
         {
-          "$ref": "#/groups/15"
+          "$ref": "#/texts/127"
         },
         {
-          "$ref": "#/texts/142"
+          "$ref": "#/groups/15"
         },
         {
           "$ref": "#/texts/143"
         },
         {
+          "$ref": "#/texts/144"
+        },
+        {
           "$ref": "#/groups/16"
         },
         {
-          "$ref": "#/texts/147"
+          "$ref": "#/texts/148"
         },
         {
           "$ref": "#/groups/17"
         },
         {
-          "$ref": "#/texts/153"
+          "$ref": "#/texts/154"
         },
         {
           "$ref": "#/groups/18"
         },
         {
-          "$ref": "#/texts/163"
+          "$ref": "#/texts/164"
         },
         {
-          "$ref": "#/texts/164"
+          "$ref": "#/texts/165"
         },
         {
           "$ref": "#/groups/19"
         },
         {
-          "$ref": "#/texts/172"
+          "$ref": "#/texts/173"
         },
         {
           "$ref": "#/groups/20"
@@ -3321,13 +3336,13 @@
           "$ref": "#/groups/21"
         },
         {
-          "$ref": "#/texts/189"
-        },
-        {
           "$ref": "#/texts/190"
         },
         {
           "$ref": "#/texts/191"
+        },
+        {
+          "$ref": "#/texts/192"
         },
         {
           "$ref": "#/groups/22"
@@ -3341,7 +3356,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -3353,7 +3368,7 @@
       "text": "Because the quantum wave functions of the system are represented in terms of the eigenfunctions of "
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -3365,7 +3380,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -3377,7 +3392,7 @@
       "text": ", it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant "
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -3389,7 +3404,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -3401,9 +3416,9 @@
       "text": " as"
     },
     {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/107",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3413,7 +3428,7 @@
       "text": "\\begin{eqnarray}\nI(t)\\Phi _{n}(\\vec{r},t)=\\Lambda _{n}\\Phi _{n}(\\vec{r},t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3425,7 +3440,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/108",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3437,7 +3452,7 @@
       "text": "\\Lambda _{n}"
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3449,7 +3464,7 @@
       "text": " are the eigenvalues and "
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3461,7 +3476,7 @@
       "text": "\\Phi _{n}(\\vec{r},t)"
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3473,7 +3488,7 @@
       "text": " are time-dependent eigenfunctions. Given that "
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3485,7 +3500,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3497,9 +3512,9 @@
       "text": ", as defined in Eq. (7) along with Eqs. (8)–(11), has a complicated form, it is favorable to solve Eq. (14) after we transform it mathematically into a simple form. To do this, we consider a unitary transformation of the form"
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/115",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3509,7 +3524,7 @@
       "text": "\\begin{eqnarray}\n\\Phi _{n}^{\\prime }(\\vec{r})=U(t)\\Phi _{n}(\\vec{r},t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/116",
       "parent": {
         "$ref": "#/groups/13"
       },
@@ -3521,7 +3536,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/117",
       "parent": {
         "$ref": "#/groups/13"
       },
@@ -3533,7 +3548,7 @@
       "text": "U(t)"
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/groups/13"
       },
@@ -3545,9 +3560,9 @@
       "text": " is a time-dependent unitary operator given by"
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/119",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3557,7 +3572,7 @@
       "text": "\\begin{eqnarray}\nU(t)=\\exp \\left[ \\frac{i\\ln \\rho (t)}{2\\hbar }\\left( rp_{r}+p_{r}r\\right) \\right] \\exp \\left[ -i\\frac{\\mu (t)\\dot{\\rho }(t)}{2\\hbar \\rho (t)}r^{2}\\right] .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -3569,7 +3584,7 @@
       "text": "Then, if we write the transformed invariant operator as "
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -3581,7 +3596,7 @@
       "text": "I_0"
     },
     {
-      "self_ref": "#/texts/121",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -3593,7 +3608,7 @@
       "text": ", the eigenvalue equation in the transformed frame is represented in terms of "
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -3605,7 +3620,7 @@
       "text": "\\Phi _{n}^{\\prime }(\\vec{r})"
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -3617,9 +3632,9 @@
       "text": ", such that"
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/125",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3629,9 +3644,9 @@
       "text": "\\begin{eqnarray}\nUIU^{-1}\\Phi _{n}^{\\prime }(\\vec{r})=I_{0}\\Phi _{n}^{\\prime }(\\vec{r})=\\Lambda _{n}\\Phi _{n}^{\\prime }(\\vec{r}).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/126",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3641,9 +3656,9 @@
       "text": "Now, from a mathematical procedure using Eq. (16), we obtain that"
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/127",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3653,7 +3668,7 @@
       "text": "\\begin{eqnarray}\n\\left[ A_{0}p^{2}+A_{0}\\frac{\\Omega ^{2}}{4}r^{2}-D_{0}\\frac{1}{r}\\right] \\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi )=\\Lambda _{nl}\\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi ),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3665,7 +3680,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3677,7 +3692,7 @@
       "text": "D_{0} = 2A_{0}\\mu (t)Z(t)\\rho (t)"
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3689,7 +3704,7 @@
       "text": " while "
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3701,7 +3716,7 @@
       "text": "n=0,1,2,\\cdots"
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3713,7 +3728,7 @@
       "text": ". An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of "
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3725,7 +3740,7 @@
       "text": "D_0"
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3737,7 +3752,7 @@
       "text": " with respect to "
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3756,7 +3771,7 @@
       }
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3768,7 +3783,7 @@
       "text": ", followed by the application of Eq. (13), yields "
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3780,7 +3795,7 @@
       "text": "d D_0/dt=0"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3792,7 +3807,7 @@
       "text": ". This means that "
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3804,7 +3819,7 @@
       "text": "D_0"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3816,7 +3831,7 @@
       "text": " is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant "
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3828,7 +3843,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -3840,9 +3855,9 @@
       "text": ". It is worth noting that Eq. (18) is very simple compared to the original eigenvalue equation represented in Eq. (14)."
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/143",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3852,9 +3867,9 @@
       "text": "The existence of a perturbation of Coulomb potential may make the problem much more difficult. In what follows, the eigenvalue equation (18) can be rewritten as"
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/144",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3864,7 +3879,7 @@
       "text": "\\begin{eqnarray}\n\\begin{bmatrix}-\\hbar ^{2}A_{0}\\Big [\\frac{1}{r^{2}}\\frac{\\partial }{\\partial r}\\left( r^{2}\\frac{\\partial }{\\partial r}\\right) +\\frac{1}{r^{2}\\sin ^{2}\\theta }\\frac{\\partial ^{2}}{\\partial \\varphi ^{2}} \\\\+\\frac{1}{r^{2}\\sin \\theta }\\frac{\\partial }{\\partial \\theta }(\\sin \\theta \\frac{\\partial }{\\partial \\theta })\\Big ]+A_{0}\\frac{\\Omega ^{2}}{4}r^{2}-\\frac{D_{0}}{r} \\end{bmatrix} \\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi )=\\Lambda _{nl}\\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi ).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/groups/16"
       },
@@ -3876,7 +3891,7 @@
       "text": "According to the invariant operator theory, the wave functions of the transformed system are represented in terms of "
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/groups/16"
       },
@@ -3888,7 +3903,7 @@
       "text": "\\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi )"
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/groups/16"
       },
@@ -3900,9 +3915,9 @@
       "text": ". Because this equation is independent of time, we can apply the method of separation of variables in order to solve it. Considering this, we take"
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/148",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3912,7 +3927,7 @@
       "text": "\\begin{eqnarray}\n\\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi )=R_{nl}(r)Y_{lm}(\\theta ,\\varphi )=\\frac{u_{nl}(r)Y_{lm}(\\theta ,\\varphi )}{r},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/groups/17"
       },
@@ -3924,7 +3939,7 @@
       "text": "where we have introduced "
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/groups/17"
       },
@@ -3936,7 +3951,7 @@
       "text": "u_{nl}(r) = r R_{nl}(r)"
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/groups/17"
       },
@@ -3948,7 +3963,7 @@
       "text": ", whereas "
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/groups/17"
       },
@@ -3960,7 +3975,7 @@
       "text": "Y_{lm}(\\theta ,\\varphi )"
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/groups/17"
       },
@@ -3972,9 +3987,9 @@
       "text": " are the spherical harmonics. The angular part of the eigenfunctions takes the form"
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/154",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -3984,7 +3999,7 @@
       "text": "\\begin{eqnarray}\nY_{lm}(\\theta ,\\varphi )= N_{lm}e^{im\\varphi }P_{l}^{m}(\\cos \\theta ),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -3996,7 +4011,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4008,7 +4023,7 @@
       "text": "P_{l}^{m}(x)"
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4020,7 +4035,7 @@
       "text": " are the associated Legendre polynomials, while the spherical normalization constants are "
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4032,7 +4047,7 @@
       "text": "N_{lm}=(-1)^m \\lbrace [(2l+1)/(4\\pi )](l-m)!/(l+m)! \\rbrace ^{1/2}"
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4044,7 +4059,7 @@
       "text": ". The allowed orbital and magnetic quantum numbers are "
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4056,7 +4071,7 @@
       "text": "l=0,1,2,\\cdots"
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4068,7 +4083,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4080,7 +4095,7 @@
       "text": "m=-l,-l+1,\\cdots ,l"
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -4092,9 +4107,9 @@
       "text": ", respectively."
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/164",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -4104,9 +4119,9 @@
       "text": "Some algebraic manipulation, after substituting Eq. (20) into Eq. (19), leads to the following radial equation:"
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/165",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -4116,7 +4131,7 @@
       "text": "\\begin{eqnarray}\n\\frac{d^{2}u_{nl}(r)}{dr^{2}}+\\left( \\frac{\\Lambda _{nl}}{\\hbar ^{2}A_{0}}-\\frac{\\Omega ^{2}}{4\\hbar ^{2}}r^{2}+\\frac{D_{0}}{\\hbar ^{2}A_{0}}\\frac{1}{r}-\\frac{l(l+1)}{r^{2}}\\right) u_{nl}(r)=0.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4128,7 +4143,7 @@
       "text": "The equation is analytically intractable unless "
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4140,7 +4155,7 @@
       "text": "\\Omega = 0"
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4152,7 +4167,7 @@
       "text": " owing to the coexistence of "
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4164,7 +4179,7 @@
       "text": "r^{2}"
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4176,7 +4191,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/171",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4188,7 +4203,7 @@
       "text": "-\\frac{1}{r^{2}}"
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -4200,9 +4215,9 @@
       "text": " terms. To resolve this difficulty, we employ the Greene–Aldrich approximation scheme of the form [36–39]"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/173",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -4212,7 +4227,7 @@
       "text": "\\begin{eqnarray}\n\\frac{1}{r^{2}} \\simeq \\frac{\\delta ^{2}}{\\left( 1-e^{-\\delta r}\\right) ^{2}},~~~~~\\frac{1}{r} \\simeq \\frac{\\delta }{1-e^{-\\delta r}},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4224,7 +4239,7 @@
       "text": "together with a coordinate transformation "
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4236,7 +4251,7 @@
       "text": "y=e^{-\\delta r}"
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4248,7 +4263,7 @@
       "text": ". This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter "
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4260,7 +4275,7 @@
       "text": "\\delta"
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4272,7 +4287,7 @@
       "text": " is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing "
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4284,7 +4299,7 @@
       "text": "\\delta"
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4296,7 +4311,7 @@
       "text": " to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than "
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4308,7 +4323,7 @@
       "text": "1/\\delta"
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4320,7 +4335,7 @@
       "text": ". For example, in quarkonium models, "
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4332,7 +4347,7 @@
       "text": "\\delta"
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4344,7 +4359,7 @@
       "text": " is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting "
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4356,7 +4371,7 @@
       "text": "\\delta"
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -4368,7 +4383,7 @@
       "text": " within this range is a reasonable choice."
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/groups/21"
       },
@@ -4380,7 +4395,7 @@
       "text": "Then, by rewriting the notation as "
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/groups/21"
       },
@@ -4392,7 +4407,7 @@
       "text": "u_{nl}(r)\\rightarrow U_{nl}(y)"
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/groups/21"
       },
@@ -4404,9 +4419,9 @@
       "text": ", the differential equation (22) becomes"
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/190",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -4416,9 +4431,9 @@
       "text": "\\begin{eqnarray}\n\\frac{d^{2}U_{nl}(y)}{dy^{2}}+\\frac{\\left( 1-y\\right) }{y(1-y)}\\frac{dU_{nl}(y)}{dy}+\\frac{1}{y^{2}(1-y)^{2}}\\begin{bmatrix}-\\left( \\varepsilon _{nl}-6P\\right) y^{2} \\\\+\\left( 2\\varepsilon _{nl}-4P+Q\\right) y \\\\-\\left( \\varepsilon _{nl}-P+Q+\\gamma \\right) \\end{bmatrix} U_{nl}(y)=0,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/191",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -4428,9 +4443,9 @@
       "text": "where"
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/192",
       "parent": {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/101"
       },
       "children": [],
       "content_layer": "body",
@@ -4440,7 +4455,7 @@
       "text": "\\begin{eqnarray}\n\\varepsilon _{nl}=\\frac{-\\Lambda _{nl}}{\\hbar ^{2}A_{0}\\delta ^{2}},~~~P=-\\frac{\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}},~~~Q=-\\frac{D_{0}}{\\hbar ^{2}A_{0}\\delta },~~~\\gamma =l(l+1).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -4452,7 +4467,7 @@
       "text": "In the representation of Eq. (24), we neglected higher-order terms corresponding to "
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -4464,7 +4479,7 @@
       "text": "y^{3}"
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -4476,7 +4491,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -4488,7 +4503,7 @@
       "text": "y^{4}"
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -4500,22 +4515,19 @@
       "text": ". To solve this equation, we use the NUFA method [29] outlined in the next subsection."
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/198",
       "parent": {
-        "$ref": "#/texts/10"
+        "$ref": "#/texts/11"
       },
       "children": [
-        {
-          "$ref": "#/texts/198"
-        },
         {
           "$ref": "#/texts/199"
         },
         {
-          "$ref": "#/groups/23"
+          "$ref": "#/texts/200"
         },
         {
-          "$ref": "#/texts/210"
+          "$ref": "#/groups/23"
         },
         {
           "$ref": "#/texts/211"
@@ -4545,16 +4557,19 @@
           "$ref": "#/texts/219"
         },
         {
+          "$ref": "#/texts/220"
+        },
+        {
           "$ref": "#/groups/24"
         },
         {
-          "$ref": "#/texts/223"
+          "$ref": "#/texts/224"
         },
         {
           "$ref": "#/groups/25"
         },
         {
-          "$ref": "#/texts/227"
+          "$ref": "#/texts/228"
         },
         {
           "$ref": "#/groups/26"
@@ -4571,9 +4586,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/199",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4583,9 +4598,9 @@
       "text": "A second-order differential equation of hypergeometric type can be solved in a simple and elegant way by using the so-called NUFA method. This is an improvement over the parametric NU method, which is relatively cumbersome due to the need to find the square of the polynomials and other conditions required. With the NUFA method, many diffierential equations, including our wave equation, can be properly tackled, allowing for the identification of singularities and the determination of the eigenvalue spectrum. As a general type of second-order differential equation, which encompasses Eq. (24), we consider the following equation [31]:"
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/200",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4595,7 +4610,7 @@
       "text": "\\begin{eqnarray}\n\\left[ \\frac{d^{2}}{ds^{2}}+\\frac{\\alpha _{1}-\\alpha _{2}s}{s(1-\\alpha _{3}s)}\\frac{d}{ds}+\\frac{-\\zeta _{1}s^{2}+\\zeta _{2}s-\\zeta _{3}}{s^{2}(1-\\alpha _{3}s)^{2}}\\right] \\phi (s)=0,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4607,7 +4622,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4619,7 +4634,7 @@
       "text": "\\alpha _{i}"
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4631,7 +4646,7 @@
       "text": "(i=1,2,3)"
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4643,7 +4658,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4655,7 +4670,7 @@
       "text": "\\zeta _{i}"
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4667,7 +4682,7 @@
       "text": " are parameters appropriately chosen depending on a given system. Because this equation has two singularities at "
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4679,7 +4694,7 @@
       "text": "s\\rightarrow 0"
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/208",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4691,7 +4706,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/209",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4703,7 +4718,7 @@
       "text": "s\\rightarrow 1/\\alpha _{3}"
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/210",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -4715,9 +4730,9 @@
       "text": ", it is possible to take the solution in the form"
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/211",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4727,9 +4742,9 @@
       "text": "\\begin{eqnarray}\n\\phi (s)=s^{\\lambda }(1-\\alpha _{3}s)^{\\upsilon }f(s).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/212",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4739,9 +4754,9 @@
       "text": "By substituting this formula into Eq. (26) along with the following choice,"
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/213",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4751,9 +4766,9 @@
       "text": "\\begin{eqnarray}\n\\lambda =\\frac{1}{2}\\lbrace 1-\\alpha _{1}\\pm [\\left( 1-\\alpha _{1}\\right) ^{2}+4\\zeta _{3}]^{1/2}\\rbrace ,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/214",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4763,9 +4778,9 @@
       "text": "\\begin{eqnarray}\n\\upsilon &=&\\frac{1}{2\\alpha _{3}} \\lbrace \\alpha _{3}+\\alpha _{1}\\alpha _{3}-\\alpha _{2}\\pm [\\left( \\alpha _{3}+\\alpha _{1}\\alpha _{3}-\\alpha _{2}\\right) ^{2} \\\\&&+4\\alpha _3 (\\zeta _{3}\\alpha _{3}-\\zeta _{2}+\\zeta _{1}/\\alpha _{3})]^{1/2}\\rbrace ,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/215",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4775,9 +4790,9 @@
       "text": "we have [29]"
     },
     {
-      "self_ref": "#/texts/215",
+      "self_ref": "#/texts/216",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4787,9 +4802,9 @@
       "text": "\\begin{eqnarray}\ns(1-\\alpha _{3}s)\\frac{d^{2}f(s)}{ds^{2}}+\\kappa \\frac{df(s)}{ds} -\\alpha _{3} \\kappa _+ \\kappa _- f(s)=0,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/217",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4799,9 +4814,9 @@
       "text": "where"
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/218",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4811,9 +4826,9 @@
       "text": "\\begin{eqnarray}\n\\kappa = \\alpha _{1}+2\\lambda -(2\\lambda \\alpha _{3}+2\\upsilon \\alpha _{3}+\\alpha _{2})s,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/219",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4823,9 +4838,9 @@
       "text": "\\begin{eqnarray}\n\\kappa _\\pm = \\lambda +\\upsilon +\\frac{1}{2}\\left( \\frac{\\alpha _{2}}{\\alpha _{3}}-1\\right) \\pm \\bigg [ \\frac{1}{4}\\left( \\frac{\\alpha _{2}}{\\alpha _{3}}-1\\right) ^{2}+\\frac{\\zeta _{1}}{\\alpha _{3}^{2}} \\bigg ]^{1/2}.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/220",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4835,7 +4850,7 @@
       "text": "Thus, the equation is reduced to a tractable form."
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/221",
       "parent": {
         "$ref": "#/groups/24"
       },
@@ -4847,7 +4862,7 @@
       "text": "We now examine a simple case where "
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/222",
       "parent": {
         "$ref": "#/groups/24"
       },
@@ -4859,7 +4874,7 @@
       "text": "\\alpha _3=1"
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/223",
       "parent": {
         "$ref": "#/groups/24"
       },
@@ -4871,9 +4886,9 @@
       "text": ", which meets the equation associated with our considered system. Under the condition that the principal quantum number takes the form"
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/224",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4883,7 +4898,7 @@
       "text": "\\begin{eqnarray}\nn=- \\kappa _- ,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/225",
       "parent": {
         "$ref": "#/groups/25"
       },
@@ -4895,7 +4910,7 @@
       "text": "the function "
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/226",
       "parent": {
         "$ref": "#/groups/25"
       },
@@ -4907,7 +4922,7 @@
       "text": "f(s)"
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/227",
       "parent": {
         "$ref": "#/groups/25"
       },
@@ -4919,9 +4934,9 @@
       "text": " is represented by the Gauss hypergeometric function as [29]"
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/228",
       "parent": {
-        "$ref": "#/texts/197"
+        "$ref": "#/texts/198"
       },
       "children": [],
       "content_layer": "body",
@@ -4931,7 +4946,7 @@
       "text": "\\begin{eqnarray}\nf (s) = {_{2}F_{1}}(a,b;c;s),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -4943,7 +4958,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -4955,7 +4970,7 @@
       "text": "a=\\kappa _-"
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -4967,7 +4982,7 @@
       "text": ", "
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -4979,7 +4994,7 @@
       "text": "b=\\kappa _+"
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -4991,7 +5006,7 @@
       "text": ", and "
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5003,7 +5018,7 @@
       "text": "c=\\alpha _{1}+2\\lambda"
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5015,7 +5030,7 @@
       "text": ". The mathematical formula of this hypergeometric function is as follows: "
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5027,7 +5042,7 @@
       "text": "_{2}F_{1}(a,b;c;s)=\\sum _{k=0}^{\\infty }\\frac{\\left( a\\right) _{k}\\left( b\\right) _{k}}{\\left( c\\right) _{k}k!}s^{k}"
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/237",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5039,7 +5054,7 @@
       "text": ", where "
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/238",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5051,7 +5066,7 @@
       "text": "\\left( a\\right) _{k}=a(a+1)(a+2)\\cdots (a+k-1)"
     },
     {
-      "self_ref": "#/texts/238",
+      "self_ref": "#/texts/239",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5063,7 +5078,7 @@
       "text": " for "
     },
     {
-      "self_ref": "#/texts/239",
+      "self_ref": "#/texts/240",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5075,7 +5090,7 @@
       "text": "k\\ge 1"
     },
     {
-      "self_ref": "#/texts/240",
+      "self_ref": "#/texts/241",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5087,7 +5102,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/241",
+      "self_ref": "#/texts/242",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5099,7 +5114,7 @@
       "text": "\\left( a\\right) _{0}=1"
     },
     {
-      "self_ref": "#/texts/242",
+      "self_ref": "#/texts/243",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -5111,7 +5126,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/244",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5123,7 +5138,7 @@
       "text": "The Gauss hypergeometric function "
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/245",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5135,7 +5150,7 @@
       "text": "_{2}F_{1}(a,b;c;s)"
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/246",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5147,7 +5162,7 @@
       "text": " serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function "
     },
     {
-      "self_ref": "#/texts/246",
+      "self_ref": "#/texts/247",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5159,7 +5174,7 @@
       "text": "_{2}F_{1}(a,b;c;s)"
     },
     {
-      "self_ref": "#/texts/247",
+      "self_ref": "#/texts/248",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5171,7 +5186,7 @@
       "text": " terminates and reduces to a polynomial when "
     },
     {
-      "self_ref": "#/texts/248",
+      "self_ref": "#/texts/249",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5190,7 +5205,7 @@
       }
     },
     {
-      "self_ref": "#/texts/249",
+      "self_ref": "#/texts/250",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5202,7 +5217,7 @@
       "text": " is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, "
     },
     {
-      "self_ref": "#/texts/250",
+      "self_ref": "#/texts/251",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5214,7 +5229,7 @@
       "text": "_{2}F_{1}(a,b;c;s)"
     },
     {
-      "self_ref": "#/texts/251",
+      "self_ref": "#/texts/252",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5226,7 +5241,7 @@
       "text": " is a generalization of Kummer’s confluent hypergeometric function "
     },
     {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/253",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5238,7 +5253,7 @@
       "text": "_{1}F_{1}(a;c;s)"
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/254",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5250,7 +5265,7 @@
       "text": ". Hence, in the limiting case where "
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/255",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5262,7 +5277,7 @@
       "text": "b \\rightarrow \\infty"
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5274,7 +5289,7 @@
       "text": ", "
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5286,7 +5301,7 @@
       "text": "_{2}F_{1}(a,b;c;s)"
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5298,7 +5313,7 @@
       "text": " converges to "
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5310,7 +5325,7 @@
       "text": "_{1}F_{1}(a;c;s)"
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5322,7 +5337,7 @@
       "text": ". This convergence is rooted in the fact that, while "
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/261",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5334,7 +5349,7 @@
       "text": "{}_2F_1"
     },
     {
-      "self_ref": "#/texts/261",
+      "self_ref": "#/texts/262",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5346,7 +5361,7 @@
       "text": " has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to "
     },
     {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/263",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5358,7 +5373,7 @@
       "text": "{}_1F_1"
     },
     {
-      "self_ref": "#/texts/263",
+      "self_ref": "#/texts/264",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5370,7 +5385,7 @@
       "text": " [44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The "
     },
     {
-      "self_ref": "#/texts/264",
+      "self_ref": "#/texts/265",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5382,7 +5397,7 @@
       "text": "{}_2F_1"
     },
     {
-      "self_ref": "#/texts/265",
+      "self_ref": "#/texts/266",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5394,7 +5409,7 @@
       "text": " function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the "
     },
     {
-      "self_ref": "#/texts/266",
+      "self_ref": "#/texts/267",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5406,7 +5421,7 @@
       "text": "{}_2F_1"
     },
     {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/268",
       "parent": {
         "$ref": "#/groups/27"
       },
@@ -5418,16 +5433,16 @@
       "text": " function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24)."
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/269",
       "parent": {
-        "$ref": "#/texts/10"
+        "$ref": "#/texts/11"
       },
       "children": [
         {
-          "$ref": "#/texts/269"
+          "$ref": "#/texts/270"
         },
         {
-          "$ref": "#/texts/366"
+          "$ref": "#/texts/367"
         }
       ],
       "content_layer": "body",
@@ -5438,9 +5453,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/269",
+      "self_ref": "#/texts/270",
       "parent": {
-        "$ref": "#/texts/268"
+        "$ref": "#/texts/269"
       },
       "children": [
         {
@@ -5450,13 +5465,10 @@
           "$ref": "#/groups/29"
         },
         {
-          "$ref": "#/texts/292"
+          "$ref": "#/texts/293"
         },
         {
           "$ref": "#/groups/30"
-        },
-        {
-          "$ref": "#/texts/298"
         },
         {
           "$ref": "#/texts/299"
@@ -5465,34 +5477,34 @@
           "$ref": "#/texts/300"
         },
         {
-          "$ref": "#/groups/31"
+          "$ref": "#/texts/301"
         },
         {
-          "$ref": "#/texts/314"
+          "$ref": "#/groups/31"
         },
         {
           "$ref": "#/texts/315"
         },
         {
+          "$ref": "#/texts/316"
+        },
+        {
           "$ref": "#/groups/32"
         },
         {
-          "$ref": "#/texts/319"
+          "$ref": "#/texts/320"
         },
         {
           "$ref": "#/groups/33"
         },
         {
-          "$ref": "#/texts/325"
-        },
-        {
           "$ref": "#/texts/326"
         },
         {
-          "$ref": "#/groups/34"
+          "$ref": "#/texts/327"
         },
         {
-          "$ref": "#/texts/330"
+          "$ref": "#/groups/34"
         },
         {
           "$ref": "#/texts/331"
@@ -5507,16 +5519,16 @@
           "$ref": "#/texts/334"
         },
         {
+          "$ref": "#/texts/335"
+        },
+        {
           "$ref": "#/groups/35"
         },
         {
-          "$ref": "#/texts/350"
+          "$ref": "#/texts/351"
         },
         {
           "$ref": "#/groups/36"
-        },
-        {
-          "$ref": "#/texts/354"
         },
         {
           "$ref": "#/texts/355"
@@ -5525,16 +5537,19 @@
           "$ref": "#/texts/356"
         },
         {
-          "$ref": "#/groups/37"
+          "$ref": "#/texts/357"
         },
         {
-          "$ref": "#/texts/360"
+          "$ref": "#/groups/37"
         },
         {
           "$ref": "#/texts/361"
         },
         {
           "$ref": "#/texts/362"
+        },
+        {
+          "$ref": "#/texts/363"
         },
         {
           "$ref": "#/groups/38"
@@ -5548,7 +5563,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/270",
+      "self_ref": "#/texts/271",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5560,7 +5575,7 @@
       "text": "We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of "
     },
     {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/272",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5572,7 +5587,7 @@
       "text": "I(t)"
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/273",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5584,7 +5599,7 @@
       "text": " (instead of "
     },
     {
-      "self_ref": "#/texts/273",
+      "self_ref": "#/texts/274",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5596,7 +5611,7 @@
       "text": "H(t)"
     },
     {
-      "self_ref": "#/texts/274",
+      "self_ref": "#/texts/275",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5608,7 +5623,7 @@
       "text": "), we need to determine the eigenfunctions "
     },
     {
-      "self_ref": "#/texts/275",
+      "self_ref": "#/texts/276",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5620,7 +5635,7 @@
       "text": "\\Phi _n"
     },
     {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/277",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5632,7 +5647,7 @@
       "text": " of Eq. (14). However, directly solving for "
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/278",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5644,7 +5659,7 @@
       "text": "\\Phi _n"
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/279",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5656,7 +5671,7 @@
       "text": " is likely to be a formidable task. To circumvent this difficulty, we first derive "
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/280",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5668,7 +5683,7 @@
       "text": "\\Phi _n^{\\prime }"
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/281",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5680,7 +5695,7 @@
       "text": " from Eq. (17), and then reconstruct the desired eigenfunctions "
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/282",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5692,7 +5707,7 @@
       "text": "\\Phi _n"
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/283",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5704,7 +5719,7 @@
       "text": " by inversely transforming the obtained "
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/284",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5716,7 +5731,7 @@
       "text": "\\Phi _n^{\\prime }"
     },
     {
-      "self_ref": "#/texts/284",
+      "self_ref": "#/texts/285",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5728,7 +5743,7 @@
       "text": ", utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once "
     },
     {
-      "self_ref": "#/texts/285",
+      "self_ref": "#/texts/286",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5740,7 +5755,7 @@
       "text": "\\Phi _n"
     },
     {
-      "self_ref": "#/texts/286",
+      "self_ref": "#/texts/287",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5752,7 +5767,7 @@
       "text": " are obtained, the wave functions "
     },
     {
-      "self_ref": "#/texts/287",
+      "self_ref": "#/texts/288",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5764,7 +5779,7 @@
       "text": "\\Psi _n"
     },
     {
-      "self_ref": "#/texts/288",
+      "self_ref": "#/texts/289",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -5776,7 +5791,7 @@
       "text": " can be expressed in terms of them accordingly."
     },
     {
-      "self_ref": "#/texts/289",
+      "self_ref": "#/texts/290",
       "parent": {
         "$ref": "#/groups/29"
       },
@@ -5788,7 +5803,7 @@
       "text": "To obtain "
     },
     {
-      "self_ref": "#/texts/290",
+      "self_ref": "#/texts/291",
       "parent": {
         "$ref": "#/groups/29"
       },
@@ -5800,7 +5815,7 @@
       "text": "\\Phi _n^{\\prime }"
     },
     {
-      "self_ref": "#/texts/291",
+      "self_ref": "#/texts/292",
       "parent": {
         "$ref": "#/groups/29"
       },
@@ -5812,9 +5827,9 @@
       "text": ", we need to solve Eq. (24) by setting the associated functions, in accordance with Eq. (27), as"
     },
     {
-      "self_ref": "#/texts/292",
+      "self_ref": "#/texts/293",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -5824,7 +5839,7 @@
       "text": "\\begin{eqnarray}\nU_{nl}(y)=N_{nl}y^{\\lambda }(1-y)^{\\upsilon }f_{nl}(y),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/293",
+      "self_ref": "#/texts/294",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -5836,7 +5851,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/294",
+      "self_ref": "#/texts/295",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -5848,7 +5863,7 @@
       "text": "N_{nl}"
     },
     {
-      "self_ref": "#/texts/295",
+      "self_ref": "#/texts/296",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -5860,7 +5875,7 @@
       "text": " are normalization constants for the final wave functions. We applied "
     },
     {
-      "self_ref": "#/texts/296",
+      "self_ref": "#/texts/297",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -5872,7 +5887,7 @@
       "text": "\\alpha _{3}=1"
     },
     {
-      "self_ref": "#/texts/297",
+      "self_ref": "#/texts/298",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -5884,9 +5899,9 @@
       "text": " in this equation. In addition, from the comparison of Eq. (24) with the NUFA equation (26), we acquire the following parameter relations:"
     },
     {
-      "self_ref": "#/texts/298",
+      "self_ref": "#/texts/299",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -5896,9 +5911,9 @@
       "text": "\\begin{eqnarray}\n&&\\alpha _{1}=\\alpha _{2}=1,\\quad\\quad\\quad\\zeta _{1}=\\varepsilon _{nl}-6P,~~~~~~ \\\\&&\\zeta _{2}=2\\varepsilon _{nl}-4P+Q,\\quad\\quad\\zeta _{3}=\\varepsilon _{nl}-P+Q+\\gamma .~~~~~~\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/299",
+      "self_ref": "#/texts/300",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -5908,9 +5923,9 @@
       "text": "Furthermore, the singularity exponents reduce to"
     },
     {
-      "self_ref": "#/texts/300",
+      "self_ref": "#/texts/301",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -5920,7 +5935,7 @@
       "text": "\\begin{eqnarray}\n\\lambda =\\sqrt{\\varepsilon _{nl}-P+Q+\\gamma },\\quad\\quad\\upsilon =\\frac{1}{2}+\\sqrt{\\left( l+\\frac{1}{2}\\right) ^{2}-3P}.~~~~~~\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/301",
+      "self_ref": "#/texts/302",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -5932,7 +5947,7 @@
       "text": "Although the original NUFA representations of "
     },
     {
-      "self_ref": "#/texts/302",
+      "self_ref": "#/texts/303",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -5944,7 +5959,7 @@
       "text": "\\lambda"
     },
     {
-      "self_ref": "#/texts/303",
+      "self_ref": "#/texts/304",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -5956,7 +5971,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/304",
+      "self_ref": "#/texts/305",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -5968,7 +5983,7 @@
       "text": "\\upsilon"
     },
     {
-      "self_ref": "#/texts/305",
+      "self_ref": "#/texts/306",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -5980,7 +5995,7 @@
       "text": ", given in Eqs. (28) and (29), include both positive and negative signs ("
     },
     {
-      "self_ref": "#/texts/306",
+      "self_ref": "#/texts/307",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -5992,7 +6007,7 @@
       "text": "\\pm"
     },
     {
-      "self_ref": "#/texts/307",
+      "self_ref": "#/texts/308",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6004,7 +6019,7 @@
       "text": ") from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of "
     },
     {
-      "self_ref": "#/texts/308",
+      "self_ref": "#/texts/309",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6023,7 +6038,7 @@
       }
     },
     {
-      "self_ref": "#/texts/309",
+      "self_ref": "#/texts/310",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6035,7 +6050,7 @@
       "text": " and must vanish as "
     },
     {
-      "self_ref": "#/texts/310",
+      "self_ref": "#/texts/311",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6047,7 +6062,7 @@
       "text": "r \\rightarrow 0"
     },
     {
-      "self_ref": "#/texts/311",
+      "self_ref": "#/texts/312",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6059,7 +6074,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/312",
+      "self_ref": "#/texts/313",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6071,7 +6086,7 @@
       "text": "r \\rightarrow \\infty"
     },
     {
-      "self_ref": "#/texts/313",
+      "self_ref": "#/texts/314",
       "parent": {
         "$ref": "#/groups/31"
       },
@@ -6083,9 +6098,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/314",
+      "self_ref": "#/texts/315",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6095,9 +6110,9 @@
       "text": "The expansion of Eq. (33) under the first condition in Eq. (36) yields"
     },
     {
-      "self_ref": "#/texts/315",
+      "self_ref": "#/texts/316",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6107,7 +6122,7 @@
       "text": "\\begin{eqnarray}\nn+\\lambda +\\upsilon = \\sqrt{\\zeta _1}.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/316",
+      "self_ref": "#/texts/317",
       "parent": {
         "$ref": "#/groups/32"
       },
@@ -6119,7 +6134,7 @@
       "text": "By squaring both sides of this equation and using the second relation from Eq. (36) together with the formula of "
     },
     {
-      "self_ref": "#/texts/317",
+      "self_ref": "#/texts/318",
       "parent": {
         "$ref": "#/groups/32"
       },
@@ -6131,7 +6146,7 @@
       "text": "\\lambda"
     },
     {
-      "self_ref": "#/texts/318",
+      "self_ref": "#/texts/319",
       "parent": {
         "$ref": "#/groups/32"
       },
@@ -6143,9 +6158,9 @@
       "text": " given in Eq. (37), the equation associated with the eigenvalues can be obtained as"
     },
     {
-      "self_ref": "#/texts/319",
+      "self_ref": "#/texts/320",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6155,7 +6170,7 @@
       "text": "\\begin{eqnarray}\n2[\\varepsilon _{nl}-P+Q+\\gamma ]^{1/2}(n+\\upsilon )+(n+\\upsilon )^{2}+5P+Q+\\gamma =0.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/320",
+      "self_ref": "#/texts/321",
       "parent": {
         "$ref": "#/groups/33"
       },
@@ -6167,7 +6182,7 @@
       "text": "It is possible to rearrange this equation into a formula for "
     },
     {
-      "self_ref": "#/texts/321",
+      "self_ref": "#/texts/322",
       "parent": {
         "$ref": "#/groups/33"
       },
@@ -6179,7 +6194,7 @@
       "text": "\\varepsilon _{nl}"
     },
     {
-      "self_ref": "#/texts/322",
+      "self_ref": "#/texts/323",
       "parent": {
         "$ref": "#/groups/33"
       },
@@ -6191,7 +6206,7 @@
       "text": " by first isolating the square root term on the left-hand side, shifting all other terms to the right-hand side, and then squaring both sides. Substituting the expression for "
     },
     {
-      "self_ref": "#/texts/323",
+      "self_ref": "#/texts/324",
       "parent": {
         "$ref": "#/groups/33"
       },
@@ -6203,7 +6218,7 @@
       "text": "\\upsilon"
     },
     {
-      "self_ref": "#/texts/324",
+      "self_ref": "#/texts/325",
       "parent": {
         "$ref": "#/groups/33"
       },
@@ -6215,9 +6230,9 @@
       "text": " from Eq. (37) into the resulting equation, and using Eq. (25), we finally obtain the eigenvalues:"
     },
     {
-      "self_ref": "#/texts/325",
+      "self_ref": "#/texts/326",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6227,9 +6242,9 @@
       "text": "\\begin{eqnarray}\n\\Lambda _{nl} &=& l(l+1)\\hbar ^{2}A_{0}\\delta ^{2}+\\frac{A_{0}\\Omega ^{2}}{4\\delta ^{2}}-D_{0}\\delta \\\\&&-\\frac{\\hbar ^{2}A_{0}\\delta ^{2}}{4}\\left[ \\frac{l(l+1)-\\frac{5\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}-\\frac{D_{0}}{\\hbar ^{2}A_{0}\\delta }+\\left( n+\\upsilon \\right) ^{2}}{n+\\upsilon }\\right] ^{2}.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/326",
+      "self_ref": "#/texts/327",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6239,7 +6254,7 @@
       "text": "The eigenvalues obtained in Eq. (40) depend explicitly on several parameters of the system, including the effective oscillator frequency and coupling constants, which may exhibit time dependence through the Hamiltonian. This feature reflects the fact that the present model belongs to the class of parameter-dependent quantum systems. In such systems, variations of the energy spectrum with respect to the relevant parameters are conceptually related to the Hellmann–Feynman theorem [46,47], which expresses derivatives of eigenvalues in terms of expectation values of derivatives of the Hamiltonian. Although the present work does not explicitly employ the Hellmann–Feynman theorem in deriving Eq. (40), the obtained spectrum is consistent with the general framework of parameter-dependent quantum mechanics."
     },
     {
-      "self_ref": "#/texts/327",
+      "self_ref": "#/texts/328",
       "parent": {
         "$ref": "#/groups/34"
       },
@@ -6251,7 +6266,7 @@
       "text": "In addition, by considering Eq. (27) with Eqs. (28), (29), and (34), the corresponding radial wave functions can be derived in terms of "
     },
     {
-      "self_ref": "#/texts/328",
+      "self_ref": "#/texts/329",
       "parent": {
         "$ref": "#/groups/34"
       },
@@ -6263,7 +6278,7 @@
       "text": "\\Lambda _{nl}"
     },
     {
-      "self_ref": "#/texts/329",
+      "self_ref": "#/texts/330",
       "parent": {
         "$ref": "#/groups/34"
       },
@@ -6275,9 +6290,9 @@
       "text": " to be"
     },
     {
-      "self_ref": "#/texts/330",
+      "self_ref": "#/texts/331",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6287,9 +6302,9 @@
       "text": "\\begin{eqnarray}\nU_{nl}(y) &=& N_{nl}y^{\\sqrt{-\\frac{\\Lambda _{nl}}{\\hbar ^{2}A_{0}\\delta ^{2}}+\\frac{\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}-\\frac{D_{0}}{\\hbar ^{2}A_{0}\\delta }+l(l+1)}} \\\\&&\\times {(1-y)^{\\frac{1}{2}+\\sqrt{\\left( l+\\frac{1}{2}\\right) ^{2}+\\frac{3\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}}}}{_{2}F_{1}}(\\bar{a},\\bar{b};\\bar{c};y),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/331",
+      "self_ref": "#/texts/332",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6299,9 +6314,9 @@
       "text": "where the parameters are defined as"
     },
     {
-      "self_ref": "#/texts/332",
+      "self_ref": "#/texts/333",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6311,9 +6326,9 @@
       "text": "\\begin{eqnarray}\n\\bar{a}=\\lambda +\\upsilon -\\sqrt{\\varepsilon _{nl}-6P},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/333",
+      "self_ref": "#/texts/334",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6323,9 +6338,9 @@
       "text": "\\begin{eqnarray}\n\\bar{b}=\\lambda +\\upsilon +\\sqrt{\\varepsilon _{nl}-6P},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/334",
+      "self_ref": "#/texts/335",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6335,7 +6350,7 @@
       "text": "\\begin{eqnarray}\n\\bar{c}=1+2\\lambda .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/335",
+      "self_ref": "#/texts/336",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6347,7 +6362,7 @@
       "text": "From a mathematical standpoint, it is possible to define the parameter "
     },
     {
-      "self_ref": "#/texts/336",
+      "self_ref": "#/texts/337",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6359,7 +6374,7 @@
       "text": "\\bar{a}"
     },
     {
-      "self_ref": "#/texts/337",
+      "self_ref": "#/texts/338",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6371,7 +6386,7 @@
       "text": " interchangeably with "
     },
     {
-      "self_ref": "#/texts/338",
+      "self_ref": "#/texts/339",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6383,7 +6398,7 @@
       "text": "\\bar{b}"
     },
     {
-      "self_ref": "#/texts/339",
+      "self_ref": "#/texts/340",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6395,7 +6410,7 @@
       "text": ". However, by choosing "
     },
     {
-      "self_ref": "#/texts/340",
+      "self_ref": "#/texts/341",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6407,7 +6422,7 @@
       "text": "\\bar{a}"
     },
     {
-      "self_ref": "#/texts/341",
+      "self_ref": "#/texts/342",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6419,7 +6434,7 @@
       "text": " as in Eq. (42), we allow the possibility for "
     },
     {
-      "self_ref": "#/texts/342",
+      "self_ref": "#/texts/343",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6431,7 +6446,7 @@
       "text": "\\bar{a}"
     },
     {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/344",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6443,7 +6458,7 @@
       "text": " to take on negative values. When "
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/345",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6455,7 +6470,7 @@
       "text": "\\bar{a}"
     },
     {
-      "self_ref": "#/texts/345",
+      "self_ref": "#/texts/346",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6467,7 +6482,7 @@
       "text": " is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the ("
     },
     {
-      "self_ref": "#/texts/346",
+      "self_ref": "#/texts/347",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6479,7 +6494,7 @@
       "text": "n+1"
     },
     {
-      "self_ref": "#/texts/347",
+      "self_ref": "#/texts/348",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6491,7 +6506,7 @@
       "text": ")th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator "
     },
     {
-      "self_ref": "#/texts/348",
+      "self_ref": "#/texts/349",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6503,7 +6518,7 @@
       "text": "I_{0}"
     },
     {
-      "self_ref": "#/texts/349",
+      "self_ref": "#/texts/350",
       "parent": {
         "$ref": "#/groups/35"
       },
@@ -6515,9 +6530,9 @@
       "text": " are represented in the form"
     },
     {
-      "self_ref": "#/texts/350",
+      "self_ref": "#/texts/351",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6527,7 +6542,7 @@
       "text": "\\begin{eqnarray}\n\\Phi _{nlm}^{\\prime }(r,\\theta ,\\varphi ) &=& N_{nl}\\frac{1}{r}e^{-\\left( \\sqrt{-\\frac{\\Lambda _{nl}}{\\hbar ^{2}A_{0}\\delta ^{2}}+\\frac{\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}-\\frac{D_{0}}{\\hbar ^{2}A_{0}\\delta }+l(l+1)}\\right) \\delta r} \\\\&&\\times \\left( 1-e^{-\\delta r}\\right) ^{\\frac{1}{2}+\\sqrt{\\left( l+\\frac{1}{2}\\right) ^{2}+\\frac{3\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}}}{_{2}F_{1}}(\\bar{a},\\bar{b};\\bar{c};e^{-\\delta r})Y_{lm}(\\theta ,\\varphi ).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/351",
+      "self_ref": "#/texts/352",
       "parent": {
         "$ref": "#/groups/36"
       },
@@ -6539,7 +6554,7 @@
       "text": "The complete eigenfunctions of the invariant "
     },
     {
-      "self_ref": "#/texts/352",
+      "self_ref": "#/texts/353",
       "parent": {
         "$ref": "#/groups/36"
       },
@@ -6558,7 +6573,7 @@
       }
     },
     {
-      "self_ref": "#/texts/353",
+      "self_ref": "#/texts/354",
       "parent": {
         "$ref": "#/groups/36"
       },
@@ -6570,9 +6585,9 @@
       "text": " that belongs to the original system, i.e., the untransformed system, are given by the relation"
     },
     {
-      "self_ref": "#/texts/354",
+      "self_ref": "#/texts/355",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6582,9 +6597,9 @@
       "text": "\\begin{eqnarray}\n\\Phi _{nlm}(\\vec{r},t)=U^{-1}(t)\\Phi _{nlm}^{\\prime }(\\vec{r}).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/355",
+      "self_ref": "#/texts/356",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6594,9 +6609,9 @@
       "text": "The evaluation of this using Eqs. (16) and (45) results in"
     },
     {
-      "self_ref": "#/texts/356",
+      "self_ref": "#/texts/357",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6606,7 +6621,7 @@
       "text": "\\begin{eqnarray}\n\\Phi _{nlm}(r,\\theta ,\\varphi ,t) &=& N_{nl} \\frac{1 }{\\sqrt{\\rho (t)}r} \\exp \\left( \\frac{i\\mu (t)\\dot{\\rho }(t)}{2\\hbar \\rho (t)}r^{2}\\right) \\\\&&\\times e^{-\\left( \\sqrt{-\\frac{\\Lambda _{nl}}{\\hbar ^{2}A_{0}\\delta ^{2}}+\\frac{\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}-\\frac{D_{0}}{\\hbar ^{2}A_{0}\\delta }+l(l+1)}\\right) \\delta \\frac{r}{\\rho (t) }} \\\\&&\\times \\left( 1-e^{-\\delta \\frac{r}{\\rho (t) }}\\right) ^{\\frac{1}{2}+\\sqrt{\\left( l+\\frac{1}{2}\\right) ^{2}+\\frac{3\\Omega ^{2}}{4\\hbar ^{2}\\delta ^{4}}}}{_{2}F_{1}}(\\bar{a},\\bar{b};\\bar{c};e^{-\\delta \\frac{r}{\\rho (t) }})Y_{lm}(\\theta ,\\varphi ).\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/357",
+      "self_ref": "#/texts/358",
       "parent": {
         "$ref": "#/groups/37"
       },
@@ -6618,7 +6633,7 @@
       "text": "Meanwhile, "
     },
     {
-      "self_ref": "#/texts/358",
+      "self_ref": "#/texts/359",
       "parent": {
         "$ref": "#/groups/37"
       },
@@ -6630,7 +6645,7 @@
       "text": "N_{nl}"
     },
     {
-      "self_ref": "#/texts/359",
+      "self_ref": "#/texts/360",
       "parent": {
         "$ref": "#/groups/37"
       },
@@ -6642,9 +6657,9 @@
       "text": " are derived by normalizing these resultant eigenfunctions. The normalization procedure yields (see Appendix A for a detailed evaluation)"
     },
     {
-      "self_ref": "#/texts/360",
+      "self_ref": "#/texts/361",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6654,9 +6669,9 @@
       "text": "\\begin{eqnarray}\nN_{nl}=\\sqrt{\\delta } \\frac{\\Gamma (2(\\upsilon +\\lambda )+n)}{n!\\Gamma (2\\lambda +1)} \\Bigg [ \\sum _{k=0}^n\\sum _{k^{\\prime }=0}^n (-1)^{k+k^{\\prime }} \\mathcal {N}_{nl}(k,k^{\\prime }) \\Bigg ]^{-1/2},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/361",
+      "self_ref": "#/texts/362",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6666,9 +6681,9 @@
       "text": "where"
     },
     {
-      "self_ref": "#/texts/362",
+      "self_ref": "#/texts/363",
       "parent": {
-        "$ref": "#/texts/269"
+        "$ref": "#/texts/270"
       },
       "children": [],
       "content_layer": "body",
@@ -6678,7 +6693,7 @@
       "text": "\\begin{eqnarray}\n\\mathcal {N}_{nl}(k,k^{\\prime }) &=& \\frac{\\Gamma (2(\\upsilon +\\lambda )+n+k) \\Gamma (2(\\upsilon +\\lambda )+n+k^{\\prime })}{k!k^{\\prime }!(n-k)!(n-k^{\\prime })!\\Gamma (2\\lambda +k+1)\\Gamma (2\\lambda +k^{\\prime }+1)} \\\\&& \\times {\\mathrm{B}}(k+k^{\\prime }+2\\lambda ,2\\upsilon +1),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/363",
+      "self_ref": "#/texts/364",
       "parent": {
         "$ref": "#/groups/38"
       },
@@ -6690,7 +6705,7 @@
       "text": "whereas "
     },
     {
-      "self_ref": "#/texts/364",
+      "self_ref": "#/texts/365",
       "parent": {
         "$ref": "#/groups/38"
       },
@@ -6702,7 +6717,7 @@
       "text": "{\\mathrm{B}}(a_1,a_2)"
     },
     {
-      "self_ref": "#/texts/365",
+      "self_ref": "#/texts/366",
       "parent": {
         "$ref": "#/groups/38"
       },
@@ -6714,16 +6729,13 @@
       "text": " denotes the Beta function [48]. The eigenfunctions in Eq. (47) are essentially related to the Schrödinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection."
     },
     {
-      "self_ref": "#/texts/366",
+      "self_ref": "#/texts/367",
       "parent": {
-        "$ref": "#/texts/268"
+        "$ref": "#/texts/269"
       },
       "children": [
         {
           "$ref": "#/groups/39"
-        },
-        {
-          "$ref": "#/texts/376"
         },
         {
           "$ref": "#/texts/377"
@@ -6732,13 +6744,16 @@
           "$ref": "#/texts/378"
         },
         {
+          "$ref": "#/texts/379"
+        },
+        {
           "$ref": "#/groups/40"
         },
         {
-          "$ref": "#/texts/382"
+          "$ref": "#/texts/383"
         },
         {
-          "$ref": "#/texts/383"
+          "$ref": "#/texts/384"
         },
         {
           "$ref": "#/groups/41"
@@ -6752,7 +6767,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/367",
+      "self_ref": "#/texts/368",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6764,7 +6779,7 @@
       "text": "According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions "
     },
     {
-      "self_ref": "#/texts/368",
+      "self_ref": "#/texts/369",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6776,7 +6791,7 @@
       "text": "\\Phi _{nlm}(\\vec{r},t)"
     },
     {
-      "self_ref": "#/texts/369",
+      "self_ref": "#/texts/370",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6788,7 +6803,7 @@
       "text": " of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase "
     },
     {
-      "self_ref": "#/texts/370",
+      "self_ref": "#/texts/371",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6800,7 +6815,7 @@
       "text": "\\alpha (t)"
     },
     {
-      "self_ref": "#/texts/371",
+      "self_ref": "#/texts/372",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6812,7 +6827,7 @@
       "text": " associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate "
     },
     {
-      "self_ref": "#/texts/372",
+      "self_ref": "#/texts/373",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6824,7 +6839,7 @@
       "text": "\\vert \\Phi ^\\prime \\rangle"
     },
     {
-      "self_ref": "#/texts/373",
+      "self_ref": "#/texts/374",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6836,7 +6851,7 @@
       "text": " instead of "
     },
     {
-      "self_ref": "#/texts/374",
+      "self_ref": "#/texts/375",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6848,7 +6863,7 @@
       "text": "\\vert \\Phi \\rangle"
     },
     {
-      "self_ref": "#/texts/375",
+      "self_ref": "#/texts/376",
       "parent": {
         "$ref": "#/groups/39"
       },
@@ -6860,9 +6875,9 @@
       "text": ", such that"
     },
     {
-      "self_ref": "#/texts/376",
+      "self_ref": "#/texts/377",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [],
       "content_layer": "body",
@@ -6872,9 +6887,9 @@
       "text": "\\begin{eqnarray}\n\\hbar \\frac{d\\alpha (t)}{dt}=\\left\\langle \\Phi ^{\\prime }\\left|\\Bigg ( i \\hbar \\frac{\\partial }{\\partial t}-\\frac{I_{0}}{2A_{0}\\mu (t)\\rho ^{2}(t)} \\Bigg ) \\right|\\Phi ^{\\prime }\\right\\rangle .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/377",
+      "self_ref": "#/texts/378",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [],
       "content_layer": "body",
@@ -6884,9 +6899,9 @@
       "text": "Then, a minor evaluation using Eq. (18) yields the phases in the form"
     },
     {
-      "self_ref": "#/texts/378",
+      "self_ref": "#/texts/379",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [],
       "content_layer": "body",
@@ -6896,7 +6911,7 @@
       "text": "\\begin{eqnarray}\n\\alpha _{nl}(t)=-\\frac{\\Lambda _{nl}}{2A_{0}\\hbar }\\int _{0}^{t}\\frac{1}{\\mu (t^{\\prime })\\rho ^{2}(t^{\\prime })}dt^{\\prime }+\\alpha _{nl}(0),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/380",
       "parent": {
         "$ref": "#/groups/40"
       },
@@ -6908,7 +6923,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/380",
+      "self_ref": "#/texts/381",
       "parent": {
         "$ref": "#/groups/40"
       },
@@ -6920,7 +6935,7 @@
       "text": "\\Lambda _{nl}"
     },
     {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/382",
       "parent": {
         "$ref": "#/groups/40"
       },
@@ -6932,9 +6947,9 @@
       "text": " are given by Eq. (40). These phases emerge as a result of the time evolution of the wave functions and can produce observable consequences, such as interference patterns, through relative phase differences between quantum states. Both the geometrical phase and the conventional dynamical phase contribute to the total phase. While the dynamical phase results from the cumulation of energy over time, the geometric phase originates from the intrinsic geometry of the path traced by the state vector during evolution, often under adiabatic conditions. The significance of the geometrical phase lies in the fact that it is not a mathematical artifact but a physically meaningful, gauge-invariant quantity that can influence the actual quantum state of the system. It not only takes place in this system, but appears ubiquitously across various physical systems as well, and can be measured via interference experiments. Unlike the dynamical phase, which depends on the eigenvalues of the Hamiltonian, the geometrical phase depends on the trajectory of the eigenvectors themselves. As such, it plays a critical role in associated phenomena such as energy level splitting and the orbital behavior of quasiparticles, making it a subject of continued theoretical and experimental interest. In particular, in systems with irregular and nonlinear interactions, such as quark–antiquark systems, it reflects the underlying symmetries, binding mechanisms, and topological features of the system [49,50]. Accordingly, the geometrical phase constitutes a fundamental component in the evolution of the system, linking theoretical descriptions to experimental observations."
     },
     {
-      "self_ref": "#/texts/382",
+      "self_ref": "#/texts/383",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [],
       "content_layer": "body",
@@ -6944,9 +6959,9 @@
       "text": "The solutions of the original Schrödinger equation (3) corresponding to the Hamiltonian in Eq. (1) can now be written in configuration space as"
     },
     {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/384",
       "parent": {
-        "$ref": "#/texts/366"
+        "$ref": "#/texts/367"
       },
       "children": [],
       "content_layer": "body",
@@ -6956,7 +6971,7 @@
       "text": "\\begin{eqnarray}\n\\Psi _{nlm}(r,\\theta ,\\varphi ,t)=e^{i\\alpha _{nl}(t)}\\Phi _{nlm}(r,\\theta ,\\varphi ,t),\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/385",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -6968,7 +6983,7 @@
       "text": "where the explicit forms of "
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/386",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -6980,7 +6995,7 @@
       "text": "\\alpha _{nl}(t)"
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/387",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -6992,7 +7007,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/388",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -7004,7 +7019,7 @@
       "text": "\\Phi _{nlm}(r,\\theta ,\\varphi ,t)"
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/389",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -7016,7 +7031,7 @@
       "text": " are given in Eqs. (51) and (47), respectively. The resulting wave functions (52), together with "
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/390",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -7028,7 +7043,7 @@
       "text": "\\Lambda _{nl}"
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/391",
       "parent": {
         "$ref": "#/groups/41"
       },
@@ -7040,13 +7055,13 @@
       "text": " in Eq. (40), serve as fundamental solutions for the quark–antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [51,52]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark–antiquark pair."
     },
     {
-      "self_ref": "#/texts/391",
+      "self_ref": "#/texts/392",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/392"
+          "$ref": "#/texts/393"
         },
         {
           "$ref": "#/groups/42"
@@ -7060,9 +7075,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/392",
+      "self_ref": "#/texts/393",
       "parent": {
-        "$ref": "#/texts/391"
+        "$ref": "#/texts/392"
       },
       "children": [],
       "content_layer": "body",
@@ -7072,7 +7087,7 @@
       "text": "In this study, we investigated the interaction between a quark and an antiquark by modeling its mechanical behavior using a nonstationary 3D harmonic oscillator coupled with a Coulomb potential. To solve the associated Schrödinger equation, we employed the recently refined NUFA method, together with the invariant operator method and the unitary transformation approach. The NUFA method, based on a novel conceptual framework, allowed us to bypass the complex mathematical manipulations commonly encountered in other techniques. As a result, we obtained the wave functions of the system in closed form, expressed in terms of the Gauss hypergeometric function. These solutions offer advantages over previous ones that employed biconfluent Heun functions, as Gauss hypergeometric functions are among the most thoroughly characterized and best understood special functions in mathematics."
     },
     {
-      "self_ref": "#/texts/393",
+      "self_ref": "#/texts/394",
       "parent": {
         "$ref": "#/groups/42"
       },
@@ -7084,7 +7099,7 @@
       "text": "Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the "
     },
     {
-      "self_ref": "#/texts/394",
+      "self_ref": "#/texts/395",
       "parent": {
         "$ref": "#/groups/42"
       },
@@ -7096,7 +7111,7 @@
       "text": "\\theta"
     },
     {
-      "self_ref": "#/texts/395",
+      "self_ref": "#/texts/396",
       "parent": {
         "$ref": "#/groups/42"
       },
@@ -7108,7 +7123,7 @@
       "text": "-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as "
     },
     {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/397",
       "parent": {
         "$ref": "#/groups/42"
       },
@@ -7120,7 +7135,7 @@
       "text": "J/\\psi"
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/398",
       "parent": {
         "$ref": "#/groups/42"
       },
@@ -7132,7 +7147,7 @@
       "text": " [5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues."
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/399",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -7141,16 +7156,13 @@
           "$ref": "#/groups/43"
         },
         {
-          "$ref": "#/texts/402"
-        },
-        {
           "$ref": "#/texts/403"
         },
         {
-          "$ref": "#/groups/44"
+          "$ref": "#/texts/404"
         },
         {
-          "$ref": "#/texts/407"
+          "$ref": "#/groups/44"
         },
         {
           "$ref": "#/texts/408"
@@ -7159,40 +7171,43 @@
           "$ref": "#/texts/409"
         },
         {
+          "$ref": "#/texts/410"
+        },
+        {
           "$ref": "#/groups/45"
         },
         {
-          "$ref": "#/texts/417"
+          "$ref": "#/texts/418"
         },
         {
           "$ref": "#/groups/46"
         },
         {
-          "$ref": "#/texts/421"
+          "$ref": "#/texts/422"
         },
         {
           "$ref": "#/groups/47"
         },
         {
-          "$ref": "#/texts/425"
+          "$ref": "#/texts/426"
         },
         {
           "$ref": "#/groups/48"
         },
         {
-          "$ref": "#/texts/429"
+          "$ref": "#/texts/430"
         },
         {
           "$ref": "#/groups/49"
-        },
-        {
-          "$ref": "#/texts/439"
         },
         {
           "$ref": "#/texts/440"
         },
         {
           "$ref": "#/texts/441"
+        },
+        {
+          "$ref": "#/texts/442"
         },
         {
           "$ref": "#/groups/50"
@@ -7206,7 +7221,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/399",
+      "self_ref": "#/texts/400",
       "parent": {
         "$ref": "#/groups/43"
       },
@@ -7218,7 +7233,7 @@
       "text": "Open Access funding: SCOAP"
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/401",
       "parent": {
         "$ref": "#/groups/43"
       },
@@ -7237,7 +7252,7 @@
       }
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/402",
       "parent": {
         "$ref": "#/groups/43"
       },
@@ -7249,9 +7264,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/403",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7261,9 +7276,9 @@
       "text": "Although normalization is formally defined for the full wave functions, the phase factors do not affect the outcome. Therefore, in the normalization process, it suffices to consider only Eq. (47), which corresponds to the eigenfunctions. The normalization condition associated with Eq. (47) is given by"
     },
     {
-      "self_ref": "#/texts/403",
+      "self_ref": "#/texts/404",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7273,7 +7288,7 @@
       "text": "\\begin{eqnarray}\n\\int _0^{2\\pi } \\int _0^\\pi \\int _0^\\infty \\left|\\Phi _{nlm} (r,\\theta ,\\varphi ,t) \\right|^{2}r^{2} \\sin \\theta dr d\\theta d\\varphi =1.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/404",
+      "self_ref": "#/texts/405",
       "parent": {
         "$ref": "#/groups/44"
       },
@@ -7285,7 +7300,7 @@
       "text": "Because the angular part "
     },
     {
-      "self_ref": "#/texts/405",
+      "self_ref": "#/texts/406",
       "parent": {
         "$ref": "#/groups/44"
       },
@@ -7297,7 +7312,7 @@
       "text": "Y_{lm} (\\theta ,\\varphi )"
     },
     {
-      "self_ref": "#/texts/406",
+      "self_ref": "#/texts/407",
       "parent": {
         "$ref": "#/groups/44"
       },
@@ -7309,9 +7324,9 @@
       "text": ", defined in Eq. (21), is already normalized, we only need to consider the radial part in this evaluation. Thus, based on the radial part of Eq. (47), Eq. (A.1) can be rewritten as"
     },
     {
-      "self_ref": "#/texts/407",
+      "self_ref": "#/texts/408",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7321,9 +7336,9 @@
       "text": "\\begin{eqnarray}\n\\frac{\\left|N_{nl}\\right|^{2}}{\\rho (t) }\\int _{0}^{\\infty }e^{-2\\lambda \\delta \\frac{r}{\\rho (t)}}\\left( 1-e^{-\\delta \\frac{r}{\\rho (t)}}\\right) ^{2\\upsilon }\\left[ {_{2}F_{1}}(\\bar{a},\\bar{b};\\bar{c};e^{-\\delta \\frac{r}{\\rho (t)}})\\right] ^{2}dr =1.\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/408",
+      "self_ref": "#/texts/409",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7333,9 +7348,9 @@
       "text": "To simplify the integral, we introduce the substitution"
     },
     {
-      "self_ref": "#/texts/409",
+      "self_ref": "#/texts/410",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7345,7 +7360,7 @@
       "text": "\\begin{eqnarray}\nz=e^{-\\delta \\frac{r}{\\rho (t)}},\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/410",
+      "self_ref": "#/texts/411",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7357,7 +7372,7 @@
       "text": "and consider the fact that "
     },
     {
-      "self_ref": "#/texts/411",
+      "self_ref": "#/texts/412",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7369,7 +7384,7 @@
       "text": "\\bar{a}"
     },
     {
-      "self_ref": "#/texts/412",
+      "self_ref": "#/texts/413",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7381,7 +7396,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/413",
+      "self_ref": "#/texts/414",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7393,7 +7408,7 @@
       "text": "\\bar{b}"
     },
     {
-      "self_ref": "#/texts/414",
+      "self_ref": "#/texts/415",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7405,7 +7420,7 @@
       "text": " in this case can be expressed in terms of "
     },
     {
-      "self_ref": "#/texts/415",
+      "self_ref": "#/texts/416",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7424,7 +7439,7 @@
       }
     },
     {
-      "self_ref": "#/texts/416",
+      "self_ref": "#/texts/417",
       "parent": {
         "$ref": "#/groups/45"
       },
@@ -7436,9 +7451,9 @@
       "text": " as"
     },
     {
-      "self_ref": "#/texts/417",
+      "self_ref": "#/texts/418",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7448,7 +7463,7 @@
       "text": "\\begin{eqnarray}\n\\bar{a}=-n,~~~~~~~ \\bar{b}=2(\\upsilon +\\lambda )+n,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/418",
+      "self_ref": "#/texts/419",
       "parent": {
         "$ref": "#/groups/46"
       },
@@ -7460,7 +7475,7 @@
       "text": "along with Eq. (44) as the formula of "
     },
     {
-      "self_ref": "#/texts/419",
+      "self_ref": "#/texts/420",
       "parent": {
         "$ref": "#/groups/46"
       },
@@ -7472,7 +7487,7 @@
       "text": "\\bar{c}"
     },
     {
-      "self_ref": "#/texts/420",
+      "self_ref": "#/texts/421",
       "parent": {
         "$ref": "#/groups/46"
       },
@@ -7484,9 +7499,9 @@
       "text": ". Then, Eq. (A.2) becomes"
     },
     {
-      "self_ref": "#/texts/421",
+      "self_ref": "#/texts/422",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7496,7 +7511,7 @@
       "text": "\\begin{eqnarray}\n\\frac{\\left|N_{nl}\\right|^{2}}{\\delta }g_{\\rm int}=1,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/422",
+      "self_ref": "#/texts/423",
       "parent": {
         "$ref": "#/groups/47"
       },
@@ -7508,7 +7523,7 @@
       "text": "where "
     },
     {
-      "self_ref": "#/texts/423",
+      "self_ref": "#/texts/424",
       "parent": {
         "$ref": "#/groups/47"
       },
@@ -7520,7 +7535,7 @@
       "text": "g_{\\rm int}"
     },
     {
-      "self_ref": "#/texts/424",
+      "self_ref": "#/texts/425",
       "parent": {
         "$ref": "#/groups/47"
       },
@@ -7532,9 +7547,9 @@
       "text": " is the integral part:"
     },
     {
-      "self_ref": "#/texts/425",
+      "self_ref": "#/texts/426",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7544,7 +7559,7 @@
       "text": "\\begin{eqnarray}\ng_{\\rm int}=\\int _{0}^{1}z^{2\\lambda -1} \\left( 1-z\\right) ^{2\\upsilon }\\left[ {_{2}F_{1}}(-n,2(\\upsilon +\\lambda )+n;2\\lambda +1;z)\\right] ^{2}dz .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/426",
+      "self_ref": "#/texts/427",
       "parent": {
         "$ref": "#/groups/48"
       },
@@ -7556,7 +7571,7 @@
       "text": "To evaluate the integration "
     },
     {
-      "self_ref": "#/texts/427",
+      "self_ref": "#/texts/428",
       "parent": {
         "$ref": "#/groups/48"
       },
@@ -7568,7 +7583,7 @@
       "text": "g_{\\rm int}"
     },
     {
-      "self_ref": "#/texts/428",
+      "self_ref": "#/texts/429",
       "parent": {
         "$ref": "#/groups/48"
       },
@@ -7580,9 +7595,9 @@
       "text": ", we use the expansion formula for the hypergeometric function (see formula 15.2.4 of Ref. [45]):"
     },
     {
-      "self_ref": "#/texts/429",
+      "self_ref": "#/texts/430",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7592,7 +7607,7 @@
       "text": "\\begin{eqnarray}\n{_{2}F_{1}}(-n,b;c;s)=\\sum _{k=0}^n (-1)^k \\binom{n}{k} \\frac{(b)_k}{(c)_k}s^k,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/430",
+      "self_ref": "#/texts/431",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7604,7 +7619,7 @@
       "text": "which holds when "
     },
     {
-      "self_ref": "#/texts/431",
+      "self_ref": "#/texts/432",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7616,7 +7631,7 @@
       "text": "n=0,1,2,\\cdots"
     },
     {
-      "self_ref": "#/texts/432",
+      "self_ref": "#/texts/433",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7628,7 +7643,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/433",
+      "self_ref": "#/texts/434",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7640,7 +7655,7 @@
       "text": "c \\ne 0,-1,-2,\\cdots"
     },
     {
-      "self_ref": "#/texts/434",
+      "self_ref": "#/texts/435",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7652,7 +7667,7 @@
       "text": ". This relation also holds when "
     },
     {
-      "self_ref": "#/texts/435",
+      "self_ref": "#/texts/436",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7664,7 +7679,7 @@
       "text": "c=-n-j"
     },
     {
-      "self_ref": "#/texts/436",
+      "self_ref": "#/texts/437",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7676,7 +7691,7 @@
       "text": ", where "
     },
     {
-      "self_ref": "#/texts/437",
+      "self_ref": "#/texts/438",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7688,7 +7703,7 @@
       "text": "j=0,1,2,\\cdots"
     },
     {
-      "self_ref": "#/texts/438",
+      "self_ref": "#/texts/439",
       "parent": {
         "$ref": "#/groups/49"
       },
@@ -7700,9 +7715,9 @@
       "text": ". Substituting this series expansion into Eq. (A.6), we obtain"
     },
     {
-      "self_ref": "#/texts/439",
+      "self_ref": "#/texts/440",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7712,9 +7727,9 @@
       "text": "\\begin{eqnarray}\ng_{\\rm int}&=&\\sum _{k=0}^n\\sum _{k^{\\prime }=0}^n(-1)^{k+k^{\\prime }}\\binom{n}{k} \\binom{n}{k^{\\prime }} \\frac{(2(\\upsilon +\\lambda )+n)_k (2(\\upsilon +\\lambda )+n)_{k^{\\prime }}}{(2\\lambda +1)_k(2\\lambda +1)_{k^{\\prime }}} \\\\&&\\times \\int _{0}^{1}z^{k+k^{\\prime }+2\\lambda -1} \\left( 1-z\\right) ^{2\\upsilon }dz .\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/440",
+      "self_ref": "#/texts/441",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7724,9 +7739,9 @@
       "text": "The integral in the above equation is the Beta function, which is defined as [48]"
     },
     {
-      "self_ref": "#/texts/441",
+      "self_ref": "#/texts/442",
       "parent": {
-        "$ref": "#/texts/398"
+        "$ref": "#/texts/399"
       },
       "children": [],
       "content_layer": "body",
@@ -7736,7 +7751,7 @@
       "text": "\\begin{eqnarray}\n\\mathrm{B}(a_1,a_2)= \\int _0^1 s^{a_1-1} (1-s)^{a_2-1} ds,\n\\end{eqnarray}"
     },
     {
-      "self_ref": "#/texts/442",
+      "self_ref": "#/texts/443",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7748,7 +7763,7 @@
       "text": "under the conditions "
     },
     {
-      "self_ref": "#/texts/443",
+      "self_ref": "#/texts/444",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7760,7 +7775,7 @@
       "text": "{\\rm Re}a_1\\gt 0"
     },
     {
-      "self_ref": "#/texts/444",
+      "self_ref": "#/texts/445",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7772,7 +7787,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/445",
+      "self_ref": "#/texts/446",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7784,7 +7799,7 @@
       "text": "{\\rm Re}a_2\\gt 0"
     },
     {
-      "self_ref": "#/texts/446",
+      "self_ref": "#/texts/447",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7796,7 +7811,7 @@
       "text": ". The two shape parameters of this function, in our case, are "
     },
     {
-      "self_ref": "#/texts/447",
+      "self_ref": "#/texts/448",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7808,7 +7823,7 @@
       "text": "a_1=k+k^{\\prime }+2\\lambda"
     },
     {
-      "self_ref": "#/texts/448",
+      "self_ref": "#/texts/449",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7820,7 +7835,7 @@
       "text": " and "
     },
     {
-      "self_ref": "#/texts/449",
+      "self_ref": "#/texts/450",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7832,7 +7847,7 @@
       "text": "a_2=2\\upsilon +1"
     },
     {
-      "self_ref": "#/texts/450",
+      "self_ref": "#/texts/451",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7844,7 +7859,7 @@
       "text": ". Thus, considering that the Pochhammer number is given by "
     },
     {
-      "self_ref": "#/texts/451",
+      "self_ref": "#/texts/452",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7856,7 +7871,7 @@
       "text": "(a)_k=\\Gamma (a+k)/\\Gamma (a)"
     },
     {
-      "self_ref": "#/texts/452",
+      "self_ref": "#/texts/453",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7868,7 +7883,7 @@
       "text": ", where "
     },
     {
-      "self_ref": "#/texts/453",
+      "self_ref": "#/texts/454",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7880,7 +7895,7 @@
       "text": "a \\ne 0,-1,-2,\\cdots"
     },
     {
-      "self_ref": "#/texts/454",
+      "self_ref": "#/texts/455",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7892,7 +7907,7 @@
       "text": ", a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants "
     },
     {
-      "self_ref": "#/texts/455",
+      "self_ref": "#/texts/456",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7904,7 +7919,7 @@
       "text": "N_{nl}"
     },
     {
-      "self_ref": "#/texts/456",
+      "self_ref": "#/texts/457",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -7916,7 +7931,7 @@
       "text": ", as presented in Eq. (48) of the text."
     },
     {
-      "self_ref": "#/texts/457",
+      "self_ref": "#/texts/458",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -7933,7 +7948,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/458",
+      "self_ref": "#/texts/459",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -7947,7 +7962,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/459",
+      "self_ref": "#/texts/460",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -7961,7 +7976,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/460",
+      "self_ref": "#/texts/461",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -7975,7 +7990,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/461",
+      "self_ref": "#/texts/462",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -7989,7 +8004,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/462",
+      "self_ref": "#/texts/463",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8003,7 +8018,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/463",
+      "self_ref": "#/texts/464",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8017,7 +8032,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/464",
+      "self_ref": "#/texts/465",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8031,7 +8046,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/465",
+      "self_ref": "#/texts/466",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8045,7 +8060,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/466",
+      "self_ref": "#/texts/467",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8059,7 +8074,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/467",
+      "self_ref": "#/texts/468",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8073,7 +8088,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/468",
+      "self_ref": "#/texts/469",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8087,7 +8102,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/469",
+      "self_ref": "#/texts/470",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8101,7 +8116,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/470",
+      "self_ref": "#/texts/471",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8115,7 +8130,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/471",
+      "self_ref": "#/texts/472",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8129,7 +8144,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/472",
+      "self_ref": "#/texts/473",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8143,7 +8158,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/473",
+      "self_ref": "#/texts/474",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8157,7 +8172,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/474",
+      "self_ref": "#/texts/475",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8171,7 +8186,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/475",
+      "self_ref": "#/texts/476",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8185,7 +8200,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/476",
+      "self_ref": "#/texts/477",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8199,7 +8214,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/477",
+      "self_ref": "#/texts/478",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8213,7 +8228,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/478",
+      "self_ref": "#/texts/479",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8227,7 +8242,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/479",
+      "self_ref": "#/texts/480",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8241,7 +8256,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/480",
+      "self_ref": "#/texts/481",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8255,7 +8270,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/481",
+      "self_ref": "#/texts/482",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8269,7 +8284,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/482",
+      "self_ref": "#/texts/483",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8283,7 +8298,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/483",
+      "self_ref": "#/texts/484",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8297,7 +8312,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/484",
+      "self_ref": "#/texts/485",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8311,7 +8326,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/485",
+      "self_ref": "#/texts/486",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8325,7 +8340,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/486",
+      "self_ref": "#/texts/487",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8339,7 +8354,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/487",
+      "self_ref": "#/texts/488",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8353,7 +8368,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/488",
+      "self_ref": "#/texts/489",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8367,7 +8382,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/489",
+      "self_ref": "#/texts/490",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8381,7 +8396,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/490",
+      "self_ref": "#/texts/491",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8395,7 +8410,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/491",
+      "self_ref": "#/texts/492",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8409,7 +8424,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/492",
+      "self_ref": "#/texts/493",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8423,7 +8438,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/493",
+      "self_ref": "#/texts/494",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8437,7 +8452,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/494",
+      "self_ref": "#/texts/495",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8451,7 +8466,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/495",
+      "self_ref": "#/texts/496",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8465,7 +8480,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/496",
+      "self_ref": "#/texts/497",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8479,7 +8494,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/497",
+      "self_ref": "#/texts/498",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8493,7 +8508,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/498",
+      "self_ref": "#/texts/499",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8507,7 +8522,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/499",
+      "self_ref": "#/texts/500",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8521,7 +8536,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/500",
+      "self_ref": "#/texts/501",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8535,7 +8550,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/501",
+      "self_ref": "#/texts/502",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8549,7 +8564,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/502",
+      "self_ref": "#/texts/503",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8563,7 +8578,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/503",
+      "self_ref": "#/texts/504",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8577,7 +8592,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/504",
+      "self_ref": "#/texts/505",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8591,7 +8606,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/505",
+      "self_ref": "#/texts/506",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8605,7 +8620,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/506",
+      "self_ref": "#/texts/507",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8619,7 +8634,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/507",
+      "self_ref": "#/texts/508",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8637,7 +8652,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/508",
+      "self_ref": "#/texts/509",
       "parent": {
         "$ref": "#/groups/52"
       },
@@ -8649,7 +8664,7 @@
       "text": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] ["
     },
     {
-      "self_ref": "#/texts/509",
+      "self_ref": "#/texts/510",
       "parent": {
         "$ref": "#/groups/52"
       },
@@ -8662,7 +8677,7 @@
       "hyperlink": "https://inspirehep.net/literature?q=find%20EPRINT%202408.15986v3"
     },
     {
-      "self_ref": "#/texts/510",
+      "self_ref": "#/texts/511",
       "parent": {
         "$ref": "#/groups/52"
       },
@@ -8674,7 +8689,7 @@
       "text": "]."
     },
     {
-      "self_ref": "#/texts/511",
+      "self_ref": "#/texts/512",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8688,7 +8703,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/512",
+      "self_ref": "#/texts/513",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8702,7 +8717,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/513",
+      "self_ref": "#/texts/514",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8716,7 +8731,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/514",
+      "self_ref": "#/texts/515",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8730,7 +8745,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/515",
+      "self_ref": "#/texts/516",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8744,7 +8759,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/516",
+      "self_ref": "#/texts/517",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -8756,7 +8771,7 @@
       "text": "© The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan."
     },
     {
-      "self_ref": "#/texts/517",
+      "self_ref": "#/texts/518",
       "parent": {
         "$ref": "#/groups/53"
       },
@@ -8768,7 +8783,7 @@
       "text": "This is an Open Access article distributed under the terms of the Creative Commons Attribution License ("
     },
     {
-      "self_ref": "#/texts/518",
+      "self_ref": "#/texts/519",
       "parent": {
         "$ref": "#/groups/53"
       },
@@ -8781,7 +8796,7 @@
       "hyperlink": "https://creativecommons.org/licenses/by/4.0/"
     },
     {
-      "self_ref": "#/texts/519",
+      "self_ref": "#/texts/520",
       "parent": {
         "$ref": "#/groups/53"
       },
@@ -8793,7 +8808,7 @@
       "text": "), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited."
     },
     {
-      "self_ref": "#/texts/520",
+      "self_ref": "#/texts/521",
       "parent": {
         "$ref": "#/groups/54"
       },
@@ -8805,7 +8820,7 @@
       "text": "Funded by SCOAP"
     },
     {
-      "self_ref": "#/texts/521",
+      "self_ref": "#/texts/522",
       "parent": {
         "$ref": "#/groups/54"
       },
