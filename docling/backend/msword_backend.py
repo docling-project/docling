@@ -3346,10 +3346,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._last_child_item(doc, self.parents[self._get_level() - 1]), CodeItem
         )
         p_style_id, p_level = self._get_label_and_level(paragraph)
-        numid, ilevel = self._get_numId_and_ilvl(paragraph)
+        if not text and "Heading" in p_style_id:
+            return elem_ref
 
-        if numid == 0:
-            numid = None
+        numid, ilevel = self._get_numId_and_ilvl(paragraph)
+        numid = numid or None
 
         if self._apply_caption_numbering(paragraph_elements, numid, ilevel, p_style_id):
             numid = None

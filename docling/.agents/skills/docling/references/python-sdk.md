@@ -639,6 +639,11 @@ converter = DocumentConverter(
     format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
 )
 ```
+## DOCX headings
+
+DOCX conversion skips empty and whitespace-only headings. The following body
+text stays under the previous heading, if there is one.
+
 ## DOCX, XLSX, PPTX and EPUB size limits
 
 These formats are ZIP archives. Docling checks the decompressed sizes before it

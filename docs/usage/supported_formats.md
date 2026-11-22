@@ -37,6 +37,9 @@ unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
 
+DOCX conversion skips empty and whitespace-only headings. The following body
+text stays under the previous heading, if there is one.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 

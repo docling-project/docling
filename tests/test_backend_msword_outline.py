@@ -10,12 +10,16 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
+from pathlib import Path
+
 import pytest
+from docling_core.types.doc import DocItemLabel
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+from docling.chunking import HierarchicalChunker
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, WordFormatOption
@@ -331,3 +335,42 @@ def test_numbered_paragraph_with_outline_level_is_a_heading_not_a_list_item(tmp_
         "## 2 Discussion",
         "Body text.",
     ]
+
+
+def test_blank_headings_do_not_change_the_parent_or_chunk_headings(
+    tmp_path: Path,
+) -> None:
+    doc = Document()
+    doc.add_heading("Introduction", level=1)
+    doc.add_heading("", level=2)
+    doc.add_heading(" \t ", level=2)
+    doc.add_paragraph("Body text.")
+    docx_path = tmp_path / "blank_headings.docx"
+    doc.save(docx_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    converted = converter.convert(docx_path).document
+
+    assert [(item.label, item.text) for item in converted.texts] == [
+        (DocItemLabel.SECTION_HEADER, "Introduction"),
+        (DocItemLabel.TEXT, "Body text."),
+    ]
+    heading, body = converted.texts
+    assert body.parent == heading.get_ref()
+    chunk_headings = [
+        chunk.meta.headings for chunk in HierarchicalChunker().chunk(converted)
+    ]
+    assert chunk_headings == [["Introduction"]]
+
+
+def test_numbered_blank_heading_does_not_advance_numbering(tmp_path: Path) -> None:
+    doc = Document()
+    num_id = _add_decimal_numbering(doc, 90)
+    for text in ("Introduction", "", "Discussion"):
+        para = doc.add_paragraph(text)
+        _set_paragraph_outline_level(para, 0)
+        _set_paragraph_numbering(para, num_id)
+
+    markdown = _markdown(doc, tmp_path, "numbered_blank_heading")
+
+    assert markdown.splitlines() == ["## 1 Introduction", "", "## 2 Discussion"]
