@@ -287,6 +287,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
+    def _recover_msg_body(data: bytes, message: OxMsgMessage) -> str | None:
+        """Read the plain-text body from the OLE stream with the message codepage.
+
+        When ``message.body`` fails (wrong codec or unknown codec), this reads
+        the raw ``PtypString8`` bytes from the OLE compound file and decodes
+        them with the message code page.  Returns ``None`` if the stream does
+        not exist or cannot be decoded.
+        """
+        try:
+            import olefile
+            from oxmsg.domain.constants import PID_BODY, PTYP_STRING8
+            from oxmsg.domain.encodings import encoding_from_codepage
+
+            codepage = message.properties.int_prop_value(0x3FFD)  # PID_MESSAGE_CODEPAGE
+            if codepage is None:
+                return None
+            encoding = encoding_from_codepage(codepage)
+            stream_name = f"__substg1.0_{PID_BODY:04X}{PTYP_STRING8:04X}"
+            with olefile.OleFileIO(data) as ole:
+                if not ole.exists(stream_name):
+                    return None
+                raw = ole.openstream(stream_name).read()
+            return raw.decode(encoding, errors="replace")
+        except Exception:
+            return None
+
+    @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
@@ -294,6 +321,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         ``email.message.EmailMessage`` from it so the ``.msg`` path shares the
         exact body, HTML, address, and attachment handling used for ``.eml``
         input.
+
+        Every string property access is guarded against
+        ``UnicodeDecodeError`` (wrong codec) and ``LookupError`` (unknown
+        codec, e.g. ``windows-950``).  python-oxmsg <=0.0.2 can pick the
+        wrong codec for 8-bit body properties
+        (`python-oxmsg#5 <https://github.com/scanny/python-oxmsg/issues/5>`_),
+        and some code-page-to-codec mappings produce names Python does not
+        recognise.  When the body cannot be decoded through python-oxmsg, the
+        raw bytes are read from the OLE stream and decoded with the message
+        code page.
         """
         if not _OXMSG_AVAILABLE:
             raise ImportError(_MSG_INSTALL_HINT) from _OXMSG_IMPORT_ERROR
@@ -301,20 +338,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         message = OxMsgMessage.load(data)
         email_message = EmailMessage()
 
-        if message.subject:
-            email_message["Subject"] = EmailDocumentBackend._header_safe(
-                message.subject
-            )
-        if message.sender:
-            email_message["From"] = EmailDocumentBackend._header_safe(message.sender)
+        try:
+            subject = message.subject or ""
+        except (UnicodeDecodeError, LookupError):
+            subject = ""
+            _log.warning("Could not decode .msg subject")
+        if subject:
+            email_message["Subject"] = EmailDocumentBackend._header_safe(subject)
+
+        try:
+            sender = message.sender or ""
+        except (UnicodeDecodeError, LookupError):
+            sender = ""
+            _log.warning("Could not decode .msg sender")
+        if sender:
+            email_message["From"] = EmailDocumentBackend._header_safe(sender)
 
         # Preserve the To/Cc/Bcc split from the recipient rows so downstream
         # rendering (which shows "To" and "Cc") matches the .eml behavior.
         grouped: dict[str, list[str]] = {}
         for recipient in message.recipients:
-            formatted = formataddr(
-                (recipient.name or "", recipient.email_address or "")
-            )
+            try:
+                formatted = formataddr(
+                    (recipient.name or "", recipient.email_address or "")
+                )
+            except (UnicodeDecodeError, LookupError):
+                _log.warning("Could not decode .msg recipient; skipping")
+                continue
             if not formatted:
                 continue
             rtype = recipient.properties.int_prop_value(_RECIPIENT_TYPE_PROP_ID)
@@ -334,8 +384,23 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(message.sent_date, datetime):
             email_message["Date"] = format_datetime(message.sent_date)
 
-        plain_body = message.body
-        html_body = message.html_body
+        try:
+            plain_body = message.body
+        except (UnicodeDecodeError, LookupError):
+            # Recover via OLE stream with the message code page.
+            plain_body = EmailDocumentBackend._recover_msg_body(data, message)
+            if plain_body:
+                _log.warning(
+                    "Recovered .msg body via message code page "
+                    "(python-oxmsg used the wrong codec)"
+                )
+            else:
+                _log.warning("Could not decode .msg plain-text body")
+        try:
+            html_body = message.html_body
+        except (UnicodeDecodeError, LookupError):
+            html_body = None
+            _log.warning("Could not decode .msg HTML body")
         if plain_body:
             email_message.set_content(plain_body)
             if html_body:
@@ -348,13 +413,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
-            # Only filename and MIME type are needed; pass an empty payload to avoid
-            # copying attachment content into the RFC 822 byte stream.
+            try:
+                filename = attachment.file_name
+            except (UnicodeDecodeError, LookupError):
+                filename = None
+                _log.warning("Could not decode .msg attachment filename")
             email_message.add_attachment(
                 b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
-                filename=attachment.file_name,
+                filename=filename,
             )
 
         return email_message.as_bytes()

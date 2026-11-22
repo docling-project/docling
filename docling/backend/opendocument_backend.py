@@ -44,6 +44,7 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
+    PictureItem,
     PictureMeta,
     ProvenanceItem,
     RichTableCell,
@@ -64,6 +65,7 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.media import load_linked_media, media_kind, media_ref
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -1221,6 +1223,49 @@ def _add_odf_images(
     return image_count
 
 
+def _add_odf_media_track(
+    doc: DoclingDocument,
+    frame: Frame,
+    parent: NodeItem,
+    odf_obj: OdfDocument,
+    pictures: list[PictureItem],
+) -> None:
+    """Turn the video or audio that a frame plays into a track.
+
+    The media is a ``draw:plugin`` in the frame, next to a ``draw:image``
+    preview that is already a picture. The track takes the place of the first
+    such picture, with its image as the cover. A frame without one gets a track
+    without a cover, so the media keeps its place.
+    """
+    plugin = frame.get_element("draw:plugin")
+    if plugin is None:
+        return
+    location = (plugin.get_attribute_string("xlink:href") or "").removeprefix("./")
+    if not location:
+        return
+    # LibreOffice may declare its generic "application/vnd.sun.star.media" type.
+    # The manifest entry of an embedded file, or else the extension, then tells
+    # video from audio.
+    kind = media_kind(plugin.get_attribute_string("draw:mime-type")) or media_kind(
+        odf_obj.manifest.get_media_type(location), location
+    )
+    if kind is None or (ref := media_ref(kind, location)) is None:
+        return
+    media = {kind: ref}
+    if not pictures:
+        doc.add_track(parent=parent, **media)
+        return
+    picture = pictures[0]
+    doc.insert_track(
+        sibling=picture,
+        image=picture.image,
+        prov=picture.prov[0] if picture.prov else None,
+        content_layer=picture.content_layer,
+        **media,
+    )
+    doc.delete_items(node_items=[picture])
+
+
 def _add_odf_child(
     doc: DoclingDocument,
     element: Any,
@@ -2165,6 +2210,17 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 self._hide_slide(doc, slide_group)
         return doc
 
+    @override
+    def load_media(self, location: str) -> bytes | None:
+        if location in self.odf_obj.get_parts():
+            part = self.odf_obj.get_part(location)
+            if isinstance(part, bytes):
+                return part
+        base_path = (
+            str(self.path_or_stream) if isinstance(self.path_or_stream, Path) else None
+        )
+        return load_linked_media(location, self.options, base_path)
+
     @staticmethod
     def _hide_slide(doc: DoclingDocument, slide_group: NodeItem) -> None:
         """Move the content of a hidden slide to the invisible layer.
@@ -2318,6 +2374,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 image_loader=self._image_loader,
             )
 
+        first_picture = len(doc.pictures)
         _add_odf_images(
             doc,
             frame.get_images(),
@@ -2326,6 +2383,9 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             self.odf_obj,
             image_loader=self._image_loader,
             skip_object_replacements=chart_count > 0,
+        )
+        _add_odf_media_track(
+            doc, frame, parent, self.odf_obj, doc.pictures[first_picture:]
         )
 
         for textbox in frame.get_elements("descendant::draw:text-box"):

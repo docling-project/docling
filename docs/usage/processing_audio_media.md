@@ -267,6 +267,50 @@ docling --to md --video-sampling-mode scene --video-diarization video.mp4
 
 See the [CLI reference](../reference/cli.md) for the complete flag list.
 
+## Video and audio in slides
+
+PowerPoint (PPTX) and OpenDocument (ODP) slides can play video and audio. Docling turns each media object into a track on its slide, with its poster frame or icon as the cover. The `video` or `audio` of the track tells where the media file is: its path inside the presentation package, or the link of a linked file.
+
+Set `keep_media=True` to hold the media file in the track, so that a DocLang archive (`save_as_doclang_archive`, or `--keep-media --to dclx` on the CLI) stores it. The JSON of the document keeps only the reference.
+
+Set `do_media_conversion=True` to also convert the media. Docling sends each media file through the ASR pipeline (audio) or the video pipeline (video). The result goes in the track: the transcript with its timestamps and, for a video, the sampled frames. These items get the provenance of the track, so you can see on which slide the media plays.
+
+```python
+from pathlib import Path
+
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.document_converter import (
+    DocumentConverter,
+    OdpFormatOption,
+    PowerpointFormatOption,
+)
+
+pipeline_options = ConvertPipelineOptions(do_media_conversion=True)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PPTX: PowerpointFormatOption(pipeline_options=pipeline_options),
+        InputFormat.ODP: OdpFormatOption(pipeline_options=pipeline_options),
+    }
+)
+result = converter.convert(Path("slides.pptx"))
+print(result.document.export_to_markdown())
+```
+
+`media_asr_options` selects the Whisper model (default: `WHISPER_TINY`). Frames are sampled with the default settings of the video pipeline.
+
+On the CLI, `--convert-media` does the same. It transcribes with the model of the `--asr-*` options, like audio and video inputs:
+
+```bash
+docling convert slides.pptx --convert-media --asr-model whisper_base --keep-media --to dclx
+```
+
+Docling loads a linked media file only when the backend options allow it: `enable_remote_fetch=True` for a URL, and `enable_local_fetch=True` for a local file. A local file must be in the folder of the presentation or below it, and the presentation must be given as a `Path`. PowerPoint stores links to local files as absolute paths, so Docling does not load them.
+
+Each media file is loaded and converted once, also when several slides show it. The containers of older decks are tracks too: `.wmv`, `.asf`, `.mpg`, `.m4v` and `.flv` video, and `.wma` and `.aiff` audio. Their audio is transcribed, but the video pipeline does not read these video containers, so such a video is kept without a transcript or frames. Media in a container that a track does not support (for example `.3gp`) stays a picture of its poster frame or icon, and is neither kept nor converted. A video without an audio track gives only its sampled frames.
+
+If a media file cannot be converted, the track stays, the result status is `PARTIAL_SUCCESS`, and the reason is in `ConversionResult.errors`.
+
 ## Choosing an ASR model and backend
 
 Docling includes these local backends. The [Installation](#installation) table shows the extra for each one. A [remote server](#transcribing-with-a-remote-whisper-server) is also possible.

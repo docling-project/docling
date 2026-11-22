@@ -544,6 +544,16 @@ to `200` (set `None` for no limit). When `document_timeout` is set, all FFmpeg
 calls share that budget; running out yields `PARTIAL_SUCCESS` with a `TIMEOUT`
 error (`result.has_timeout_errors()`).
 
+Video and audio on PPTX and ODP slides become tracks (`doc.tracks`) with their
+poster frame as cover; the track's `video` or `audio` references the media file.
+On `PowerpointFormatOption` or `OdpFormatOption`, `ConvertPipelineOptions(keep_media=True)`
+holds the file in the track (a DocLang archive then stores it), and
+`do_media_conversion=True` transcribes it: the transcript (and the frames of a
+video) goes in the track. `media_asr_options` picks the Whisper model. The CLI
+flags are `--keep-media` and `--convert-media` (which uses the `--asr-*` options). Linked
+media files load only with the backend options `enable_remote_fetch` /
+`enable_local_fetch`.
+
 ## Exporting images and tables
 
 To keep and export page/figure images, tell the pipeline to generate them, then
