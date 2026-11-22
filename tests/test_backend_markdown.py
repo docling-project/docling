@@ -120,6 +120,31 @@ Here is some content...
     )
 
 
+def test_long_underscore_runs_in_fenced_code_are_kept():
+    """Fenced code is literal, so the underscore-run guard does not change it.
+
+    The guard against slow emphasis parsing still shortens runs in prose.
+    """
+    underscores = "_" * 20
+    markdown = (
+        f"```python\nSEP = '{underscores}'\n```\n\n"
+        f"~~~\n# {underscores}\n~~~\n\n"
+        f"Name: {underscores}\n\n"
+        f"````\n```\n{underscores}\n````\n"
+    )
+    with pytest.warns(UserWarning, match="Detected potentially incorrect Markdown"):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    texts = [(item.label, item.text) for item in conv_result.document.texts]
+    assert texts == [
+        (DocItemLabel.CODE, f"SEP = '{underscores}'"),
+        (DocItemLabel.CODE, f"# {underscores}"),
+        (DocItemLabel.TEXT, "Name: " + "_" * 10),
+        (DocItemLabel.CODE, f"```\n{underscores}"),
+    ]
+
+
 def test_convert_list_item_codespan_only():
     """
     Regression test:

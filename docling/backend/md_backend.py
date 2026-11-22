@@ -118,6 +118,13 @@ _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
 _STOP_MARKER = f"#_#_{_MARKER_BODY}_STOP_#_#"
 
+# A line with its line ending (CommonMark ends lines at \n, \r\n or \r only).
+_LINE = re.compile(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$")
+# Opening code fence: up to 3 spaces, then 3+ backticks or 3+ tildes.
+_FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$", re.DOTALL)
+# Closing code fence: the fence characters followed by whitespace only.
+_FENCE_CLOSE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*[\r\n]*$")
+
 
 class _PendingCreationType(str, Enum):
     """CoordOrigin."""
@@ -339,17 +346,38 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return _LINK_DEST.validate_python(dest)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
-        pattern = r"_+"
+        """Shorten long runs of underscores outside fenced code blocks.
 
-        def replace_match(match):
-            underscore_sequence = match.group(0)
+        Long runs make the emphasis parser slow. Fenced code is not parsed
+        for emphasis and its text is literal, so its lines are kept as is.
+        """
+        pattern = re.compile(rf"_{{{max_length + 1},}}")
+        replacement = "_" * max_length
 
-            if len(underscore_sequence) > max_length:
-                return "_" * max_length
-            else:
-                return underscore_sequence
+        lines: list[str] = []
+        fence: str | None = None
+        for line in _LINE.findall(markdown_text):
+            if fence is None:
+                opening = _FENCE_OPEN.match(line)
+                # A backtick fence cannot have a backtick in its info string.
+                if opening and not (
+                    opening.group(1)[0] == "`" and "`" in opening.group(2)
+                ):
+                    fence = opening.group(1)
+                    lines.append(line)
+                else:
+                    lines.append(pattern.sub(replacement, line))
+                continue
+            closing = _FENCE_CLOSE.match(line)
+            if (
+                closing
+                and closing.group(1)[0] == fence[0]
+                and len(closing.group(1)) >= len(fence)
+            ):
+                fence = None
+            lines.append(line)
 
-        shortened_text = re.sub(pattern, replace_match, markdown_text)
+        shortened_text = "".join(lines)
 
         if len(shortened_text) != len(markdown_text):
             warnings.warn("Detected potentially incorrect Markdown, correcting...")
