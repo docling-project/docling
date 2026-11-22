@@ -299,6 +299,32 @@ def test_wrapped_cell_text_stays_in_its_cell() -> None:
     assert [item.text for item in doc.texts] == ["After."]
 
 
+def test_wrapped_line_with_a_pipe_opens_the_next_cell() -> None:
+    # A wrapped line continues the cell above only up to its first "|", which
+    # opens the next cell, also when the line is indented. The whole line used
+    # to go into the cell above, so every later cell moved one column left.
+    src = (
+        b"|===\n|Name |Description |Default\n"
+        b"|timeout |How long to wait\nbefore giving up |30s\n"
+        b"|retries |Number of retries\n  |3\n|===\n"
+    )
+    doc = _convert_adoc(src)
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 3)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "Name",
+        "Description",
+        "Default",
+        "timeout",
+        "How long to wait before giving up",
+        "30s",
+        "retries",
+        "Number of retries",
+        "3",
+    ]
+
+
 def test_escaped_pipe_stays_inside_its_cell() -> None:
     # A backslash-escaped pipe is cell content: Asciidoctor partitions cells on
     # unescaped pipes only and drops the backslash from the output. Splitting on
