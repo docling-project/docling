@@ -11,7 +11,7 @@ What this example does:
 - maps headers, footers, formulas, tables, code, and pictures;
 - writes Markdown and Docling JSON.
 
-Run with the bundled fixture:
+Run with the built-in sample:
 
     python docs/examples/oxr_result_to_docling.py
 
@@ -26,17 +26,61 @@ Parse and convert through a local OXR service:
 """
 
 import argparse
+import json
+import tempfile
 from pathlib import Path
 
 from docling.utils.oxr_utils import parse_oxr_result, run_oxr_parse
 
-_DEFAULT_INPUT = (
-    Path(__file__).resolve().parents[2]
-    / "tests"
-    / "data"
-    / "json_oxr"
-    / "self_authored_pages.oxr.json"
-)
+_SAMPLE_RESULT = {
+    "code": 0,
+    "message": "success",
+    "warnings": [],
+    "data": {
+        "task_id": "example",
+        "error": None,
+        "metadata": {},
+        "result": {
+            "file_name": "sample.pdf",
+            "metadata": {"page_num": 1, "file_type": ".pdf"},
+            "outputs": {
+                "markdown": "",
+                "json": {
+                    "pages": [
+                        {
+                            "page_num": 0,
+                            "page_size": {"w": 800, "h": 1000},
+                            "blocks": [
+                                {
+                                    "type": "Title",
+                                    "bbox": [40, 40, 760, 100],
+                                    "content": "OXR Example",
+                                    "format": "text",
+                                },
+                                {
+                                    "type": "Text",
+                                    "bbox": [40, 120, 760, 220],
+                                    "content": (
+                                        "A saved OXR parse result converts without "
+                                        "a running OXR service."
+                                    ),
+                                    "format": "text",
+                                },
+                            ],
+                        }
+                    ]
+                },
+            },
+        },
+    },
+}
+
+
+def _write_sample(directory: Path) -> Path:
+    """Write the built-in OXR result next to the caller's output."""
+    path = directory / "sample.oxr.json"
+    path.write_text(json.dumps(_SAMPLE_RESULT, indent=2), encoding="utf-8")
+    return path
 
 
 def main() -> None:
@@ -50,9 +94,8 @@ def main() -> None:
         "input",
         nargs="?",
         type=Path,
-        default=_DEFAULT_INPUT,
         help="Saved OXR result JSON, or a PDF/image when --base-url is set "
-        "(default: bundled synthetic fixture)",
+        "(default: a small built-in sample)",
     )
     parser.add_argument(
         "--base-url",
@@ -86,7 +129,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    input_path: Path = args.input
+    sample_dir = tempfile.TemporaryDirectory()
+    input_path: Path = (
+        args.input if args.input is not None else _write_sample(Path(sample_dir.name))
+    )
     if args.base_url is not None:
         result = run_oxr_parse(input_path, base_url=args.base_url, api_key=args.api_key)
         document = parse_oxr_result(
