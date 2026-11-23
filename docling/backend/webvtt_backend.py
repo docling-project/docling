@@ -19,6 +19,7 @@ from docling_core.types.doc.webvtt import (
     WebVTTCueComponent,
     WebVTTCueComponentWithTerminator,
     WebVTTCueItalicSpan,
+    WebVTTCueRubyTextSpan,
     WebVTTCueTextSpan,
     WebVTTCueUnderlineSpan,
     WebVTTCueVoiceSpan,
@@ -137,11 +138,9 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                 # Ruby text (`<rt>`) is a reading aid for the base text before it,
                 # e.g. furigana. Kept, it would be glued to that base text, as in
                 # "東京とうきょう", so it is left out like in the Word backend.
-                if getattr(component, "kind", None) == "rt":
-                    if comp.terminator is not None:
-                        cue_text.append(AnnotatedPar(items=[]))
-                    continue
-                if isinstance(component, WebVTTCueTextSpan):
+                if isinstance(component, WebVTTCueRubyTextSpan):
+                    pass
+                elif isinstance(component, WebVTTCueTextSpan):
                     item.text = component.text
                     # a line terminator inside a nested span starts a new paragraph,
                     # so the current paragraph is always the last one
