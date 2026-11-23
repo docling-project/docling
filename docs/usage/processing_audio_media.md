@@ -637,6 +637,31 @@ Notes:
   saying so. Speaker labels are not part of the OpenAI transcription API, so the items have no speaker.
 - The request waits up to `timeout` seconds (600 by default), which long recordings may need to exceed.
 
+#### FonadaLabs Kapture V3
+
+FonadaLabs can be used through the same remote ASR option. Place a small
+OpenAI-compatible adapter in front of the Fonada REST endpoint. The adapter must
+send `file` and `language_id` to `https://api.fonada.ai/v3/asr/transcribe`, then
+return Fonada's `transcript_chunks` as `segments` in `verbose_json`:
+
+```python
+pipeline_options = AsrPipelineOptions(
+    asr_options=ApiAsrOptions(
+        url="https://your-fonada-adapter.example/v1/audio/transcriptions",
+        model="kapture-v3",
+        language="en",
+        headers={"Authorization": "Bearer YOUR_ADAPTER_TOKEN"},
+    ),
+    enable_remote_services=True,
+)
+```
+
+Docling accepts Fonada's provider-specific response directly when it contains
+`transcript_chunks` with real numeric `start_s`, `end_s`, and `text` values. The
+segments are validated for order and positive duration. Docling does not infer
+word timings, confidence, or speaker labels. A missing or malformed timed
+segment fails conversion rather than producing misleading timestamps.
+
 ### From the command line
 
 `docling models --asr` lists the models by family, with one column for each backend. Two more columns show if the selected backend gives real time ranges (`Times`) and speaker labels (`Spk`). The output has a legend for its symbols, and `--format json` gives the same data for scripts:

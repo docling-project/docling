@@ -166,6 +166,26 @@ class TestApiAsrOptions:
 
 
 class TestApiAsrConversion:
+    def test_fonada_transcript_chunks_become_timed_text_items(self, server):
+        server.body = {
+            "text": "Pump two Go for the switch-over.",
+            "transcript_chunks": [
+                {"text": "Pump two", "start_s": 0.0, "end_s": 3.5},
+                {"text": "Go for the switch-over.", "start_s": 3.5, "end_s": 9.0},
+            ],
+        }
+        conversation = _ApiAsrModel(ApiAsrOptions(url=server.url)).transcribe(SAMPLE_AUDIO)
+        assert [item.text for item in conversation] == ["Pump two", "Go for the switch-over."]
+        assert [(item.start_time, item.end_time) for item in conversation] == [(0.0, 3.5), (3.5, 9.0)]
+
+    def test_invalid_fonada_timing_is_rejected(self, server):
+        server.body = {
+            "text": "hello",
+            "transcript_chunks": [{"text": "hello", "start_s": 3.0, "end_s": 2.0}],
+        }
+        with pytest.raises(RuntimeError, match="invalid timed segment bounds"):
+            _ApiAsrModel(ApiAsrOptions(url=server.url)).transcribe(SAMPLE_AUDIO)
+
     def test_audio_file_becomes_timed_text_items(self, server):
         converter = _converter(ApiAsrOptions(url=server.url))
 
