@@ -325,6 +325,18 @@ def test_wrapped_line_with_a_pipe_opens_the_next_cell() -> None:
     ]
 
 
+def test_stray_line_before_the_first_row_stays_out_of_the_table() -> None:
+    # A line without "|" right after "|===" is not a wrapped continuation:
+    # there is no cell above to extend, so _continue_table returns False and
+    # the empty table ends. Only the following row forms the table.
+    src = b"|===\nStray text\n|a |b\n|===\n"
+    doc = _convert_adoc(src)
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (1, 2)
+    assert [cell.text for cell in table.data.table_cells] == ["a", "b"]
+
+
 def test_escaped_pipe_stays_inside_its_cell() -> None:
     # A backslash-escaped pipe is cell content: Asciidoctor partitions cells on
     # unescaped pipes only and drops the backslash from the output. Splitting on
