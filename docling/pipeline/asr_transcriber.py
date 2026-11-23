@@ -1002,7 +1002,9 @@ class _ApiAsrModel:
                 previous_end = 0.0
                 for chunk in chunks:
                     if not isinstance(chunk, dict):
-                        raise RuntimeError("The transcription service returned an invalid timed segment")
+                        raise RuntimeError(
+                            "The transcription service returned an invalid timed segment"
+                        )
                     start, end = chunk.get("start_s"), chunk.get("end_s")
                     text = chunk.get("text")
                     if (
@@ -1012,7 +1014,9 @@ class _ApiAsrModel:
                         or end <= start
                         or not isinstance(text, str)
                     ):
-                        raise RuntimeError("The transcription service returned invalid timed segment bounds")
+                        raise RuntimeError(
+                            "The transcription service returned invalid timed segment bounds"
+                        )
                     previous_end = end
                     segments.append({"start": start, "end": end, "text": text})
         if not isinstance(segments, list):

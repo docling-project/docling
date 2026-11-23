@@ -174,9 +174,17 @@ class TestApiAsrConversion:
                 {"text": "Go for the switch-over.", "start_s": 3.5, "end_s": 9.0},
             ],
         }
-        conversation = _ApiAsrModel(ApiAsrOptions(url=server.url)).transcribe(SAMPLE_AUDIO)
-        assert [item.text for item in conversation] == ["Pump two", "Go for the switch-over."]
-        assert [(item.start_time, item.end_time) for item in conversation] == [(0.0, 3.5), (3.5, 9.0)]
+        conversation = _ApiAsrModel(ApiAsrOptions(url=server.url)).transcribe(
+            SAMPLE_AUDIO
+        )
+        assert [item.text for item in conversation] == [
+            "Pump two",
+            "Go for the switch-over.",
+        ]
+        assert [(item.start_time, item.end_time) for item in conversation] == [
+            (0.0, 3.5),
+            (3.5, 9.0),
+        ]
 
     def test_invalid_fonada_timing_is_rejected(self, server):
         server.body = {
