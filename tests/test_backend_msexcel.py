@@ -1656,6 +1656,8 @@ def test_format_excel_value_matches_excel_display() -> None:
         (12.5, '"$0"0.00', "12.5"),
         (12.5, '"$"0.0?', "12.5"),
         (12.5, '"$"€0.00', "12.5"),
+        # Accounting without a currency sign or percent (built-in 43) stays raw.
+        (1234.5, '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)', "1234.5"),
     ],
 )
 def test_excel_number_format_tokens_and_sections(
