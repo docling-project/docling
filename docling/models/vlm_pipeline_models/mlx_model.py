@@ -3,7 +3,6 @@
 
 import logging
 import sys
-import threading
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -29,13 +28,10 @@ from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
+from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
-
-# Global lock for MLX model calls - MLX models are not thread-safe
-# All MLX models share this lock to prevent concurrent MLX operations
-_MLX_GLOBAL_LOCK = threading.Lock()
 
 
 class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
@@ -208,7 +204,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             raise ValueError(f"prompt must be str or list[str], got {type(prompt)}")
 
         # MLX models are not thread-safe - use global lock to serialize access
-        with _MLX_GLOBAL_LOCK:
+        with MLX_GLOBAL_LOCK:
             _log.debug("MLX model: Acquired global lock for thread safety")
             for image, user_prompt in zip(image_list, user_prompts):
                 # Convert numpy array to PIL Image if needed

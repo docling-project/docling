@@ -80,7 +80,7 @@ The cost is \$100. A group {$x$} and \textbf{bold $y$} follow.
     doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
 
     dclg = doc.export_to_doclang()
-    assert "<content>The long-sought Higgs boson(s) </content>" in dclg
+    assert "The long-sought Higgs boson(s) <formula>h</formula>" in dclg
     assert "<formula>h</formula>" in dclg
     assert r"<formula>h\rightarrow\gamma\gamma</formula>" in dclg
     assert "electroweak symmetry breaking in particle physics" in dclg

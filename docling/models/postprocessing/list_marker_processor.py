@@ -45,6 +45,9 @@ class ListItemMarkerProcessor:
             r"[-*+•·‣⁃]",  # noqa: RUF001 - intentional Unicode bullet glyphs
             r"[►▶▸‣➤➢]",  # Arrow-like bullets
             r"[✓✔✗✘]",  # Checkmark bullets
+            # Symbol and Wingdings bullets as the fonts' private-use code points, which is what
+            # the text layer of a PDF exported from Word often holds (U+F0B7 for Symbol's bullet)
+            r"[\uF0B7\uF0A7\uF06E\uF076\uF0D8\uF0E0\uF0FC\uF0A8]",
         ]
 
         # Numbered markers (ordered lists). Compound/hierarchical markers are listed

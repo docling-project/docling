@@ -18,6 +18,8 @@ from enum import Enum
 from pathlib import PurePosixPath
 from typing import Any
 
+from safe_markdown import markdown_code, markdown_text
+
 GROUNDTRUTH_SEGMENT = "groundtruth"
 MAX_LISTED_FILES = 60
 # Keys that only carry layout coordinates or page geometry.
@@ -306,8 +308,10 @@ def render_markdown(changes: list[FileChange]) -> str:
         for change in by_kind.get(kind, []):
             if listed >= MAX_LISTED_FILES:
                 break
-            detail = f": {'; '.join(change.details)}" if change.details else ""
-            lines.append(f"- **{kind.value}** `{change.path}`{detail}")
+            # The paths and the details come from the files of the PR.
+            details = "; ".join(markdown_text(detail) for detail in change.details)
+            suffix = f": {details}" if details else ""
+            lines.append(f"- **{kind.value}** {markdown_code(change.path)}{suffix}")
             listed += 1
     if len(changes) > listed:
         lines.append(f"- … {len(changes) - listed} more file(s) not listed")

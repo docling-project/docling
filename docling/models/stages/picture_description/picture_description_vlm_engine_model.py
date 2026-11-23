@@ -27,6 +27,7 @@ from docling.models.inference_engines.vlm import (
     create_vlm_engine,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.utils.stop_reason import normalize_stop_reason
 
 _log = logging.getLogger(__name__)
 
@@ -189,7 +190,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
                 yield ApiImageRequestResult(
                     text=description,
                     num_tokens=output.metadata.get("num_tokens"),
-                    stop_reason=_map_stop_reason(output.stop_reason),
+                    stop_reason=normalize_stop_reason(output.stop_reason),
                     usage=output.metadata.get("usage"),
                     logprobs=output.metadata.get("logprobs"),
                     error=output.metadata.get("error"),
@@ -213,23 +214,3 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
                 self.engine.cleanup()
             except Exception as e:
                 _log.warning(f"Error cleaning up engine: {e}")
-
-
-def _map_stop_reason(stop_reason: str | VlmStopReason | None) -> VlmStopReason:
-    if isinstance(stop_reason, VlmStopReason):
-        return stop_reason
-    if not stop_reason:
-        return VlmStopReason.UNSPECIFIED
-    try:
-        return VlmStopReason(stop_reason)
-    except ValueError:
-        pass
-    if stop_reason == "content_filter":
-        return VlmStopReason.CONTENT_FILTERED
-    if stop_reason == "length":
-        return VlmStopReason.LENGTH
-    if stop_reason in ("stop", "end_of_sequence"):
-        return VlmStopReason.END_OF_SEQUENCE
-    if stop_reason == "stop_sequence":
-        return VlmStopReason.STOP_SEQUENCE
-    return VlmStopReason.UNSPECIFIED

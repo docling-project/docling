@@ -7,6 +7,7 @@ from typing import Annotated, Literal, Optional, Union
 from urllib.parse import urlparse
 
 from pydantic import (
+    AnyHttpUrl,
     AnyUrl,
     BaseModel,
     Field,
@@ -61,6 +62,12 @@ class CsvBackendOptions(TextBackendOptions):
     """Options specific to the CSV backend."""
 
     kind: Literal["csv"] = Field("csv", exclude=True, repr=False)
+
+
+class CalendarBackendOptions(TextBackendOptions):
+    """Options specific to the iCalendar backend."""
+
+    kind: Literal["calendar"] = Field("calendar", exclude=True, repr=False)
 
 
 class AsciiDocBackendOptions(TextBackendOptions):
@@ -336,8 +343,9 @@ class PdfBackendOptions(BaseBackendOptions):
         DEFAULT_MAX_IMAGE_PIXELS,
         description=(
             "The maximum number of pixels (width x height) of one page of an "
-            "image input, such as one frame of a multi-page TIFF. Used by the "
-            "image backend; an image with a larger page is rejected."
+            "image input, such as one frame of a multi-page TIFF, or of one "
+            "METS-GBS page. Used by the image and METS-GBS backends; a larger "
+            "page is rejected."
         ),
     )
 
@@ -555,6 +563,29 @@ class MsPowerpointBackendOptions(BaseBackendOptions):
         ),
     )
 
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the PPTX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "PPTX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the PPTX archive"),
+    ] = 10_000
+
 
 class MsWordBackendOptions(BaseBackendOptions):
     """Options specific to the MS Word backend."""
@@ -644,6 +675,19 @@ class OdsBackendOptions(BaseBackendOptions):
             )
         ),
     ] = None
+    max_repeated_cells: Annotated[
+        NonNegativeInt,
+        Field(
+            description=(
+                "Maximum number of cells that repeated rows and cells "
+                "(table:number-rows-repeated and table:number-columns-repeated) "
+                "can add to the workbook, in addition to the cells written in "
+                "the file. A repetition that goes over the limit keeps only the "
+                "copies that fit, and one copy when the limit is spent. Trailing "
+                "empty rows and cells do not count."
+            )
+        ),
+    ] = 100_000
 
 
 class LatexBackendOptions(BaseBackendOptions):
@@ -712,12 +756,56 @@ class EmailBackendOptions(BaseBackendOptions):
             "is never embedded. Opt-in (default False)."
         ),
     )
+    parse_calendar_invitations: bool = Field(
+        True,
+        description=(
+            "Whether to convert the calendar parts of the email, such as meeting "
+            "invitations, cancellations and attached .ics files, into their "
+            "events with time, location, organizer and attendees. They are "
+            "added under a 'Calendar' heading after the body. An event that "
+            "the email carries twice, as an inline part and as an attachment, "
+            "is added once. An event description that the body already holds "
+            "is left out."
+        ),
+    )
 
 
 class XBRLBackendOptions(BaseBackendOptions):
-    """Options specific to the XBRL backend."""
+    """Options specific to the XBRL backend.
+
+    Both `enable_local_fetch` and `enable_remote_fetch` default to `False` and
+    must be set explicitly if the XBRL instance document needs to fetch
+    taxonomy elements from a local folder (`taxonomy` field) or remotely.
+    """
 
     kind: Annotated[Literal["xbrl"], Field("xbrl", exclude=True, repr=False)] = "xbrl"
+    source_uri: Annotated[
+        AnyHttpUrl | None,
+        Field(
+            description=(
+                "The http(s) URL that originates the XBRL or iXBRL document. If"
+                " provided and `enable_remote_fetch` is True, the backend uses it to"
+                " resolve the relative references to schemas and linkbases (for"
+                " instance, the company-specific extension taxonomy of SEC filings)"
+                " that are not found in the `taxonomy` folder. It is set"
+                " automatically when the document is converted from a URL. It must"
+                " not include credentials. Like any remote reference, it only"
+                " allows connections to public addresses. Set it only to a location"
+                " you trust, since the taxonomy files that it provides determine the"
+                " meaning of the facts."
+            )
+        ),
+    ] = None
+
+    @field_validator("source_uri")
+    @classmethod
+    def _source_uri_without_credentials(
+        cls, value: AnyHttpUrl | None
+    ) -> AnyHttpUrl | None:
+        if value is not None and (value.username or value.password):
+            raise ValueError("source_uri must not include credentials")
+        return value
+
     taxonomy: Annotated[
         Path | None,
         Field(
@@ -728,6 +816,12 @@ class XBRLBackendOptions(BaseBackendOptions):
                 " Optionally, it can also include taxonomy packages (`.zip`)"
                 " referenced by the reports with absolute URLs and mapped to files"
                 " with a taxonomy catalog (`catalog.xml`) for offline parsing."
+                " Files in this folder take precedence over remote ones. A taxonomy"
+                " package whose catalog maps every `https://` URL to its own files"
+                " must also contain the company-specific extension taxonomy of the"
+                " report, or the extension files must be in this folder. Otherwise,"
+                " the extension taxonomy is not fetched remotely and the facts of the"
+                " report cannot be converted."
             )
         ),
     ] = None
@@ -923,6 +1017,7 @@ BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         AsciiDocBackendOptions,
+        CalendarBackendOptions,
         CsvBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,

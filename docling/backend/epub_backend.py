@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import quote, unquote, urlsplit
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
@@ -31,6 +31,12 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# A start tag such as <a href="ch2.xhtml#n">. Only its attributes are markup: the
+# same characters in text, like a code listing that shows an HTML tag, have their
+# "<" escaped, since XML text cannot hold a literal "<", and must stay as written.
+# An attribute value cannot hold a literal "<" either, but it can hold a ">".
+_START_TAG = re.compile(r"""<[A-Za-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>""")
 
 
 class EpubDocumentBackend(DeclarativeDocumentBackend):
@@ -120,6 +126,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             opf_path = rootfile.get("full-path")
             if not opf_path:
                 raise ValueError("Could not find full-path in rootfile")
+            # full-path is a reference inside the container, so it is a URL,
+            # while the archive stores the literal file name. Some books store
+            # the escaped name as is, so an exact match is used first.
+            if opf_path not in self.epub_zip.namelist():
+                opf_path = unquote(opf_path)
 
             # Parse content.opf to get the reading order
             opf_data = read_member(self.epub_zip, opf_path, max_file_bytes)
@@ -294,15 +305,29 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # src is a URL; decode percent-escapes to get the archive entry name.
-            image_path = posixpath.normpath(posixpath.join(content_dir, unquote(src)))
-            return 'src="{}"'.format(image_path.replace('"', "&quot;"))
+            # Only a plain relative reference names an archive entry. Leave a
+            # malformed src, or one with a scheme or host, unchanged.
+            try:
+                parts = urlsplit(src)
+            except ValueError:
+                return match.group(0)
+            if parts.scheme or parts.netloc or not parts.path:
+                return match.group(0)
+
+            # Decode after the split: an escaped "#" or "?" belongs to the file name.
+            image_path = posixpath.normpath(
+                posixpath.join(content_dir, unquote(parts.path))
+            )
+            # Encode it again: the HTML backend reads "src" as a URL.
+            return f'src="{quote(image_path)}"'
 
         # Group 1: the opening quote (" or '). Group 2: the value, up to the
         # matching closing quote. The lookbehind skips attributes that only end
         # in "src", such as data-src.
         pattern = r"""(?<![\w-])src=(["'])((?:(?!\1).)+)\1"""
-        return re.sub(pattern, replace_image_src, html_content)
+        return _START_TAG.sub(
+            lambda tag: re.sub(pattern, replace_image_src, tag.group(0)), html_content
+        )
 
     def _fix_internal_links(self, html_content: str) -> str:
         """Reduce a link into another content document to its anchor.
@@ -323,10 +348,19 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             HTML content with fixed internal links
         """
-        pattern = r'href="(?!\w+:|//)([^"]*\.(?:xhtml|xht|html?))(#[^"]*)"'
+        # Group 1: the opening quote (" or '), which single-quoted markup makes
+        # as legal as a double quote. Group 3: the fragment, up to the matching
+        # closing quote.
+        pattern = (
+            r"""href=(["'])(?!\w+:|//)"""
+            r"""((?:(?!\1)[\s\S])*\.(?:xhtml|xht|html?))"""
+            r"""(#(?:(?!\1)[\s\S])*)\1"""
+        )
 
         # Replace with just the anchor part
-        fixed_content = re.sub(pattern, r'href="\2"', html_content)
+        fixed_content = _START_TAG.sub(
+            lambda tag: re.sub(pattern, r"href=\1\3\1", tag.group(0)), html_content
+        )
 
         return fixed_content
 

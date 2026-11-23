@@ -5,11 +5,11 @@
 
 import json
 import sys
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from types import ModuleType, SimpleNamespace
 
 import pytest
-from docling_core.types.doc import DocItemLabel, Size
+from docling_core.types.doc import DocItemLabel, DoclingDocument, Size
 from PIL import Image
 
 from docling.datamodel.base_models import (
@@ -225,6 +225,25 @@ def test_parse_mineru2_merges_text_continuations() -> None:
         40,
         60,
     ]
+
+
+def test_merged_text_keeps_its_space_after_dclx_reload(tmp_path: Path) -> None:
+    layout = (
+        "<|box_start|>0 200 1000 400<|box_end|><|ref_start|>text<|ref_end|>"
+        "<|box_start|>0 400 1000 600<|box_end|><|ref_start|>text<|ref_end|>"
+        "<|txt_contd_tgt|>"
+    )
+    document = parse_mineru2(
+        serialize_mineru2_transcript(layout, [(0, "Hello"), (1, "world")]),
+        original_page_size=Size(width=100, height=100),
+        page_no=1,
+    )
+    path = tmp_path / "merged.dclx"
+
+    document.save_as_doclang_archive(path)
+
+    loaded = DoclingDocument.load_from_doclang_archive(path)
+    assert [item.text for item in loaded.texts] == ["Hello world"]
 
 
 def test_parse_mineru2_index_is_text() -> None:

@@ -48,6 +48,12 @@ class PdfPageBackend(ABC):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         """Return bitmap bounds in 72-DPI document coordinates, scaled by ``scale``."""
 
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Optional[Image.Image]:
+        """Return a directly extracted image when ``bbox`` contains one safe image."""
+        return None
+
     def has_content_in(
         self,
         *,
@@ -155,6 +161,9 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
     def iter_pages(self) -> Iterator[PdfPageBackend]:
         for page_index in range(self.page_count()):
             yield self.load_page(page_index)
+
+    def cancel(self) -> None:
+        """Request cancellation of pending page work without waiting for it."""
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Return the PDF bookmark / table-of-contents outline.

@@ -1,0 +1,24 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: Message type: Invitation
+  item-2 at level 1: section_header: Q4 budget review
+  item-3 at level 1: text: Start: 2026-11-05 14:00 W. Europe Standard Time
+  item-4 at level 1: text: End: 2026-11-05 15:30 W. Europe Standard Time
+  item-5 at level 1: text: Location: Microsoft Teams Meeting
+  item-6 at level 1: text: Organizer: "Martin, Carla" <carla.martin@example.com>
+  item-7 at level 1: text: Status: Confirmed
+  item-8 at level 1: text: Priority: Medium
+  item-9 at level 1: text: Conference: https://teams.microsoft.com/l/meetup-join/example
+  item-10 at level 1: text: Hello all,
+  item-11 at level 1: text: please review the Q4 budget before the meeting. The draft is attached.
+  item-12 at level 1: text: ________________________________ ... ______________________________________
+  item-13 at level 1: section_header: Attendees
+  item-14 at level 1: list: group attendees
+    item-15 at level 2: list_item: Dan Moreau <dan.moreau@example.com> (required, awaiting response)
+    item-16 at level 2: list_item: Eva Novák <eva.novak@example.com> (optional, tentative)
+    item-17 at level 2: list_item: Room Atlas <room.atlas@example.com> (resource, for information, accepted)
+  item-18 at level 1: section_header: Reminders
+  item-19 at level 1: list: group reminders
+    item-20 at level 2: list_item: Display, 15 minutes before start
+  item-21 at level 1: section_header: Attachments
+  item-22 at level 1: list: group attachments
+    item-23 at level 2: list_item: budget-draft.txt (text/plain)

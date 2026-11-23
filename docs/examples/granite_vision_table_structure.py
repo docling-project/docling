@@ -8,7 +8,8 @@
 #
 # Prerequisites
 # - Install Docling with VLM support: `pip install docling[vlm]`
-# - A CUDA GPU is recommended; CPU works but is significantly slower.
+# - A CUDA GPU or Apple Silicon (MPS) is recommended; CPU works but is
+#   significantly slower.
 #
 # How to run
 # - From the repo root: `python docs/examples/granite_vision_table_structure.py`
@@ -21,6 +22,8 @@
 #   automatically from HuggingFace on first run.
 # - The model outputs table structure in OTSL (Open Table Structure Language) format,
 #   which Docling parses into structured table cells.
+# - `scale` sets the render scale of the table crops (default 2.0, about 144 dpi).
+#   A lower scale makes the model misread small digits.
 
 # %%
 
@@ -48,7 +51,9 @@ def main():
     # Configure pipeline to use Granite Vision for table structure
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_table_structure = True
-    pipeline_options.table_structure_options = GraniteVisionTableStructureOptions()
+    pipeline_options.table_structure_options = GraniteVisionTableStructureOptions(
+        scale=2.0
+    )
     pipeline_options.accelerator_options = AcceleratorOptions(
         device=AcceleratorDevice.AUTO,
     )

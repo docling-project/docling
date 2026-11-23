@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import csv
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -412,6 +413,34 @@ def test_utf8_bom_is_not_part_of_the_first_cell(tmp_path):
         assert cells[1].text == "Age"
 
 
+@pytest.mark.parametrize(
+    "csv_text, expected",
+    [
+        ("sep=;\nName;Price\nApple;1,50\n", ["Name", "Price", "Apple", "1,50"]),
+        ("SEP=;\nName;Price\nApple;1,50\n", ["Name", "Price", "Apple", "1,50"]),
+        ("Sep=;\nName;Price\nApple;1,50\n", ["Name", "Price", "Apple", "1,50"]),
+        ("sep=,\r\nName,Price\r\nApple,1.50\r\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=\t\nName\tPrice\nApple\t1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("\ufeffsep=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("\ufeffSEP=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
+    ],
+)
+def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
+    """A first line `sep=<char>` names the delimiter and is not a row.
+
+    Excel writes and reads this line, typically for files whose values contain
+    the delimiter the sniffer would otherwise pick, such as decimal commas.
+    The keyword matches in any letter case, so `SEP=;` is the same instruction
+    as `sep=;` and is not kept as a header row.
+    """
+    conv_result = get_converter().convert(
+        DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+    assert [cell.text for cell in cells] == expected
+
+
 def test_malformed_quoted_csv_is_a_load_error():
     """An unclosed quote used to escape convert() as csv.Error after sniffing."""
     conv_result = get_converter().convert(
@@ -606,3 +635,19 @@ def test_repeated_backend_conversion_preserves_dialect(delimiter: str):
             "1",
         ]
     assert first.export_to_dict() == second.export_to_dict()
+
+
+def test_field_over_default_csv_limit_is_kept():
+    long_text = "x" * 200_000
+    payload = f"id,text\n1,{long_text}\n2,short\n".encode()
+    limit_before = csv.field_size_limit()
+
+    result = get_converter().convert(
+        DocumentStream(name="long_field.csv", stream=BytesIO(payload))
+    )
+
+    assert result.status == ConversionStatus.SUCCESS
+    table = result.document.tables[0].data
+    assert (table.num_rows, table.num_cols) == (3, 2)
+    assert table.table_cells[3].text == long_text
+    assert csv.field_size_limit() == limit_before

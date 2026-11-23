@@ -27,7 +27,7 @@ from PIL import Image as PILImage
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from docling.utils.otsl import parse_otsl_output
-from docling.utils.vlm_utils import link_adjacent_captions
+from docling.utils.vlm_utils import append_text_fragment, link_adjacent_captions
 
 _log = logging.getLogger(__name__)
 
@@ -112,7 +112,6 @@ _TEXT_LABELS = {
     "table_footnote": DocItemLabel.FOOTNOTE,
     "text": DocItemLabel.TEXT,
 }
-_CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 _CAPTION_OWNER_LABELS = {
     "table_caption": {DocItemLabel.TABLE},
     "image_caption": {DocItemLabel.PICTURE},
@@ -424,12 +423,9 @@ def parse_mineru2(
                 and region.merge_prev
                 and previous_text_item is not None
             ):
-                separator = "" if _CJK_PATTERN.search(text) else " "
-                start = len(previous_text_item.text) + len(separator)
-                previous_text_item.text += separator + text
-                previous_text_item.orig += separator + (region.content or "")
-                provenance.charspan = (start, start + len(text))
-                previous_text_item.prov.append(provenance)
+                append_text_fragment(
+                    previous_text_item, text, region.content or "", provenance
+                )
                 continue
 
             text_item = document.add_text(

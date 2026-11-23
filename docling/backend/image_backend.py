@@ -25,7 +25,12 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
-from docling.utils.image_utils import check_image_pixels, to_rgb
+from docling.utils.image_utils import (
+    IMAGE_INPUT_FORMATS,
+    check_image_pixels,
+    open_image,
+    to_rgb,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -52,7 +57,9 @@ def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, floa
 
 def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
     dpi = image.info.get("dpi")
-    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+    # (1, 1) and (0, 0) carry no resolution: some writers store (1, 1) as a
+    # placeholder, and a PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1), (0, 0)) else dpi)
 
 
 def _oriented_frame(image: Image.Image) -> tuple[Image.Image, tuple[float, float]]:
@@ -230,7 +237,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self._source: Image.Image | None = None
         self._frame_count = 0
         try:
-            self._source = Image.open(self.path_or_stream)  # type: ignore[arg-type]
+            self._source = open_image(self.path_or_stream, IMAGE_INPUT_FORMATS)
             # Multi-frame formats: TIFF, GIF, ICO, animated WEBP/PNG. Other
             # formats have no n_frames attribute and hold one frame.
             self._frame_count = getattr(self._source, "n_frames", 1)

@@ -164,7 +164,8 @@ def convert_remote(
         typer.Option(
             "--from",
             help="Input formats to accept; filters directories and is sent as the "
-            "server allow-list. Defaults to all supported formats.",
+            "server allow-list. When omitted, all formats are accepted when "
+            "filtering directories and the service applies its own default.",
         ),
     ] = None,
     to_formats: Annotated[
@@ -208,6 +209,14 @@ def convert_remote(
             help="If enabled, the service extracts table structure.",
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help="If enabled, the service infers section-header levels for PDF and "
+            "image inputs.",
+        ),
+    ] = False,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(help="Pipeline the service uses to process PDF or image files."),
@@ -332,6 +341,9 @@ def convert_remote(
         )
         raise typer.Exit(2)
 
+    # Forward --from only when set: the default list can contain formats an
+    # older service rejects.
+    requested_from_formats = from_formats
     if from_formats is None:
         from_formats = list(InputFormat)
     if to_formats is None:
@@ -344,12 +356,12 @@ def convert_remote(
 
     # 3. Map flags -> ConvertDocumentsOptions (only fields the service honors).
     option_kwargs = {
-        "from_formats": from_formats,
         "to_formats": to_formats,
         "do_ocr": ocr,
         "force_ocr": force_ocr,
         "ocr_lang": _canonicalize_ocr_lang(ocr_lang),
         "do_table_structure": tables,
+        "do_pdf_heading_hierarchy": heading_hierarchy,
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,
         "do_formula_enrichment": enrich_formula,
@@ -359,6 +371,8 @@ def convert_remote(
         "document_timeout": document_timeout,
         "abort_on_error": abort_on_error,
     }
+    if requested_from_formats is not None:
+        option_kwargs["from_formats"] = requested_from_formats
     # Only send image_export_mode when the user set it, so the service/datamodel
     # default applies otherwise.
     if image_export_mode is not None:

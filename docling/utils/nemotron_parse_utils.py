@@ -24,6 +24,7 @@ from docling_core.types.doc import (
     Size,
     TableData,
     TabularChartMetaField,
+    TextItem,
 )
 from PIL import Image as PILImage
 
@@ -31,6 +32,8 @@ from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils.chandra_utils import _add_html_fragment
+from docling.utils.markdown_math import create_markdown_parser
 from docling.utils.vlm_utils import (
     normalize_section_header_levels,
     strip_math_delimiters,
@@ -198,6 +201,17 @@ def _markdown_to_text(markdown: str) -> str:
         return markdown.strip()
 
 
+def _add_inline_math(document: DoclingDocument, item: TextItem, text: str) -> None:
+    if not any(token in text for token in ("$", r"\(", r"\[")):
+        return
+    rendered = create_markdown_parser(inline_only=True).convert(text)
+    if "<math" not in rendered:
+        return
+    item.text = ""
+    # The native region owns the coordinates; derived formula runs do not.
+    _add_html_fragment(document, rendered, label=DocItemLabel.TEXT, parent=item)
+
+
 def _markdown_cell_to_text(markdown: str) -> str:
     """Parse Markdown cell content using Docling's Markdown backend."""
     try:
@@ -295,12 +309,13 @@ def parse_nemotron_parse_v2(
         if region.label == "List-item":
             if current_list_group is None:
                 current_list_group = document.add_list_group()
-            document.add_list_item(
+            item = document.add_list_item(
                 text=_markdown_to_text(raw_text),
                 orig=raw_text,
                 parent=current_list_group,
                 prov=provenance,
             )
+            _add_inline_math(document, item, raw_text)
             continue
 
         current_list_group = None
@@ -316,17 +331,23 @@ def parse_nemotron_parse_v2(
                     tabular_chart=TabularChartMetaField(chart_data=table_data)
                 )
         elif region.label == "Title":
-            document.add_title(
+            item = document.add_title(
                 text=_markdown_to_text(raw_text), orig=raw_text, prov=provenance
+            )
+            _add_inline_math(
+                document, item, _HEADING_PATTERN.sub("", raw_text, count=1)
             )
         elif region.label == "Section-header":
             heading_match = _HEADING_PATTERN.match(raw_text)
-            document.add_heading(
+            item = document.add_heading(
                 text=_markdown_to_text(raw_text),
                 orig=raw_text,
                 # Raw markup depth, normalized per document later.
                 level=len(heading_match.group(1)) if heading_match is not None else 2,
                 prov=provenance,
+            )
+            _add_inline_math(
+                document, item, _HEADING_PATTERN.sub("", raw_text, count=1)
             )
         else:
             label = _TEXT_LABELS.get(region.label, DocItemLabel.TEXT)
@@ -335,12 +356,14 @@ def parse_nemotron_parse_v2(
                 if label == DocItemLabel.FORMULA
                 else _markdown_to_text(raw_text)
             )
-            document.add_text(
+            item = document.add_text(
                 label=label,
                 text=text,
                 orig=raw_text,
                 prov=provenance,
             )
+            if label != DocItemLabel.FORMULA:
+                _add_inline_math(document, item, raw_text)
 
     if normalize_heading_levels:
         normalize_section_header_levels(document)

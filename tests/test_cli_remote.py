@@ -135,6 +135,7 @@ def test_remote_converts_local_file(tmp_path, _patch_client):
     assert client.health_called
     # Local files are sent as Path objects.
     assert client.captured_sources == [source]
+    assert "from_formats" not in client.captured_options.model_fields_set
 
 
 @pytest.mark.parametrize(
@@ -219,6 +220,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
             "json",
             "--no-ocr",
             "--no-tables",
+            "--heading-hierarchy",
             "--ocr-lang",
             "iso:en,iso:de",
             "--page-range",
@@ -234,6 +236,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert opts.to_formats == [OutputFormat.MARKDOWN, OutputFormat.JSON]
     assert opts.do_ocr is False
     assert opts.do_table_structure is False
+    assert opts.do_pdf_heading_hierarchy is True
     # A tag is canonicalized locally, so the service receives the resolved pair.
     assert opts.ocr_lang == ["iso:en-Latn", "iso:de-Latn"]
     assert opts.page_range == (2, 5)

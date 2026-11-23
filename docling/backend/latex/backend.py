@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import ContentLayer, DocItemLabel, DoclingDocument, NodeItem
-from docling_core.types.doc.document import Formatting
+from docling_core.types.doc.document import Formatting, InlineGroup
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.constants import MACROS_IGNORED
@@ -91,6 +91,8 @@ class LatexDocumentBackend(
         self._masked_macro_spans: list[tuple[int, int]] = []
         self._suppress_image_path_caption = False
         self._input_stack: set[str] = set()
+        # The line of a list item that starts with a formula, by item reference.
+        self._list_item_lines: dict[str, InlineGroup] = {}
         self._tectonic_engine: TectonicEngine | None = None
         self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
         self._tikz_futures: list[concurrent.futures.Future] = []
@@ -288,21 +290,6 @@ class LatexDocumentBackend(
         def flush_text_buffer():
             if text_buffer:
                 if any(isinstance(part, InlineFormula) for part in text_buffer):
-                    if heading_level is not None:
-                        paragraph = doc.add_heading(
-                            parent=parent,
-                            text="",
-                            level=heading_level,
-                            formatting=formatting,
-                        )
-                    else:
-                        paragraph = doc.add_text(
-                            parent=parent,
-                            label=text_label or DocItemLabel.TEXT,
-                            text="",
-                            formatting=formatting,
-                        )
-                    inline_group = doc.add_inline_group(parent=paragraph)
                     parts: list[str | InlineFormula] = []
                     for part in text_buffer:
                         if (
@@ -313,7 +300,23 @@ class LatexDocumentBackend(
                             parts[-1] += part
                         else:
                             parts.append(part)
-                    if isinstance(parts[0], str):
+                    if heading_level is not None:
+                        paragraph = doc.add_heading(
+                            parent=parent,
+                            text="",
+                            level=heading_level,
+                            formatting=formatting,
+                        )
+                        inline_group = doc.add_inline_group(parent=paragraph)
+                        continues_line = False
+                    else:
+                        inline_group, continues_line = self._open_inline_group(
+                            doc, parent, text_label or DocItemLabel.TEXT, formatting
+                        )
+                    # Text that continues the line of a list item keeps its
+                    # leading whitespace: serializers join the runs of an
+                    # inline group without a separator.
+                    if isinstance(parts[0], str) and not continues_line:
                         parts[0] = parts[0].lstrip()
                     if isinstance(parts[-1], str):
                         parts[-1] = parts[-1].rstrip()
@@ -342,21 +345,22 @@ class LatexDocumentBackend(
                             text=text_run,
                         )
                 else:
-                    combined_text = "".join(text_buffer).strip()
-                    if combined_text:
+                    combined_text = "".join(text_buffer)
+                    if combined_text.strip():
                         if heading_level is not None:
                             doc.add_heading(
                                 parent=parent,
-                                text=combined_text,
+                                text=combined_text.strip(),
                                 level=heading_level,
                                 formatting=formatting,
                             )
                         else:
-                            doc.add_text(
-                                parent=parent,
-                                label=text_label or DocItemLabel.TEXT,
-                                text=combined_text,
-                                formatting=formatting,
+                            self._add_text(
+                                doc,
+                                parent,
+                                text_label or DocItemLabel.TEXT,
+                                combined_text,
+                                formatting,
                             )
                 text_buffer.clear()
 

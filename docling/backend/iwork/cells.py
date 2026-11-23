@@ -316,7 +316,10 @@ def read_decimal128(buffer: bytes, at: int) -> Decimal | None:
         coefficient = coefficient * 256 + byte
     if field[15] & 0x80:
         coefficient = -coefficient
-    return Decimal(coefficient).scaleb(exponent)
+    # Scaling decodes an implied decimal point rather than an arithmetic result.
+    # Decimal.scaleb() rounds to the caller's context precision, which keeps 28
+    # digits, and a decimal128 holds 34.
+    return Decimal(f"{coefficient}e{exponent}")
 
 
 def read_uint32(buffer: bytes, at: int) -> int:

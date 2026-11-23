@@ -3,6 +3,8 @@
 
 import csv
 import logging
+import re
+import threading
 import warnings
 from collections.abc import Callable
 from io import BytesIO, StringIO
@@ -24,6 +26,13 @@ _log = logging.getLogger(__name__)
 # cannot be sniffed.
 _SNIFF_SAMPLE_SIZE: Final[int] = 4096
 _DELIMITERS: Final[str] = ",;\t|:"
+# Excel reads a first line `sep=<char>` as the delimiter and does not show it.
+# The keyword is case-insensitive: real files use both `sep=;` and `SEP=;`.
+_SEP_LINE: Final[re.Pattern[str]] = re.compile(r"sep=(.)", re.IGNORECASE)
+# csv.reader rejects fields over 131072 characters by default. The limit is a
+# C long, which has 32 bits on Windows, so sys.maxsize would overflow.
+_MAX_FIELD_SIZE: Final[int] = 2**31 - 1
+_FIELD_SIZE_LIMIT_LOCK: Final[threading.Lock] = threading.Lock()
 
 
 def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialect]:
@@ -176,6 +185,11 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         head = self.content.readline()
         while head in ("\n", "\r\n", "\r"):
             head = self.content.readline()
+        data_start = 0
+        sep_line = _SEP_LINE.fullmatch(head.rstrip("\r\n"))
+        if sep_line is not None:
+            data_start = self.content.tell()
+            head = self.content.readline()
         sample_start = self.content.tell() - len(head)
 
         def read_sample() -> str:
@@ -183,7 +197,16 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             return self.content.read(_SNIFF_SAMPLE_SIZE)
 
         try:
-            dialect: type[csv.Dialect] = _sniff_dialect(head, read_sample)
+            dialect: type[csv.Dialect]
+            if sep_line is not None:
+                sep = sep_line.group(1)
+
+                class _SepDialect(csv.excel):
+                    delimiter = sep
+
+                dialect = _SepDialect
+            else:
+                dialect = _sniff_dialect(head, read_sample)
             if dialect.delimiter not in _DELIMITERS:
                 raise RuntimeError(
                     f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
@@ -197,19 +220,25 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             )
             dialect = csv.excel
 
-        self.content.seek(0)
-        try:
-            result = csv.reader(
-                self.content,
-                dialect=dialect,
-                doublequote=True,
-                strict=True,
-            )
-            self.csv_data = list(result)
-        except csv.Error as e:
-            raise DocumentLoadError(
-                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
-            ) from e
+        self.content.seek(data_start)
+        # The limit is process-wide, so the lock stops concurrent conversions
+        # from restoring it while another one is parsing.
+        with _FIELD_SIZE_LIMIT_LOCK:
+            previous_limit = csv.field_size_limit(_MAX_FIELD_SIZE)
+            try:
+                result = csv.reader(
+                    self.content,
+                    dialect=dialect,
+                    doublequote=True,
+                    strict=True,
+                )
+                self.csv_data = list(result)
+            except csv.Error as e:
+                raise DocumentLoadError(
+                    f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+                ) from e
+            finally:
+                csv.field_size_limit(previous_limit)
 
         # csv.reader yields [] for blank lines; ["", ...] for empty-field rows like ",,".
         # Filtering on truthiness keeps the latter and drops the former.

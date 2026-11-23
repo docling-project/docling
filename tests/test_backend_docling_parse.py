@@ -13,7 +13,6 @@ from docling_core.types.doc.page import PdfCellRenderingMode
 from docling_parse.pdf_parser import ContentLevel, ThreadedPdfParserConfig
 from PIL import Image, ImageDraw, ImageStat
 
-import docling.backend.docling_parse_backend as docling_parse_backend_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
@@ -41,7 +40,11 @@ def ruled_table_path():
     return Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 
 
-def _get_backend(pdf_doc, page_range: PageRange = DEFAULT_PAGE_RANGE):
+def _get_backend(
+    pdf_doc,
+    page_range: PageRange = DEFAULT_PAGE_RANGE,
+    backend_options: ThreadedDoclingParseBackendOptions | None = None,
+):
     """Open a document with the threaded backend, optionally narrowed to a page range.
 
     The threaded parser yields results in completion order, not page order, so
@@ -52,6 +55,7 @@ def _get_backend(pdf_doc, page_range: PageRange = DEFAULT_PAGE_RANGE):
         path_or_stream=pdf_doc,
         format=InputFormat.PDF,
         backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=backend_options,
         limits=DocumentLimits(page_range=page_range),
     )
 
@@ -211,11 +215,8 @@ class _FakeThreadedParser:
         assert doc_key == "doc-key"
         return None
 
-    def has_tasks(self) -> bool:
-        return False
-
-    def get_task(self):
-        raise AssertionError("get_task must not be called once has_tasks() is False")
+    def cancel(self, doc_key: str) -> None:
+        assert doc_key == "doc-key"
 
     def unload(self, doc_key: str) -> bool:
         self.unload_calls.append(doc_key)
@@ -307,6 +308,44 @@ def test_threaded_backend_open_ended_page_range_is_clipped_to_document(
     assert parser.load_calls == [(2, sys.maxsize)]
 
     in_doc._backend.unload()
+
+
+@pytest.mark.parametrize(
+    "cancel_first",
+    [True, False],
+    ids=["cancel-then-unload", "unload-with-pending-work"],
+)
+def test_threaded_backend_discards_pending_pages_and_unloads_stream(
+    test_doc_path: Path, cancel_first: bool
+) -> None:
+    stream = BytesIO(test_doc_path.read_bytes())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        filename=test_doc_path.name,
+        backend_options=ThreadedDoclingParseBackendOptions(
+            parser_threads=1, max_concurrent_results=1
+        ),
+        limits=DocumentLimits(page_range=(1, 3)),
+    )
+    backend = in_doc._backend
+    assert isinstance(backend, ThreadedDoclingParseDocumentBackend)
+
+    pages = backend.iter_pages()
+    try:
+        assert next(pages).is_valid()
+        assert backend.parser.has_tasks()
+        if cancel_first:
+            backend.cancel()
+            assert list(pages) == []
+    finally:
+        backend.unload()
+
+    assert stream.closed
+    assert list(pages) == []
+    with pytest.raises(ValueError, match="Document key not loaded"):
+        backend.page_count()
 
 
 def test_threaded_backend_rewinds_stream_before_deriving_document_key(
@@ -671,6 +710,8 @@ def test_threaded_page_backend_delegates_image_access() -> None:
 
 def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     class _FakeCell:
+        text = orig = "text"
+
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
             return self
 
@@ -693,6 +734,35 @@ def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     cells = list(page_backend.get_text_cells())
 
     assert len(cells) == 1
+
+
+def test_threaded_page_backend_replaces_nul_with_replacement_char() -> None:
+    """An unmapped glyph (U+0000) becomes U+FFFD, so the loss stays visible."""
+
+    class _FakeCell:
+        def __init__(self) -> None:
+            self.text = self.orig = "mg.mL \x00 1"
+
+        def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
+            return self
+
+    class _FakeDimension:
+        height = 200.0
+
+    class _FakeSegmentedPage:
+        dimension = _FakeDimension()
+        textline_cells = [_FakeCell()]
+        char_cells = [_FakeCell()]
+        word_cells = [_FakeCell()]
+
+    result = _FakeThreadedResult(page_number=1)
+    result.get_page = lambda: _FakeSegmentedPage()
+
+    seg_page = ThreadedDoclingParsePageBackend(result).get_segmented_page()
+
+    assert seg_page is not None
+    for cell in (*seg_page.textline_cells, *seg_page.char_cells, *seg_page.word_cells):
+        assert cell.text == cell.orig == "mg.mL \ufffd 1"
 
 
 def _create_black_square_pdf(path: Path) -> None:
@@ -996,3 +1066,36 @@ def test_docling_parse_exposes_complete_widget_contract_in_native_order() -> Non
     finally:
         page.unload()
         backend.unload()
+
+
+def test_extract_single_embedded_image():
+    doc_backend: ThreadedDoclingParseDocumentBackend = _get_backend(
+        Path("tests/data/pdf/sources/picture_classification.pdf"),
+        page_range=(1, 1),
+        backend_options=ThreadedDoclingParseBackendOptions(include_bitmap_images=True),
+    )
+    try:
+        page_backend = next(doc_backend.iter_pages())
+        bitmap_bbox = next(iter(page_backend.get_bitmap_rects()))
+
+        image = page_backend.get_embedded_image(bitmap_bbox)
+
+        assert image is not None
+        assert image.size == (768, 474)
+    finally:
+        doc_backend.unload()
+
+
+def test_reject_embedded_image_with_overlapping_page_content():
+    doc_backend: ThreadedDoclingParseDocumentBackend = _get_backend(
+        Path("tests/data/pdf/sources/amt_handbook_sample.pdf"),
+        page_range=(1, 1),
+        backend_options=ThreadedDoclingParseBackendOptions(include_bitmap_images=True),
+    )
+    try:
+        page_backend = next(doc_backend.iter_pages())
+        bitmap_bbox = next(iter(page_backend.get_bitmap_rects()))
+
+        assert page_backend.get_embedded_image(bitmap_bbox) is None
+    finally:
+        doc_backend.unload()

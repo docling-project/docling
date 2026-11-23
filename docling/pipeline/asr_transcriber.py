@@ -7,9 +7,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Protocol
+from typing import ClassVar, Final, Protocol
 
 import requests
 from docling_core.types.doc import (
@@ -17,6 +18,8 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    MediaRef,
+    TrackItem,
     TrackSource,
 )
 from pydantic import BaseModel, Field
@@ -24,6 +27,7 @@ from pydantic import BaseModel, Field
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
     AcceleratorOptions,
 )
 from docling.datamodel.asr_model_specs import (
@@ -44,6 +48,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.pipeline_options_asr_model import (
     ApiAsrOptions,
+    InlineAsrMlxAudioOptions,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
@@ -51,6 +56,9 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrWhisperS2TOptions,
 )
 from docling.exceptions import OperationNotAllowed
+from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
+from docling.pipeline.asr_conversation import _ConversationItem, _ConversationWord
+from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder, metal_is_usable
 from docling.pipeline.asr_transformers import TransformersAsrDecoder
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
@@ -74,9 +82,9 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
 )
 
 _AUDIO_SUFFIX_TO_MIMETYPE = {
-    ".wav": "audio/x-wav",
-    ".mp3": "audio/mp3",
-    ".m4a": "audio/m4a",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
     ".aac": "audio/aac",
     ".ogg": "audio/ogg",
     ".flac": "audio/flac",
@@ -85,7 +93,28 @@ _AUDIO_SUFFIX_TO_MIMETYPE = {
 
 def _audio_mimetype(filename: str) -> str:
     suffix = Path(filename).suffix.lower()
-    return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/x-wav")
+    return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/wav")
+
+
+def _keep_media(conv_res: ConversionResult) -> None:
+    """Reference the input file as the recording of the first track."""
+    if not conv_res.document or not conv_res.document.tracks:
+        return
+    assert conv_res.input._backend is not None
+    path = conv_res.input._backend.path_or_stream
+    if not isinstance(path, Path):
+        _log.warning("Media not kept: only file inputs are supported.")
+        return
+    try:
+        media = MediaRef.from_file(path)
+    except ValueError as exc:
+        _log.warning(f"Media not kept: {exc}")
+        return
+    track = conv_res.document.tracks[0]
+    if media.mimetype.startswith("video/"):
+        track.video = media
+    else:
+        track.audio = media
 
 
 def _process_conversation(
@@ -102,6 +131,7 @@ def _process_conversation(
     conv_res.document = DoclingDocument(
         name=conv_res.input.file.stem or "audio.wav", origin=origin
     )
+    track: TrackItem | None = None
 
     for citem in conversation:
         # Fix zero-duration segments (end_time <= start_time) with non-empty text
@@ -124,16 +154,19 @@ def _process_conversation(
             and citem.text.strip()
         ):
             try:
-                track: TrackSource = TrackSource(
+                source = TrackSource(
                     start_time=citem.start_time,
                     end_time=citem.end_time,
                     voice=citem.speaker,
                 )
+                if track is None:
+                    track = conv_res.document.add_track()
                 _ = conv_res.document.add_text(
                     label=DocItemLabel.TEXT,
                     text=citem.text,
                     content_layer=ContentLayer.BODY,
-                    source=track,
+                    source=source,
+                    parent=track,
                 )
             except Exception as e:
                 _log.warning(
@@ -143,55 +176,6 @@ def _process_conversation(
                     f"{e}. Skipping this item and continuing with the rest."
                 )
                 continue
-
-
-class _ConversationWord(BaseModel):
-    text: str
-    start_time: float | None = Field(
-        None, description="Start time in seconds from video start"
-    )
-    end_time: float | None = Field(
-        None, ge=0, description="End time in seconds from video start"
-    )
-
-
-class _ConversationItem(BaseModel):
-    text: str
-    start_time: float | None = Field(
-        None, description="Start time in seconds from video start"
-    )
-    end_time: float | None = Field(
-        None, ge=0, description="End time in seconds from video start"
-    )
-    speaker_id: int | None = Field(None, description="Numeric speaker identifier")
-    speaker: str | None = Field(
-        None, description="Speaker name, defaults to speaker-{speaker_id}"
-    )
-    words: list[_ConversationWord] | None = Field(
-        None, description="Individual words with time-stamps"
-    )
-
-    def __lt__(self, other):
-        if not isinstance(other, _ConversationItem):
-            return NotImplemented
-        return self.start_time < other.start_time
-
-    def __eq__(self, other):
-        if not isinstance(other, _ConversationItem):
-            return NotImplemented
-        return self.start_time == other.start_time
-
-    def to_string(self) -> str:
-        """Format the conversation entry as a string"""
-        result = ""
-        if (self.start_time is not None) and (self.end_time is not None):
-            result += f"[time: {self.start_time}-{self.end_time}] "
-
-        if self.speaker is not None:
-            result += f"[speaker:{self.speaker}] "
-
-        result += self.text
-        return result
 
 
 def _resolve_asr_artifacts(artifacts_path: Path, repo_id: str) -> Path:
@@ -250,7 +234,8 @@ class _NativeWhisperModel:
                 if sys.version_info < (3, 14):
                     raise ImportError(
                         "whisper is not installed. Please install it via "
-                        "`pip install openai-whisper` or do `uv sync --extra asr`."
+                        "`pip install openai-whisper` or do "
+                        "`uv sync --extra format-audio`."
                     )
                 else:
                     raise ImportError(
@@ -328,6 +313,7 @@ class _NativeWhisperModel:
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         # Access the file path from the backend, similar to other pipelines
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
 
         # Handle both Path and BytesIO inputs
@@ -394,7 +380,10 @@ class _NativeWhisperModel:
         convo: list[_ConversationItem] = []
         for _ in result["segments"]:
             item = _ConversationItem(
-                start_time=_["start"], end_time=_["end"], text=_["text"], words=[]
+                start_time=_["start"],
+                end_time=_["end"],
+                text=_["text"].strip(),
+                words=[],
             )
             if "words" in _ and self.word_timestamps:
                 item.words = []
@@ -411,7 +400,83 @@ class _NativeWhisperModel:
         return convo
 
 
-class _MlxWhisperModel:
+class _LocalAudioTranscriber(ABC):
+    """Run a backend that transcribes a local audio file.
+
+    Holds the temporary file for `BytesIO` input, the FFmpeg check, the error
+    report, and the cleanup. A subclass implements `transcribe()`.
+    """
+
+    # A backend that decodes some formats itself clears this. It then reports a
+    # decoder failure through the transcription error instead.
+    _requires_ffmpeg: ClassVar[bool] = True
+
+    @abstractmethod
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]: ...
+
+    def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
+        path_or_stream = conv_res.input._backend.path_or_stream
+        temp_file_path: Path | None = None
+
+        if not isinstance(path_or_stream, (BytesIO, Path)):
+            raise RuntimeError(
+                f"ASR pipeline requires a file path or BytesIO stream, "
+                f"but got {type(path_or_stream)}"
+            )
+
+        try:
+            if isinstance(path_or_stream, BytesIO):
+                suffix = Path(conv_res.input.file.name).suffix or ".wav"
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix
+                ) as tmp_file:
+                    temp_file_path = Path(tmp_file.name)
+                    tmp_file.write(path_or_stream.getvalue())
+                audio_path = temp_file_path
+            else:
+                audio_path = path_or_stream
+
+            if self._requires_ffmpeg and shutil.which("ffmpeg") is None:
+                _log.error(MISSING_FFMPEG_MESSAGE)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="AsrPipeline",
+                        error_message=MISSING_FFMPEG_MESSAGE,
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return conv_res
+
+            conversation = self.transcribe(audio_path)
+            _process_conversation(conversation, conv_res)
+            conv_res.status = ConversionStatus.SUCCESS
+            return conv_res
+
+        except Exception as exc:
+            _log.error(f"ASR transcription has an error: {exc}")
+            conv_res.errors.append(
+                ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name="AsrPipeline",
+                    error_message=str(exc),
+                )
+            )
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
+
+        finally:
+            if temp_file_path is not None and temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as exc:
+                    _log.warning(
+                        f"Failed to delete temporary file {temp_file_path}: {exc}"
+                    )
+
+
+class _MlxWhisperModel(_LocalAudioTranscriber):
     def __init__(
         self,
         enabled: bool,
@@ -431,7 +496,7 @@ class _MlxWhisperModel:
             except ImportError:
                 raise ImportError(
                     "mlx-whisper is not installed. Please install it via "
-                    "`pip install mlx-whisper` or do `uv sync --extra asr`."
+                    "`pip install mlx-whisper` or do `uv sync --extra format-audio`."
                 )
             self.asr_options = asr_options
             self.mlx_whisper = mlx_whisper
@@ -465,59 +530,12 @@ class _MlxWhisperModel:
             self.no_speech_threshold = asr_options.no_speech_threshold
             self.logprob_threshold = asr_options.logprob_threshold
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
-
-    def run(self, conv_res: ConversionResult) -> ConversionResult:
-        path_or_stream = conv_res.input._backend.path_or_stream
-        temp_file_path: Path | None = None
-
-        if not isinstance(path_or_stream, (BytesIO, Path)):
-            raise RuntimeError(
-                f"ASR pipeline requires a file path or BytesIO stream, "
-                f"but got {type(path_or_stream)}"
+            self.temperature = asr_options.temperature
+            self.condition_on_previous_text = asr_options.condition_on_previous_text
+            self.hallucination_silence_threshold = (
+                asr_options.hallucination_silence_threshold
             )
-
-        try:
-            if isinstance(path_or_stream, BytesIO):
-                suffix = Path(conv_res.input.file.name).suffix or ".wav"
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=suffix
-                ) as tmp_file:
-                    temp_file_path = Path(tmp_file.name)
-                    tmp_file.write(path_or_stream.getvalue())
-                audio_path = temp_file_path
-            else:
-                audio_path = path_or_stream
-
-            if shutil.which("ffmpeg") is None:
-                _log.error(MISSING_FFMPEG_MESSAGE)
-                conv_res.errors.append(
-                    ErrorItem(
-                        component_type=DoclingComponentType.PIPELINE,
-                        module_name="AsrPipeline",
-                        error_message=MISSING_FFMPEG_MESSAGE,
-                    )
-                )
-                conv_res.status = ConversionStatus.FAILURE
-                return conv_res
-
-            conversation = self.transcribe(audio_path)
-            _process_conversation(conversation, conv_res)
-            conv_res.status = ConversionStatus.SUCCESS
-            return conv_res
-
-        except Exception as exc:
-            _log.error(f"ASR transcription has an error: {exc}")
-            conv_res.status = ConversionStatus.FAILURE
-            return conv_res
-
-        finally:
-            if temp_file_path is not None and temp_file_path.exists():
-                try:
-                    temp_file_path.unlink()
-                except Exception as exc:
-                    _log.warning(
-                        f"Failed to delete temporary file {temp_file_path}: {exc}"
-                    )
+            self.initial_prompt = asr_options.initial_prompt
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """Transcribe audio using MLX Whisper.
@@ -528,16 +546,33 @@ class _MlxWhisperModel:
         Returns:
             List of conversation items with timestamps
         """
-        result = self.mlx_whisper.transcribe(
-            str(fpath),
-            path_or_hf_repo=self.model_path,
-            language=self.language,
-            task=self.task,
-            word_timestamps=self.word_timestamps,
-            no_speech_threshold=self.no_speech_threshold,
-            logprob_threshold=self.logprob_threshold,
-            compression_ratio_threshold=self.compression_ratio_threshold,
-        )
+        # Only forward options that are set, so mlx-whisper keeps its own
+        # defaults when they are None.
+        optional_kwargs: dict[str, bool | float | str] = {}
+        if self.condition_on_previous_text is not None:
+            optional_kwargs["condition_on_previous_text"] = (
+                self.condition_on_previous_text
+            )
+        if self.hallucination_silence_threshold is not None:
+            optional_kwargs["hallucination_silence_threshold"] = (
+                self.hallucination_silence_threshold
+            )
+        if self.initial_prompt is not None:
+            optional_kwargs["initial_prompt"] = self.initial_prompt
+
+        with MLX_GLOBAL_LOCK:
+            result = self.mlx_whisper.transcribe(
+                str(fpath),
+                path_or_hf_repo=self.model_path,
+                language=self.language,
+                task=self.task,
+                word_timestamps=self.word_timestamps,
+                no_speech_threshold=self.no_speech_threshold,
+                logprob_threshold=self.logprob_threshold,
+                compression_ratio_threshold=self.compression_ratio_threshold,
+                temperature=self.temperature,
+                **optional_kwargs,
+            )
 
         convo: list[_ConversationItem] = []
 
@@ -566,7 +601,7 @@ class _MlxWhisperModel:
         return convo
 
 
-class _TransformersAsrModel(_MlxWhisperModel):
+class _TransformersAsrModel(_LocalAudioTranscriber):
     """Transcribe speech with a Transformers ASR pipeline."""
 
     def __init__(
@@ -590,7 +625,7 @@ class _TransformersAsrModel(_MlxWhisperModel):
             else asr_options.repo_id
         )
         self.decoder: TransformersAsrDecoder | None = None
-        if asr_options.model_family in {"granite", "granite_ctc"}:
+        if asr_options.model_family in {"granite", "granite_plus", "granite_ctc"}:
             self.decoder = TransformersAsrDecoder(
                 asr_options, self.device, model, artifacts_path is not None
             )
@@ -618,7 +653,10 @@ class _TransformersAsrModel(_MlxWhisperModel):
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         if self.asr_options.model_family == "whisper":
-            generate_kwargs: dict[str, str] = {"task": self.asr_options.task}
+            generate_kwargs: dict[str, str | float] = {
+                "task": self.asr_options.task,
+                "temperature": self.asr_options.temperature,
+            }
             if self.asr_options.language is not None:
                 generate_kwargs["language"] = self.asr_options.language
             result = self.asr_pipeline(
@@ -636,10 +674,9 @@ class _TransformersAsrModel(_MlxWhisperModel):
             ]
 
         if self.decoder is not None:
-            text = self.decoder.transcribe(fpath)
-        else:
-            result = self.asr_pipeline(str(fpath))
-            text = result["text"].strip()
+            return self.decoder.transcribe(fpath)
+
+        text = self.asr_pipeline(str(fpath))["text"].strip()
         if not text:
             return []
         return [
@@ -649,6 +686,44 @@ class _TransformersAsrModel(_MlxWhisperModel):
                 text=text,
             )
         ]
+
+
+class _MlxAudioModel(_LocalAudioTranscriber):
+    """Transcribe speech with mlx-audio on Apple Silicon, without torch."""
+
+    # mlx-audio decodes WAV, MP3, and FLAC itself. For other formats, it reports a
+    # missing FFmpeg through the transcription error.
+    _requires_ffmpeg: ClassVar[bool] = False
+
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Path | None,
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrMlxAudioOptions,
+    ):
+        self.enabled = enabled
+        if not enabled:
+            return
+        self.asr_options = asr_options
+        # `decide_device()` imports torch, which this backend must not need.
+        if accelerator_options.device not in {
+            AcceleratorDevice.AUTO,
+            AcceleratorDevice.MPS,
+        }:
+            _log.warning(
+                f"mlx-audio runs on Metal and ignores device "
+                f"'{accelerator_options.device}'."
+            )
+        checkpoint = (
+            _resolve_asr_artifacts(artifacts_path, asr_options.repo_id)
+            if artifacts_path is not None
+            else None
+        )
+        self.decoder = MlxAudioAsrDecoder(asr_options, checkpoint)
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        return self.decoder.transcribe(fpath)
 
 
 class _WhisperS2TModel:
@@ -769,6 +844,7 @@ class _WhisperS2TModel:
         return device_str, 0
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
 
         temp_file_path: Path | None = None
@@ -960,6 +1036,7 @@ class _ApiAsrModel:
         return self._to_conversation(self._post(fpath.name, fpath.read_bytes()))
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         try:
             if isinstance(path_or_stream, BytesIO):
@@ -1057,6 +1134,38 @@ class _AsrTranscriber(Protocol):
     def run(self, conv_res: ConversionResult) -> ConversionResult: ...
 
 
+def _with_transformers_fallback(
+    asr_options: InlineAsrMlxAudioOptions, accelerator_options: AcceleratorOptions
+) -> InlineAsrMlxAudioOptions | InlineAsrTransformersOptions:
+    """Replace an auto-selected mlx-audio backend when it cannot run here.
+
+    Options without a fallback come from an explicit choice, so they do not change.
+    """
+    fallback = asr_options.transformers_fallback_options()
+    if fallback is None:
+        return asr_options
+    if accelerator_options.device not in {
+        AcceleratorDevice.AUTO,
+        AcceleratorDevice.MPS,
+    }:
+        _log.info(
+            f"Using Transformers for {fallback.repo_id}, because mlx-audio cannot use "
+            f"device '{accelerator_options.device}'."
+        )
+        return fallback
+    if not metal_is_usable():
+        _log.warning(
+            f"Using Transformers for {fallback.repo_id}, because this process cannot "
+            "use mlx-audio with a Metal device."
+        )
+        return fallback
+    _log.info(
+        f"Using mlx-audio for {asr_options.repo_id}. Select a `_transformers` preset "
+        "to use Transformers."
+    )
+    return asr_options
+
+
 class _AsrModelFactory:
     """Builds a concrete ASR transcriber from ASR options.
 
@@ -1071,6 +1180,8 @@ class _AsrModelFactory:
         accelerator_options: AcceleratorOptions,
         enable_remote_services: bool = False,
     ) -> _AsrTranscriber:
+        if isinstance(asr_options, InlineAsrMlxAudioOptions):
+            asr_options = _with_transformers_fallback(asr_options, accelerator_options)
         if isinstance(asr_options, ApiAsrOptions):
             if not enable_remote_services:
                 raise OperationNotAllowed(
@@ -1088,6 +1199,13 @@ class _AsrModelFactory:
             )
         elif isinstance(asr_options, InlineAsrMlxWhisperOptions):
             return _MlxWhisperModel(
+                enabled=True,
+                artifacts_path=artifacts_path,
+                accelerator_options=accelerator_options,
+                asr_options=asr_options,
+            )
+        elif isinstance(asr_options, InlineAsrMlxAudioOptions):
+            return _MlxAudioModel(
                 enabled=True,
                 artifacts_path=artifacts_path,
                 accelerator_options=accelerator_options,
