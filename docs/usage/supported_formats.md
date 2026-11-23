@@ -37,6 +37,11 @@ unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
 
+For Markdown input, inline code text in the document model follows the
+[CommonMark code-span spacing rules](https://spec.commonmark.org/0.31.2/#code-spans).
+After that normalization, the remaining whitespace is code content and is kept,
+including in table cells, headings, and list items.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
