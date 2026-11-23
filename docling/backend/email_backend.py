@@ -40,7 +40,6 @@ _MAILPARSER_AVAILABLE: bool = False
 _MAILPARSER_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     import mailparser
-    from mailparser.utils import ported_string
 
     _MAILPARSER_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -98,6 +97,21 @@ _MAILPARSER_BODY_DELIMITER = "\n--- mail_boundary ---\n"
 class _BodyParagraph:
     text: str
     content_layer: ContentLayer
+
+
+def _decode_text_part(part: Message) -> str:
+    """Decode a text part the way mailparser decodes it into `text_plain`.
+
+    The declared charset is tried first, then UTF-8 with replacement characters, so
+    the result matches mailparser's text also when the charset is wrong.
+    """
+    payload = part.get_payload(decode=True)
+    if not isinstance(payload, bytes):
+        return ""
+    try:
+        return payload.decode(part.get_content_charset("utf-8"))
+    except (LookupError, UnicodeError):
+        return payload.decode("utf-8", "replace")
 
 
 def _unflow(text: str, delsp: bool) -> str:
@@ -509,10 +523,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             # mailparser keeps only the decoded text of a part, so the flowed
             # parts are found again by their text.
             flowed = {
-                ported_string(
-                    part.get_payload(decode=True),
-                    encoding=part.get_content_charset("utf-8"),
-                ): str(part.get_param("delsp", "")).lower() == "yes"
+                _decode_text_part(part): str(part.get_param("delsp", "")).lower()
+                == "yes"
                 for part in self.mail.message.walk()
                 if part.get_content_type() == "text/plain"
                 and str(part.get_param("format", "")).lower() == "flowed"
