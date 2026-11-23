@@ -127,7 +127,9 @@ def test_document_timeout_bounds_picture_description(tmp_path: Path) -> None:
 
     endpoint = "/v1/chat/completions"
     service = FakeService()
-    api = FakeOpenAiApi(delay_seconds=3.0)
+    # Leave time for PDF setup on loaded CI workers. The delayed API response
+    # must still exceed the full conversion budget.
+    api = FakeOpenAiApi(delay_seconds=12.0)
     service.include(api.router)
     service.respond_once(
         "POST",
@@ -152,7 +154,7 @@ def test_document_timeout_bounds_picture_description(tmp_path: Path) -> None:
             format_options={
                 InputFormat.PDF: NativePdfFormatOption(
                     pipeline_options=NativePdfPipelineOptions(
-                        document_timeout=1.5,
+                        document_timeout=5.0,
                         parser_threads=1,
                         generate_page_images=False,
                         do_picture_description=True,
