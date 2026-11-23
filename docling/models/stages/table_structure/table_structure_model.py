@@ -63,16 +63,22 @@ def _words_and_ocr_cells(
     merge with the native text. Without them, a table with a few native words
     (e.g. a scanned form with filled-in fields) loses all its OCR text.
 
-    - A native word under a surviving OCR line is dropped, as the merge
+    - A native cell under a surviving OCR line is dropped, as the merge
       dropped its line.
+    - A native line with no covering native word (e.g. from backends such as
+      PyPdfiumDocumentBackend that only emit textline cells) is kept unless
+      covered by a surviving OCR line.
     - An OCR engine may also report word cells (e.g. third-party OCR plugins).
-      An OCR word on a kept native word is dropped, as the merge rejected its
+      An OCR word on kept native text is dropped, as the merge rejected its
       line there. The other OCR words replace the OCR line they sit in.
     """
+    native_lines = [c for c in cluster_cells if not c.from_ocr]
     ocr_lines = [c for c in cluster_cells if c.from_ocr]
-    native_words = _uncovered([w for w in word_cells if not w.from_ocr], ocr_lines)
-    ocr_words = _uncovered([w for w in word_cells if w.from_ocr], native_words)
-    return native_words + ocr_words + _uncovered(ocr_lines, ocr_words)
+    non_empty_words = [w for w in word_cells if w.text.strip()]
+    native_words = _uncovered([w for w in non_empty_words if not w.from_ocr], ocr_lines)
+    native_cells = native_words + _uncovered(native_lines, [*native_words, *ocr_lines])
+    ocr_words = _uncovered([w for w in non_empty_words if w.from_ocr], native_cells)
+    return native_cells + ocr_words + _uncovered(ocr_lines, ocr_words)
 
 
 class TableStructureModel(BaseTableStructureModel):
