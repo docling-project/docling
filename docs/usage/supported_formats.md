@@ -37,6 +37,13 @@ unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
 
+In Markdown prose, inline HTML `<br>` tags become hard line breaks in paragraphs,
+headings, and list items. Code spans, code blocks, and escaped tags stay literal.
+The document representation keeps heading line breaks; Markdown export normalizes
+them to spaces in plain headings. Headings with formatted inline content follow
+the existing Markdown hard-break serialization. Inline HTML inside Markdown table
+cells follows separate handling.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
