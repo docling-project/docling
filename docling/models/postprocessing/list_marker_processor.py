@@ -84,6 +84,11 @@ class ListItemMarkerProcessor:
             re.compile(f"^({pattern})" + r"\s(.+)", re.DOTALL)
             for pattern in self._bullet_patterns
         ]
+        # Word's ASCII circle is ambiguous in prose; only strip it from list items.
+        self._compiled_list_bullet_item_patterns = [
+            *self._compiled_bullet_item_patterns,
+            re.compile(r"^(o)\s(.+)", re.DOTALL),
+        ]
         self._compiled_numbered_item_patterns = [
             re.compile(f"^({pattern})" + r"\s(.+)", re.DOTALL)
             for pattern in self._numbered_patterns
@@ -107,6 +112,17 @@ class ListItemMarkerProcessor:
     def _is_numbered_item(self, text: str) -> bool:
         return any(
             pattern.match(text) for pattern in self._compiled_numbered_item_patterns
+        )
+
+    def has_same_numbered_marker_style(self, first: str, second: str) -> bool:
+        """Check whether two different numbered markers use the same format."""
+        first_match = self._find_match(first, self._compiled_numbered_item_patterns)
+        second_match = self._find_match(second, self._compiled_numbered_item_patterns)
+        return (
+            first_match is not None
+            and second_match is not None
+            and first_match.re is second_match.re
+            and first_match[1] != second_match[1]
         )
 
     @classmethod
@@ -195,7 +211,7 @@ class ListItemMarkerProcessor:
 
         is_enumerated: bool = False
         if mtch := self._find_match(
-            text=item.orig, patterns=self._compiled_bullet_item_patterns
+            text=item.orig, patterns=self._compiled_list_bullet_item_patterns
         ):
             is_enumerated = False
         elif mtch := self._find_match(
