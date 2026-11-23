@@ -147,6 +147,10 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
 EnrichElementT = TypeVar("EnrichElementT", default=NodeItem)
 
 
+class EnrichmentTimeoutError(Exception):
+    """The document deadline expired during enrichment."""
+
+
 class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
     elements_batch_size: int = settings.perf.elements_batch_size
     # Reported in progress events; docling's own models override it.
@@ -167,6 +171,16 @@ class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
         self, doc: DoclingDocument, element_batch: Iterable[EnrichElementT]
     ) -> Iterable[NodeItem]:
         pass
+
+    def enrich_batch(
+        self,
+        doc: DoclingDocument,
+        element_batch: Iterable[EnrichElementT],
+        *,
+        deadline: float | None,
+    ) -> Iterable[NodeItem]:
+        """Process a batch, optionally honoring an absolute monotonic deadline."""
+        return self(doc=doc, element_batch=element_batch)
 
 
 class BaseEnrichmentModel(GenericEnrichmentModel[NodeItem]):

@@ -3,21 +3,28 @@
 
 import logging
 import os
+import time
 from pathlib import Path
 from threading import Barrier
 
 from docling_core.types.doc import CoordOrigin, DocItemLabel
 from docling_core.types.doc.page import TextCellUnit
+from PIL import Image
 
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, FailureCategory, InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    NativePdfPipelineOptions,
+    PictureDescriptionApiOptions,
+)
 from docling.datamodel.settings import PageRange, settings
 from docling.document_converter import DocumentConverter, NativePdfFormatOption
 from docling.pipeline.native_pdf_pipeline import NativePdfPipeline
+from tests.fakes.http_service import FakeService, Response
+from tests.fakes.openai_compatible import FakeOpenAiApi
 
 TEXT_PDF = Path("tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 PICTURE_PDF = Path("tests/data/pdf/sources/picture_classification.pdf")
@@ -109,6 +116,83 @@ def test_native_pipeline_extracts_native_bitmaps_as_pictures():
     assert len(doc.pictures) > 0
     assert all(picture.image is not None for picture in doc.pictures)
     assert all(len(picture.prov) == 1 for picture in doc.pictures)
+
+
+def test_document_timeout_bounds_picture_description(tmp_path: Path) -> None:
+    pdf = tmp_path / "three_pictures.pdf"
+    first, second, third = (
+        Image.new("RGB", (32, 32), color) for color in ("red", "green", "blue")
+    )
+    first.save(pdf, save_all=True, append_images=[second, third])
+
+    endpoint = "/v1/chat/completions"
+    service = FakeService()
+    api = FakeOpenAiApi(delay_seconds=3.0)
+    service.include(api.router)
+    service.respond_once(
+        "POST",
+        endpoint,
+        Response(
+            body={
+                "id": "first-picture",
+                "created": 0,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": "Red"},
+                        "finish_reason": "stop",
+                    }
+                ],
+            }
+        ),
+    )
+    service.start()
+    try:
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: NativePdfFormatOption(
+                    pipeline_options=NativePdfPipelineOptions(
+                        document_timeout=1.5,
+                        parser_threads=1,
+                        generate_page_images=False,
+                        do_picture_description=True,
+                        enable_remote_services=True,
+                        picture_description_options=PictureDescriptionApiOptions(
+                            url=f"{service.base_url}{endpoint}",
+                            timeout=10,
+                            batch_size=3,
+                            concurrency=1,
+                        ),
+                    )
+                )
+            }
+        )
+        converter.initialize_pipeline(InputFormat.PDF)
+        started = time.monotonic()
+        result = converter.convert(pdf)
+        elapsed = time.monotonic() - started
+        requests = service.requests_for("POST", endpoint)
+        print(f"Conversion took {elapsed:.3f}s and sent {len(requests)} requests")
+
+        assert result.status == ConversionStatus.PARTIAL_SUCCESS
+        assert [error.category for error in result.errors] == [FailureCategory.TIMEOUT]
+        assert elapsed < api.delay_seconds
+        assert len(requests) == 2
+        assert len(result.document.pages) == len(result.document.pictures) == 3
+        first_picture, *remaining = result.document.pictures
+        assert first_picture.meta is not None
+        assert first_picture.meta.description is not None
+        assert first_picture.meta.description.text == "Red"
+        assert all(picture.meta is None for picture in remaining)
+
+        # The cached pipeline gets a fresh deadline for the next conversion.
+        api.delay_seconds = 0
+        result = converter.convert(pdf)
+        assert result.status == ConversionStatus.SUCCESS
+        assert not result.errors
+        assert len(service.requests_for("POST", endpoint)) == 5
+    finally:
+        service.stop()
 
 
 def test_native_pipeline_can_skip_picture_images():

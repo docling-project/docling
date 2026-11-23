@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from abc import abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any, List, Optional, Type, Union
 
@@ -77,6 +77,16 @@ class PictureDescriptionBaseModel(
         doc: DoclingDocument,
         element_batch: Iterable[ItemAndImageEnrichmentElement],
     ) -> Iterable[NodeItem]:
+        return self._describe_images(doc, element_batch, self._annotate_images)
+
+    def _describe_images(
+        self,
+        doc: DoclingDocument,
+        element_batch: Iterable[ItemAndImageEnrichmentElement],
+        annotate_images: Callable[
+            [Iterable[Image.Image]], Iterable[str | ApiImageRequestResult]
+        ],
+    ) -> Iterable[NodeItem]:
         if not self.enabled:
             for element in element_batch:
                 yield element.item
@@ -108,7 +118,7 @@ class PictureDescriptionBaseModel(
                 elements.append(el.item)
                 images.append(to_rgb(el.image))
 
-        outputs = self._annotate_images(images)
+        outputs = annotate_images(images)
 
         for item, output in zip(elements, outputs):
             description_text, usage = _normalize_description_output(output)
