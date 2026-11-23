@@ -310,9 +310,11 @@ def _markdown_table_data(markdown: str) -> TableData | None:
 
     header_seen = False
     rows: list[list[str]] = []
-    for line in lines:
+    for row_idx, line in enumerate(lines):
         cells = _markdown_table_cells(line.replace("\\|", "\x00"))
-        if all(_TABLE_SEPARATOR.fullmatch(cell) for cell in cells):
+        # Only the second line can be the header separator. A later data row
+        # such as ``| - | - |`` is content, not a separator.
+        if row_idx == 1 and all(_TABLE_SEPARATOR.fullmatch(cell) for cell in cells):
             header_seen = True
             continue
         rows.append([cell.replace("\x00", "|") for cell in cells])

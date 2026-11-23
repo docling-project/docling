@@ -198,6 +198,29 @@ def test_parses_markdown_tables_when_the_service_returns_them() -> None:
     ]
 
 
+def test_keeps_a_dash_only_row_in_markdown_tables() -> None:
+    markdown = "| name | value |\n| --- | --- |\n| - | - |"
+
+    doc = _parse_one(_block("Table", markdown, fmt="markdown"))
+
+    assert doc.tables[0].data.num_rows == 2
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "name",
+        "value",
+        "-",
+        "-",
+    ]
+
+
+def test_markdown_table_without_a_separator_has_no_header_row() -> None:
+    markdown = "| name | value |\n| alpha | 1 |"
+
+    doc = _parse_one(_block("Table", markdown, fmt="markdown"))
+
+    assert doc.tables[0].data.num_rows == 2
+    assert not any(cell.column_header for cell in doc.tables[0].data.table_cells)
+
+
 def test_unparsable_table_content_is_kept_as_text() -> None:
     doc = _parse_one(_block("Table", "not a table", fmt="text"))
 
