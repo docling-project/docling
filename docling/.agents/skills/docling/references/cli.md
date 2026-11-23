@@ -53,9 +53,12 @@ docling report.pdf --to dclx --output-file /tmp/named-result.dclx
 ```
 
 Supported input formats include: `pdf`, `docx`/`doc`, `pptx`/`ppt`, `xlsx`/`xls`,
-`html`, `md`, `asciidoc`, `csv`, `odt`/`ods`/`odp`, images, `audio`, and several
+`html`, `md`, `mediawiki`, `asciidoc`, `csv`, `odt`/`ods`/`odp`, images, `audio`, and several
 XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
 `--from pdf --from docx ./inbox` to batch-convert a directory.
+
+`--from mediawiki` accepts MediaWiki XML exports and `.wiki` or `.wikitext`
+files. These can also arrive as gzip-compressed files or inside tar archives.
 
 ## Picking a pipeline (PDF / images)
 

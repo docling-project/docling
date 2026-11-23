@@ -18,6 +18,7 @@ Below you can find a listing of all supported input and output formats.
 | Numbers | Apple Numbers spreadsheets (`.numbers`), both container generations (Numbers 3+ and iWork '09); requires the `format-iwork` extra |
 | Keynote | Apple Keynote presentations (`.key`), every container generation (Keynote 6+, the flattened package Keynote 2018+ writes, and iWork '09); requires the `format-iwork` extra |
 | Markdown | |
+| MediaWiki wikitext | `.wiki`, `.wikitext`, and gzip-compressed copies |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
 | HTML, XHTML | |
@@ -81,8 +82,21 @@ Schema-specific support:
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard; also inline XBRL (iXBRL) reports in `.htm`, `.html` and `.xhtml` files; needs the `xbrl` extra |
+| MediaWiki XML | MediaWiki page exports (`.xml`, `.xml.gz`) |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
+
+MediaWiki inputs use `InputFormat.MEDIAWIKI` in the SDK and `--from mediawiki`
+in the CLI. Docling also accepts `.tar`, `.tar.gz`, and `.tgz` archives that
+contain MediaWiki XML or wikitext. Each input produces one Docling document.
+Docling imports the latest revision of each exported page and processes
+archive members in archive order.
+
+The parser runs locally and preserves headings, emphasis, links, lists, and
+tables. It leaves template calls and Lua modules unexpanded. A wikitext page
+can contain up to 4,194,304 characters. Compressed files and archives can
+contain up to 512 MiB of uncompressed data. Tar archives can have up to
+10,000 members. The `format-html` extra provides the renderer for Docling Slim.
 
 ## Supported output formats
 

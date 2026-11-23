@@ -1684,6 +1684,7 @@ def convert(  # noqa: C901
         IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
+        MediaWikiFormatOption,
         NativePdfFormatOption,
         OdpFormatOption,
         OdsFormatOption,
@@ -2167,6 +2168,9 @@ def convert(  # noqa: C901
                     else None,
                 ),
                 InputFormat.MD: MarkdownFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.MEDIAWIKI: MediaWikiFormatOption(
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.LATEX: LatexFormatOption(

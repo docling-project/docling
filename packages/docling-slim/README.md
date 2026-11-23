@@ -82,7 +82,7 @@ pip install docling-slim[service-client]
 | Extra | Description | Use Case |
 |-------|-------------|----------|
 | `format-web` | HTML and Markdown | Web content |
-| `format-html` | HTML parsing | Web pages and HTML files |
+| `format-html` | HTML and MediaWiki conversion | Web pages, HTML files, MediaWiki XML exports, and wikitext |
 | `format-markdown` | Markdown parsing | .md files |
 
 #### Other Formats

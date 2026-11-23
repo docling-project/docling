@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+# Adapted from mwparserfromhell v0.7.2 by Ben Kurtovic. See LICENSE.
+
+"""Character, tag, and link rules for MediaWiki wikitext."""
+
+URI_SCHEMES = {
+    # [wikimedia/mediawiki.git]/includes/DefaultSettings.php @ 5c660de5d0
+    "bitcoin": False,
+    "ftp": True,
+    "ftps": True,
+    "geo": False,
+    "git": True,
+    "gopher": True,
+    "http": True,
+    "https": True,
+    "irc": True,
+    "ircs": True,
+    "magnet": False,
+    "mailto": False,
+    "mms": True,
+    "news": False,
+    "nntp": True,
+    "redis": True,
+    "sftp": True,
+    "sip": False,
+    "sips": False,
+    "sms": False,
+    "ssh": True,
+    "svn": True,
+    "tel": False,
+    "telnet": True,
+    "urn": False,
+    "worldwind": True,
+    "xmpp": False,
+}
+
+PARSER_BLACKLIST = [
+    # https://www.mediawiki.org/wiki/Parser_extension_tags @ 2020-12-21
+    "categorytree",
+    "ce",
+    "chem",
+    "gallery",
+    "graph",
+    "hiero",
+    "imagemap",
+    "inputbox",
+    "math",
+    "nowiki",
+    "pre",
+    "score",
+    "section",
+    "source",
+    "syntaxhighlight",
+    "templatedata",
+    "timeline",
+]
+
+# [wikimedia/mediawiki.git]/includes/parser/Sanitizer.php @ 95e17ee645
+SINGLE_ONLY = ["br", "wbr", "hr", "meta", "link", "img"]
+SINGLE = [*SINGLE_ONLY, "li", "dt", "dd", "th", "td", "tr"]
+
+MARKUP_TO_HTML = {
+    "#": "li",
+    "*": "li",
+    ";": "dt",
+    ":": "dd",
+}
+
+
+def get_html_tag(markup: str) -> str:
+    """Return the HTML tag associated with the given wiki-markup."""
+    return MARKUP_TO_HTML[markup]
+
+
+def is_parsable(tag: str) -> bool:
+    """Return if the given *tag*'s contents should be passed to the parser."""
+    return tag.lower() not in PARSER_BLACKLIST
+
+
+def is_single(tag: str) -> bool:
+    """Return whether or not the given *tag* can exist without a close tag."""
+    return tag.lower() in SINGLE
+
+
+def is_single_only(tag: str) -> bool:
+    """Return whether or not the given *tag* must exist without a close tag."""
+    return tag.lower() in SINGLE_ONLY
+
+
+def is_scheme(scheme: str, slashes: bool = True) -> bool:
+    """Return whether *scheme* is valid for external links."""
+    scheme = scheme.lower()
+    if slashes:
+        return scheme in URI_SCHEMES
+    return scheme in URI_SCHEMES and not URI_SCHEMES[scheme]

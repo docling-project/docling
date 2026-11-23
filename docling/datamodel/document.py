@@ -78,6 +78,11 @@ from docling.datamodel.base_models import (
 from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
+from docling.utils.mediawiki_input import (
+    is_mediawiki_archive,
+    is_mediawiki_xml,
+    is_wikitext_name,
+)
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
@@ -1027,6 +1032,20 @@ class _DocumentConversionInput(BaseModel):
                         mime = office_mime
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
+
+        if mime is None or mime.lower() in {
+            "application/octet-stream",
+            "application/xml",
+        }:
+            if is_mediawiki_xml(content) or is_wikitext_name(obj.name):
+                return InputFormat.MEDIAWIKI
+        if mime is not None and mime.lower() in {
+            "application/gzip",
+            "application/x-tar",
+        }:
+            source = obj if isinstance(obj, Path) else obj.stream
+            if is_mediawiki_archive(source, obj.name):
+                return InputFormat.MEDIAWIKI
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):

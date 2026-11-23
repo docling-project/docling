@@ -600,8 +600,13 @@ class _BaseDoclingServiceClient:
 
     def _guess_input_format(self, name: str) -> InputFormat:
         lowered = name.lower()
-        extension = (
-            "tar.gz" if lowered.endswith(".tar.gz") else Path(name).suffix[1:].lower()
+        extension = next(
+            (
+                suffix
+                for suffix in ("tar.gz", "xml.gz", "wiki.gz", "wikitext.gz")
+                if lowered.endswith(f".{suffix}")
+            ),
+            Path(name).suffix[1:].lower(),
         )
         if extension in self._extension_to_format:
             return self._extension_to_format[extension]

@@ -69,6 +69,8 @@ result = client.convert(source="path/to/report.pdf")  # local path or http(s) UR
 print(result.document.export_to_markdown())
 ```
 
+MediaWiki conversion requires a server that supports `InputFormat.MEDIAWIKI`.
+
 Defaults (OCR, table structure, Markdown output) match a local
 `DocumentConverter`. Override only when needed:
 

@@ -120,6 +120,7 @@ class InputFormat(str, Enum):
     XML_DOCLANG = "xml_doclang"
     DCLX = "dclx"
     METS_GBS = "mets_gbs"
+    MEDIAWIKI = "mediawiki"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
     VIDEO = "video"
@@ -175,6 +176,17 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.ODP: ["odp", "otp"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
+    InputFormat.MEDIAWIKI: [
+        "xml",
+        "wiki",
+        "wikitext",
+        "xml.gz",
+        "wiki.gz",
+        "wikitext.gz",
+        "tar",
+        "tar.gz",
+        "tgz",
+    ],
     InputFormat.JSON_DOCLING: ["json"],
     InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac"],
     InputFormat.VIDEO: ["mp4", "avi", "mov", "mkv", "webm"],
@@ -251,6 +263,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.METS_GBS: ["application/mets+xml"],
+    InputFormat.MEDIAWIKI: ["text/plain", "application/xml"],
     InputFormat.JSON_DOCLING: ["application/json"],
     InputFormat.AUDIO: [
         "audio/x-wav",
