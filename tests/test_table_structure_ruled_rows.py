@@ -39,6 +39,26 @@ def _segmented_rule(y: float) -> list[BoundingBox]:
     return [BoundingBox(l=x, t=y, r=x + 50, b=y) for x in range(0, 200, 50)]
 
 
+def test_complete_rows_do_not_request_page_rules() -> None:
+    cells, tags = _table()
+    tags[5:10] = "rhed fcel fcel fcel nl".split()
+
+    def get_rules() -> list[BoundingBox]:
+        pytest.fail("TableFormer already predicted a complete row")
+
+    assert (
+        repair_split_final_row(
+            cells=cells,
+            tags=tags,
+            num_rows=3,
+            num_cols=4,
+            get_rules=get_rules,
+            table_box=BoundingBox(l=0, t=0, r=200, b=49),
+        )
+        is None
+    )
+
+
 def test_wrapped_final_row_preserves_labels_amounts_and_boxes() -> None:
     cells, tags = _table()
     result = repair_split_final_row(
@@ -46,7 +66,7 @@ def test_wrapped_final_row_preserves_labels_amounts_and_boxes() -> None:
         tags=tags,
         num_rows=3,
         num_cols=4,
-        rules=[*_segmented_rule(18), *_segmented_rule(48)],
+        get_rules=lambda: [*_segmented_rule(18), *_segmented_rule(48)],
         table_box=BoundingBox(l=0, t=0, r=200, b=49),
     )
 
@@ -89,7 +109,7 @@ def test_incomplete_evidence_leaves_rows_alone(geometry: str) -> None:
             tags=tags,
             num_rows=3,
             num_cols=4,
-            rules=rules,
+            get_rules=lambda: rules,
             table_box=BoundingBox(l=0, t=0, r=200, b=49),
         )
         is None

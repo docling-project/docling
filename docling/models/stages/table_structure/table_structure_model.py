@@ -5,6 +5,7 @@ import copy
 import logging
 import warnings
 from collections.abc import Iterable, Sequence
+from functools import cache
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -278,6 +279,17 @@ class TableStructureModel(BaseTableStructureModel):
                 # backend would re-parse and return native words OCR replaced.
                 sp = page.parsed_page
 
+                @cache
+                def get_shape_lines(
+                    current_page: Page = page,
+                ) -> list[BoundingBox] | None:
+                    if current_page._shape_lines is not None:
+                        return current_page._shape_lines
+                    assert current_page._backend is not None
+                    return current_page._backend.get_shape_lines(
+                        horizontal=True, vertical=False
+                    )
+
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
                     if sp is not None:
@@ -359,17 +371,13 @@ class TableStructureModel(BaseTableStructureModel):
                         )
                         num_rows, num_cols, table_cells = 0, 0, []
                         keep_table_text_as_child(table_cluster, page)
-                    elif (
-                        page._shape_lines
-                        and self.mode == TableFormerMode.FAST
-                        and self.do_cell_matching
-                    ):
+                    elif self.mode == TableFormerMode.FAST and self.do_cell_matching:
                         repaired = repair_split_final_row(
                             cells=table_cells,
                             tags=otsl_seq,
                             num_rows=num_rows,
                             num_cols=num_cols,
-                            rules=page._shape_lines,
+                            get_rules=get_shape_lines,
                             table_box=table_cluster.bbox,
                         )
                         if repaired is not None:

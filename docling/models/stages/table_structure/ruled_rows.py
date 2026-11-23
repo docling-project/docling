@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from collections import defaultdict
+from collections.abc import Callable
 from unicodedata import east_asian_width
 
 from docling_core.types.doc import BoundingBox, TableCell
@@ -62,7 +63,7 @@ def repair_split_final_row(
     tags: list[str],
     num_rows: int,
     num_cols: int,
-    rules: list[BoundingBox],
+    get_rules: Callable[[], list[BoundingBox] | None],
     table_box: BoundingBox,
 ) -> tuple[list[TableCell], list[str]] | None:
     """Recover a wrapped stub and its values within a single printed bottom row.
@@ -73,7 +74,7 @@ def repair_split_final_row(
     rule alone does not establish that the text belongs to one row.
     """
     stride = num_cols + 1
-    if num_rows < 3 or num_cols < 4 or not rules or len(tags) < 2 * stride:
+    if num_rows < 3 or num_cols < 4 or len(tags) < 2 * stride:
         return None
     upper, lower = tags[-2 * stride : -stride], tags[-stride:]
     num_labels = 1 + upper.count("fcel")
@@ -129,7 +130,10 @@ def repair_split_final_row(
     previous_bottom = max(
         (cell.bbox.b for cell in earlier if cell.bbox is not None), default=table_box.t
     )
-    if not _is_one_printed_row(columns, rules, previous_bottom, table_box.b):
+    rules = get_rules()
+    if not rules or not _is_one_printed_row(
+        columns, rules, previous_bottom, table_box.b
+    ):
         return None
 
     left, right = label.text.rstrip(), fragment.text.lstrip()
