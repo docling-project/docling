@@ -310,6 +310,20 @@ class TableStructureModel(BaseTableStructureModel):
                                     "bbox": new_cell.rect.to_bounding_box().model_dump(),
                                 }
                             )
+                    if self.do_cell_matching and not tokens:
+                        # Cell matching makes cells only from tokens. Without
+                        # tokens, the table is empty, thus do not decode it.
+                        keep_table_text_as_child(table_cluster, page)
+                        table_prediction.table_map[table_cluster.id] = Table(
+                            otsl_seq=[],
+                            table_cells=[],
+                            id=table_cluster.id,
+                            page_no=page.page_no,
+                            cluster=table_cluster,
+                            label=table_cluster.label,
+                        )
+                        continue
+
                     page_input["tokens"] = tokens
 
                     tf_output = self.tf_predictor.multi_table_predict(

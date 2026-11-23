@@ -145,9 +145,11 @@ class _PageBackend:
         return ""
 
 
-def _stage_page(table: Cluster, scale: float) -> Page:
+def _stage_page(
+    table: Cluster, scale: float, cells: list[TextCell] | None = None
+) -> Page:
     """A page the table stages can run on without a PDF behind it."""
-    page = _page([*TABLE_CELLS, CAPTION_CELL], [table])
+    page = _page([*TABLE_CELLS, CAPTION_CELL] if cells is None else cells, [table])
     page._backend = _PageBackend(page.parsed_page)  # type: ignore[assignment]
     page._image_cache[scale] = Image.new(
         "RGB", (int(PAGE_WIDTH * scale), int(PAGE_HEIGHT * scale)), "white"
@@ -493,3 +495,29 @@ def test_v1_predict_tables_keeps_a_complete_structure(conv_res, caplog):
     assert [cell.text for cell in tbl.table_cells] == TABLE_TEXT
     assert table.children == []
     assert not caplog.records
+
+
+def test_v1_predict_tables_does_not_decode_a_table_without_words(conv_res, monkeypatch):
+    """With cell matching, the cells come only from the words in the table.
+    A table without words is thus empty, and its structure is not decoded."""
+    model = _v1_model(COMPLETE_SEQ, (2, 2), [])
+    decode = model.tf_predictor.multi_table_predict
+    decoded = []
+
+    def counted_decode(page_input, table_bboxes, do_matching=True):
+        decoded.append(table_bboxes)
+        return decode(page_input, table_bboxes, do_matching=do_matching)
+
+    monkeypatch.setattr(model.tf_predictor, "multi_table_predict", counted_decode)
+    # Two thirds of the line lie inside the table box, and no cluster holds it.
+    edge_line = _text_cell(6, BoundingBox(l=150, t=280, r=350, b=310), "Total")
+    table = _table_cluster()
+    page = _stage_page(table, model.scale, cells=[edge_line])
+
+    (prediction,) = model.predict_tables(conv_res, [page])
+
+    tbl = prediction.table_map[table.id]
+    assert decoded == []
+    assert (tbl.num_rows, tbl.num_cols, tbl.table_cells) == (0, 0, [])
+    (child,) = table.children
+    assert [cell.text for cell in child.cells] == ["Total"]
