@@ -319,6 +319,19 @@ def test_alarms(converter):
             "Yearly on the 1st and last day of every month",
         ),
         ("FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=15", "Yearly in March on the 15th"),
+        # BYMONTHDAY limits BYDAY to the days that are both.
+        (
+            "FREQ=MONTHLY;BYDAY=FR;BYMONTHDAY=13",
+            "Monthly on Friday on the 13th",
+        ),
+        (
+            "FREQ=MONTHLY;BYDAY=SA;BYMONTHDAY=7,8,9,10,11,12,13",
+            "Monthly on Saturday on the 7th, 8th, 9th, 10th, 11th, 12th and 13th",
+        ),
+        (
+            "FREQ=YEARLY;BYDAY=FR;BYMONTHDAY=13",
+            "Yearly on Friday on the 13th of every month",
+        ),
         # A day with a position, and a weekly rule, already name one day.
         ("FREQ=MONTHLY;BYDAY=-1FR", "Monthly on the last Friday"),
         ("FREQ=WEEKLY;BYDAY=MO", "Weekly on Monday"),
