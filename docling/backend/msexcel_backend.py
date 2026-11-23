@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import bisect
 import collections
+import functools
 import logging
 import posixpath
 import re
@@ -151,11 +152,6 @@ _EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-# Every Unicode currency sign ($, €, £, ¥, ₹, ...), for number-format sections.
-_CURRENCY_SYMBOLS: Final[str] = "".join(
-    char for char in map(chr, range(0x110000)) if unicodedata.category(char) == "Sc"
-)
-_CURRENCY_CLASS: Final[str] = re.escape(_CURRENCY_SYMBOLS)
 # A ``[$<symbol>-<locale id>]`` currency tag, e.g. ``[$€-407]`` or ``[$₹-4009]``.
 _LOCALE_CURRENCY_TAG_RE: Final[re.Pattern[str]] = re.compile(
     r"\[\$(?P<symbol>[^\]\-]+)(?:-[0-9a-fA-F]+)?\]"
@@ -174,6 +170,19 @@ _OPENPYXL_FORMAT_FIXES: Final[dict[str, str]] = {
         '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)'
     ),
 }
+
+
+@functools.cache
+def _currency_symbols() -> str:
+    """Every Unicode currency sign ($, €, £, ¥, ₹, ...), built on first use.
+
+    Scanning all code points takes a noticeable fraction of a second, so it is
+    not done at import time, where every ``DocumentConverter`` user would pay
+    for it.
+    """
+    return "".join(
+        char for char in map(chr, range(0x110000)) if unicodedata.category(char) == "Sc"
+    )
 
 
 def _strip_section_layout(section: str) -> str:
@@ -268,14 +277,16 @@ def _format_excel_number(value: int | float, fmt: str) -> str:
         re.search(r"[0#.,%]", literal) for literal in re.findall(r'"([^"]*)"', section)
     ):
         return str(value)
+    currency_symbols = _currency_symbols()
+    currency_class = re.escape(currency_symbols)
     normalized = section.replace('"', "")
-    normalized = re.sub(rf"\\([()${_CURRENCY_CLASS} -])", r"\1", normalized)
+    normalized = re.sub(rf"\\([()${currency_class} -])", r"\1", normalized)
     match = re.fullmatch(
-        rf"(?P<prefix>[{_CURRENCY_CLASS}( -]*)(?P<number>#,##0|0)"
-        rf"(?:\.(?P<decimals>0{{1,15}}))?(?P<suffix>[{_CURRENCY_CLASS}% )-]*)",
+        rf"(?P<prefix>[{currency_class}( -]*)(?P<number>#,##0|0)"
+        rf"(?:\.(?P<decimals>0{{1,15}}))?(?P<suffix>[{currency_class}% )-]*)",
         normalized,
     )
-    currency_signs = sum(normalized.count(sign) for sign in _CURRENCY_SYMBOLS)
+    currency_signs = sum(normalized.count(sign) for sign in currency_symbols)
     if match is None or normalized.count("%") > 1 or currency_signs > 1:
         return str(value)
     if not currency_signs and "%" not in normalized:
