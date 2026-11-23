@@ -39,9 +39,15 @@ def _cluster(
 
 
 class _PageStub:
-    def __init__(self, cells: list[TextCell]) -> None:
+    def __init__(
+        self,
+        cells: list[TextCell],
+        size: Size | None = None,
+    ) -> None:
         self.cells = cells
-        self.size = Size(width=400, height=400)
+        self.size = size or Size(width=400, height=400)
+        self.parsed_page = None
+        self.page_no = 0
 
 
 def _reference_assignments(
@@ -496,3 +502,149 @@ def test_direct_child_uses_tightest_container() -> None:
     by_id = {cluster.id: cluster for cluster in result}
     assert by_id[1].children == []
     assert [child.id for child in by_id[2].children] == [3]
+
+
+def _list_tail_fixture() -> tuple[list[TextCell], list[Cluster]]:
+    cells = [
+        _text_cell(0, _bbox(58.3, 483.4, 537.7, 494.8), "1. First line of item one"),
+        _text_cell(1, _bbox(57.4, 497.5, 537.8, 508.7), "second line of item one"),
+        _text_cell(2, _bbox(57.4, 511.5, 537.8, 522.8), "third line of item one"),
+        _text_cell(3, _bbox(57.4, 525.6, 537.8, 536.8), "fourth line of item one"),
+        _text_cell(4, _bbox(57.8, 539.6, 259.1, 551.0), "short tail of item one."),
+        _text_cell(5, _bbox(57.4, 553.7, 537.8, 565.0), "2. First line of item two"),
+        _text_cell(6, _bbox(57.8, 596.0, 162.0, 607.1), "short tail of item two."),
+    ]
+    clusters = [
+        _cluster(
+            5,
+            _bbox(56, 482, 539, 549),
+            DocItemLabel.LIST_ITEM,
+            confidence=0.751,
+        ),
+        _cluster(
+            3,
+            _bbox(56, 552, 539, 605),
+            DocItemLabel.LIST_ITEM,
+            confidence=0.763,
+        ),
+        _cluster(
+            13,
+            _bbox(56, 395, 539, 732),
+            DocItemLabel.TEXT,
+            confidence=0.519,
+        ),
+    ]
+    return cells, clusters
+
+
+def test_list_item_tail_lines_stay_with_enclosed_list_items() -> None:
+    cells, clusters = _list_tail_fixture()
+    page = _PageStub(cells, size=Size(width=595.3, height=841.9))
+
+    result = LayoutPostprocessor(
+        page, clusters, LayoutPostprocessorOptions()
+    ).postprocess()
+
+    by_id = {cluster.id: cluster for cluster in result}
+    assert set(by_id) == {5, 3}
+    assert [cell.index for cell in by_id[5].cells] == [0, 1, 2, 3, 4]
+    assert [cell.index for cell in by_id[3].cells] == [5, 6]
+
+
+def test_list_item_tail_assignment_independent_of_cluster_order() -> None:
+    cells, clusters = _list_tail_fixture()
+    reordered = [clusters[2], clusters[1], clusters[0]]
+    page = _PageStub(cells, size=Size(width=595.3, height=841.9))
+
+    result = LayoutPostprocessor(
+        page, reordered, LayoutPostprocessorOptions()
+    ).postprocess()
+
+    by_id = {cluster.id: cluster for cluster in result}
+    assert set(by_id) == {5, 3}
+    assert [cell.index for cell in by_id[5].cells] == [0, 1, 2, 3, 4]
+    assert [cell.index for cell in by_id[3].cells] == [5, 6]
+
+
+def test_enclosing_text_keeps_non_list_cells_and_low_overlap_cells() -> None:
+    cells = [
+        _text_cell(0, _bbox(58, 484, 530, 496), "1. List item body line."),
+        _text_cell(1, _bbox(58, 539, 250, 551), "short tail line."),
+        _text_cell(2, _bbox(58, 546, 530, 560), "Following line mostly below item."),
+        _text_cell(3, _bbox(58, 580, 530, 592), "Paragraph line well below list."),
+    ]
+    clusters = [
+        _cluster(1, _bbox(56, 482, 539, 549), DocItemLabel.LIST_ITEM, confidence=0.78),
+        _cluster(2, _bbox(56, 470, 539, 700), DocItemLabel.TEXT, confidence=0.52),
+    ]
+    page = _PageStub(cells, size=Size(width=595.3, height=841.9))
+
+    result = LayoutPostprocessor(
+        page, clusters, LayoutPostprocessorOptions()
+    ).postprocess()
+
+    by_id = {cluster.id: cluster for cluster in result}
+    assert set(by_id) == {1, 2}
+    assert [cell.index for cell in by_id[1].cells] == [0, 1]
+    assert [cell.index for cell in by_id[2].cells] == [2, 3]
+
+
+def test_higher_confidence_enclosing_text_retains_cells() -> None:
+    cells = [
+        _text_cell(0, _bbox(58, 484, 530, 496), "1. Line inside weak list box."),
+        _text_cell(1, _bbox(58, 539, 250, 551), "tail overlapping both."),
+    ]
+    clusters = [
+        _cluster(1, _bbox(56, 482, 539, 549), DocItemLabel.LIST_ITEM, confidence=0.60),
+        _cluster(2, _bbox(56, 395, 539, 700), DocItemLabel.TEXT, confidence=0.90),
+    ]
+    page = _PageStub(cells, size=Size(width=595.3, height=841.9))
+
+    assigned = LayoutPostprocessor(
+        page, clusters, LayoutPostprocessorOptions()
+    )._assign_cells_to_clusters(clusters)
+
+    by_id = {cluster.id: cluster for cluster in assigned}
+    assert [cell.index for cell in by_id[1].cells] == [0]
+    assert [cell.index for cell in by_id[2].cells] == [1]
+
+
+def test_non_enclosed_text_cluster_wins_higher_overlap_cell() -> None:
+    cells = [
+        _text_cell(0, _bbox(58, 484, 530, 496), "1. List item line."),
+        _text_cell(1, _bbox(58, 541, 250, 553), "line mostly inside sibling text."),
+    ]
+    clusters = [
+        _cluster(1, _bbox(56, 482, 539, 549), DocItemLabel.LIST_ITEM, confidence=0.85),
+        _cluster(2, _bbox(56, 535, 539, 700), DocItemLabel.TEXT, confidence=0.55),
+    ]
+    page = _PageStub(cells, size=Size(width=595.3, height=841.9))
+
+    assigned = LayoutPostprocessor(
+        page, clusters, LayoutPostprocessorOptions()
+    )._assign_cells_to_clusters(clusters)
+
+    by_id = {cluster.id: cluster for cluster in assigned}
+    assert [cell.index for cell in by_id[1].cells] == [0]
+    assert [cell.index for cell in by_id[2].cells] == [1]
+
+
+def test_enclosed_list_item_prefers_highest_overlap_among_multiple_items() -> None:
+    cells = [
+        _text_cell(0, _bbox(58, 540, 250, 552), "tail overlapping both list items."),
+    ]
+    clusters = [
+        _cluster(1, _bbox(56, 545, 539, 610), DocItemLabel.LIST_ITEM, confidence=0.80),
+        _cluster(2, _bbox(56, 482, 539, 550), DocItemLabel.LIST_ITEM, confidence=0.78),
+        _cluster(3, _bbox(56, 400, 539, 700), DocItemLabel.TEXT, confidence=0.52),
+    ]
+    page = _PageStub(cells, size=Size(width=595.3, height=841.9))
+
+    assigned = LayoutPostprocessor(
+        page, clusters, LayoutPostprocessorOptions()
+    )._assign_cells_to_clusters(clusters)
+
+    by_id = {cluster.id: cluster for cluster in assigned}
+    assert [cell.index for cell in by_id[1].cells] == []
+    assert [cell.index for cell in by_id[2].cells] == [0]
+    assert [cell.index for cell in by_id[3].cells] == []
