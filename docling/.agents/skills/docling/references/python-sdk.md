@@ -509,6 +509,11 @@ result = converter.convert("interview.wav")
 print(result.document.export_to_markdown())  # timestamped transcript
 ```
 
+To select a preset by its CLI name (`--asr-model`), use
+`InlineAsrOptions.from_preset("whisper_turbo")` from
+`docling.datamodel.pipeline_options_asr_model`. `InlineAsrOptions.list_preset_ids()`
+lists the names.
+
 For a Transformers-format Whisper checkpoint, install
 `docling-slim[feat-asr-transformers]` and select an explicit preset such as
 `asr_model_specs.WHISPER_TINY_TRANSFORMERS`. The presets cover tiny, base,

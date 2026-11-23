@@ -249,6 +249,59 @@ class InlineAsrOptions(BaseAsrOptions):
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")
 
+    @classmethod
+    def list_preset_ids(cls) -> list[str]:
+        """List the IDs of the built-in ASR presets.
+
+        The IDs are the values of ``AsrModelType``, the same names that the CLI
+        accepts in ``--asr-model``.
+
+        Returns:
+            List of preset IDs
+        """
+        # The presets are defined from these classes, so import them here.
+        from docling.datamodel.asr_model_specs import _ASR_PRESETS
+
+        return [model.value for model in _ASR_PRESETS]
+
+    @classmethod
+    def from_preset(
+        cls,
+        preset_id: str,
+        device: AcceleratorDevice | str = AcceleratorDevice.AUTO,
+    ) -> "InlineAsrOptions":
+        """Create ASR options from a built-in preset.
+
+        A preset without an engine suffix (e.g. ``whisper_tiny``) selects the
+        engine for this machine, like the ``WHISPER_*`` constants in
+        ``asr_model_specs``. ``whisper_tiny`` gives the default ASR options of
+        ``AsrPipelineOptions``.
+
+        Args:
+            preset_id: The preset identifier
+            device: The accelerator device, used to select the engine of the
+                model-family presets
+
+        Returns:
+            A new instance of the ``InlineAsrOptions`` subclass for the engine
+
+        Raises:
+            KeyError: If preset not found
+        """
+        # The presets are defined from these classes, so import them here.
+        from docling.datamodel.asr_model_specs import _ASR_PRESETS, AsrModelType
+        from docling.datamodel.asr_presets import AsrModelPreset
+
+        if preset_id not in _ASR_PRESETS:
+            raise KeyError(
+                f"Preset '{preset_id}' not found for {cls.__name__}. "
+                f"Available presets: {cls.list_preset_ids()}"
+            )
+        preset = _ASR_PRESETS[AsrModelType(preset_id)]
+        if isinstance(preset, AsrModelPreset):
+            return preset.to_auto_options(device)
+        return preset.model_copy(deep=True)
+
 
 class InlineAsrNativeWhisperOptions(InlineAsrOptions):
     """Configuration for native Whisper ASR implementation."""

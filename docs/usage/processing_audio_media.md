@@ -395,6 +395,22 @@ pipeline_options.asr_options = asr_model_specs.GRANITE_SPEECH_5_0_2B_MLX_AUDIO
 
 The rest of the setup — the `DocumentConverter` from [Basic usage](#basic-usage) — is unchanged.
 
+### Selecting a preset by name
+
+Each preset also has an ID, which is the same name as in the CLI `--asr-model` option. Use `InlineAsrOptions.list_preset_ids()` to list the IDs, and `InlineAsrOptions.from_preset()` to get a new copy of the options of a preset. A preset without a backend suffix selects its backend as described in [Automatic backend selection](#automatic-backend-selection). Pass `device` to select it for a specific accelerator. `whisper_tiny` gives the default options of `AsrPipelineOptions`.
+
+```python
+from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+
+print(InlineAsrOptions.list_preset_ids())  # ['granite_speech_5_0_2b', ..., 'whisper_turbo', ...]
+
+pipeline_options.asr_options = InlineAsrOptions.from_preset("whisper_turbo")
+pipeline_options.asr_options = InlineAsrOptions.from_preset(
+    "parakeet_ctc_1_1b", device=AcceleratorDevice.CPU
+)
+```
+
 ### Speech models
 
 These presets run on Transformers or, when the model has an export, on `mlx-audio`. The SDK constants are in `docling.datamodel.asr_model_specs`; the CLI names are their lower-case names. [Automatic backend selection](#automatic-backend-selection) explains how a preset selects its backend, and the [Installation](#installation) table shows the extras.
