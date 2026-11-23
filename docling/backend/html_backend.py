@@ -74,6 +74,7 @@ from docling.backend.utils.table_spans import (
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
+from docling.datamodel.document_metadata import DocumentMetadata, normalize_string_list
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
 from docling.utils.code_language import (
     _HINT_PREFIXES,
@@ -1033,6 +1034,112 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         resources = cls._collect_mhtml_resources(related_scope, effective_base)
         return html_bytes, resources, effective_base
 
+    @staticmethod
+    def _extract_document_metadata(soup: BeautifulSoup) -> DocumentMetadata:
+        """Extract document-level metadata from HTML head/meta/link tags."""
+
+        def _meta_contents(attr: str, *names: str) -> list[str]:
+            wanted = {name.lower() for name in names}
+            values: list[str] = []
+            for tag in soup.find_all("meta"):
+                if not isinstance(tag, Tag):
+                    continue
+                raw_key = tag.get(attr)
+                key = raw_key.strip().lower() if isinstance(raw_key, str) else None
+                if key not in wanted:
+                    continue
+                content = tag.get("content")
+                if isinstance(content, str) and content.strip():
+                    value = HTMLDocumentBackend._clean_unicode(content.strip())
+                    if key in {"author", "keywords"}:
+                        values.extend(normalize_string_list(value))
+                    else:
+                        values.append(value)
+            return values
+
+        def _first_meta(*pairs: tuple[str, str]) -> str | None:
+            for attr, name in pairs:
+                vals = _meta_contents(attr, name)
+                if vals:
+                    return vals[0]
+            return None
+
+        title = _first_meta(
+            ("property", "og:title"),
+            ("name", "dc.title"),
+            ("name", "dcterms.title"),
+            ("name", "citation_title"),
+        )
+        if title is None and soup.title is not None:
+            raw_title = soup.title.get_text(separator=" ", strip=True)
+            if raw_title:
+                title = HTMLDocumentBackend._clean_unicode(raw_title)
+
+        authors = normalize_string_list(
+            _meta_contents(
+                "name", "author", "dc.creator", "dcterms.creator", "citation_author"
+            )
+            + _meta_contents("property", "article:author")
+        )
+        date = _first_meta(
+            ("name", "date"),
+            ("name", "dc.date"),
+            ("name", "dcterms.created"),
+            ("name", "citation_publication_date"),
+            ("property", "article:published_time"),
+        )
+        language: str | None = None
+        html_tag = soup.find("html")
+        if isinstance(html_tag, Tag):
+            raw_lang = html_tag.get("lang") or html_tag.get("xml:lang")
+            if isinstance(raw_lang, str) and raw_lang.strip():
+                language = raw_lang.strip()
+        if language is None:
+            language = _first_meta(
+                ("http-equiv", "content-language"), ("name", "dc.language")
+            )
+
+        description = _first_meta(
+            ("name", "description"),
+            ("property", "og:description"),
+            ("name", "dc.description"),
+        )
+        keywords = normalize_string_list(
+            _meta_contents("name", "keywords")
+            + _meta_contents("property", "article:tag")
+        )
+        publisher = _first_meta(
+            ("name", "dc.publisher"),
+            ("property", "og:site_name"),
+            ("name", "citation_journal_title"),
+        )
+        identifier = _first_meta(
+            ("name", "dc.identifier"),
+            ("name", "citation_doi"),
+        )
+        if identifier is None:
+            for link_tag in soup.find_all("link"):
+                if not isinstance(link_tag, Tag):
+                    continue
+                rel = link_tag.get("rel")
+                rel_values = [rel] if isinstance(rel, str) else (rel or [])
+                if any(str(r).lower() == "canonical" for r in rel_values):
+                    href = link_tag.get("href")
+                    if isinstance(href, str) and href.strip():
+                        identifier = href.strip()
+                        break
+
+        return DocumentMetadata(
+            title=title,
+            authors=authors,
+            date=date,
+            language=language,
+            description=description,
+            keywords=keywords,
+            publisher=publisher,
+            identifier=identifier,
+        )
+
     @override
     def convert(self) -> DoclingDocument:
         _log.debug("Starting HTML conversion...")
@@ -1061,6 +1168,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         assert self.soup is not None
+        if self.options.extract_metadata:
+            self._extract_document_metadata(self.soup).attach_to_document(doc)
         # set the title as furniture, since it is part of the document metadata
         title = self.soup.title
         if title and self.options.add_title:

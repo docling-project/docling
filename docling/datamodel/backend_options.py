@@ -36,6 +36,14 @@ class BaseBackendOptions(BaseModel):
     enable_local_fetch: bool = Field(
         False, description="Enable local resource fetching."
     )
+    extract_metadata: bool = Field(
+        False,
+        description=(
+            "Extract document-level metadata (title, authors, date, language, "
+            "description, keywords, publisher, identifier, and custom fields) "
+            "into `document.body.meta['docling__document_metadata']`."
+        ),
+    )
 
 
 class DeclarativeBackendOptions(BaseBackendOptions):

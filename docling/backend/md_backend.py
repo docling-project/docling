@@ -50,6 +50,7 @@ from docling.datamodel.backend_options import (
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.datamodel.document_metadata import DocumentMetadata
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
 from docling.utils.text_decoding import decode_text
@@ -226,16 +227,24 @@ def _decode_char_references(text: str) -> str:
     return _CHAR_REFERENCE_PATTERN.sub(replace, text)
 
 
-def _strip_frontmatter(text: str) -> str:
-    """Drop a leading YAML frontmatter block (a ``---`` fenced YAML mapping)."""
+def _extract_frontmatter(text: str) -> tuple[str, DocumentMetadata | None]:
+    """Strip a leading YAML frontmatter mapping and return its metadata."""
     match = _FRONTMATTER_PATTERN.match(text)
     if match is None:
-        return text
+        return text, None
     try:
         meta = yaml.safe_load(match.group(1))
     except yaml.YAMLError:
-        return text
-    return text[match.end() :] if isinstance(meta, dict) else text
+        return text, None
+    if not isinstance(meta, dict):
+        return text, None
+    return text[match.end() :], DocumentMetadata.from_mapping(meta)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block (a ``---`` fenced YAML mapping)."""
+    stripped, _ = _extract_frontmatter(text)
+    return stripped
 
 
 _LINK_DEST: Final = TypeAdapter(AnyUrl | Path | None)
@@ -406,13 +415,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self._pending_soft_line_break = False
         self._html_blocks: int = 0
         self._image_loader: ImageResourceLoader | None = None
+        self._document_metadata: DocumentMetadata | None = None
 
         # A leading BOM is dropped. Kept, it prefixes the first line, so a
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
         # output.
         try:
             md_content = decode_text(self.path_or_stream, options.encoding)
-            md_content = _strip_frontmatter(md_content)
+            md_content, self._document_metadata = _extract_frontmatter(md_content)
             # remove invalid sequences
             # very long sequences of underscores will lead to unnecessary long processing times.
             # In any proper Markdown files, underscores have to be escaped,
@@ -1418,6 +1428,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     picture_refs=html_payload.picture_refs,
                 )
                 doc = html_backend_obj.convert()
+            if self.options.extract_metadata and self._document_metadata is not None:
+                self._document_metadata.attach_to_document(doc)
         else:
             raise RuntimeError(
                 f"Cannot convert md with {self.document_hash} because the backend failed to init."

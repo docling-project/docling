@@ -69,6 +69,11 @@ from docling.backend.utils.media import load_linked_media, media_kind, media_ref
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.datamodel.document_metadata import (
+    DocumentMetadata,
+    normalize_metadata_value,
+    normalize_string_list,
+)
 from docling.utils._inline_runs import trim_run_edges
 from docling.utils.image_utils import open_image
 
@@ -346,6 +351,47 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
                 item,
                 bodies[0].get_elements("descendant::text:p | descendant::text:h"),
             )
+
+    def _attach_document_metadata(self, doc: DoclingDocument) -> None:
+        """Extract ODF ``meta.xml`` Dublin Core fields when enabled."""
+        if not self.options.extract_metadata:
+            return
+        try:
+            meta_part = self.odf_obj.meta
+        except Exception:
+            return
+        if meta_part is None:
+            return
+
+        def _meta_text(tag: str) -> str | None:
+            el = meta_part.get_element(f"descendant::{tag}")
+            if el is None:
+                return None
+            val = normalize_metadata_value(el.text)
+            if val is None:
+                return None
+            text = str(val).strip()
+            return text or None
+
+        def _meta_texts(tag: str) -> list[str]:
+            return [
+                el.text.strip()
+                for el in meta_part.get_elements(f"descendant::{tag}")
+                if el.text and el.text.strip()
+            ]
+
+        authors = normalize_string_list(
+            _meta_texts("dc:creator") or _meta_texts("meta:initial-creator")
+        )
+        keywords = normalize_string_list(",".join(_meta_texts("meta:keyword")))
+        DocumentMetadata(
+            title=_meta_text("dc:title"),
+            authors=authors,
+            date=_meta_text("dc:date") or _meta_text("meta:creation-date"),
+            language=_meta_text("dc:language"),
+            description=_meta_text("dc:description") or _meta_text("dc:subject"),
+            keywords=keywords,
+        ).attach_to_document(doc)
 
 
 # The rows that odfdo expands when it traverses a table (``odfdo.table._XP_ROW``).
@@ -1920,6 +1966,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
         self._add_footnotes(doc, comments)
         comments.attach_rest(doc)
         self._add_header_footer(doc)
+        self._attach_document_metadata(doc)
         return doc
 
     def _used_master_pages(self) -> list[Element]:
@@ -2208,6 +2255,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             self._walk_slide(page, parent=slide_group, doc=doc)
             if self._is_slide_hidden(page):
                 self._hide_slide(doc, slide_group)
+        self._attach_document_metadata(doc)
         return doc
 
     @override
@@ -2559,6 +2607,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             page.size = Size(width=width, height=height)
 
             _log.debug("Processed ODS sheet %s as page %s", table.name, page_no)
+        self._attach_document_metadata(doc)
         return doc
 
     def _convert_sheet_table(
