@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "name": "table_mislabeled_as_picture",
   "origin": {
     "mimetype": "application/pdf",

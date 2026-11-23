@@ -488,7 +488,11 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                     ) or (
                         # PDFium boxes a punctuation run tightly on the baseline,
                         # so its edges miss the row's, though it sits inside it.
-                        bbox.t >= row_top and bbox.b <= row_bottom
+                        # Words beside a taller cell (rotated label, drop cap) sit
+                        # inside it too, so only runs without letters or digits.
+                        bbox.t >= row_top
+                        and bbox.b <= row_bottom
+                        and not any(ch.isalnum() for ch in cell.text)
                     ):
                         current_row.append(cell)
                         row_top = min(row_top, cell.rect.to_bounding_box().t)
@@ -512,14 +516,13 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 for cell in row[1:]:
                     prev_cell = current_group[-1]
-                    avg_height = (
-                        prev_cell.rect.height + cell.rect.to_bounding_box().height
-                    ) / 2
-                    if (
-                        cell.rect.to_bounding_box().l
-                        - prev_cell.rect.to_bounding_box().r
-                        <= avg_height * horizontal_threshold_factor
-                    ):
+                    prev_bbox = prev_cell.rect.to_bounding_box()
+                    bbox = cell.rect.to_bounding_box()
+                    avg_height = (prev_cell.rect.height + bbox.height) / 2
+                    # Gap on either side: a run set left of the previous one
+                    # (right-to-left text) must not merge across a wide gap.
+                    gap = max(bbox.l - prev_bbox.r, prev_bbox.l - bbox.r)
+                    if gap <= avg_height * horizontal_threshold_factor:
                         current_group.append(cell)
                     else:
                         merged.append(merge_group(current_group))

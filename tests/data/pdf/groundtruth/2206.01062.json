@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "name": "2206.01062",
   "origin": {
     "mimetype": "application/pdf",
@@ -1386,8 +1386,8 @@
           ]
         }
       ],
-      "orig": "pupils is the interpupil ary distance.",
-      "text": "pupils is the interpupil ary distance."
+      "orig": "pupils is the interpupillary distance.",
+      "text": "pupils is the interpupillary distance."
     },
     {
       "self_ref": "#/texts/32",
@@ -1413,8 +1413,8 @@
           ]
         }
       ],
-      "orig": "2. To adjust the interpupil ary distance",
-      "text": "2. To adjust the interpupil ary distance"
+      "orig": "2. To adjust the interpupillary distance",
+      "text": "2. To adjust the interpupillary distance"
     },
     {
       "self_ref": "#/texts/33",
@@ -1872,8 +1872,8 @@
           ]
         }
       ],
-      "orig": "oblique il uminator cap and remove",
-      "text": "oblique il uminator cap and remove"
+      "orig": "oblique illuminator cap and remove",
+      "text": "oblique illuminator cap and remove"
     },
     {
       "self_ref": "#/texts/50",
@@ -2034,8 +2034,8 @@
           ]
         }
       ],
-      "orig": "il uminator.",
-      "text": "il uminator."
+      "orig": "illuminator.",
+      "text": "illuminator."
     },
     {
       "self_ref": "#/texts/56",
@@ -2655,8 +2655,8 @@
           ]
         }
       ],
-      "orig": "and left eyes, fol ow the fol owing",
-      "text": "and left eyes, fol ow the fol owing"
+      "orig": "and left eyes, follow the following",
+      "text": "and left eyes, follow the following"
     },
     {
       "self_ref": "#/texts/79",
@@ -3249,8 +3249,8 @@
           ]
         }
       ],
-      "orig": "oblique il uminator cap and remove",
-      "text": "oblique il uminator cap and remove"
+      "orig": "oblique illuminator cap and remove",
+      "text": "oblique illuminator cap and remove"
     },
     {
       "self_ref": "#/texts/101",
@@ -3411,8 +3411,8 @@
           ]
         }
       ],
-      "orig": "il uminator.",
-      "text": "il uminator."
+      "orig": "illuminator.",
+      "text": "illuminator."
     },
     {
       "self_ref": "#/texts/107",
@@ -3897,8 +3897,8 @@
           ]
         }
       ],
-      "orig": "equipped with transmitted il umination. By using this instrument,",
-      "text": "equipped with transmitted il umination. By using this instrument,"
+      "orig": "equipped with transmitted illumination. By using this instrument,",
+      "text": "equipped with transmitted illumination. By using this instrument,"
     },
     {
       "self_ref": "#/texts/125",
@@ -4005,8 +4005,8 @@
           ]
         }
       ],
-      "orig": "head al ows the user to position the eyepieces for maximum",
-      "text": "head al ows the user to position the eyepieces for maximum"
+      "orig": "head allows the user to position the eyepieces for maximum",
+      "text": "head allows the user to position the eyepieces for maximum"
     },
     {
       "self_ref": "#/texts/129",
@@ -4028,12 +4028,12 @@
           },
           "charspan": [
             0,
-            55
+            56
           ]
         }
       ],
-      "orig": "viewing comfort and easy access to al adjustment knobs.",
-      "text": "viewing comfort and easy access to al adjustment knobs."
+      "orig": "viewing comfort and easy access to all adjustment knobs.",
+      "text": "viewing comfort and easy access to all adjustment knobs."
     },
     {
       "self_ref": "#/texts/130",
@@ -4346,18 +4346,18 @@
           "bbox": {
             "l": 409.72,
             "t": 505.85,
-            "r": 413.27,
+            "r": 413.68,
             "b": 504.8,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            5
+            6
           ]
         }
       ],
-      "orig": "On/Of",
-      "text": "On/Of"
+      "orig": "On/Off",
+      "text": "On/Off"
     },
     {
       "self_ref": "#/texts/142",
@@ -4572,8 +4572,8 @@
           ]
         }
       ],
-      "orig": "Interpupil ary Slide Adjustment",
-      "text": "Interpupil ary Slide Adjustment"
+      "orig": "Interpupillary Slide Adjustment",
+      "text": "Interpupillary Slide Adjustment"
     },
     {
       "self_ref": "#/texts/150",
@@ -4973,12 +4973,12 @@
           },
           "charspan": [
             0,
-            62
+            63
           ]
         }
       ],
-      "orig": "dimensions (length and width) are shown for al active runways.",
-      "text": "dimensions (length and width) are shown for al active runways."
+      "orig": "dimensions (length and width) are shown for all active runways.",
+      "text": "dimensions (length and width) are shown for all active runways."
     },
     {
       "self_ref": "#/texts/165",
@@ -5540,12 +5540,12 @@
           },
           "charspan": [
             0,
-            66
+            67
           ]
         }
       ],
-      "orig": "the landing surface. Circling only approaches wil not show a TDZE.",
-      "text": "the landing surface. Circling only approaches wil not show a TDZE."
+      "orig": "the landing surface. Circling only approaches will not show a TDZE.",
+      "text": "the landing surface. Circling only approaches will not show a TDZE."
     },
     {
       "self_ref": "#/texts/186",
@@ -5675,12 +5675,12 @@
           },
           "charspan": [
             0,
-            49
+            50
           ]
         }
       ],
-      "orig": "2012 ful year result and final dividend announced",
-      "text": "2012 ful year result and final dividend announced"
+      "orig": "2012 full year result and final dividend announced",
+      "text": "2012 full year result and final dividend announced"
     },
     {
       "self_ref": "#/texts/191",
@@ -5999,12 +5999,12 @@
           },
           "charspan": [
             0,
-            50
+            51
           ]
         }
       ],
-      "orig": "2013 ful year results and final dividend announced",
-      "text": "2013 ful year results and final dividend announced"
+      "orig": "2013 full year results and final dividend announced",
+      "text": "2013 full year results and final dividend announced"
     },
     {
       "self_ref": "#/texts/203",
@@ -6053,12 +6053,12 @@
           },
           "charspan": [
             0,
-            86
+            87
           ]
         }
       ],
-      "orig": "AGL's Annual General Meeting wil be held at the City Recital Hal , Angel Place, Sydney",
-      "text": "AGL's Annual General Meeting wil be held at the City Recital Hal , Angel Place, Sydney"
+      "orig": "AGL's Annual General Meeting will be held at the City Recital Hall, Angel Place, Sydney",
+      "text": "AGL's Annual General Meeting will be held at the City Recital Hall, Angel Place, Sydney"
     },
     {
       "self_ref": "#/texts/205",
@@ -6836,12 +6836,12 @@
           },
           "charspan": [
             0,
-            65
+            66
           ]
         }
       ],
-      "orig": "of classifying signs wil help you figure out the meaning of signs",
-      "text": "of classifying signs wil help you figure out the meaning of signs"
+      "orig": "of classifying signs will help you figure out the meaning of signs",
+      "text": "of classifying signs will help you figure out the meaning of signs"
     },
     {
       "self_ref": "#/texts/234",
@@ -7083,8 +7083,8 @@
           ]
         }
       ],
-      "orig": "yel ow-green",
-      "text": "yel ow-green"
+      "orig": "yellow-green",
+      "text": "yellow-green"
     },
     {
       "self_ref": "#/texts/243",
@@ -7110,8 +7110,8 @@
           ]
         }
       ],
-      "orig": "Tel s about motorist",
-      "text": "Tel s about motorist"
+      "orig": "Tells about motorist",
+      "text": "Tells about motorist"
     },
     {
       "self_ref": "#/texts/244",
@@ -8055,8 +8055,8 @@
           ]
         }
       ],
-      "orig": "- yel ow lines",
-      "text": "- yel ow lines"
+      "orig": "- yellow lines",
+      "text": "- yellow lines"
     },
     {
       "self_ref": "#/texts/279",
@@ -8406,12 +8406,12 @@
           },
           "charspan": [
             0,
-            163
+            165
           ]
         }
       ],
-      "orig": "\u00b7 Information systems \u2192Document structure; \u00b7 Applied computing \u2192 Document analysis; \u00b7 Computing methodologies \u2192Machine learning; Computer vision; Object detection;",
-      "text": "\u00b7 Information systems \u2192Document structure; \u00b7 Applied computing \u2192 Document analysis; \u00b7 Computing methodologies \u2192Machine learning; Computer vision; Object detection;"
+      "orig": "\u00b7 Information systems \u2192 Document structure; \u00b7 Applied computing \u2192 Document analysis; \u00b7 Computing methodologies \u2192 Machine learning; Computer vision; Object detection;",
+      "text": "\u00b7 Information systems \u2192 Document structure; \u00b7 Applied computing \u2192 Document analysis; \u00b7 Computing methodologies \u2192 Machine learning; Computer vision; Object detection;"
     },
     {
       "self_ref": "#/texts/292",
@@ -8961,12 +8961,12 @@
           },
           "charspan": [
             0,
-            13
+            14
           ]
         }
       ],
-      "orig": "2 RELATEDWORK",
-      "text": "2 RELATEDWORK",
+      "orig": "2 RELATED WORK",
+      "text": "2 RELATED WORK",
       "level": 1
     },
     {
@@ -9706,12 +9706,12 @@
           },
           "charspan": [
             0,
-            20
+            21
           ]
         }
       ],
-      "orig": "4 ANNOTATIONCAMPAIGN",
-      "text": "4 ANNOTATIONCAMPAIGN",
+      "orig": "4 ANNOTATION CAMPAIGN",
+      "text": "4 ANNOTATION CAMPAIGN",
       "level": 1
     },
     {
@@ -12184,12 +12184,12 @@
           },
           "charspan": [
             0,
-            258
+            260
           ]
         }
       ],
-      "orig": "[5] LoganMarkewich, Hao Zhang, YubinXing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR), pages 1-11, 01 2022.",
-      "text": "LoganMarkewich, Hao Zhang, YubinXing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR), pages 1-11, 01 2022.",
+      "orig": "[5] Logan Markewich, Hao Zhang, Yubin Xing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR), pages 1-11, 01 2022.",
+      "text": "Logan Markewich, Hao Zhang, Yubin Xing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR), pages 1-11, 01 2022.",
       "enumerated": true,
       "marker": "[5]"
     },
@@ -12416,12 +12416,12 @@
           },
           "charspan": [
             0,
-            304
+            305
           ]
         }
       ],
-      "orig": "[13] Glenn Jocher, Alex Stoken, Ayush Chaurasia, Jirka Borovec, NanoCode012, TaoXie, Yonghye Kwon, Kalen Michael, Liu Changyu, Jiacong Fang, Abhiram V, Laughing, tkianai, yxNONG, Piotr Skalski, AdamHogan, Jebastin Nadar, imyhxy, Lorenzo Mammana, Alex Wang, Cristi Fati, Diego Montes, Jan Hajek, Laurentiu",
-      "text": "Glenn Jocher, Alex Stoken, Ayush Chaurasia, Jirka Borovec, NanoCode012, TaoXie, Yonghye Kwon, Kalen Michael, Liu Changyu, Jiacong Fang, Abhiram V, Laughing, tkianai, yxNONG, Piotr Skalski, AdamHogan, Jebastin Nadar, imyhxy, Lorenzo Mammana, Alex Wang, Cristi Fati, Diego Montes, Jan Hajek, Laurentiu",
+      "orig": "[13] Glenn Jocher, Alex Stoken, Ayush Chaurasia, Jirka Borovec, NanoCode012, TaoXie, Yonghye Kwon, Kalen Michael, Liu Changyu, Jiacong Fang, Abhiram V, Laughing, tkianai, yxNONG, Piotr Skalski, Adam Hogan, Jebastin Nadar, imyhxy, Lorenzo Mammana, Alex Wang, Cristi Fati, Diego Montes, Jan Hajek, Laurentiu",
+      "text": "Glenn Jocher, Alex Stoken, Ayush Chaurasia, Jirka Borovec, NanoCode012, TaoXie, Yonghye Kwon, Kalen Michael, Liu Changyu, Jiacong Fang, Abhiram V, Laughing, tkianai, yxNONG, Piotr Skalski, Adam Hogan, Jebastin Nadar, imyhxy, Lorenzo Mammana, Alex Wang, Cristi Fati, Diego Montes, Jan Hajek, Laurentiu",
       "enumerated": true,
       "marker": "[13]"
     },
@@ -13074,12 +13074,12 @@
           },
           "charspan": [
             0,
-            338
+            339
           ]
         }
       ],
-      "orig": "[18] Nikolaos Livathinos, Cesar Berrospi, MaksymLysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 15137-15145, feb 2021.",
-      "text": "Nikolaos Livathinos, Cesar Berrospi, MaksymLysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 15137-15145, feb 2021.",
+      "orig": "[18] Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 15137-15145, feb 2021.",
+      "text": "Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 15137-15145, feb 2021.",
       "enumerated": true,
       "marker": "[18]"
     },
@@ -14080,10 +14080,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 322.41,
-            "t": 545.5,
-            "r": 555.29,
-            "b": 264.33,
+            "l": 322.55,
+            "t": 545.3,
+            "r": 554.84,
+            "b": 264.3,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -14526,7 +14526,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 5,
             "end_col_offset_idx": 12,
-            "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+            "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
             "column_header": true,
             "row_header": false,
             "row_section": false,
@@ -17758,7 +17758,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -17778,7 +17778,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -17798,7 +17798,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -17818,7 +17818,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -17838,7 +17838,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -17858,7 +17858,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -17878,7 +17878,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 12,
-              "text": "triple inter-annotator mAP@ 0.5-0.95 (%)",
+              "text": "triple inter-annotator mAP @ 0.5-0.95 (%)",
               "column_header": true,
               "row_header": false,
               "row_section": false,

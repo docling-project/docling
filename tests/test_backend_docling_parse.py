@@ -13,7 +13,6 @@ from docling_core.types.doc.page import PdfCellRenderingMode
 from docling_parse.pdf_parser import ContentLevel, ThreadedPdfParserConfig
 from PIL import Image, ImageDraw, ImageStat
 
-import docling.backend.docling_parse_backend as docling_parse_backend_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
@@ -216,11 +215,8 @@ class _FakeThreadedParser:
         assert doc_key == "doc-key"
         return None
 
-    def has_tasks(self) -> bool:
-        return False
-
-    def get_task(self):
-        raise AssertionError("get_task must not be called once has_tasks() is False")
+    def cancel(self, doc_key: str) -> None:
+        assert doc_key == "doc-key"
 
     def unload(self, doc_key: str) -> bool:
         self.unload_calls.append(doc_key)
@@ -312,6 +308,44 @@ def test_threaded_backend_open_ended_page_range_is_clipped_to_document(
     assert parser.load_calls == [(2, sys.maxsize)]
 
     in_doc._backend.unload()
+
+
+@pytest.mark.parametrize(
+    "cancel_first",
+    [True, False],
+    ids=["cancel-then-unload", "unload-with-pending-work"],
+)
+def test_threaded_backend_discards_pending_pages_and_unloads_stream(
+    test_doc_path: Path, cancel_first: bool
+) -> None:
+    stream = BytesIO(test_doc_path.read_bytes())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        filename=test_doc_path.name,
+        backend_options=ThreadedDoclingParseBackendOptions(
+            parser_threads=1, max_concurrent_results=1
+        ),
+        limits=DocumentLimits(page_range=(1, 3)),
+    )
+    backend = in_doc._backend
+    assert isinstance(backend, ThreadedDoclingParseDocumentBackend)
+
+    pages = backend.iter_pages()
+    try:
+        assert next(pages).is_valid()
+        assert backend.parser.has_tasks()
+        if cancel_first:
+            backend.cancel()
+            assert list(pages) == []
+    finally:
+        backend.unload()
+
+    assert stream.closed
+    assert list(pages) == []
+    with pytest.raises(ValueError, match="Document key not loaded"):
+        backend.page_count()
 
 
 def test_threaded_backend_rewinds_stream_before_deriving_document_key(
