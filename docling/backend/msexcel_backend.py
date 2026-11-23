@@ -60,6 +60,7 @@ from docling.backend.docx.drawingml.utils import (
     convert_to_modern_format,
     crop_whitespace,
     get_docx_to_pdf_converter,
+    render_pdf_page_as_pil,
 )
 from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
@@ -86,16 +87,6 @@ from docling.utils.image_utils import (
 )
 
 _log = logging.getLogger(__name__)
-
-# pypdfium2 ships with the PDF extras, not with format-xlsx, and is only reached
-# through the LibreOffice converter below. `get_docx_to_pdf_converter` returns
-# None when it is missing, so the rendering paths already degrade to "no image";
-# this guard only keeps the module itself importable.
-# See https://github.com/docling-project/docling/issues/3613.
-try:  # pragma: no cover - import-time guard
-    import pypdfium2
-except ImportError:  # pragma: no cover - import-time guard
-    pass
 
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
@@ -2125,8 +2116,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         converts the input file to PDF at the given output path.
 
         Returns:
-            A converter callable, or None when LibreOffice or pypdfium2 is not
-            available; `get_docx_to_pdf_converter` checks for both.
+            A converter callable, or None when LibreOffice or docling-parse is
+            not available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
@@ -2145,7 +2136,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         LibreOffice can convert standalone ``.emf``/``.wmf`` files to PDF
         directly — no DOCX or XLSX wrapper is needed.  The raw bytes are
         written to a temp file, converted to PDF, and the first page is
-        rendered with pypdfium2.
+        rendered with docling-parse.
 
         Args:
             image_bytes: Raw EMF or WMF image data.
@@ -2168,11 +2159,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("EMF/WMF conversion via LibreOffice failed: %s", exc)
@@ -2799,7 +2786,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         workbook (its data copied onto hidden sheets so the series still
         resolve), convert that to PDF with LibreOffice — the same external tool
         already used for EMF/WMF images — and rasterize the first page with
-        pypdfium2, trimming the surrounding whitespace.
+        docling-parse, trimming the surrounding whitespace.
 
         Args:
             chart: An openpyxl chart object.
@@ -2825,11 +2812,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for a chart")
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("Chart rendering via LibreOffice failed: %s", exc)
