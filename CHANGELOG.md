@@ -1,3 +1,28 @@
+## [v2.152.0](https://github.com/docling-project/docling/releases/tag/v2.152.0) - 2026-11-23
+
+### Feature
+
+* **pdf:** Cancel queued PDF parsing when conversions stop ([#5456](https://github.com/docling-project/docling/issues/5456)) ([`4c0a96d`](https://github.com/docling-project/docling/commit/4c0a96de53af1032a2f2ac0375fdd7f844672349))
+* **service:** Let the server choose the default pipeline ([#4875](https://github.com/docling-project/docling/issues/4875)) ([`adfdff3`](https://github.com/docling-project/docling/commit/adfdff3426692a736145c3a3e0ac4fc837615d1e))
+* Turn audio/video transcripts and slide media into tracks ([#4752](https://github.com/docling-project/docling/issues/4752)) ([`5182e55`](https://github.com/docling-project/docling/commit/5182e556308958f3ac4762bb7d03a092c2f339c9))
+* **heading-hierarchy:** Read keyword markers of other languages ([#5474](https://github.com/docling-project/docling/issues/5474)) ([`557df04`](https://github.com/docling-project/docling/commit/557df045572672b4cf62a119c5252af49938a10b))
+* **vlm:** Add native MLX support for Nemotron 3.5 Parse ([#4934](https://github.com/docling-project/docling/issues/4934)) ([`825c774`](https://github.com/docling-project/docling/commit/825c77458b4d05ed7071d0789dc8e40ba9d18211))
+
+### Fix
+
+* **pdfium:** Keep words beside a tall cell and right-to-left runs apart ([#5440](https://github.com/docling-project/docling/issues/5440)) ([`41dbb0c`](https://github.com/docling-project/docling/commit/41dbb0c73c2c1335a0858990949501a4259619e5))
+* **epub:** Find a package document stored with a literal percent sign ([#5442](https://github.com/docling-project/docling/issues/5442)) ([`0cf0f8a`](https://github.com/docling-project/docling/commit/0cf0f8a1d507d5f202c5879df14337ea3bab5159))
+* **jats:** Treat xref/@rid as optional and as IDREFS ([#4381](https://github.com/docling-project/docling/issues/4381)) ([`6504fe0`](https://github.com/docling-project/docling/commit/6504fe0feef5106f35ceb72a7bd618177b08fba0))
+* Serialize PDFium rendering in Office backends ([#5377](https://github.com/docling-project/docling/issues/5377)) ([`62ff440`](https://github.com/docling-project/docling/commit/62ff440a1f0b6608a965b717c5538a8e8e034288))
+* **md:** Preserve inline HTML line breaks ([#5275](https://github.com/docling-project/docling/issues/5275)) ([`d416bd1`](https://github.com/docling-project/docling/commit/d416bd1f78679c35321c7d008641f7f2312cd5bd))
+* **csv:** Keep fields larger than the default csv limit ([#5253](https://github.com/docling-project/docling/issues/5253)) ([`1fb40fb`](https://github.com/docling-project/docling/commit/1fb40fb41b1b980c4d0236385b06897fa2d91b60))
+* **email:** Handle UnicodeDecodeError for .msg files with 8-bit body ([#5439](https://github.com/docling-project/docling/issues/5439)) ([`0f3564c`](https://github.com/docling-project/docling/commit/0f3564c772e006c73417f61658a2d41c8352224d))
+* **calendar:** Describe expanded days of monthly and yearly rules as every such day ([#5451](https://github.com/docling-project/docling/issues/5451)) ([`f93ee6b`](https://github.com/docling-project/docling/commit/f93ee6bc72717da7384389434d90fbb1977047df))
+
+### Documentation
+
+* **examples:** Pass engine_type to ApiVlmEngineOptions ([#5380](https://github.com/docling-project/docling/issues/5380)) ([`77907bb`](https://github.com/docling-project/docling/commit/77907bbe40d0dc62436bae078ebb6ec7d772e396))
+
 ## [v2.151.1](https://github.com/docling-project/docling/releases/tag/v2.151.1) - 2026-11-19
 
 ### Fix
