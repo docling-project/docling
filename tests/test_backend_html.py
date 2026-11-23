@@ -3343,3 +3343,43 @@ def test_inline_quotation_marks_follow_the_language():
         "「はい」",
         "“unknown”",
     ]
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        "<details><summary>Show example</summary><p>Run it twice</p></details>",
+        "<details><summary>Show example</summary><h5>Run it twice</h5></details>",
+    ],
+    ids=["paragraph", "heading"],
+)
+def test_details_in_table_cell_stays_in_the_cell(details: str):
+    # The content of a <details> in a table cell belongs to that cell. It was
+    # left under the body, so it came out again after the table, and the cell
+    # text ran its parts together.
+    html = (
+        "<html><body><h1>Title</h1><table>"
+        "<tr><th>Option</th><th>Notes</th></tr>"
+        f"<tr><td>retry</td><td>{details}</td></tr>"
+        "</table><p>After the table</p></body></html>"
+    ).encode()
+    doc = _convert_html(html)
+
+    assert len(doc.tables) == 1
+    cell = next(
+        c
+        for c in doc.tables[0].data.table_cells
+        if c.start_row_offset_idx == 1 and c.start_col_offset_idx == 1
+    )
+    assert isinstance(cell, RichTableCell)
+    for text in ("Show example", "Run it twice"):
+        item = next(t for t in doc.texts if t.text == text)
+        ancestor = item.parent
+        while ancestor is not None and ancestor != cell.ref:
+            ancestor = ancestor.resolve(doc).parent
+        assert ancestor == cell.ref, f"{text!r} is not inside its table cell"
+
+    markdown = doc.export_to_markdown()
+    assert markdown.count("Run it twice") == 1
+    assert "exampleRun" not in markdown
+    assert markdown.rstrip().endswith("After the table")
