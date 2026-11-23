@@ -23,7 +23,7 @@ L.V. Duarte a,b,c,* , J. Segundo d , A. Gonçalves e , C.F. Rodrigues b,f,g,h , 
 - i CITEUC, Centro Investigaç˜ao da Terra e do Espaço da Universidade de Coimbra, Portugal
 - j PALEOIBERICA, Consolidated Research Group of the University of Alcal´a de Henares, Spain
 
-## A R T I C L E I N F O
+## ARTICLE INFO
 
 Handling Editor: DR Damien Delvaux
 
