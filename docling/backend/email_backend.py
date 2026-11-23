@@ -12,6 +12,7 @@ from email.message import EmailMessage, Message
 from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
+from typing import cast
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -105,9 +106,8 @@ def _decode_text_part(part: Message) -> str:
     The declared charset is tried first, then UTF-8 with replacement characters, so
     the result matches mailparser's text also when the charset is wrong.
     """
-    payload = part.get_payload(decode=True)
-    if not isinstance(payload, bytes):
-        return ""
+    # a non-multipart part, like every text/plain part, decodes to bytes
+    payload = cast(bytes, part.get_payload(decode=True))
     try:
         return payload.decode(part.get_content_charset("utf-8"))
     except (LookupError, UnicodeError):
