@@ -31,6 +31,7 @@ from docling.utils.granite_vision_utils import (
     GRANITE_VISION_4_REPO_ID,
     granite_vision_4_needs_remote_code,
 )
+from docling.utils.transformers_utils import transformers_dtype_kwargs
 
 _log = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
+            transformers_version = importlib.metadata.version("transformers")
             trust_remote_code = vlm_options.trust_remote_code
             attn_implementation: Optional[str] = (
                 "flash_attention_2"
@@ -82,9 +84,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 else "sdpa"
             )
             if vlm_options.repo_id == GRANITE_VISION_4_REPO_ID:
-                if not granite_vision_4_needs_remote_code(
-                    importlib.metadata.version("transformers")
-                ):
+                if not granite_vision_4_needs_remote_code(transformers_version):
                     trust_remote_code = False
                 if attn_implementation == "sdpa":
                     # The native granite4_vision Q-Former rejects an explicit sdpa
@@ -111,9 +111,12 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 self.vlm_model = AutoModelForImageTextToText.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
-                    dtype=vlm_options.torch_dtype or torch.bfloat16,
                     _attn_implementation=attn_implementation,
                     trust_remote_code=trust_remote_code,
+                    **transformers_dtype_kwargs(
+                        vlm_options.torch_dtype or torch.bfloat16,
+                        transformers_version=transformers_version,
+                    ),
                 )
 
             if hasattr(self.vlm_model, "merge_lora_adapters"):

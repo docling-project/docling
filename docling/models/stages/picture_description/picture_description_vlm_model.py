@@ -20,6 +20,7 @@ from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.transformers_utils import transformers_dtype_kwargs
 
 # Global lock for model initialization to prevent threading issues
 _model_init_lock = threading.Lock()
@@ -77,13 +78,13 @@ class PictureDescriptionVlmModel(
                 self.model = AutoModelForImageTextToText.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
-                    dtype=torch.bfloat16,
                     _attn_implementation=(
                         "flash_attention_2"
                         if self.device.startswith("cuda")
                         and accelerator_options.cuda_use_flash_attention2
                         else "sdpa"
                     ),
+                    **transformers_dtype_kwargs(torch.bfloat16),
                 )
                 if sys.version_info < (3, 14):
                     self.model = torch.compile(self.model)  # type: ignore

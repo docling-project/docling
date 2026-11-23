@@ -23,6 +23,7 @@ from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.transformers_utils import transformers_dtype_kwargs
 
 _log = logging.getLogger(__name__)
 
@@ -153,7 +154,6 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             self.vlm_model = AutoModelForImageTextToText.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                dtype=self.vlm_options.torch_dtype,
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")
@@ -161,6 +161,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                     else "sdpa"
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
+                **transformers_dtype_kwargs(self.vlm_options.torch_dtype),
             )
             if sys.version_info < (3, 14):
                 self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
