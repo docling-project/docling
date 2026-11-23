@@ -143,9 +143,17 @@ _CreationPayload = Annotated[
 ]
 
 
+def _is_inline_html_break(element: marko.element.Element) -> bool:
+    """Recognize an opening HTML br tag already parsed and validated by Marko."""
+    return (
+        isinstance(element, marko.inline.InlineHTML)
+        and re.match(r"<br(?=[\s/>])", element.children, re.IGNORECASE) is not None
+    )
+
+
 def _only_plain_line_breaks(children: list) -> bool:
     """Return True when children consist solely of RawText/Literal runs separated
-    by LineBreak nodes (soft or hard), with at least one break present.
+    by LineBreak nodes or inline HTML br tags, with at least one break present.
 
     Such content is fully handled by the pending-line-break merge paths and does
     not need an inline_group wrapper.
@@ -160,10 +168,14 @@ def _only_plain_line_breaks(children: list) -> bool:
     """
     if not _MARKO_AVAILABLE:
         return False
-    has_break = any(isinstance(c, marko.inline.LineBreak) for c in children)
+    has_break = any(
+        isinstance(c, marko.inline.LineBreak) or _is_inline_html_break(c)
+        for c in children
+    )
     return has_break and all(
         isinstance(c, (marko.inline.RawText, marko.inline.Literal))
         or isinstance(c, marko.inline.LineBreak)
+        or _is_inline_html_break(c)
         for c in children
     )
 
@@ -390,7 +402,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.valid = True
         self.markdown = ""
 
-        self._pending_hard_line_break = False
+        self._pending_hard_line_breaks = 0
         self._pending_soft_line_break = False
         self._html_blocks: int = 0
         self._image_loader: ImageResourceLoader | None = None
@@ -855,7 +867,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # flag would otherwise join the first run of a later block onto the
         # last text item.
         if isinstance(element, marko.block.BlockElement):
-            self._pending_hard_line_break = False
+            self._pending_hard_line_breaks = 0
             self._pending_soft_line_break = False
 
         # Iterates over all elements in the AST
@@ -870,7 +882,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children[0].children,  # type: ignore
             )
 
-            if len(element.children) > 1:  # inline group will be created further down
+            if len(element.children) > 1 and not _only_plain_line_breaks(
+                element.children
+            ):  # inline group will be created further down
                 parent_item = self._create_heading_item(
                     doc=doc,
                     parent_item=parent_item,
@@ -966,6 +980,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
 
+            if self._pending_hard_line_breaks:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent_item,
+                    text="\n" * self._pending_hard_line_breaks,
+                )
+                self._pending_hard_line_breaks = 0
+                self._pending_soft_line_break = False
+
             image_ref = self._load_image_ref(element.dest)
             pic = doc.add_picture(parent=parent_item, image=image_ref)
             if element.title is not None and element.title != "":
@@ -1029,7 +1052,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         formatting=formatting,
                         hyperlink=hyperlink,
                     )
-                    self._pending_hard_line_break = False
+                    self._pending_hard_line_breaks = 0
                     self._pending_soft_line_break = False
                 else:
                     # A code span is its own item: text after a break never
@@ -1037,18 +1060,30 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     last_is_code = bool(doc.texts) and isinstance(
                         doc.texts[-1], CodeItem
                     )
+                    # A picture or another child can follow the last text item.
+                    # Only adjacent runs, or a container's own text before its
+                    # first child, can be joined without changing content order.
+                    container = parent_item if parent_item is not None else doc.body
+                    last_text_is_adjacent = bool(doc.texts) and (
+                        (container is doc.texts[-1] and not container.children)
+                        or (
+                            bool(container.children)
+                            and container.children[-1].cref == doc.texts[-1].self_ref
+                        )
+                    )
                     if (
-                        self._pending_hard_line_break
-                        and doc.texts
+                        self._pending_hard_line_breaks
+                        and last_text_is_adjacent
                         and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
-                        doc.texts[-1].text += "\n" + snippet_text
-                        doc.texts[-1].orig += "\n" + snippet_text
+                        separator = "\n" * self._pending_hard_line_breaks
+                        doc.texts[-1].text += separator + snippet_text
+                        doc.texts[-1].orig += separator + snippet_text
                     elif (
                         self._pending_soft_line_break
-                        and doc.texts
+                        and last_text_is_adjacent
                         and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
@@ -1058,8 +1093,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     else:
                         # The break still separates the runs when they cannot merge.
                         prefix = (
-                            "\n"
-                            if self._pending_hard_line_break
+                            "\n" * self._pending_hard_line_breaks
+                            if self._pending_hard_line_breaks
                             else " "
                             if self._pending_soft_line_break
                             else ""
@@ -1071,7 +1106,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             formatting=formatting,
                             hyperlink=hyperlink,
                         )
-                    self._pending_hard_line_break = False
+                    self._pending_hard_line_breaks = 0
                     self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
@@ -1092,16 +1127,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
-                self._pending_hard_line_break = False
+                self._pending_hard_line_breaks = 0
                 self._pending_soft_line_break = False
                 # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
                 return
-            if self._pending_hard_line_break or self._pending_soft_line_break:
+            if self._pending_hard_line_breaks or self._pending_soft_line_break:
                 # The break separator never goes inside the code run: give it a plain run.
                 doc.add_text(
                     label=DocItemLabel.TEXT,
                     parent=parent_item,
-                    text="\n" if self._pending_hard_line_break else " ",
+                    text="\n" * self._pending_hard_line_breaks
+                    if self._pending_hard_line_breaks
+                    else " ",
                 )
             doc.add_code(
                 parent=parent_item,
@@ -1111,7 +1148,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
             # The code span consumed the break that preceded it, like a
             # text run does.
-            self._pending_hard_line_break = False
+            self._pending_hard_line_breaks = 0
             self._pending_soft_line_break = False
 
         elif (
@@ -1136,13 +1173,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 hyperlink=hyperlink,
             )
 
-        elif isinstance(element, marko.inline.LineBreak):
-            if element.soft:
+        elif isinstance(element, marko.inline.LineBreak) or _is_inline_html_break(
+            element
+        ):
+            if isinstance(element, marko.inline.LineBreak) and element.soft:
                 _log.debug("Soft line break")
                 self._pending_soft_line_break = True
             else:
                 _log.debug("Hard line break")
-                self._pending_hard_line_break = True
+                self._pending_hard_line_breaks += 1
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
