@@ -52,6 +52,11 @@ for result in client.convert_all(
 Defaults (OCR, table structure, Markdown output) match that of docling's `DocumentConverter`. Pass
 `options=ConvertDocumentsOptions(...)` only when you need to override them.
 
+With `submit_and_retrieve_each()`, a conversion error is returned with its input
+item. An error raised by the input iterable itself, such as a failed manifest
+read, is raised to the caller and stops iteration. This applies to both the
+sync and async clients, with or without ordered results.
+
 ## Examples
 
 

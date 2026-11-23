@@ -1,12 +1,13 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: text: It’s a blue apple tree!
-  item-2 at level 1: text: No way!
-  item-3 at level 1: inline: group WebVTT cue span
-    item-4 at level 2: text: Hee!
-    item-5 at level 2: text:  
-    item-6 at level 2: text: laughter
-  item-7 at level 1: text: That’s awesome!
-  item-8 at level 1: inline: group WebVTT cue span
-    item-9 at level 2: text: Sur les 
-    item-10 at level 2: text: playground
-    item-11 at level 2: text: , ici à Montpellier
+    item-1 at level 1: track: ignored
+    item-2 at level 2: text: It’s a blue apple tree!
+    item-3 at level 2: text: No way!
+    item-4 at level 2: inline: group WebVTT cue span
+      item-5 at level 3: text: Hee!
+      item-6 at level 3: text:  
+      item-7 at level 3: text: laughter
+    item-8 at level 2: text: That’s awesome!
+    item-9 at level 2: inline: group WebVTT cue span
+      item-10 at level 3: text: Sur les 
+      item-11 at level 3: text: playground
+      item-12 at level 3: text: , ici à Montpellier

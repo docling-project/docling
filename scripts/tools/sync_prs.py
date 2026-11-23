@@ -4,15 +4,25 @@
 """Rank the open PRs by merge readiness, and act on them with your gh login.
 
 The script saves the metadata of each PR to ``<cache-dir>/<number>/pr.json``
-(title, author, labels, reviews, checks, and the computed rank). It does not
-download code. It then prints these lists:
+(title, author, labels, reviews, checks, whose turn it is, and the computed
+rank). It does not download code. It then prints these lists:
 
 1. Ready to merge: CI is green, the PR has all the approvals it needs, and
    GitHub reports the merge state ``CLEAN``.
-2. Needs approval: CI is green, but the PR needs at least one more approval.
+2. Needs review: CI is green, but the PR needs at least one more approval.
 3. Merge conflict: the PR conflicts with its base branch.
 4. Other: drafts, failing or pending CI, CI that waits for maintainer
    approval, and PRs that GitHub blocks for another reason.
+
+Lists 2 and 4 have subsections by whose turn it is: maintainers to follow up,
+no review yet, the author, and PRs from maintainers or bots.
+
+After the four lists, the report shows the PRs where it is the turn of a
+maintainer again: a maintainer already acted, and the author acted after
+that, or the last maintainer action is an approval (see ``pr_turn.py`` for
+the rules). Drafts are not in this list.
+``--maintainer`` keeps only the PRs where this maintainer acted (``@me`` for
+your gh login). Each ``pr.json`` has the ``turn`` of the PR.
 
 "CI is green" means: every required status check of the base branch is
 present, and every check is complete with ``SUCCESS``, ``SKIPPED``, or
@@ -50,6 +60,10 @@ Actions (all of them are off by default):
     then the rest (for example, PRs with a merge conflict or with changes
     requested).
 
+``--open-maintainer-turn-in-tabs``
+    Open a new Google Chrome window with a tab for each PR in the
+    "maintainer's turn again" list, the longest wait first.
+
 Status lines and progress bars go to stderr (``--quiet`` turns them off).
 The report goes to stdout.
 
@@ -59,6 +73,7 @@ Examples::
     uv run python scripts/tools/sync_prs.py --comment-conflicts --approve-ci
     uv run python scripts/tools/sync_prs.py --pr 5115 --pr 5122
     uv run python scripts/tools/sync_prs.py --label pdf --label docx
+    uv run python scripts/tools/sync_prs.py --maintainer @me
 """
 
 from __future__ import annotations
@@ -66,19 +81,33 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from gh_helpers import (
+    DEFAULT_REPO,
+    MAINTAINER_ROLES,
+    HelpFormatter,
+    Progress,
+    age,
+    describe_labels,
+    gh_api_list,
+    gh_login,
+    graphql,
+    graphql_prs,
+    open_in_chrome,
+    parse_time,
+    run,
+)
+from pr_turn import Turn, TurnState, describe_turn, fetch_turns
 from tqdm import tqdm
 
-DEFAULT_REPO = "docling-project/docling"
 LABELS_HELP = f"""\
 labels for --label in {DEFAULT_REPO}:
 
@@ -110,7 +139,6 @@ APPROVAL_CONCLUSION = "action_required"
 MERGIFY_CHECK = "Mergify Merge Protections"
 GREEN_RESULTS = {"SUCCESS", "SKIPPED", "NEUTRAL"}
 FAILED_RESULTS = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"}
-MAINTAINER_ROLES = {"OWNER", "MEMBER", "COLLABORATOR"}
 READY_MERGE_STATES = {"CLEAN", "HAS_HOOKS"}
 CONFLICT_MARKER = "<!-- sync-prs:merge-conflict head={sha} -->"
 CONFLICT_MARKER_RE = re.compile(r"<!-- sync-prs:merge-conflict head=([0-9a-f]+) -->")
@@ -147,53 +175,15 @@ query($owner: String!, $name: String!, $size: Int!, $after: String, $labels: [St
 }
 """
 )
-VIEW_QUERY = (
-    PR_FRAGMENT
-    + """
-query($owner: String!, $name: String!, $number: Int!) {
-  repository(owner: $owner, name: $name) {
-    pullRequest(number: $number) { ...PrFields }
-  }
-}
-"""
-)
 # Status checks and files make the query heavy; large pages time out (502).
 PAGE_SIZE = 10
-GRAPHQL_ATTEMPTS = 3
 # GitHub computes mergeability on demand; ask again for UNKNOWN results.
 UNKNOWN_RETRY_DELAY_S = 5
 
 
-class Progress:
-    """Status lines and progress bars on stderr. ``--quiet`` turns them off.
-
-    The report goes to stdout, so ``> report.md`` gives a clean file.
-    """
-
-    quiet = False
-
-    @classmethod
-    def info(cls, message: str) -> None:
-        if not cls.quiet:
-            tqdm.write(
-                f"\N{BLACK RIGHT-POINTING SMALL TRIANGLE} {message}", file=sys.stderr
-            )
-
-    @classmethod
-    def bar(cls, total: int, desc: str) -> tqdm:
-        return tqdm(
-            total=total,
-            desc=desc,
-            unit="PR",
-            file=sys.stderr,
-            disable=cls.quiet,
-            dynamic_ncols=True,
-        )
-
-
 class Rank(str, Enum):
     READY = "ready to merge"
-    NEEDS_APPROVAL = "CI green, needs approval"
+    NEEDS_REVIEW = "CI green, needs review"
     CONFLICT = "merge conflict"
     OTHER = "other"
 
@@ -245,6 +235,7 @@ class PullRequest:
     ci_green: bool = False
     waiting_runs: list[WaitingRun] = field(default_factory=list)
     conflict_notice: ConflictNotice | None = None
+    turn: Turn | None = None
 
     @classmethod
     def from_graphql(cls, data: dict[str, Any]) -> PullRequest:
@@ -290,69 +281,9 @@ def parse_check(item: dict[str, Any]) -> Check:
 # --- GitHub access ---------------------------------------------------------
 
 
-def run(command: list[str], stdin: str | None = None) -> str:
-    result = subprocess.run(
-        command, input=stdin, check=True, capture_output=True, text=True
-    )
-    return result.stdout
-
-
-def gh_json(args: list[str]) -> Any:
-    return json.loads(run(["gh", *args]))
-
-
-def gh_api_list(path: str, key: str | None = None) -> list[dict[str, Any]]:
-    pages = gh_json(["api", "--paginate", "--slurp", path])
-    items: list[dict[str, Any]] = []
-    for page in pages:
-        items.extend(page[key] if key else page)
-    return items
-
-
-def parse_time(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-
-def graphql(query: str, **variables: str | int | list[str]) -> dict[str, Any]:
-    command = ["gh", "api", "graphql", "-f", f"query={query}"]
-    for key, value in variables.items():
-        if isinstance(value, list):
-            # gh sends key[]=item as a list. An empty list sends null: no filter.
-            for item in value:
-                command += ["-f", f"{key}[]={item}"]
-            continue
-        flag = "-F" if isinstance(value, int) else "-f"
-        command += [flag, f"{key}={value}"]
-    for attempt in range(1, GRAPHQL_ATTEMPTS + 1):
-        try:
-            return gh_json(command[1:])["data"]
-        except subprocess.CalledProcessError as exc:
-            # Heavy queries sometimes time out on GitHub (HTTP 502).
-            if attempt == GRAPHQL_ATTEMPTS or "HTTP 50" not in exc.stderr:
-                raise
-            error = exc.stderr.strip().splitlines()[-1]
-            Progress.info(
-                f"GitHub returned '{error}'. Try again"
-                f" ({attempt + 1}/{GRAPHQL_ATTEMPTS}) in {2 * attempt} s."
-            )
-            time.sleep(2 * attempt)
-    raise AssertionError("unreachable")
-
-
-def view_pr(repo: str, number: int) -> PullRequest:
-    owner, name = repo.split("/")
-    data = graphql(VIEW_QUERY, owner=owner, name=name, number=number)
-    return PullRequest.from_graphql(data["repository"]["pullRequest"])
-
-
 def view_prs(repo: str, numbers: list[int], desc: str) -> list[PullRequest]:
-    prs: list[PullRequest] = []
-    with Progress.bar(len(numbers), desc) as bar:
-        for number in numbers:
-            bar.set_postfix_str(f"#{number}")
-            prs.append(view_pr(repo, number))
-            bar.update(1)
-    return prs
+    nodes = graphql_prs(repo, numbers, PR_FRAGMENT, "PrFields", PAGE_SIZE, desc)
+    return [PullRequest.from_graphql(nodes[number]) for number in numbers]
 
 
 def fetch_open_prs(repo: str, limit: int, labels: list[str]) -> list[PullRequest]:
@@ -381,10 +312,6 @@ def fetch_open_prs(repo: str, limit: int, labels: list[str]) -> list[PullRequest
             after = {"after": str(page["pageInfo"]["endCursor"])}
             page_number += 1
     return prs
-
-
-def describe_labels(labels: list[str]) -> str:
-    return f" with label {' or '.join(labels)}" if labels else ""
 
 
 def list_prs(
@@ -504,7 +431,7 @@ def rank_pr(pr: PullRequest, required: set[str], base_approvals: int) -> None:
     elif pr.review_decision == "CHANGES_REQUESTED":
         pr.rank, pr.reason = Rank.OTHER, f"changes requested, {approvals}"
     elif missing_approvals > 0:
-        pr.rank = Rank.NEEDS_APPROVAL
+        pr.rank = Rank.NEEDS_REVIEW
         pr.reason = f"{approvals}, needs {missing_approvals} more"
     elif pr.merge_state not in READY_MERGE_STATES:
         # For example BLOCKED: unresolved review threads or a Mergify rule.
@@ -544,13 +471,6 @@ def read_conflict_notice(repo: str, number: int) -> ConflictNotice | None:
                 is_last_comment=index == len(comments) - 1,
             )
     return None
-
-
-def age(since: datetime) -> str:
-    hours = int((datetime.now(timezone.utc) - since).total_seconds() // 3600)
-    if hours < 1:
-        return "less than 1 h"
-    return f"{hours // 24} d" if hours >= 48 else f"{hours} h"
 
 
 def describe_notice(pr: PullRequest) -> str:
@@ -629,38 +549,6 @@ def approve_runs(repo: str, runs: list[WaitingRun]) -> list[str]:
     return errors
 
 
-CHROME_PROGRAMS = (
-    "google-chrome",
-    "google-chrome-stable",
-    "chromium",
-    "chromium-browser",
-    "chrome",
-)
-
-
-def open_in_chrome(urls: list[str]) -> None:
-    """Open a new Google Chrome window with one tab for each URL."""
-    if sys.platform == "darwin":
-        # -n passes --args also when Chrome already runs.
-        run(["open", "-na", "Google Chrome", "--args", "--new-window", *urls])
-        return
-    for name in CHROME_PROGRAMS:
-        program = shutil.which(name)
-        if program is None:
-            continue
-        # Chrome keeps running when it was not running before; do not wait.
-        subprocess.Popen(
-            [program, "--new-window", *urls],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        return
-    raise RuntimeError(
-        "Google Chrome or Chromium not found on PATH: " + ", ".join(CHROME_PROGRAMS)
-    )
-
-
 def handle_green_tabs(prs: list[PullRequest]) -> bool:
     """Open the PRs with green CI in Chrome. Return True if it worked."""
     order = list(Rank)
@@ -676,14 +564,23 @@ def handle_green_tabs(prs: list[PullRequest]) -> bool:
     except (RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"- error: {exc}", file=sys.stderr)
         return False
-    print("- opened, in the order: ready to merge, needs approval, other")
+    print("- opened, in the order: ready to merge, needs review, other")
     return True
 
 
-class HelpFormatter(
-    argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter
-):
-    """Keep the docstring layout and show the default of each option."""
+def handle_turn_tabs(turn_prs: list[PullRequest]) -> bool:
+    """Open the PRs of the maintainer's turn list in Chrome."""
+    print(f"\n## Open {len(turn_prs)} PR(s) of the maintainer's turn in Chrome\n")
+    if not turn_prs:
+        return True
+    Progress.info(f"Open a new Google Chrome window with {len(turn_prs)} tab(s).")
+    try:
+        open_in_chrome([pr.url for pr in turn_prs])
+    except (RuntimeError, subprocess.CalledProcessError) as exc:
+        print(f"- error: {exc}", file=sys.stderr)
+        return False
+    print("- opened, the longest wait first")
+    return True
 
 
 # --- Output ----------------------------------------------------------------
@@ -698,14 +595,67 @@ def save_metadata(cache_dir: Path, pr: PullRequest) -> None:
     )
 
 
+def maintainer_turns(
+    prs: list[PullRequest], maintainer: str | None
+) -> list[PullRequest]:
+    """Return the PRs where a maintainer must act again, longest wait first.
+
+    Drafts are not in the list. With ``maintainer``, keep only the PRs where
+    this maintainer acted.
+    """
+    waiting = [
+        (pr.turn.waiting_since, pr)
+        for pr in prs
+        if not pr.draft
+        and pr.turn is not None
+        and pr.turn.state is TurnState.MAINTAINER
+        and pr.turn.waiting_since is not None
+        and (maintainer is None or maintainer in pr.turn.maintainers)
+    ]
+    return [pr for _, pr in sorted(waiting, key=lambda item: item[0])]
+
+
+# Lists that the report splits by whose turn it is.
+SPLIT_BY_TURN = {Rank.NEEDS_REVIEW, Rank.OTHER}
+# The subsections of these lists, in this order.
+TURN_SUBSECTIONS = (
+    (TurnState.MAINTAINER, "Waits for maintainers to follow up"),
+    (TurnState.FIRST_REVIEW, "No review started"),
+    (TurnState.AUTHOR, "Author's turn"),
+    (TurnState.NOT_TRACKED, "Opened by a maintainer or a bot"),
+)
+
+
+def print_pr(pr: PullRequest, with_turn: bool = False) -> None:
+    print(f"- #{pr.number} {pr.title}")
+    print(f"  @{pr.author} · {pr.reason} · {pr.url}")
+    if with_turn and pr.turn is not None and pr.turn.last_maintainer is not None:
+        print(f"  {describe_turn(pr.turn)}")
+
+
+def print_turn_subsections(index: int, members: list[PullRequest]) -> None:
+    for sub, (state, title) in enumerate(TURN_SUBSECTIONS, start=1):
+        group = [pr for pr in members if pr.turn and pr.turn.state is state]
+        if state is TurnState.MAINTAINER:
+            # Longest wait first, like the "maintainer's turn again" list.
+            # Unlike that list, keep the drafts ("Other" has them).
+            group.sort(key=lambda pr: pr.turn.waiting_since if pr.turn else 0)
+        print(f"\n### {index}.{sub}. {title} ({len(group)})\n")
+        for pr in group:
+            print_pr(pr, with_turn=True)
+
+
 def print_lists(prs: list[PullRequest]) -> None:
     for index, rank in enumerate(Rank, start=1):
         members = [pr for pr in prs if pr.rank is rank]
         title = rank.value[0].upper() + rank.value[1:]
-        print(f"\n## {index}. {title} ({len(members)})\n")
+        print(f"\n## {index}. {title} ({len(members)})")
+        if rank in SPLIT_BY_TURN:
+            print_turn_subsections(index, members)
+            continue
+        print()
         for pr in members:
-            print(f"- #{pr.number} {pr.title}")
-            print(f"  @{pr.author} · {pr.reason} · {pr.url}")
+            print_pr(pr)
 
 
 def handle_conflicts(repo: str, prs: list[PullRequest]) -> bool:
@@ -811,6 +761,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Open a new Google Chrome window with a tab for each PR with green CI.",
     )
     parser.add_argument(
+        "--open-maintainer-turn-in-tabs",
+        action="store_true",
+        help="Open a new Google Chrome window with a tab for each PR where it is"
+        " the turn of a maintainer again.",
+    )
+    parser.add_argument(
+        "--maintainer",
+        default=None,
+        help="Only list the maintainer's-turn PRs where this maintainer acted."
+        " Use @me for your gh login.",
+    )
+    parser.add_argument(
         "--quiet",
         action="store_true",
         help="Do not show status lines and progress bars on stderr.",
@@ -822,6 +784,11 @@ def main(argv: list[str] | None = None) -> int:
     started = time.monotonic()
     numbers: list[int] = args.numbers or []
     labels: list[str] = args.labels or []
+    maintainer: str | None = args.maintainer
+    if maintainer == "@me":
+        maintainer = gh_login()
+    elif maintainer is not None:
+        maintainer = maintainer.removeprefix("@")
 
     repo_root = Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
     cache_dir = args.cache_dir
@@ -867,6 +834,17 @@ def main(argv: list[str] | None = None) -> int:
             f"{notified} of {len(conflicts)} PR(s) already have a notification."
         )
 
+    Progress.info(f"Read the timeline of {len(prs)} PR(s) to find whose turn it is.")
+    turns = fetch_turns(args.repo, [pr.number for pr in prs])
+    for pr in prs:
+        pr.turn = turns[pr.number]
+    counts = ", ".join(
+        f"{sum(pr.turn is not None and pr.turn.state is state for pr in prs)}"
+        f" {state.value}"
+        for state in TurnState
+    )
+    Progress.info(f"Turns: {counts}.")
+
     for pr in prs:
         save_metadata(cache_dir, pr)
     Progress.info(f"Saved the pr.json files to {cache_dir}.")
@@ -874,6 +852,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"# {len(prs)} open PR(s) in {args.repo}{describe_labels(labels)}")
     print(f"Metadata: {cache_dir}/<number>/pr.json")
     print_lists(prs)
+    turn_prs = maintainer_turns(prs, maintainer)
+    where = f", where @{maintainer} acted" if maintainer else ""
+    print(f"\n## Maintainer's turn again{where} ({len(turn_prs)})\n")
+    for pr in turn_prs:
+        print_pr(pr, with_turn=True)
 
     ok = True
     if args.comment_conflicts:
@@ -881,6 +864,8 @@ def main(argv: list[str] | None = None) -> int:
     ok = handle_waiting_ci(args.repo, prs, args.approve_ci) and ok
     if args.open_ci_greens_in_tabs:
         ok = handle_green_tabs(prs) and ok
+    if args.open_maintainer_turn_in_tabs:
+        ok = handle_turn_tabs(turn_prs) and ok
     Progress.info(f"Done in {time.monotonic() - started:.0f} s.")
     return 0 if ok else 1
 

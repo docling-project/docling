@@ -732,6 +732,31 @@ def test_latex_legacy_font_switches():
     assert "Normal content here" in md
 
 
+def test_latex_verb_keeps_braces_and_spaces():
+    """Test \\verb content keeps its own braces, in body text and in headings."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \section{The \verb|{x}| key}
+    Start a section with \verb|\section{Intro}| and write an empty group as \verb|{}|.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY]
+    assert texts == [
+        "The {x} key",
+        "Start a section with \\section{Intro} and write an empty group as {}.",
+    ]
+
+
 def test_latex_accent_macro():
     """Test accent macros (\\'{e}, \\`{a}) are converted to Unicode characters."""
     latex_content = rb"""

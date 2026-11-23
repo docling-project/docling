@@ -20,9 +20,10 @@ Scripts that GitHub workflows call (triage, release, CI helpers) live in
 See [`tools/README.md`](tools/README.md) for the details.
 
 - `sync_prs.py`: rank the open PRs (ready to merge, CI green but needs
-  approval, merge conflict, other). It can also ask authors to resolve merge
-  conflicts, and it can approve the waiting CI runs of PRs that have the
-  label `ai:ci-safe`.
+  review, merge conflict, other) and find whose turn it is on each PR. It
+  can also ask authors to resolve merge conflicts, and it can approve the
+  waiting CI runs of PRs that have the label `ai:ci-safe`.
+- `pr_turn.py` and `gh_helpers.py`: shared modules of the tools.
 
 ## `benchmarking/`
 

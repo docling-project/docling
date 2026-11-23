@@ -28,6 +28,12 @@ from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.table_spans import (
+    MAX_COLSPAN,
+    MAX_ROWSPAN,
+    clamp_span,
+    table_width,
+)
 from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -66,6 +72,10 @@ _CELL_SPAN_RE: Final = re.compile(r"(?P<col>\d+)?(?:\.(?P<row>\d+))?\+")
 # Asciidoctor takes one span or one factor per cell and keeps "2*3+" as text;
 # Docling drops it as a specifier, as it did before the factor was read.
 _CELL_REPEAT_RE: Final = re.compile(r"(?P<repeat>\d+)\*(?![\d.])")
+# The copies of one table that "*" factors add beyond the cells as written. A
+# factor makes at most one copy for each column of the table, and the factors
+# that do not fit into this limit write their cell once.
+_MAX_TABLE_CELL_COPIES: Final = 100_000
 # An ordered marker with a letter has one letter only ("a.", "B."), so a line
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
@@ -1273,11 +1283,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         for spec, text in zip(specs, texts):
             span = _CELL_SPAN_RE.match(spec)
             repeat = _CELL_REPEAT_RE.match(spec)
+            cols, rows = (span.group("col"), span.group("row")) if span else ("", "")
             cells.append(
                 _TableCellSource(
                     text=text.replace("\\|", "|").strip(),
-                    col_span=int(span.group("col") or 1) if span else 1,
-                    row_span=int(span.group("row") or 1) if span else 1,
+                    col_span=clamp_span(int(cols or 1), MAX_COLSPAN),
+                    row_span=clamp_span(int(rows or 1), MAX_ROWSPAN),
                     repeat=int(repeat.group("repeat")) if repeat else 1,
                 )
             )
@@ -1334,31 +1345,47 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         row on its own stays one row, also when it is wider. Columns that a
         rowspan from a row above covers count as filled. A cell with a "3*"
         factor counts as three cells, expanded only here so that a line
-        continuing its text applies to every copy.
+        continuing its text applies to every copy. A factor makes at most one
+        copy for each column of the table (see ``_MAX_TABLE_CELL_COPIES``).
         """
         if not table_data:
             return []
-        table_data = [
-            [replace(cell, repeat=1) for cell in line for _ in range(cell.repeat)]
-            for line in table_data
-        ]
-        num_cols = num_cols or sum(cell.col_span for cell in table_data[0])
+        copy_limit = clamp_span(
+            num_cols or sum(cell.col_span * cell.repeat for cell in table_data[0]),
+            MAX_COLSPAN,
+        )
+        copies_left = _MAX_TABLE_CELL_COPIES
+        expanded: list[list[_TableCellSource]] = []
+        for line in table_data:
+            line_cells: list[_TableCellSource] = []
+            for cell in line:
+                repeat = min(cell.repeat, copy_limit)
+                repeat = repeat if repeat - 1 <= copies_left else 1
+                copies_left -= repeat - 1
+                line_cells.extend(replace(cell, repeat=1) for _ in range(repeat))
+            expanded.append(line_cells)
+        num_cols = num_cols or sum(cell.col_span for cell in expanded[0])
         rows: list[list[_TableCellSource]] = []
-        covered: dict[int, int] = {}
+        # The columns that rowspans from rows above cover in the current row,
+        # and the columns that they stop covering, by row.
+        covered = 0
+        freed: dict[int, int] = {}
         row: list[_TableCellSource] = []
         width = 0
 
         def close_row() -> None:
-            nonlocal row, width
+            nonlocal row, width, covered
             for cell in row:
-                for offset in range(1, cell.row_span):
-                    target = len(rows) + offset
-                    covered[target] = covered.get(target, 0) + cell.col_span
+                if cell.row_span > 1:
+                    covered += cell.col_span
+                    end = len(rows) + cell.row_span
+                    freed[end] = freed.get(end, 0) + cell.col_span
             rows.append(row)
+            covered -= freed.pop(len(rows), 0)
             row, width = [], 0
 
-        for line_cells in table_data:
-            needed = num_cols - covered.get(len(rows), 0)
+        for line_cells in expanded:
+            needed = num_cols - covered
             if not row and sum(cell.col_span for cell in line_cells) >= needed:
                 row = list(line_cells)
                 close_row()
@@ -1366,7 +1393,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             for cell in line_cells:
                 row.append(cell)
                 width += cell.col_span
-                if width >= num_cols - covered.get(len(rows), 0):
+                if width >= num_cols - covered:
                     close_row()
         if row:
             close_row()
@@ -1382,22 +1409,25 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         A cell takes the first column of its row that no cell to its left and
         no rowspan from a row above already covers. A rowspan is cut at the
-        last row of the table.
+        last row of the table, and a colspan at its last column.
         """
         rows = cls._group_table_rows(table_data, num_cols)
         num_rows = len(rows)
-        occupied: set[tuple[int, int]] = set()
+        width = table_width(
+            [[(source.col_span, source.row_span) for source in row] for row in rows]
+        )
+        # The row, exclusive, until which a cell placed so far covers a column.
+        covered_until: dict[int, int] = {}
         cells: list[TableCell] = []
         for row_idx, row in enumerate(rows):
             col_idx = 0
             for source in row:
-                while (row_idx, col_idx) in occupied:
+                while covered_until.get(col_idx, 0) > row_idx:
                     col_idx += 1
-                row_span = min(source.row_span, num_rows - row_idx)
-                col_span = source.col_span
-                for r in range(row_idx, row_idx + row_span):
-                    for c in range(col_idx, col_idx + col_span):
-                        occupied.add((r, c))
+                row_span = clamp_span(source.row_span, num_rows - row_idx)
+                col_span = clamp_span(source.col_span, width - col_idx)
+                for c in range(col_idx, col_idx + col_span):
+                    covered_until[c] = max(covered_until.get(c, 0), row_idx + row_span)
                 cells.append(
                     TableCell(
                         text=source.text,

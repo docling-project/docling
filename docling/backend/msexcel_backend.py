@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import bisect
 import collections
 import logging
 import posixpath
 import re
 import shutil
 import warnings
+from collections.abc import Iterator
 from copy import deepcopy
 from datetime import date, datetime, time, timezone
 from decimal import ROUND_HALF_UP, Decimal, localcontext
@@ -58,6 +60,7 @@ from docling.backend.docx.drawingml.utils import (
     convert_to_modern_format,
     crop_whitespace,
     get_docx_to_pdf_converter,
+    render_pdf_page_as_pil,
 )
 from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
@@ -71,22 +74,19 @@ from docling.backend.utils.charts import (
     datetime_to_iso,
 )
 from docling.backend.utils.image import normalize_image_for_png
+from docling.backend.utils.table_spans import clamp_span
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    RASTER_IMAGE_FORMATS,
+    is_metafile,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
-
-# pypdfium2 ships with the PDF extras, not with format-xlsx, and is only reached
-# through the LibreOffice converter below. `get_docx_to_pdf_converter` returns
-# None when it is missing, so the rendering paths already degrade to "no image";
-# this guard only keeps the module itself importable.
-# See https://github.com/docling-project/docling/issues/3613.
-try:  # pragma: no cover - import-time guard
-    import pypdfium2
-except ImportError:  # pragma: no cover - import-time guard
-    pass
 
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
@@ -348,22 +348,55 @@ _NS_RICH_DATA: Final = "http://schemas.microsoft.com/office/spreadsheetml/2017/r
 _NS_RICH_VALUE_REL: Final = (
     "http://schemas.microsoft.com/office/spreadsheetml/2022/richvaluerel"
 )
+_NS_WEB_IMAGE: Final = (
+    "http://schemas.microsoft.com/office/spreadsheetml/2020/richdatawebimage"
+)
 _RICH_DATA_NAMESPACES: Final = {
     "m": _NS_MAIN,
     "rd": _NS_RICH_DATA,
     "rvrel": _NS_RICH_VALUE_REL,
+    "wi": _NS_WEB_IMAGE,
 }
 _R_ID: Final = f"{{{_NS_REL}}}id"
 
-# Workbook parts that hold the images placed in cells, by the last segment of
-# their relationship type: the namespace part differs between Excel versions.
+# Workbook parts that every kind of image in a cell needs, by the last segment
+# of their relationship type: the namespace part differs between Excel versions.
 _RICH_DATA_PARTS: Final = frozenset(
-    {"sheetMetadata", "rdRichValue", "rdRichValueStructure", "richValueRel"}
+    {"sheetMetadata", "rdRichValue", "rdRichValueStructure"}
 )
 
 
+class _RichImageKind(NamedTuple):
+    """Describes where a rich value structure stores its images.
+
+    Attributes:
+        part: The last segment of the relationship type of the part with the images.
+        position_key: The rich value key with the position of the image in the part.
+        entry_path: The path to the entries of the part.
+        id_path: The path from an entry to the node with the relationship id.
+    """
+
+    part: str
+    position_key: str
+    entry_path: str
+    id_path: str
+
+
+# "Place in Cell" images use the first structure and images from the `IMAGE()`
+# function use the second. A workbook has the part of at least one of them.
+_RICH_IMAGE_KINDS: Final = {
+    "_localImage": _RichImageKind(
+        "richValueRel", "_rvRel:LocalImageIdentifier", "rvrel:rel", "."
+    ),
+    "_webimage": _RichImageKind(
+        "rdRichValueWebImage", "WebImageIdentifier", "wi:webImageSrd", "wi:blip"
+    ),
+}
+_RICH_IMAGE_PARTS: Final = frozenset(kind.part for kind in _RICH_IMAGE_KINDS.values())
+
+
 class ExcelCellImage(NamedTuple):
-    """Represents an image placed in a cell ("Place in Cell" in Excel).
+    """Represents an image placed in a cell ("Place in Cell" or `IMAGE()` in Excel).
 
     Attributes:
         target: The archive member of the image, e.g. ``xl/media/image1.png``.
@@ -384,7 +417,9 @@ def _read_xml(zip_file: ZipFile, member: str, max_bytes: int) -> etree._Element:
 def _rich_data_parts(
     workbook_rels: RelationshipList | dict[str, Relationship],
 ) -> dict[str, str] | None:
-    """Return the rich-data parts of a workbook, or None if any is missing.
+    """Return the rich-data parts of a workbook, or None if it cannot hold images.
+
+    All of `_RICH_DATA_PARTS` and at least one of `_RICH_IMAGE_PARTS` must exist.
 
     Args:
         workbook_rels: openpyxl's relationships of the workbook part. At
@@ -398,8 +433,46 @@ def _rich_data_parts(
         name: rel.target
         for rel in relationships
         if (name := rel.Type.rsplit("/", 1)[-1]) in _RICH_DATA_PARTS
+        or name in _RICH_IMAGE_PARTS
     }
-    return parts if parts.keys() == _RICH_DATA_PARTS else None
+    if _RICH_DATA_PARTS <= parts.keys() and _RICH_IMAGE_PARTS & parts.keys():
+        return parts
+    return None
+
+
+def _image_rels(zip_file: ZipFile, part: str) -> dict[str, str]:
+    """Return the image members that a rich-data part refers to, by relationship id."""
+    rels_path = get_rels_path(part)
+    if rels_path not in zip_file.NameToInfo:
+        return {}
+    return {
+        rel.Id: rel.target
+        for rel in get_dependents(zip_file, rels_path)
+        if rel.Type == IMAGE_NS and rel.Id is not None
+    }
+
+
+def _rich_image_targets(
+    zip_file: ZipFile, parts: dict[str, str], kind: _RichImageKind, max_bytes: int
+) -> dict[int, str]:
+    """Return the image members of one kind of image, by the position in its part.
+
+    An entry without an image, such as a web image without a blip, still has a
+    position.
+    """
+    part = parts.get(kind.part)
+    if part is None:
+        return {}
+    rels = _image_rels(zip_file, part)
+    entries = _read_xml(zip_file, part, max_bytes).iterfind(
+        kind.entry_path, _RICH_DATA_NAMESPACES
+    )
+    return {
+        position: target
+        for position, entry in enumerate(entries)
+        if (node := entry.find(kind.id_path, _RICH_DATA_NAMESPACES)) is not None
+        and (target := rels.get(node.get(_R_ID) or "")) is not None
+    }
 
 
 def _rich_value_images(
@@ -415,8 +488,14 @@ def _rich_value_images(
                    -> rdrichvalue rv -> rdrichvaluestructure "_localImage"
                    -> richValueRel rel -> image member
 
-    Only rich values with the ``_localImage`` structure are images. Other rich
-    values, such as linked data types, are not returned.
+    An image from the ``IMAGE()`` function has the ``_webimage`` structure. Excel
+    stores the downloaded image in the file::
+
+        rdrichvalue rv -> rdrichvaluestructure "_webimage"
+                       -> rdRichValueWebImage webImageSrd blip -> image member
+
+    Only rich values with these structures are images. Other rich values, such
+    as linked data types, are not returned.
 
     Args:
         zip_file: The open XLSX archive.
@@ -447,20 +526,10 @@ def _rich_value_images(
             zip_file, parts["rdRichValueStructure"], max_bytes
         ).iterfind("rd:s", ns)
     ]
-    rel_ids = [
-        node.get(_R_ID)
-        for node in _read_xml(zip_file, parts["richValueRel"], max_bytes).iterfind(
-            "rvrel:rel", ns
-        )
-    ]
-    image_targets: dict[str, str] = {}
-    rel_list_rels = get_rels_path(parts["richValueRel"])
-    if rel_list_rels in zip_file.NameToInfo:
-        image_targets = {
-            rel.Id: rel.target
-            for rel in get_dependents(zip_file, rel_list_rels)
-            if rel.Type == IMAGE_NS and rel.Id is not None
-        }
+    image_targets = {
+        kind: _rich_image_targets(zip_file, parts, kind, max_bytes)
+        for kind in _RICH_IMAGE_KINDS.values()
+    }
 
     images: dict[int, ExcelCellImage] = {}
     rich_values = _read_xml(zip_file, parts["rdRichValue"], max_bytes)
@@ -469,13 +538,11 @@ def _rich_value_images(
         if not 0 <= structure < len(structures):
             continue
         structure_type, keys = structures[structure]
-        if structure_type != "_localImage":
+        kind = _RICH_IMAGE_KINDS.get(structure_type or "")
+        if kind is None:
             continue
         fields = dict(zip(keys, (v.text or "" for v in node.iterfind("rd:v", ns))))
-        rel_index = int(fields.get("_rvRel:LocalImageIdentifier", "-1"))
-        if not 0 <= rel_index < len(rel_ids):
-            continue
-        target = image_targets.get(rel_ids[rel_index] or "")
+        target = image_targets[kind].get(int(fields.get(kind.position_key, "-1")))
         if target is not None:
             images[index] = ExcelCellImage(target, fields.get("Text") or None)
 
@@ -598,38 +665,55 @@ class DataRegion:
         return self.max_row - self.min_row + 1
 
 
+# A merged range can reach past the cells with values, for example a section
+# label merged across all 16,384 columns of a row. The table detection treats the
+# covered cells as content, so such a range widens a table to its own size. The
+# covered cells outside the cells with values are kept up to this limit for each
+# worksheet; a range that does not fit is clipped to the cells with values, the
+# same way ``_RangeBudget`` clips ranges while a workbook loads.
+_MAX_MERGED_CELLS_OUTSIDE_DATA: Final[int] = 1_000
+
+
 class _MergedCellIndex:
     """Index merged-cell anchors without expanding their coordinate ranges."""
 
-    def __init__(self, sheet: Worksheet) -> None:
+    def __init__(self, sheet: Worksheet, value_bounds: DataRegion | None) -> None:
         self._anchor_spans: dict[tuple[int, int], tuple[int, int]] = {}
 
         min_row: int | None = None
         min_col: int | None = None
         max_row = 0
         max_col = 0
+        remaining = _MAX_MERGED_CELLS_OUTSIDE_DATA
 
         for merged_range in sheet.merged_cells.ranges:
-            anchor = (merged_range.min_row - 1, merged_range.min_col - 1)
-            self._anchor_spans.setdefault(
-                anchor,
-                (
-                    merged_range.max_row - merged_range.min_row + 1,
-                    merged_range.max_col - merged_range.min_col + 1,
-                ),
+            region = DataRegion(
+                merged_range.min_row,
+                merged_range.max_row,
+                merged_range.min_col,
+                merged_range.max_col,
             )
+            if value_bounds is not None:
+                outside = _cells_outside(region, value_bounds)
+                if outside <= remaining:
+                    remaining -= outside
+                else:
+                    region = DataRegion(
+                        region.min_row,
+                        max(region.min_row, min(region.max_row, value_bounds.max_row)),
+                        region.min_col,
+                        max(region.min_col, min(region.max_col, value_bounds.max_col)),
+                    )
+            anchor = (region.min_row - 1, region.min_col - 1)
+            self._anchor_spans.setdefault(anchor, (region.height(), region.width()))
             min_row = (
-                merged_range.min_row
-                if min_row is None
-                else min(min_row, merged_range.min_row)
+                region.min_row if min_row is None else min(min_row, region.min_row)
             )
             min_col = (
-                merged_range.min_col
-                if min_col is None
-                else min(min_col, merged_range.min_col)
+                region.min_col if min_col is None else min(min_col, region.min_col)
             )
-            max_row = max(max_row, merged_range.max_row)
-            max_col = max(max_col, merged_range.max_col)
+            max_row = max(max_row, region.max_row)
+            max_col = max(max_col, region.max_col)
 
         self.bounds = (
             DataRegion(min_row, max_row, min_col, max_col)
@@ -706,6 +790,14 @@ class _RangeBudget:
             covered = 0
         self._remaining -= covered
         return region
+
+
+def _cells_outside(region: DataRegion, bounds: DataRegion) -> int:
+    """Return the number of cells of a range that are outside ``bounds``."""
+    rows = min(region.max_row, bounds.max_row) - max(region.min_row, bounds.min_row)
+    cols = min(region.max_col, bounds.max_col) - max(region.min_col, bounds.min_col)
+    inside = (rows + 1) * (cols + 1) if rows >= 0 and cols >= 0 else 0
+    return region.width() * region.height() - inside
 
 
 def _covered_cells(region: DataRegion) -> int:
@@ -892,6 +984,119 @@ def _load_workbook(filename: str | BytesIO) -> ExcelReader:
     return reader
 
 
+class _TableRect(NamedTuple):
+    """A rectangle of worksheet cells, with 0-based inclusive bounds."""
+
+    min_row: int
+    max_row: int
+    min_col: int
+    max_col: int
+
+
+# A table holds all positions of its bounding box, so that gaps keep the layout,
+# and each empty position becomes a table cell. A region whose empty positions
+# are at most this many times its cells with content is kept as one table.
+_TABLE_FILL_RATIO: Final[int] = 4
+# The empty positions above that ratio, which the tables of one workbook can
+# hold. A region that does not fit is split into smaller rectangles, so that a
+# sparse region, such as a staircase of values or a long row next to a narrow
+# table, cannot make the tables hold one cell for each position of a very large
+# bounding box.
+_MAX_TABLE_FILL_CELLS: Final[int] = 100_000
+
+
+class _TableFillBudget:
+    """Limit the empty positions that the tables of one workbook hold."""
+
+    def __init__(self, cells: int) -> None:
+        self._remaining = cells
+
+    def fit(self, *, empty: int, content: int) -> bool:
+        """Return whether a region fits, and take its empty positions if so."""
+        extra = empty - _TABLE_FILL_RATIO * content
+        if extra <= 0:
+            return True
+        if extra > self._remaining:
+            return False
+        self._remaining -= extra
+        return True
+
+
+def _split_table_region(
+    cells: set[tuple[int, int]], gap_tolerance: int
+) -> list[_TableRect]:
+    """Split a region of cells into rectangles with few empty positions.
+
+    Consecutive rows join one rectangle while its empty positions stay within
+    ``_TABLE_FILL_RATIO`` times its cells. A single row that does not satisfy
+    the ratio is split at its gaps wider than ``gap_tolerance``. The empty
+    positions of all rectangles are thus proportional to the cells.
+    """
+    cols_by_row: dict[int, list[int]] = {}
+    for row, col in cells:
+        cols_by_row.setdefault(row, []).append(col)
+
+    rects: list[_TableRect] = []
+    first_cols: list[int] = []
+    band: _TableRect | None = None
+    count = 0
+
+    def close() -> None:
+        if band is None:
+            return
+        area = (band.max_row + 1 - band.min_row) * (band.max_col + 1 - band.min_col)
+        if area - count <= _TABLE_FILL_RATIO * count:
+            rects.append(band)
+            return
+        # Only a single row can break the ratio: split it into runs of columns.
+        start = prev = first_cols[0]
+        for col in first_cols[1:]:
+            if col - prev > gap_tolerance + 1:
+                rects.append(_TableRect(band.min_row, band.max_row, start, prev))
+                start = col
+            prev = col
+        rects.append(_TableRect(band.min_row, band.max_row, start, prev))
+
+    for row in sorted(cols_by_row):
+        cols = sorted(cols_by_row[row])
+        if band is not None:
+            grown = _TableRect(
+                band.min_row,
+                row,
+                min(band.min_col, cols[0]),
+                max(band.max_col, cols[-1]),
+            )
+            grown_count = count + len(cols)
+            area = (grown.max_row + 1 - grown.min_row) * (
+                grown.max_col + 1 - grown.min_col
+            )
+            if area - grown_count <= _TABLE_FILL_RATIO * grown_count:
+                band, count = grown, grown_count
+                continue
+            close()
+        band = _TableRect(row, row, cols[0], cols[-1])
+        count = len(cols)
+        first_cols = cols
+    close()
+    return rects
+
+
+def _value_cells_in(
+    value_cols: dict[int, list[int]], table: ExcelTable
+) -> Iterator[tuple[int, int]]:
+    """Yield the 0-based cells with a value inside the rectangle of a table."""
+    min_col, min_row = table.anchor
+    max_col = min_col + table.num_cols - 1
+    for row in range(min_row, min_row + table.num_rows):
+        cols = value_cols.get(row)
+        if not cols:
+            continue
+        start = bisect.bisect_left(cols, min_col)
+        stop = bisect.bisect_right(cols, max_col)
+        for col in cols[start:stop]:
+            yield row, col
+
+
 class ExcelCell(BaseModel):
     """Represents an Excel cell.
 
@@ -1008,6 +1213,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # several cells is decoded once.
         self._cell_image_refs: dict[str, ImageRef | None] = {}
 
+        self._table_fill_budget = _TableFillBudget(_MAX_TABLE_FILL_CELLS)
         self.workbook = None
         try:
             self._check_archive_limits()
@@ -1571,17 +1777,18 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             ),
         )
 
+    @staticmethod
     def _find_true_data_bounds(
-        self, sheet: Worksheet, merged_cell_index: _MergedCellIndex
+        value_bounds: DataRegion | None, merged_cell_index: _MergedCellIndex
     ) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in a worksheet.
 
-        This function scans all cells to find the smallest rectangular region that contains
-        all non-empty cells or merged cell ranges. It returns the minimal and maximal
-        row/column indices that bound the actual data region.
+        The boundaries are the smallest rectangle that contains all non-empty
+        cells and all merged cell ranges, as the merged-cell index clips them.
 
         Args:
-            sheet: The worksheet to analyze.
+            value_bounds: The smallest region that holds all cells with a value,
+                or None if no cell has a value.
             merged_cell_index: Index containing merged-cell anchors, spans, and
                 bounds for the worksheet.
 
@@ -1589,38 +1796,19 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             A data region representing the smallest rectangle that covers all data and merged cells.
             If the sheet is empty, returns (1, 1, 1, 1) by default.
         """
-        min_row, min_col = None, None
-        max_row, max_col = 0, 0
-
-        for cell in sheet._cells.values():
-            if cell.value is not None:
-                r, c = cell.row, cell.column
-                min_row = r if min_row is None else min(min_row, r)
-                min_col = c if min_col is None else min(min_col, c)
-                max_row = max(max_row, r)
-                max_col = max(max_col, c)
-
-        # Expand bounds to include merged cells without scanning all ranges again.
-        if merged_cell_index.bounds is not None:
-            merged_bounds = merged_cell_index.bounds
-            min_row = (
-                merged_bounds.min_row
-                if min_row is None
-                else min(min_row, merged_bounds.min_row)
-            )
-            min_col = (
-                merged_bounds.min_col
-                if min_col is None
-                else min(min_col, merged_bounds.min_col)
-            )
-            max_row = max(max_row, merged_bounds.max_row)
-            max_col = max(max_col, merged_bounds.max_col)
-
-        # If no data found, default to (1, 1, 1, 1)
-        if min_row is None or min_col is None:
-            min_row = min_col = max_row = max_col = 1
-
-        return DataRegion(min_row, max_row, min_col, max_col)
+        regions = [
+            region
+            for region in (value_bounds, merged_cell_index.bounds)
+            if region is not None
+        ]
+        if not regions:
+            return DataRegion(1, 1, 1, 1)
+        return DataRegion(
+            min(region.min_row for region in regions),
+            max(region.max_row for region in regions),
+            min(region.min_col for region in regions),
+            max(region.max_col for region in regions),
+        )
 
     def _find_data_tables(
         self, sheet: Worksheet
@@ -1641,8 +1829,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 - A dict mapping (row, col) to the (author, comment_text, timestamp)
                   tuples of the comment thread on that cell
         """
-        merged_cell_index = _MergedCellIndex(sheet)
-        bounds = self._find_true_data_bounds(sheet, merged_cell_index)
+        value_bounds = _value_bounds(sheet)
+        merged_cell_index = _MergedCellIndex(sheet, value_bounds)
+        bounds = self._find_true_data_bounds(value_bounds, merged_cell_index)
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
@@ -1656,12 +1845,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # Limit scan to actual data bounds
         # Iterate existing cells only: sheet.iter_rows() creates empty cells.
         # sorted() keeps row-major order; its O(N log N) cost is accepted, so keep it.
-        for row_1, col_1 in sorted(
+        coords = sorted(
             coord
             for coord in sheet._cells
             if bounds.min_row <= coord[0] <= bounds.max_row
             and bounds.min_col <= coord[1] <= bounds.max_col
-        ):
+        )
+        # The 0-based columns of the cells with a value, by 0-based row, in
+        # ascending order. They mark the cells inside a found table as visited
+        # without a walk over each position of the table.
+        value_cols: dict[int, list[int]] = {}
+        for row_1, col_1 in coords:
+            if sheet._cells[(row_1, col_1)].value is not None:
+                value_cols.setdefault(row_1 - 1, []).append(col_1 - 1)
+
+        for row_1, col_1 in coords:
             cell = sheet._cells[(row_1, col_1)]
             ri, rj = row_1 - 1, col_1 - 1
             # Collect comment if present
@@ -1688,7 +1886,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 continue
 
             # If the cell starts a new table, find its bounds
-            table_bounds, visited_cells = self._find_table_bounds(
+            found = self._find_table_bounds(
                 sheet,
                 start_row=ri,
                 start_col=rj,
@@ -1697,8 +1895,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 merged_cell_index=merged_cell_index,
                 cell_images=cell_images,
             )
-            visited.update(visited_cells)  # Mark these cells as visited
-            tables.append(table_bounds)
+            # A table holds all cells of its rectangle, including disconnected
+            # cells with a value. Mark them as visited so they are not emitted
+            # again as duplicate fragment tables.
+            for table in found:
+                visited.update(_value_cells_in(value_cols, table))
+            tables.extend(found)
 
         return tables, comment_map
 
@@ -1712,7 +1914,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         max_col: int,
         merged_cell_index: _MergedCellIndex,
         cell_images: dict[tuple[int, int], ExcelCellImage],
-    ) -> tuple[ExcelTable, set[tuple[int, int]]]:
+    ) -> list[ExcelTable]:
         """Determine table bounds using a Flood Fill (BFS) strategy.
 
         This method identifies contiguous regions of non-empty cells in an Excel worksheet
@@ -1725,6 +1927,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         2. Data Extraction: Builds a rectangular bounding box and extracts cell data,
            handling merged cells appropriately
 
+        The bounding box holds an empty cell for each gap. If these gaps do not
+        fit into the table fill budget of the workbook, the region is split into
+        smaller rectangles (see ``_split_table_region``).
+
         Args:
             sheet: The Excel worksheet to analyze.
             start_row: The starting row index (0-based) for the flood fill.
@@ -1734,11 +1940,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             cell_images: The images placed in cells, by 0-based (row, col).
 
         Returns:
-            A tuple containing:
-                - ExcelTable: An object representing the detected table with its anchor
-                  position, dimensions, and cell data.
-                - set[tuple[int, int]]: A set of (row, col) tuples representing all cells
-                  that were visited during the flood fill, used to prevent re-scanning.
+            The detected tables with their anchor position, dimensions, and cell
+            data: one table for the bounding box of the region, or one table for
+            each rectangle of a split region.
 
         Note:
             The method respects the GAP_TOLERANCE option, which allows cells separated by
@@ -1808,18 +2012,40 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         break
 
         # --- Phase 2: Extract Data (Semantic Grid) ---
+        content = len(table_cells)
+        empty = (max_r + 1 - min_r) * (max_c + 1 - min_c) - content
+        if self._table_fill_budget.fit(empty=empty, content=content):
+            rects = [_TableRect(min_r, max_r, min_c, max_c)]
+        else:
+            rects = _split_table_region(table_cells, GAP_TOLERANCE)
+            _log.warning(
+                "Split a table region of %d x %d cells into %d tables: "
+                "the tables of the workbook hold more than %d empty cells",
+                max_r + 1 - min_r,
+                max_c + 1 - min_c,
+                len(rects),
+                _MAX_TABLE_FILL_CELLS,
+            )
+        return [
+            self._extract_table(sheet, rect, merged_cell_index, cell_images)
+            for rect in rects
+        ]
+
+    @staticmethod
+    def _extract_table(
+        sheet: Worksheet,
+        rect: _TableRect,
+        merged_cell_index: _MergedCellIndex,
+        cell_images: dict[tuple[int, int], ExcelCellImage],
+    ) -> ExcelTable:
+        """Extract the cells of a rectangle of a worksheet as a table.
+
+        Gaps inside the rectangle become empty cells, which keeps the layout.
+        The spans of merged cells are clipped to the rectangle.
+        """
         data = []
-
-        # We iterate the bounding box of the found region
-        # Gaps inside the bounding box become empty cells (preserving layout)
-        for ri in range(min_r, max_r + 1):
-            for rj in range(min_c, max_c + 1):
-                # If this cell was part of the flood-fill OR is inside the bounds
-                # (We include gaps inside the bounds to keep the table rectangular)
-
-                # Logic: If we found a "U" shape, do we fill the middle?
-                # Yes, Excel tables are typically treated as rectangular bounding boxes.
-
+        for ri in range(rect.min_row, rect.max_row + 1):
+            for rj in range(rect.min_col, rect.max_col + 1):
                 cell = sheet._cells.get((ri + 1, rj + 1))
                 if cell is not None and merged_cell_index.is_shadow(cell):
                     continue
@@ -1837,36 +2063,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     else _displayed_cell_text(cell)
                 )
 
-                # Compute Spans
                 row_span, col_span = merged_cell_index.span_at(ri, rj)
 
                 data.append(
                     ExcelCell(
-                        row=ri - min_r,
-                        col=rj - min_c,
+                        row=ri - rect.min_row,
+                        col=rj - rect.min_col,
                         text=cell_text,
-                        row_span=row_span,
-                        col_span=col_span,
+                        row_span=clamp_span(row_span, rect.max_row + 1 - ri),
+                        col_span=clamp_span(col_span, rect.max_col + 1 - rj),
                         image=image,
                     )
                 )
 
-        # The extracted table is the full rectangular bounding box, including
-        # gaps and disconnected non-empty cells inside that rectangle. Mark the
-        # same rectangle as visited so those cells are not scanned again and
-        # emitted as duplicate fragment tables.
-        visited_cells = {
-            (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
-        }
-
-        return (
-            ExcelTable(
-                anchor=(min_c, min_r),
-                num_rows=max_r + 1 - min_r,
-                num_cols=max_c + 1 - min_c,
-                data=data,
-            ),
-            visited_cells,
+        return ExcelTable(
+            anchor=(rect.min_col, rect.min_row),
+            num_rows=rect.max_row + 1 - rect.min_row,
+            num_cols=rect.max_col + 1 - rect.min_col,
+            data=data,
         )
 
     @staticmethod
@@ -1902,8 +2116,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         converts the input file to PDF at the given output path.
 
         Returns:
-            A converter callable, or None when LibreOffice or pypdfium2 is not
-            available; `get_docx_to_pdf_converter` checks for both.
+            A converter callable, or None when LibreOffice or docling-parse is
+            not available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
@@ -1922,7 +2136,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         LibreOffice can convert standalone ``.emf``/``.wmf`` files to PDF
         directly — no DOCX or XLSX wrapper is needed.  The raw bytes are
         written to a temp file, converted to PDF, and the first page is
-        rendered with pypdfium2.
+        rendered with docling-parse.
 
         Args:
             image_bytes: Raw EMF or WMF image data.
@@ -1945,11 +2159,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("EMF/WMF conversion via LibreOffice failed: %s", exc)
@@ -2055,13 +2265,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 _log.warning("Skipping image %s: %s", dep.target, exc)
                 continue
 
-            # Skip images PIL can already handle — openpyxl already added those.
+            # Only metafiles are left for LibreOffice. openpyxl adds the
+            # images that PIL can handle, and other pictures are skipped.
+            if not is_metafile(image_bytes):
+                continue
+            # Skip metafiles PIL can already draw (on Windows only).
             try:
-                pil_probe = normalize_image_for_png(PILImage.open(BytesIO(image_bytes)))
+                pil_probe = normalize_image_for_png(
+                    open_image(image_bytes, PICTURE_IMAGE_FORMATS)
+                )
                 probe_buf = BytesIO()
                 pil_probe.save(probe_buf, format="PNG")
                 continue  # PIL succeeded; openpyxl took care of this one
-            except (UnidentifiedImageError, OSError, ValueError):
+            except (
+                PILImage.DecompressionBombError,
+                UnidentifiedImageError,
+                OSError,
+                ValueError,
+            ):
                 pass
 
             pil_image = self._convert_emf_to_pil(image_bytes)
@@ -2099,7 +2320,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return ZipFile(self.path_or_stream, "r")
 
     def _read_rich_value_images(self, reader: ExcelReader) -> None:
-        """Read the index of the images placed in cells ("Place in Cell").
+        """Read the index of the images placed in cells ("Place in Cell" or ``IMAGE()``).
 
         Excel 365 stores such an image as a rich value in ``xl/richData``,
         which openpyxl does not read: the cell value is only the ``#VALUE!``
@@ -2175,22 +2396,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return cell_images
 
     def _read_cell_image(self, zip_file: ZipFile, target: str) -> ImageRef | None:
-        """Read and decode an image placed in a cell."""
+        """Read and decode an image placed in a cell. A failure loses only this image."""
         try:
             image_bytes = read_member(zip_file, target, self._MAX_IMAGE_BYTES)
-        except (ArchiveLimitError, KeyError) as exc:
+            try:
+                pil_image: PILImage.Image | None = normalize_image_for_png(
+                    open_image(image_bytes, PICTURE_IMAGE_FORMATS)
+                )
+            except (UnidentifiedImageError, OSError, ValueError):
+                if not is_metafile(image_bytes):
+                    raise
+                pil_image = self._convert_emf_to_pil(image_bytes)
+            if pil_image is None:
+                _log.warning("Could not decode the image %s in a cell", target)
+                return None
+            return ImageRef.from_pil(image=pil_image, dpi=72)
+        except Exception as exc:
             _log.warning("Skipping image %s in a cell: %s", target, exc)
             return None
-        try:
-            pil_image: PILImage.Image | None = normalize_image_for_png(
-                PILImage.open(BytesIO(image_bytes))
-            )
-        except (UnidentifiedImageError, OSError, ValueError):
-            pil_image = self._convert_emf_to_pil(image_bytes)
-        if pil_image is None:
-            _log.warning("Could not decode the image %s in a cell", target)
-            return None
-        return ImageRef.from_pil(image=pil_image, dpi=72)
 
     def _add_cell_image(
         self,
@@ -2238,9 +2461,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 try:
                     image: Image = cast(Image, item)
                     ref = image.ref
-                    pil_image = normalize_image_for_png(
-                        ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)
-                    )
+                    if isinstance(ref, PILImage.Image):
+                        if ref.format not in RASTER_IMAGE_FORMATS:
+                            raise ValueError(f"Unsupported image format {ref.format}")
+                        pil_image = normalize_image_for_png(ref)
+                    else:
+                        # openpyxl selects any Pillow decoder: open the
+                        # bytes again with the raster decoders only.
+                        pil_image = normalize_image_for_png(open_image(ref))
                     doc.add_picture(
                         parent=self.parent,
                         image=ImageRef.from_pil(image=pil_image, dpi=72),
@@ -2558,7 +2786,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         workbook (its data copied onto hidden sheets so the series still
         resolve), convert that to PDF with LibreOffice — the same external tool
         already used for EMF/WMF images — and rasterize the first page with
-        pypdfium2, trimming the surrounding whitespace.
+        docling-parse, trimming the surrounding whitespace.
 
         Args:
             chart: An openpyxl chart object.
@@ -2584,11 +2812,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for a chart")
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("Chart rendering via LibreOffice failed: %s", exc)

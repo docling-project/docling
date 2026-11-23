@@ -182,6 +182,11 @@ opts = PdfPipelineOptions(
 )
 ```
 
+The keyword markers (`PART`, `CHAPTER`, `ARTICLE`, ...) are English. For other languages, add
+words with `numbering_keywords`, for example
+`HeadingHierarchyOptions(enabled=True, numbering_keywords={"chapter": ["rozdział"], "article": ["art."]})`,
+and number words with `numbering_number_words`.
+
 The service equivalent is `do_pdf_heading_hierarchy` plus `pdf_heading_hierarchy_options`.
 
 ### Selecting the accelerator
@@ -567,6 +572,16 @@ to `200` (set `None` for no limit). When `document_timeout` is set, all FFmpeg
 calls share that budget; running out yields `PARTIAL_SUCCESS` with a `TIMEOUT`
 error (`result.has_timeout_errors()`).
 
+Video and audio on PPTX and ODP slides become tracks (`doc.tracks`) with their
+poster frame as cover; the track's `video` or `audio` references the media file.
+On `PowerpointFormatOption` or `OdpFormatOption`, `ConvertPipelineOptions(keep_media=True)`
+holds the file in the track (a DocLang archive then stores it), and
+`do_media_conversion=True` transcribes it: the transcript (and the frames of a
+video) goes in the track. `media_asr_options` picks the Whisper model. The CLI
+flags are `--keep-media` and `--convert-media` (which uses the `--asr-*` options). Linked
+media files load only with the backend options `enable_remote_fetch` /
+`enable_local_fetch`.
+
 ## Exporting images and tables
 
 To keep and export page/figure images, tell the pipeline to generate them, then
@@ -652,15 +667,15 @@ converter = DocumentConverter(
     format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
 )
 ```
-## DOCX, XLSX and EPUB size limits
+## DOCX, XLSX, PPTX and EPUB size limits
 
 These formats are ZIP archives. Docling checks the decompressed sizes before it
 parses them and fails the file with `ArchiveLimitError` (a `DocumentLoadError`)
-when one is too large. Defaults: DOCX/XLSX 128 MiB per member, 512 MiB in total,
-10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise them
-for large trusted files with `max_file_bytes`, `max_total_bytes` and
-`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions` or
-`EpubBackendOptions`:
+when one is too large. Defaults: DOCX/XLSX/PPTX 128 MiB per member, 512 MiB in
+total, 10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise
+them for large trusted files with `max_file_bytes`, `max_total_bytes` and
+`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions`,
+`MsPowerpointBackendOptions` or `EpubBackendOptions`:
 
 ```python
 from docling.datamodel.backend_options import MsWordBackendOptions
@@ -675,6 +690,15 @@ converter = DocumentConverter(
     }
 )
 ```
+
+## ODS repeated cells limit
+
+ODS sheets can repeat a row or a cell with one attribute. The ODS backend keeps
+at most `OdsBackendOptions.max_repeated_cells` (default 100,000) cells added by
+repetition per workbook; trailing empty rows and cells do not count. Over the
+limit, each repetition keeps only the copies that fit and Docling logs a
+warning. Raise it for large trusted files with
+`OdsFormatOption(backend_options=OdsBackendOptions(max_repeated_cells=...))`.
 
 ## Offline / air-gapped models
 
