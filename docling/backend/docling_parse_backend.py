@@ -358,7 +358,6 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: PdfBackendOptions
         self._closed = False
-        self._iterating = False
 
         password = (
             self.options.password.get_secret_value() if self.options.password else None
@@ -451,22 +450,25 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         )
 
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
-        self._iterating = True
+        if self._closed:
+            return
         for result in self.parser.iterate_results():
+            if self._closed:
+                return
             yield ThreadedDoclingParsePageBackend(result, rendered=self._render_pages)
-        self._iterating = False
+
+    def cancel(self) -> None:
+        self.parser.cancel(self.doc_key)
 
     def unload(self) -> None:
         if self._closed:
             return
         self._closed = True
-        # The parser cannot unload while an iteration is active. Drain the raw
-        # tasks rather than creating page backends for work a consumer abandoned.
-        while self.parser.has_tasks():
-            self.parser.get_task()
-        self._iterating = False
-        self.parser.unload(self.doc_key)
-        super().unload()
+        try:
+            self.cancel()
+            self.parser.unload(self.doc_key)
+        finally:
+            super().unload()
 
 
 class DoclingParseDocumentBackend(ThreadedDoclingParseDocumentBackend):
