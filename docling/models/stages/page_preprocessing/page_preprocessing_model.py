@@ -32,9 +32,14 @@ def resolve_skip_cell_extraction(pipeline_options: PdfPipelineOptions) -> bool:
     vector-dense pages (CAD/wiring schematics drawn as 100k+ path segments)
     that decode costs multiple GiB regardless of cell content levels.
     See https://github.com/docling-project/docling/issues/4058.
+
+    A `page_bitmap_area_threshold` keeps the decode: the pages below it skip OCR.
     """
-    return bool(pipeline_options.do_ocr) and (
-        pipeline_options.ocr_options.mode == OcrMode.FULL_PAGE
+    ocr_options = pipeline_options.ocr_options
+    return (
+        bool(pipeline_options.do_ocr)
+        and ocr_options.mode == OcrMode.FULL_PAGE
+        and ocr_options.page_bitmap_area_threshold is None
     )
 
 
