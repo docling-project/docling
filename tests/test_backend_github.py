@@ -8,9 +8,16 @@ import subprocess
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from xml.etree import ElementTree
 
 import pytest
-from docling_core.types.doc import CodeItem, DoclingDocument, TextItem
+from docling_core.types.doc import (
+    CodeItem,
+    DocItemLabel,
+    DoclingDocument,
+    SectionHeaderItem,
+    TextItem,
+)
 from PIL import Image
 from pydantic import JsonValue
 from typer.testing import CliRunner
@@ -132,6 +139,27 @@ def test_native_pull_request_preserves_content_and_ownership(
         assert ("docs", "https://example.com/api") in _links(candidate)
         groups = {group.name: group for group in candidate.groups}
         assert groups["github:reply:tc2"].parent == groups["github:reply:tc1"].get_ref()
+        _, region = [ref.resolve(candidate) for ref in groups["github:source"].children]
+        assert region.label == DocItemLabel.FIELD_REGION
+        source_fields = {}
+        for ref in region.children:
+            field = ref.resolve(candidate)
+            assert field.label == DocItemLabel.FIELD_ITEM
+            key, value = [child.resolve(candidate) for child in field.children]
+            assert isinstance(key, TextItem) and isinstance(value, TextItem)
+            assert (key.label, value.label) == (
+                DocItemLabel.FIELD_KEY,
+                DocItemLabel.FIELD_VALUE,
+            )
+            source_fields[key.text] = value
+        assert source_fields["Repository"].text == "owner/repo"
+        assert source_fields["Number"].text == "1"
+        assert source_fields["Author"].text == "maintainer"
+        (url_ref,) = source_fields["URL"].children
+        url = url_ref.resolve(candidate)
+        assert isinstance(url, TextItem)
+        assert url.text == "https://github.com/owner/repo/pull/1"
+        assert str(url.hyperlink) == url.text
         headings = [item.text for item in candidate.texts]
         assert (
             headings.index("Source information")
@@ -143,6 +171,142 @@ def test_native_pull_request_preserves_content_and_ownership(
     labels = source_meta.get_custom_part()["github__source"]["labels"]
     assert labels[0]["color"] == "ff0000"
     assert labels[0]["id"] == "l1"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "# Summary\n\n## Details\n",
+        "### Summary\n\n#### Details\n",
+        "Summary\n=======\n\n## Details\n\n<details><summary>Log</summary><p>Text</p></details>\n",
+    ],
+)
+def test_body_headings_stay_below_body_in_dclx(
+    pull_request: dict[str, JsonValue], body: str, tmp_path: Path
+) -> None:
+    doc = _convert({**pull_request, "body": body})
+    archive = tmp_path / "headings.dclx"
+    doc.save_as_doclang_archive(archive, add_named_groups=True)
+    loaded = DoclingDocument.load_from_doclang_archive(archive)
+    for candidate in (doc, loaded):
+        group = next(group for group in candidate.groups if group.name == "github:body")
+        headings = [
+            (item.text, item.level)
+            for item, _ in candidate.iterate_items(root=group)
+            if isinstance(item, SectionHeaderItem)
+        ]
+        assert headings == [("Body", 1), ("Summary", 2), ("Details", 3)]
+
+
+@pytest.mark.parametrize("embedded_html", [False, True])
+def test_github_task_list_checkboxes_survive_dclx(
+    pull_request: dict[str, JsonValue], embedded_html: bool, tmp_path: Path
+) -> None:
+    body = (
+        "## Checklist\n\n"
+        "- [x] Done\n"
+        "- [ ] Check [docs](https://example.com/guide).\n"
+        "  - [X] Nested task\n"
+        "- Plain bullet\n"
+        "- \\[x] Literal marker\n\n"
+        "3. [X] Numbered task\n"
+        "4. Ordinary numbered item\n\n"
+        "```md\n- [x] Code example\n```\n"
+    )
+    if embedded_html:
+        body += "\n<p>Embedded HTML</p>\n"
+    doc = _convert({**pull_request, "body": body})
+    archive = tmp_path / "checklist.dclx"
+    doc.save_as_doclang_archive(archive, add_named_groups=True)
+    with zipfile.ZipFile(archive) as package:
+        xml = ElementTree.fromstring(package.read("document.xml"))
+    exported = xml.find("./group[@name='github:body']")
+    assert exported is not None
+    assert [box.get("class") for box in exported.iter("checkbox")] == [
+        "selected",
+        "unselected",
+        "selected",
+        "selected",
+    ]
+    assert exported.find(".//list/list/checkbox[@class='selected']") is not None
+    assert [
+        item.text for item in exported.findall(".//list[@class='ordered']/ldiv/marker")
+    ] == ["3.", "4."]
+
+    loaded = DoclingDocument.load_from_doclang_archive(archive)
+    selected = DocItemLabel.CHECKBOX_SELECTED
+    unselected = DocItemLabel.CHECKBOX_UNSELECTED
+    for candidate in (doc, loaded):
+        assert [
+            item.label
+            for item in candidate.texts
+            if item.label in {selected, unselected}
+        ] == [selected, unselected, selected, selected]
+        assert ("docs", "https://example.com/guide") in _links(candidate)
+        assert any(
+            item.label == DocItemLabel.LIST_ITEM and item.text == "[x] Literal marker"
+            for item in candidate.texts
+        )
+        assert any(
+            isinstance(item, CodeItem) and item.text == "- [x] Code example\n"
+            for item in candidate.texts
+        )
+
+
+def test_ci_comments_are_omitted_and_human_replies_are_kept(tmp_path: Path) -> None:
+    raw: dict[str, JsonValue] = {
+        "url": "https://github.com/o/r/discussions/1",
+        "number": 1,
+        "title": "CI discussion",
+        "comments": [
+            {
+                "id": "check",
+                "author": {"login": "github-actions"},
+                "body": "Automated checks passed",
+                "replies": [
+                    {
+                        "id": "reply",
+                        "author": {"login": "maintainer"},
+                        "body": "I reproduced the failure locally",
+                    }
+                ],
+            },
+            {
+                "id": "protection",
+                "author": {"login": "Mergify[bot]"},
+                "body": "Merge protection satisfied",
+            },
+            {
+                "id": "coverage",
+                "author": {"login": "codecov[bot]"},
+                "body": "Automated coverage report",
+            },
+            {
+                "id": "human",
+                "author": {"login": "maintainer"},
+                "body": "I reviewed the Codecov report",
+            },
+            {
+                "id": "other",
+                "author": {"login": "other[bot]"},
+                "body": "Linked issue details",
+            },
+        ],
+    }
+    doc = _convert(raw)
+    archive = tmp_path / "filtered.dclx"
+    doc.save_as_doclang_archive(archive, add_named_groups=True)
+    loaded = DoclingDocument.load_from_doclang_archive(archive)
+    for candidate in (doc, loaded):
+        groups = {group.name: group for group in candidate.groups}
+        conversation = groups["github:conversation"]
+        assert groups["github:reply:reply"].parent == conversation.get_ref()
+        assert {
+            group.name
+            for group in candidate.groups
+            if group.parent == conversation.get_ref()
+        } == {"github:reply:reply", "github:comment:human", "github:comment:other"}
+        assert "I reviewed the Codecov report" in candidate.export_to_text()
 
 
 @pytest.mark.parametrize("shape", ["gh", "rest", "graphql", "envelope"])
@@ -225,7 +389,10 @@ def test_discussion_reply_and_accepted_answer() -> None:
     }
     doc = _convert(raw)
     assert "Accepted answer" in doc.export_to_text()
-    assert "Category: Q&A" in doc.export_to_text()
+    assert any(
+        item.label == DocItemLabel.FIELD_VALUE and item.text == "Q&A"
+        for item in doc.texts
+    )
     groups = {group.name: group for group in doc.groups}
     assert groups["github:reply:r"].parent == groups["github:comment:c"].get_ref()
 

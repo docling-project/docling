@@ -33,8 +33,12 @@ Use `GitHubJSONFormatOption` with `GitHubJSONBackendOptions` to enable local or
 remote image loading. The backend preserves code whitespace and literal fenced
 HTML. Source metadata is on the title in `meta.github__source`; entry metadata
 is on headings in `meta.github__entry`. Visible label names and descriptions
-appear after source information. Use `save_as_doclang_archive(...,
-add_named_groups=True)` to retain conversation and reply ownership.
+appear after the source information field region. The highest headings in the
+body are one level below **Body**. The converted document omits GitHub Actions,
+Mergify, and Codecov comments. Use
+`save_as_doclang_archive(..., add_named_groups=True)` to retain conversation and
+reply ownership. The document represents GitHub tasks as selected or unselected
+checkboxes inside list items.
 
 ## Preserve code block whitespace
 

@@ -737,6 +737,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             hyperlink=hyperlink,
                         )
 
+    def _get_list_item_marker(
+        self, paragraph: marko.block.Paragraph, marker: str
+    ) -> str:
+        return marker
+
     def _create_list_item(
         self,
         doc: DoclingDocument,
@@ -929,6 +934,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 start = list_start_by_ref.get(parent_ref, 1)
                 count = list_item_counter_by_ref.get(parent_ref, 0)
                 marker = f"{start + count}."
+            marker = self._get_list_item_marker(child, marker)
             non_list_children: list[marko.element.Element] = [
                 item
                 for item in child.children

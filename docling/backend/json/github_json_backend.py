@@ -27,10 +27,12 @@ from docling_core.types.doc import (
     NodeItem,
     RefItem,
     RichTableCell,
+    SectionHeaderItem,
     TableCell,
     TableData,
     TableItem,
     TextItem,
+    TitleItem,
 )
 from pydantic import AnyUrl
 from typing_extensions import override
@@ -53,6 +55,7 @@ from docling.datamodel.github import (
 )
 
 _log = logging.getLogger(__name__)
+_CI_COMMENT_AUTHORS = frozenset({"github-actions", "mergify", "codecov"})
 
 
 class _CachedImageLoader(ImageResourceLoader):
@@ -144,6 +147,8 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
         parent: GroupItem,
         body: str,
         conversation: GitHubConversation,
+        *,
+        first_heading_level: int | None = None,
     ) -> None:
         if not body:
             return
@@ -183,6 +188,8 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
         # Share the loader across entries so repeated Markdown images are fetched once.
         backend._image_loader = self._images
         fragment = backend.convert()
+        if first_heading_level is not None:
+            self._rebase_headings(fragment, first_heading_level)
         for item in list(fragment.texts):
             if isinstance(item.hyperlink, Path):
                 original = str(item.hyperlink)
@@ -222,6 +229,24 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
                 "GitHub entry contains %d unavailable picture asset(s)", missing
             )
         self._append_fragment(doc, parent, fragment)
+
+    @staticmethod
+    def _rebase_headings(fragment: DoclingDocument, first_level: int) -> None:
+        headings = [
+            (index, item, item.level if isinstance(item, SectionHeaderItem) else 0)
+            for index, item in enumerate(fragment.texts)
+            if isinstance(item, (TitleItem, SectionHeaderItem))
+        ]
+        if not headings:
+            return
+        offset = first_level - min(level for _, _, level in headings)
+        for index, item, level in headings:
+            if isinstance(item, SectionHeaderItem):
+                item.level = level + offset
+            else:
+                fragment.texts[index] = SectionHeaderItem(
+                    **item.model_dump(exclude={"label"}), level=level + offset
+                )
 
     @staticmethod
     def _append_fragment(
@@ -267,12 +292,25 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
         item.meta.set_custom_field("github", name, value)
 
     @staticmethod
-    def _ordered(entries: list[GitHubEntry]) -> list[GitHubEntry]:
+    def _visible_entries(entries: list[GitHubEntry]) -> list[GitHubEntry]:
         def timestamp(entry: GitHubEntry) -> datetime:
             value = entry.created_at or datetime.min.replace(tzinfo=timezone.utc)
             return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
 
-        return sorted(entries, key=timestamp)
+        visible: list[GitHubEntry] = []
+        pending = list(reversed(entries))
+        while pending:
+            entry = pending.pop()
+            author = (entry.author or "").lower().removesuffix("[bot]")
+            if (
+                entry.kind in {"comment", "reply"}
+                and author in _CI_COMMENT_AUTHORS
+                and not entry.is_answer
+            ):
+                pending.extend(reversed(entry.replies))
+            else:
+                visible.append(entry)
+        return sorted(visible, key=timestamp)
 
     def _append_entry(
         self,
@@ -326,7 +364,7 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
             doc.add_text(
                 label=DocItemLabel.TEXT, text="No body supplied.", parent=group
             )
-        for reply in self._ordered(entry.replies):
+        for reply in self._visible_entries(entry.replies):
             self._append_entry(doc, group, reply, conversation)
 
     def _append_labels(
@@ -410,6 +448,7 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
         )
         source = doc.add_group(name="github:source")
         doc.add_heading(text="Source information", level=1, parent=source)
+        fields = doc.add_field_region(parent=source)
         details = [
             (
                 "Repository",
@@ -435,34 +474,41 @@ class GitHubJSONBackend(DeclarativeDocumentBackend):
                 if conversation.retrieval_complete is not None
                 else "Unknown (supplied JSON)",
             ),
+            ("URL", AnyUrl(conversation.source.url)),
+            ("Not supplied", ", ".join(conversation.missing_collections) or None),
         ]
         for key, value in details:
             if value is not None:
-                doc.add_text(
-                    label=DocItemLabel.TEXT, text=f"{key}: {value}", parent=source
-                )
-        doc.add_text(
-            label=DocItemLabel.TEXT,
-            text=conversation.source.url,
-            hyperlink=AnyUrl(conversation.source.url),
-            parent=source,
-        )
-        if conversation.missing_collections:
-            doc.add_text(
-                label=DocItemLabel.TEXT,
-                text="Not supplied: " + ", ".join(conversation.missing_collections),
-                parent=source,
-            )
+                field = doc.add_field_item(parent=fields)
+                doc.add_field_key(text=key, parent=field)
+                if isinstance(value, AnyUrl):
+                    # DocLang restores hyperlinks on text inside a field value.
+                    linked_value = doc.add_field_value(text="", parent=field)
+                    doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        text=str(value),
+                        hyperlink=value,
+                        parent=linked_value,
+                    )
+                else:
+                    doc.add_field_value(text=str(value), parent=field)
         if conversation.source.kind != "discussion":
             self._append_labels(doc, conversation)
         body = doc.add_group(name="github:body")
-        doc.add_heading(text="Body", level=1, parent=body)
-        self._append_markdown(doc, body, conversation.body, conversation)
+        body_heading = doc.add_heading(text="Body", level=1, parent=body)
+        self._append_markdown(
+            doc,
+            body,
+            conversation.body,
+            conversation,
+            first_heading_level=body_heading.level + 1,
+        )
         if not conversation.body:
             doc.add_text(label=DocItemLabel.TEXT, text="No body supplied.", parent=body)
-        if conversation.entries:
+        visible_entries = self._visible_entries(conversation.entries)
+        if visible_entries:
             entries = doc.add_group(name="github:conversation")
             doc.add_heading(text="Conversation", level=1, parent=entries)
-            for entry in self._ordered(conversation.entries):
+            for entry in visible_entries:
                 self._append_entry(doc, entries, entry, conversation)
         return doc

@@ -12,8 +12,11 @@ format and needs no gh installation.
 Use `--github-image-fetch remote` to load remote images, or `local` for images
 beside a saved JSON file. The default blocks both. Embedded data images remain
 available. Add `--github-strict-assets` to reject missing picture assets. DCLX
-exports preserve named entry and reply groups. Labels appear between source
-information and body, with names and descriptions.
+exports preserve named entry and reply groups and task checkbox states. Labels
+appear between source information and body, with names and descriptions. Source
+information uses a key-value field region. The highest headings in the body are
+one level below **Body**. The converted document omits GitHub Actions, Mergify,
+and Codecov comments. Use `--keep-source` to include the complete source JSON.
 
 For Granite, Parakeet, and Nemotron ASR, select `--asr-model granite_speech_5_0_2b`
 (or another speech preset). Install `docling-slim[models-asr-inline]` for all engines,

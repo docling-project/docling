@@ -88,9 +88,20 @@ and reply ownership.
 ## Content and metadata
 
 The document contains a title, source information, labels, the body, and the
-conversation. Entry groups retain reply parents. Each entry has its author,
-timestamps, permalink, and available review context. Accepted answers are
-marked explicitly. No page coordinates are invented.
+conversation. Source information uses a field region with one key and value per
+field. The source URL is clickable. The highest headings in the body are one
+level below the **Body** heading. Subheadings keep their relative levels within
+the export format's heading range.
+
+GitHub task lists keep their checked and unchecked states as DocLang checkbox
+elements inside their list items.
+
+Entry groups retain reply parents. Each entry has its author, timestamps,
+permalink, and available review context. Accepted answers are marked explicitly.
+The converted document omits GitHub Actions, Mergify, and Codecov comments.
+Replies to an omitted comment appear under the nearest retained parent or
+directly under **Conversation**. The `--keep-source` option includes the complete
+source JSON. No page coordinates are invented.
 
 Issue and pull request labels appear in a **Labels** table after source
 information and before the body. Its columns contain the original name and
