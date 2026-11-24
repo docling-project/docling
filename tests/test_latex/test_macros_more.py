@@ -12,7 +12,7 @@ from docling.datamodel.document import InputDocument
 
 
 def test_latex_subparagraph_heading():
-    """Test \\subparagraph emits heading level 5"""
+    """Test \\paragraph and \\subparagraph emit heading levels 4 and 5"""
     latex_content = b"""
     \\documentclass{article}
     \\begin{document}
@@ -32,7 +32,10 @@ def test_latex_subparagraph_heading():
     doc = backend.convert()
 
     headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
-    assert any("Subpara Level" in h.text for h in headers)
+    assert [(h.text, h.level) for h in headers] == [
+        ("Para Level", 4),
+        ("Subpara Level", 5),
+    ]
 
     md = doc.export_to_markdown()
     assert "Content A" in md

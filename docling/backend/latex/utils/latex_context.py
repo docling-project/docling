@@ -51,6 +51,13 @@ def _build_context_db() -> Any:
         environments=[EnvironmentSpec("thebibliography", "{")],
         prepend=True,
     )
+    # pylatexenc misspells \paragraph as "pagagraph" and has no \part, so their
+    # titles would stay in the body and be read as text instead of headings.
+    db.add_context_category(
+        "docling-sectioning",
+        macros=[MacroSpec("part", "*[{"), MacroSpec("paragraph", "*[{")],
+        prepend=True,
+    )
     # pylatexenc does not know hyperref's \href[options]{URL}{text}, so its two
     # arguments would stay in the body and be read as text glued together.
     db.add_context_category(
