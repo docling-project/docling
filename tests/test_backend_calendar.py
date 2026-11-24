@@ -220,6 +220,8 @@ def test_event_times(converter, lines, expected):
         ("FREQ=DAILY;COUNT=1", "Daily, once"),
         ("FREQ=DAILY;UNTIL=20261231", "Daily, until 2026-12-31"),
         ("FREQ=WEEKLY;WKST=MO;BYDAY=MO", "Weekly on Monday"),
+        # Some producers end the rule with a semicolon.
+        ("FREQ=YEARLY;BYMONTH=11;BYDAY=1SU;", "Yearly in November on the first Sunday"),
         # Parts a description cannot carry keep the whole rule raw.
         ("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", None),
         ("FREQ=DAILY;BYHOUR=9,17", None),
@@ -273,6 +275,50 @@ def test_end_without_start_is_retained(converter, component, title):
     assert _texts(result.document) == [title, "End: 2026-11-16 18:00 UTC"]
 
 
+def test_end_is_kept_when_the_start_cannot_be_read(converter):
+    # A producer can write the start in a shape this does not read, e.g. an ISO
+    # date-time with a space. The end is readable, so it must not be lost.
+    raw = _calendar(
+        "PRODID:-//Repro//EN",
+        "BEGIN:VEVENT",
+        "UID:span@example.com",
+        "DTSTAMP:20261115T120000Z",
+        "DTSTART:2026-11-15 09:00:00",
+        "DTEND:20261115T120000Z",
+        "END:VEVENT",
+    )
+
+    result = _convert(converter, raw)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert _texts(result.document) == [
+        "Untitled event",
+        "Start: 2026-11-15 09:00:00",
+        "End: 2026-11-15 12:00 UTC",
+    ]
+
+
+def test_end_is_kept_when_an_all_day_end_cannot_be_read(converter):
+    raw = _calendar(
+        "PRODID:-//Repro//EN",
+        "BEGIN:VEVENT",
+        "UID:allday@example.com",
+        "DTSTAMP:20261115T120000Z",
+        "DTSTART;VALUE=DATE:20261115",
+        "DTEND:2026-11-16 00:00:00",
+        "END:VEVENT",
+    )
+
+    result = _convert(converter, raw)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert _texts(result.document) == [
+        "Untitled event",
+        "Date: 2026-11-15 (all day)",
+        "End: 2026-11-16 00:00:00",
+    ]
+
+
 def test_alarms(converter):
     raw = _calendar(
         "BEGIN:VTODO",
@@ -301,3 +347,43 @@ def test_alarms(converter):
         "Display, 30 minutes before due",
         "Email, at start, repeated 2 times every 5 minutes",
     ]
+
+
+@pytest.mark.parametrize(
+    ("rule", "expected"),
+    [
+        ("FREQ=MONTHLY;BYDAY=MO", "Monthly on every Monday"),
+        ("FREQ=MONTHLY;BYDAY=TU,TH", "Monthly on every Tuesday and every Thursday"),
+        ("FREQ=MONTHLY;BYDAY=1MO,FR", "Monthly on the first Monday and every Friday"),
+        ("FREQ=YEARLY;BYDAY=SU", "Yearly on every Sunday"),
+        ("FREQ=YEARLY;BYMONTH=1;BYDAY=MO", "Yearly in January on every Monday"),
+        # BYMONTHDAY without BYMONTH is the same days of every month.
+        (
+            "FREQ=YEARLY;BYMONTHDAY=1,-1",
+            "Yearly on the 1st and last day of every month",
+        ),
+        ("FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=15", "Yearly in March on the 15th"),
+        # BYMONTHDAY limits BYDAY to the days that are both.
+        (
+            "FREQ=MONTHLY;BYDAY=FR;BYMONTHDAY=13",
+            "Monthly on Friday on the 13th",
+        ),
+        (
+            "FREQ=MONTHLY;BYDAY=SA;BYMONTHDAY=7,8,9,10,11,12,13",
+            "Monthly on Saturday on the 7th, 8th, 9th, 10th, 11th, 12th and 13th",
+        ),
+        (
+            "FREQ=YEARLY;BYDAY=FR;BYMONTHDAY=13",
+            "Yearly on Friday on the 13th of every month",
+        ),
+        # A day with a position, and a weekly rule, already name one day.
+        ("FREQ=MONTHLY;BYDAY=-1FR", "Monthly on the last Friday"),
+        ("FREQ=WEEKLY;BYDAY=MO", "Weekly on Monday"),
+    ],
+)
+def test_describe_rrule_monthly_and_yearly_day_without_position(rule, expected):
+    """BYDAY=MO in a monthly or yearly rule is every Monday, not one Monday.
+
+    BYMONTHDAY in a yearly rule without BYMONTH is a day of every month.
+    """
+    assert describe_rrule(rule) == expected

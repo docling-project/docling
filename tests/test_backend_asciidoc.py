@@ -235,6 +235,25 @@ def test_table_rows_over_several_lines_count_duplicated_cells() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("cell", "expected"),
+    [
+        (b"1000000000+|wide", [("wide", 1, 0, 1, 2), ("x", 2, 0, 1, 1)]),
+        (b".1000000000+|tall", [("tall", 1, 0, 2, 1), ("x", 1, 1, 1, 1)]),
+        (b"1000000000*|copy", [("copy", 1, 0, 1, 1), ("copy", 1, 1, 1, 1)]),
+    ],
+)
+def test_huge_spans_and_copy_factors_stay_within_the_table(
+    cell: bytes, expected: list[tuple[str, int, int, int, int]]
+) -> None:
+    # The spans are cut at the edges of the table, and a "*" factor makes at
+    # most one copy for each column, instead of one grid cell or one copy for
+    # each declared column, row or copy.
+    num_cols, cells = _table_grid(b"|===\n|A |B\n" + cell + b"\n|x |y\n|===\n")
+    assert num_cols == 2
+    assert cells[2:4] == expected
+
+
 def test_blank_line_inside_table_does_not_split_it() -> None:
     # Inside |=== ... |=== a blank line only separates rows: Asciidoctor's own
     # examples put one after the header row. It used to end the table, so the
@@ -278,6 +297,44 @@ def test_wrapped_cell_text_stays_in_its_cell() -> None:
         ".json",
     ]
     assert [item.text for item in doc.texts] == ["After."]
+
+
+def test_wrapped_line_with_a_pipe_opens_the_next_cell() -> None:
+    # A wrapped line continues the cell above only up to its first "|", which
+    # opens the next cell, also when the line is indented. The whole line used
+    # to go into the cell above, so every later cell moved one column left.
+    src = (
+        b"|===\n|Name |Description |Default\n"
+        b"|timeout |How long to wait\nbefore giving up |30s\n"
+        b"|retries |Number of retries\n  |3\n|===\n"
+    )
+    doc = _convert_adoc(src)
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 3)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "Name",
+        "Description",
+        "Default",
+        "timeout",
+        "How long to wait before giving up",
+        "30s",
+        "retries",
+        "Number of retries",
+        "3",
+    ]
+
+
+def test_stray_line_before_the_first_row_stays_out_of_the_table() -> None:
+    # A line without "|" right after "|===" is not a wrapped continuation:
+    # there is no cell above to extend, so _continue_table returns False and
+    # the empty table ends. Only the following row forms the table.
+    src = b"|===\nStray text\n|a |b\n|===\n"
+    doc = _convert_adoc(src)
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (1, 2)
+    assert [cell.text for cell in table.data.table_cells] == ["a", "b"]
 
 
 def test_escaped_pipe_stays_inside_its_cell() -> None:
@@ -983,6 +1040,18 @@ Not linked: word:https://example.com.
     assert "[Example site](https://example.com/)" in md
     assert "example.com[" not in md
     assert "link:" not in md
+
+
+def test_malformed_link_target_keeps_text_without_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://api.example.com:{port}/v1[API]\n"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [(item.text, item.hyperlink) for item in doc.texts] == [("API", None)]
 
 
 @pytest.mark.parametrize(

@@ -339,6 +339,14 @@ The equivalent CLI option is independent of `--num-threads`:
 docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
+### Set a PDF conversion timeout
+
+Set `document_timeout` on the pipeline options to limit PDF processing time.
+With the threaded docling-parse backend, the standard PDF pipeline cancels
+queued pages and discards unread results when it detects the timeout. The native
+and VLM pipelines stop consuming pages and cancel pending work during teardown.
+Teardown waits for already-claimed parser pages to finish, so conversion can
+return after the configured timeout.
 
 ### Extract the native content of a PDF
 
@@ -369,6 +377,40 @@ docling --pipeline native --from pdf FILE
 docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
+If the backend ends before returning all requested pages, the native pipeline
+logs a warning and records an error for each missing page. If any pages were
+converted, the result is `PARTIAL_SUCCESS`. If none were converted, the result
+is `FAILURE`. If `document_timeout` stops the conversion, each page that was not
+converted gets a `TIMEOUT` error. Use `--fail-on partial` to make the CLI exit
+with code 1 for a partial conversion.
+
+
+### Keep the original characters in PDF text
+
+By default, the docling-parse backend normalizes some Unicode characters in the
+extracted text. For example, dash and minus variants become `-`, so
+`pages 3–5` becomes `pages 3-5`. The `do_char_normalization` backend option
+controls this step (it is passed to docling-parse
+`DecodeConfig.do_char_normalization`). Set it to `False` to keep the characters
+as the PDF encodes them:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            backend_options=PdfBackendOptions(do_char_normalization=False)
+        )
+    }
+)
+```
+
+The option applies only to the docling-parse backend. Some characters can still
+be normalized when the option is off; see the docling-parse documentation for
+the exact set.
 
 ### Recover PDF heading levels
 
@@ -784,12 +826,15 @@ both, and applies them to every reference:
   the proxy.
 - Other URL schemes are refused.
 
-A refused reference stops the conversion with an error that lists it.
+A refused reference stops the conversion of an XBRL instance with an error that
+lists it.
 
 The same options apply to inline XBRL (iXBRL) reports. Docling recognizes them
 by the inline XBRL namespace that the root `html` element declares, and converts
-them with the XBRL backend instead of the HTML backend. Without the `xbrl`
-extra, converting such a report raises an error that asks you to install it.
+them with the XBRL backend. The document contains the full HTML text of the
+report and, as key-value items, its numeric facts. When the facts cannot be
+read (no `xbrl` extra, no fetch option set, or a taxonomy that does not load),
+Docling logs a warning and converts the report as HTML only.
 
 Reports from SEC EDGAR reference their company-specific extension taxonomy with
 a relative path. When you convert from a URL with `enable_remote_fetch=True`,
@@ -841,7 +886,10 @@ page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits
 the pixels (width x height) of one page; the default, 89,478,485, is the default
 of Pillow's `Image.MAX_IMAGE_PIXELS`. A larger first page rejects the document,
-and a larger later page fails that page:
+and a larger later page fails that page. Image inputs are decoded only as PNG,
+JPEG, TIFF, GIF, BMP or WEBP. The METS-GBS backend (`MetsGbsBackendOptions`)
+applies the same limit to each page image and to the page size in the hOCR, and
+skips a larger page with a warning:
 
 ```python
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -857,32 +905,37 @@ converter = DocumentConverter(
 )
 ```
 
-### Limits on the decompressed size of DOCX, XLSX and EPUB files
+### Limits on the decompressed size of DOCX, XLSX, PPTX and EPUB files
 
-DOCX, XLSX and EPUB files are ZIP archives, so a small file can decompress to a
+DOCX, XLSX, PPTX and EPUB files are ZIP archives, so a small file can decompress to a
 much larger size. Docling checks the decompressed sizes that the archive declares
 before it parses the file, and stops each read once the decompressed bytes go
 above the limit. A file that exceeds a limit fails to convert with an
 `ArchiveLimitError`, which is a `DocumentLoadError`.
 
-| Option | `MsWordBackendOptions` / `MsExcelBackendOptions` | `EpubBackendOptions` |
+| Option | `MsWordBackendOptions` / `MsExcelBackendOptions` / `MsPowerpointBackendOptions` | `EpubBackendOptions` |
 | --- | --- | --- |
 | `max_file_bytes` | 128 MiB per member | 10 MB per content document |
 | `max_total_bytes` | 512 MiB for all members | 100 MB for all content documents |
 | `max_member_count` | 10,000 members | 1,000 content documents |
 
-The DOCX and XLSX limits apply to every member of the package, because
-python-docx and openpyxl load the package members into memory. The EPUB limits
+The DOCX, XLSX and PPTX limits apply to every member of the package, because
+python-docx, openpyxl and python-pptx load the package members into memory. The EPUB limits
 apply to the container, the package document and the content documents in the
 spine, and also to the members extracted for image processing. Raise the limits
 for large trusted files:
 
 ```python
-from docling.datamodel.backend_options import MsExcelBackendOptions, MsWordBackendOptions
+from docling.datamodel.backend_options import (
+    MsExcelBackendOptions,
+    MsPowerpointBackendOptions,
+    MsWordBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import (
     DocumentConverter,
     ExcelFormatOption,
+    PowerpointFormatOption,
     WordFormatOption,
 )
 
@@ -893,6 +946,35 @@ doc_converter = DocumentConverter(
         ),
         InputFormat.XLSX: ExcelFormatOption(
             backend_options=MsExcelBackendOptions(max_total_bytes=2 * 1024**3)
+        ),
+        InputFormat.PPTX: PowerpointFormatOption(
+            backend_options=MsPowerpointBackendOptions(max_file_bytes=256 * 1024 * 1024)
+        ),
+    }
+)
+```
+
+### Limit on repeated cells in ODS files
+
+An ODS sheet can repeat a row or a cell many times with one attribute
+(`table:number-rows-repeated` or `table:number-columns-repeated`). The ODS
+backend processes each copy, so a small file can declare millions of cells.
+`OdsBackendOptions.max_repeated_cells` limits the cells that repetition adds to
+a workbook, in addition to the cells written in the file. The default is
+100,000. Trailing empty rows and cells do not count. When a workbook goes over
+the limit, each repetition keeps only the copies that fit, Docling logs a
+warning, and the cells written in the file are kept. Raise the limit for large
+trusted files:
+
+```python
+from docling.datamodel.backend_options import OdsBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, OdsFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.ODS: OdsFormatOption(
+            backend_options=OdsBackendOptions(max_repeated_cells=1_000_000)
         ),
     }
 )

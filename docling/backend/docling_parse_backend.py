@@ -82,9 +82,13 @@ def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
 def _make_docling_parse_decode_config(
     *,
     enforce_same_font: bool = True,
+    do_char_normalization: bool = True,
     release_native_memory_every_n_pages: int | None = None,
 ) -> DecodeConfig:
-    config = DecodeConfig(enforce_same_font=enforce_same_font)
+    config = DecodeConfig(
+        enforce_same_font=enforce_same_font,
+        do_char_normalization=do_char_normalization,
+    )
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
@@ -358,7 +362,6 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: PdfBackendOptions
         self._closed = False
-        self._iterating = False
 
         password = (
             self.options.password.get_secret_value() if self.options.password else None
@@ -380,6 +383,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             render_config.scale = threaded_options.render_scale
         decode_config = _make_docling_parse_decode_config(
             enforce_same_font=self.options.enforce_same_font,
+            do_char_normalization=self.options.do_char_normalization,
             release_native_memory_every_n_pages=(
                 threaded_options.release_native_memory_every_n_pages
             ),
@@ -451,22 +455,25 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         )
 
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
-        self._iterating = True
+        if self._closed:
+            return
         for result in self.parser.iterate_results():
+            if self._closed:
+                return
             yield ThreadedDoclingParsePageBackend(result, rendered=self._render_pages)
-        self._iterating = False
+
+    def cancel(self) -> None:
+        self.parser.cancel(self.doc_key)
 
     def unload(self) -> None:
         if self._closed:
             return
         self._closed = True
-        # The parser cannot unload while an iteration is active. Drain the raw
-        # tasks rather than creating page backends for work a consumer abandoned.
-        while self.parser.has_tasks():
-            self.parser.get_task()
-        self._iterating = False
-        self.parser.unload(self.doc_key)
-        super().unload()
+        try:
+            self.cancel()
+            self.parser.unload(self.doc_key)
+        finally:
+            super().unload()
 
 
 class DoclingParseDocumentBackend(ThreadedDoclingParseDocumentBackend):

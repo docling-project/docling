@@ -328,7 +328,7 @@ def probe_duration(video_path: Path, runner: FfmpegRunner) -> float:
 
 def _decode_png(data: bytes, what: str) -> Image.Image | None:
     try:
-        return Image.open(BytesIO(data)).convert("RGB")
+        return Image.open(BytesIO(data), formats=["PNG"]).convert("RGB")
     except Exception as exc:  # pragma: no cover - defensive
         _log.debug("Failed to decode %s: %s", what, exc)
         return None

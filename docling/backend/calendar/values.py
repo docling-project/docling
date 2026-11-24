@@ -240,7 +240,8 @@ def _ordinal_word(number: int) -> str:
     return _ORDINAL_WORDS.get(number, _ordinal(number))
 
 
-def _describe_byday(value: str) -> str | None:
+def _describe_byday(value: str, every: bool) -> str | None:
+    """Describe BYDAY; ``every`` marks a day without a position as every such day."""
     days: list[str] = []
     for token in value.split(","):
         match = _BYDAY.fullmatch(token.strip())
@@ -249,7 +250,7 @@ def _describe_byday(value: str) -> str | None:
         position, weekday = match.groups()
         name = _WEEKDAYS[weekday.upper()]
         if position is None:
-            days.append(name)
+            days.append(f"every {name}" if every else name)
         elif int(position) == 0:
             return None
         else:
@@ -304,6 +305,9 @@ def describe_rrule(raw: str) -> str | None:
     """
     parts: dict[str, str] = {}
     for item in raw.split(";"):
+        if not item.strip():
+            # Some producers end the rule with a semicolon: FREQ=WEEKLY;BYDAY=MO;
+            continue
         key, sep, value = item.partition("=")
         if not sep or not value:
             return None
@@ -331,7 +335,13 @@ def describe_rrule(raw: str) -> str | None:
             return None
         text += f" in {months}"
     if "BYDAY" in parts:
-        days = _describe_byday(parts["BYDAY"])
+        # A day without a position is every such day in a monthly or yearly
+        # rule, unless BYMONTHDAY limits it.
+        days = _describe_byday(
+            parts["BYDAY"],
+            every=parts["FREQ"].upper() in ("MONTHLY", "YEARLY")
+            and "BYMONTHDAY" not in parts,
+        )
         if days is None:
             return None
         text += f" on {days}"
@@ -340,6 +350,9 @@ def describe_rrule(raw: str) -> str | None:
         if month_days is None:
             return None
         text += f" on {month_days}"
+        # Without BYMONTH, a yearly rule repeats on these days in every month.
+        if parts["FREQ"].upper() == "YEARLY" and "BYMONTH" not in parts:
+            text += " of every month"
     if "COUNT" in parts:
         try:
             count = int(parts["COUNT"])

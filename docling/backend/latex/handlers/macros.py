@@ -38,6 +38,7 @@ from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 from docling.backend.latex.utils.text import iter_child_nodelists
 from docling.backend.utils.image import normalize_image_for_png
+from docling.utils.image_utils import open_image
 
 if TYPE_CHECKING:
     from typing import Any
@@ -184,6 +185,56 @@ class MacroHandlerMixin:
         def _nodes_to_text(self, nodes: Any) -> str: ...
         def _char_macro_to_text(self, node: Any) -> str | None: ...
         def _item_term(self, node: Any) -> str: ...
+
+    def _read_input(self, node) -> tuple[str, list] | None:
+        """Parse the file of an ``\\input`` or ``\\include`` macro.
+
+        Returns the resolved path and the parsed nodes, or None when the file is
+        missing, outside the source directory, already being read, or too deep.
+        The caller adds the path to ``_input_stack`` while it uses the nodes.
+        """
+        from pylatexenc.latexwalker import LatexWalker
+
+        filepath = self._extract_macro_arg(node)
+        if not filepath or self._source_dir is None:
+            return None
+        base_dir = self._source_dir.resolve()
+        input_path = self._source_dir / filepath
+        if not input_path.suffix:
+            input_path = input_path.with_suffix(".tex")
+
+        try:
+            if not input_path.resolve().is_relative_to(base_dir):
+                _log.warning(
+                    f"Path traversal attempt blocked for input file: {filepath}"
+                )
+                return None
+        except ValueError:
+            _log.warning(
+                f"Invalid path for input file (different drive or traversal): {filepath}"
+            )
+            return None
+
+        resolved = str(input_path.resolve())
+        if resolved in self._input_stack:
+            _log.warning(f"Circular \\input detected: {filepath}")
+            return None
+        if len(self._input_stack) >= 10:
+            _log.warning(f"\\input depth limit (10) reached, skipping: {filepath}")
+            return None
+        if not input_path.exists():
+            return None
+        try:
+            content = decode_latex_content(input_path)
+            sub_walker = LatexWalker(
+                content, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+            )
+            sub_nodes, _, _ = sub_walker.get_latex_nodes()
+        except Exception as e:
+            _log.debug(f"Failed to load input file {filepath}: {e}")
+            return None
+        _log.debug(f"Loaded input file: {input_path}")
+        return resolved, sub_nodes
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         """Expand legacy shortcuts without changing macro definitions."""
@@ -617,7 +668,7 @@ class MacroHandlerMixin:
                                     f"Rendered PDF image {img_path}: {pil_image.size}"
                                 )
                             else:
-                                pil_image = Image.open(img_full_path)
+                                pil_image = open_image(img_full_path)
                                 dpi = pil_image.info.get("dpi", (72, 72))
                                 if isinstance(dpi, tuple):
                                     dpi = dpi[0]
@@ -649,52 +700,16 @@ class MacroHandlerMixin:
             pass
 
         elif node.macroname in ["input", "include"]:
-            from pylatexenc.latexwalker import LatexWalker
-
-            filepath = self._extract_macro_arg(node)
-            if filepath and self._source_dir is not None:
-                base_dir = self._source_dir.resolve()
-                input_path = self._source_dir / filepath
-                if not input_path.suffix:
-                    input_path = input_path.with_suffix(".tex")
-
+            loaded = self._read_input(node)
+            if loaded is not None:
+                resolved, sub_nodes = loaded
+                self._input_stack.add(resolved)
                 try:
-                    if not input_path.resolve().is_relative_to(base_dir):
-                        _log.warning(
-                            f"Path traversal attempt blocked for input file: {filepath}"
-                        )
-                        return
-                except ValueError:
-                    _log.warning(
-                        f"Invalid path for input file (different drive or traversal): {filepath}"
-                    )
-                    return
-
-                resolved = str(input_path.resolve())
-                if resolved in self._input_stack:
-                    _log.warning(f"Circular \\input detected: {filepath}")
-                elif len(self._input_stack) >= 10:
-                    _log.warning(
-                        f"\\input depth limit (10) reached, skipping: {filepath}"
-                    )
-                elif input_path.exists():
-                    self._input_stack.add(resolved)
-                    try:
-                        content = decode_latex_content(input_path)
-                        sub_walker = LatexWalker(
-                            content,
-                            tolerant_parsing=True,
-                            latex_context=LATEX_CONTEXT_DB,
-                        )
-                        sub_nodes, _, _ = sub_walker.get_latex_nodes()
-                        self._process_nodes(
-                            sub_nodes, doc, parent, formatting, text_label
-                        )
-                        _log.debug(f"Loaded input file: {input_path}")
-                    except Exception as e:
-                        _log.debug(f"Failed to load input file {filepath}: {e}")
-                    finally:
-                        self._input_stack.discard(resolved)
+                    self._process_nodes(sub_nodes, doc, parent, formatting, text_label)
+                except Exception as e:
+                    _log.debug(f"Failed to process input file {resolved}: {e}")
+                finally:
+                    self._input_stack.discard(resolved)
 
         elif node.macroname in MACROS_ESCAPED:
             doc.add_text(

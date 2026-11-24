@@ -3,6 +3,7 @@
 
 import logging
 import os
+import unicodedata
 import warnings
 from datetime import datetime
 from enum import Enum
@@ -21,7 +22,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import deprecated
+from typing_extensions import Self, deprecated
 
 from docling.datamodel import (
     asr_model_specs,
@@ -191,6 +192,16 @@ class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure model using Granite Vision (VLM-based)."""
 
     kind: ClassVar[str] = "granite_vision_table"
+    scale: Annotated[
+        float,
+        Field(
+            gt=0,
+            description=(
+                "Render scale for the table crops sent to the model (1.0 = 72 dpi). "
+                "Small table text needs a higher scale to be read correctly."
+            ),
+        ),
+    ] = 2.0
 
 
 class OcrOptions(BaseOptions):
@@ -953,8 +964,9 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
         dict[str, Any],
         Field(
             description=(
-                "Additional query parameters to include in API requests. Service-specific parameters for customizing "
-                "API behavior beyond standard options."
+                "Additional fields for the JSON body of API requests, for example `model`, `max_completion_tokens` "
+                "or `temperature`. They are not sent as URL query parameters. Put query parameters, such as the "
+                "`api-version` of Azure OpenAI, in `url`."
             )
         ),
     ] = {}
@@ -1569,6 +1581,37 @@ class ConvertPipelineOptions(PipelineOptions):
             )
         ),
     ] = _default_chart_extraction_options
+    do_media_conversion: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert the video and audio files that slides play (PPTX, ODP) with the audio or video "
+                "pipeline. The transcript, and the sampled frames of a video, go in the track of each "
+                "media object. Needs the `asr` extra and ffmpeg. A linked file "
+                "is fetched only when the backend options `enable_remote_fetch` or `enable_local_fetch` "
+                "allow it. Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Hold the video and audio files that slides play (PPTX, ODP) in the track of each "
+                "media object, so that e.g. a DocLang archive stores them. A linked file is fetched "
+                "only when the backend options `enable_remote_fetch` or `enable_local_fetch` allow it. "
+                "Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    media_asr_options: Annotated[
+        InlineAsrOptions,
+        Field(
+            description=(
+                "Speech recognition model for the media files of `do_media_conversion`."
+            )
+        ),
+    ] = asr_model_specs.WHISPER_TINY
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -1869,6 +1912,17 @@ class AsrPipelineOptions(PipelineOptions):
             )
         ),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the audio (or video) of the transcript "
+                "track, so that e.g. a DocLang archive stores it. The document then "
+                "holds the input's local path. Only file inputs are supported; for a "
+                "stream, no media is kept."
+            )
+        ),
+    ] = False
 
 
 from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
@@ -1890,6 +1944,16 @@ class VideoPipelineOptions(PipelineOptions):
         InlineAsrOptions | ApiAsrOptions,
         Field(description="ASR model configuration for the video audio track."),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the video of the track, so that e.g. a "
+                "DocLang archive stores it. The document then holds the input's local "
+                "path. Only file inputs are supported; for a stream, no media is kept."
+            )
+        ),
+    ] = False
 
     frame_sampling_mode: Annotated[
         VideoFrameSamplingMode,
@@ -2012,6 +2076,28 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     ] = ExtractionPromptStyle.NUEXTRACT
 
 
+# Keyword families of the heading numbering signal, highest hierarchy level first.
+NUMBERING_KEYWORD_FAMILIES: tuple[str, ...] = (
+    "part",  # PART I / TITLE I / BOOK I
+    "chapter",  # CHAPTER 1
+    "division",  # DIVISION I / Division 1 / Division A
+    "subdivision",  # SUBDIVISION A / Subdivision a
+    "article",  # ARTICLE 1 / SECTION 1 / Clause / § 1
+)
+# Numeral schemes, which follow the keyword families. ``dotted`` shares the ``arabic``
+# rank and is ordered below it by its segment depth (1.1 below 1.).
+NUMBERING_NUMERAL_SCHEMES: tuple[str, ...] = (
+    "roman_u",  # I. II. III.
+    "arabic",  # 1. 2. 3.  (and dotted 1.1, 1.1.1 by depth)
+    "alpha_u",  # A. B. C.
+    "alpha_l",  # (a) (b) (c)
+    "roman_l",  # (i) (ii) (iii)
+)
+DEFAULT_NUMBERING_SCHEMES: tuple[str, ...] = (
+    NUMBERING_KEYWORD_FAMILIES + NUMBERING_NUMERAL_SCHEMES
+)
+
+
 class HeadingHierarchyOptions(BaseModel):
     """Options for inferring section-header levels in the PDF/image pipeline.
 
@@ -2107,11 +2193,42 @@ class HeadingHierarchyOptions(BaseModel):
             description=(
                 "Optional override of the numbering-scheme precedence (highest level first). "
                 "Known schemes: 'part', 'chapter', 'division', 'subdivision', 'article', "
-                "'roman_u', 'arabic', 'alpha_u', 'alpha_l', 'roman_l'. When None, a default "
-                "legal/regulatory ordering is used."
+                "'roman_u', 'arabic', 'alpha_u', 'alpha_l', 'roman_l', plus any family that "
+                "`numbering_keywords` defines. When None, a default legal/regulatory ordering "
+                "is used."
             )
         ),
     ] = None
+    numbering_keywords: Annotated[
+        dict[str, list[str]],
+        Field(
+            description=(
+                "Extra keyword markers for the numbering signal, as a mapping from a scheme "
+                "family to its words, for documents that are not in English. A key is one of "
+                "'part', 'chapter', 'division', 'subdivision', 'article', or a new family "
+                "name that `numbering_schemes` must then list. A word given here replaces "
+                "the built-in family of that word. Matching ignores letter case. Words in "
+                "'division' and 'subdivision' count only when an enumerator follows; words "
+                "in every other family also count when they stand alone. Write the dot of "
+                "an abbreviation as part of the word ('art.'). Empty by default."
+            ),
+            examples=[
+                {"chapter": ["rozdział"], "article": ["art.", "artykuł"]},
+            ],
+        ),
+    ] = {}
+    numbering_number_words: Annotated[
+        list[str],
+        Field(
+            description=(
+                "Extra number words that count as the enumerator after a keyword marker, in "
+                "addition to the English ones ('one', 'first', ...). For example "
+                "['pierwszy', 'drugi'] lets 'DZIAŁ PIERWSZY' count as a marker. Matching "
+                "ignores letter case. Empty by default."
+            ),
+            examples=[["premier", "deuxième"]],
+        ),
+    ] = []
     max_level: Annotated[
         int,
         Field(
@@ -2132,6 +2249,54 @@ class HeadingHierarchyOptions(BaseModel):
             ),
         ),
     ] = 0.8
+
+    @field_validator("numbering_keywords", mode="after")
+    @classmethod
+    def _validate_numbering_keywords(
+        cls, value: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        reserved = {*NUMBERING_NUMERAL_SCHEMES, "dotted"}
+        owner: dict[str, str] = {}
+        cleaned: dict[str, list[str]] = {}
+        for family, words in value.items():
+            if not family.strip():
+                raise ValueError("numbering_keywords has an empty family name")
+            if family in reserved:
+                raise ValueError(
+                    f"numbering_keywords cannot add words to the numeral scheme {family!r}"
+                )
+            cleaned[family] = [word.strip() for word in words]
+            for word in cleaned[family]:
+                if not word:
+                    raise ValueError(
+                        f"numbering_keywords[{family!r}] contains an empty word"
+                    )
+                key = unicodedata.normalize("NFC", word).casefold()
+                if owner.setdefault(key, family) != family:
+                    raise ValueError(
+                        f"numbering_keywords lists {word!r} in the families "
+                        f"{owner[key]!r} and {family!r}"
+                    )
+        return cleaned
+
+    @field_validator("numbering_number_words", mode="after")
+    @classmethod
+    def _validate_numbering_number_words(cls, value: list[str]) -> list[str]:
+        cleaned = [word.strip() for word in value]
+        if not all(cleaned):
+            raise ValueError("numbering_number_words contains an empty word")
+        return cleaned
+
+    @model_validator(mode="after")
+    def _validate_keyword_families_are_ordered(self) -> Self:
+        known = {*NUMBERING_KEYWORD_FAMILIES, *(self.numbering_schemes or ())}
+        unplaced = [family for family in self.numbering_keywords if family not in known]
+        if unplaced:
+            raise ValueError(
+                f"numbering_keywords defines the new families {unplaced}; list them in "
+                "numbering_schemes to give them a place in the hierarchy"
+            )
+        return self
 
 
 class ScriptPositionOptions(BaseModel):

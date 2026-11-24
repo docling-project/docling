@@ -10,6 +10,12 @@ Requirements:
 
 Run the tools from the repository root.
 
+| File | Purpose |
+| --- | --- |
+| `sync_prs.py` | Read the open PRs from GitHub, rank them, find whose turn it is, act on them, and save the data to `.cache/prs/`. |
+| `pr_turn.py` | Module: whose turn it is on a PR (maintainers or author). |
+| `gh_helpers.py` | Module: `gh` calls, batched GraphQL reads, progress output, and Chrome tabs. |
+
 ## `sync_prs.py`
 
 Rank the open PRs by how close they are to a merge.
@@ -21,9 +27,13 @@ uv run python scripts/tools/sync_prs.py --approve-ci          # approve safe CI 
 uv run python scripts/tools/sync_prs.py --open-ci-greens-in-tabs
 uv run python scripts/tools/sync_prs.py --pr 5115 --pr 5122   # only these PRs
 uv run python scripts/tools/sync_prs.py --label pdf           # only PRs with this label
+uv run python scripts/tools/sync_prs.py --maintainer @me      # your PRs in the turn list
+uv run python scripts/tools/sync_prs.py --open-maintainer-turn-in-tabs
 ```
 
-A run over 100 PRs takes about 75 seconds. Use `-h` to see all options and
+A run over 100 PRs takes about 90 seconds. Use `--limit 500` to read all
+open PRs: about 300 PRs take 4 to 6 minutes. The longer time is when GitHub
+must compute the merge state of many PRs, and the script reads them again. Use `-h` to see all options and
 their defaults.
 
 While it runs, the script shows status lines (`▸ ...`) and progress bars
@@ -63,23 +73,41 @@ A format label is present only on PRs that a rule or a maintainer labeled. See
 
 ### Output
 
-The script prints four lists:
+The script prints four lists, then the PRs where it is the turn of a
+maintainer again:
 
 1. **Ready to merge**: CI is green, the PR has all the approvals it needs, and
    GitHub reports the merge state `CLEAN`.
-2. **CI green, needs approval**: the PR needs at least one more approval.
+2. **CI green, needs review**: the PR needs at least one more approval.
 3. **Merge conflict**: the PR conflicts with its base branch.
 4. **Other**: drafts, failing or running CI, CI that waits for a maintainer,
    changes requested, and PRs that GitHub blocks for another reason (for
    example, unresolved review threads).
+
+Lists 2 and 4 have these subsections, by whose turn it is (see
+[Maintainer's turn](#maintainers-turn)):
+
+1. **Waits for maintainers to follow up**: a maintainer acted, and the author
+   acted after that, or the last maintainer action is an approval. The
+   longest wait comes first.
+2. **No review started**: no maintainer acted yet.
+3. **Author's turn**: the author did not act after the last maintainer action.
+4. **Opened by a maintainer or a bot**: the turn is not tracked.
+
+The entries of subsections 1 and 3 also show the last maintainer action. In
+list 4, drafts are in the subsections too.
+
+5. **Maintainer's turn again**: a maintainer already acted, and the author
+   acted after that, or the last maintainer action is an approval. See [Maintainer's turn](#maintainers-turn). The PRs are
+   also in one of the four lists.
 
 Each entry shows the reason, for example `1/2 approvals, needs 1 more` or
 `CI failed: lint-and-type`.
 
 The script also saves the metadata of each PR to
 `.cache/prs/<number>/pr.json`: labels, approvers, checks, merge state, changed
-file paths, and the computed rank. It does not download PR code. The folder
-`.cache/` is in `.gitignore`.
+file paths, whose turn it is (`turn`), and the computed rank. It does not
+download PR code. The folder `.cache/` is in `.gitignore`.
 
 ### Rules
 
@@ -141,7 +169,7 @@ The label `ai:ci-safe` is advisory. See
 
 Opens a new Google Chrome window with a tab for each open PR with green CI.
 Your other Chrome windows stay as they are. The order is: ready to merge,
-then needs approval, then the rest (for example, PRs with a merge conflict or
+then needs review, then the rest (for example, PRs with a merge conflict or
 with changes requested).
 
 The script starts Chrome with the flag `--new-window`:
@@ -153,12 +181,66 @@ The script starts Chrome with the flag `--new-window`:
 With 100 PRs this can open more than 50 tabs. Use `--limit` or `--pr` to open
 fewer.
 
+### Maintainer's turn
+
+The section "Maintainer's turn again" lists the open PRs where a maintainer
+already reviewed or commented, and the author acted after that, or the last
+maintainer action is an approval. Drafts are not in this list.
+
+- `--maintainer LOGIN` keeps only the PRs where this maintainer acted. Use
+  `@me` for your own `gh` login. It filters only this section, not the four
+  lists.
+- `--open-maintainer-turn-in-tabs` opens a new Google Chrome window with a tab
+  for each PR of this section, the longest wait first (the same way as
+  `--open-ci-greens-in-tabs`).
+
+[`pr_turn.py`](pr_turn.py) decides whose turn it is, from the last 100
+timeline events and the last 50 review threads of each PR. Each `pr.json` has
+one of these states:
+
+| State | Meaning |
+| --- | --- |
+| `waits for a first review` | No maintainer acted yet. |
+| `maintainer's turn` | The author acted after the last maintainer action, or that action is an approval. |
+| `author's turn` | The author did not act after the last maintainer action. |
+| `not tracked` | An owner, member, collaborator, bot, or `docling-ops` opened the PR. |
+
+- Maintainer actions: reviews, review comments, and conversation comments
+  from owners, members, and collaborators. Bot comments do not count.
+- Author actions: commits, force pushes, comments, reviews, and review thread
+  replies of the PR author.
+- Merge commits (for example "Merge branch 'main' into ...") do not count.
+- Commits of a maintainer on the author's branch do not count.
+- Comments from other contributors do not change whose turn it is.
+- When the last maintainer action is an approval, it stays the turn of the
+  maintainers (`maintainer's turn`): the PR waits for another approval or for
+  the merge. The wait starts at the approval.
+
+The list starts with the PR that waits the longest. The wait starts at the
+first author action after the last maintainer action. Each entry shows the
+reason from the ranking, the last maintainer action, and what the author did
+after it, for example:
+
+```text
+- #5402 fix(vlm): Upgrade Built-in Granite Vision Presets to 4.1-4B
+  @Yashas-naidu · CI waits for maintainer approval · https://github.com/docling-project/docling/pull/5402
+  waits 7 h · last maintainer action: @PeterStaar-IBM, review: changes requested, 21 h ago · since then: 1 comment
+```
+
+Limits:
+
+- On a very long PR, the script can miss older actions (see the event limits
+  above).
+- The script does not read the comment text. An author action can be a plain
+  "please review" comment, and a force push can be a rebase without changes.
+- The commit date is the date in the commit, not the push date.
+
 ### Limits
 
 - The script reads at most 100 changed files per PR. If a larger PR changes
   `tests/data` only after the first 100 files, the script reports 1 required
   approval instead of 2.
-- The script does not read review threads. A PR with enough approvals and
+- The ranking does not use review threads. A PR with enough approvals and
   merge state `BLOCKED` goes to "Other". Check it on GitHub.
 - GitHub computes mergeability on demand. If GitHub still reports `UNKNOWN`
   after one retry, the PR goes to "Other". Run the script again.

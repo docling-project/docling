@@ -55,7 +55,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.items.group import ListGroup
 from docling_core.types.doc.items.text import ListItem, TextItem
 from PIL import Image
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -92,6 +92,7 @@ from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import open_image
 
 _log = logging.getLogger(__name__)
 
@@ -814,7 +815,7 @@ def _picture_image(picture: Picture) -> ImageRef | None:
     if picture.data is None:
         return None
     try:
-        with Image.open(BytesIO(picture.data)) as opened:
+        with open_image(picture.data) as opened:
             return ImageRef.from_pil(image=normalize_image_for_png(opened), dpi=72)
     except (OSError, ValueError) as exc:
         # Pages stores whatever the author placed, including formats Pillow
@@ -1059,9 +1060,9 @@ def _uniform(runs: list[Run]) -> bool:
 def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     """Resolve a link's address to a URL or a local path.
 
-    A Pages document can link to a file next to it as well as to a URL, and an
-    address Pydantic will not accept is dropped rather than allowed to fail the
-    whole conversion.
+    A Pages document can link to a file next to it as well as to a URL. An
+    address ``urlparse`` or Pydantic will not accept is dropped rather than
+    allowed to fail the whole conversion.
 
     Args:
         address: The address the document recorded, if any.
@@ -1071,11 +1072,13 @@ def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     """
     if not address:
         return None
-    if not urlparse(address).scheme:
-        return Path(address)
     try:
+        # ``urlparse`` raises ValueError for a bracketed host that is not IPv6,
+        # before Pydantic gets a chance to reject the address.
+        if not urlparse(address).scheme:
+            return Path(address)
         return AnyUrl(address)
-    except ValidationError:
+    except ValueError:
         _log.debug("Skipping malformed Pages hyperlink address: %r", address)
         return None
 

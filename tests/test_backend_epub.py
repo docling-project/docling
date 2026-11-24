@@ -270,13 +270,15 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 2 body." in text
 
 
-def test_epub_percent_encoded_package_path_is_read(tmp_path: Path):
+@pytest.mark.parametrize("stored_name", ["OEBPS/my book.opf", "OEBPS/my%20book.opf"])
+def test_epub_percent_encoded_package_path_is_read(tmp_path: Path, stored_name: str):
     """The full-path of a rootfile is a URL, so its percent-escapes are decoded.
 
     A reference inside the container is a relative IRI reference, while the
     archive stores the literal file name. A package document whose name holds
     a space is therefore escaped in container.xml, and looking it up with the
-    escape still in place fails the whole conversion.
+    escape still in place fails the whole conversion. Some books store the
+    escaped name as is, and these must still convert.
     """
     container = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -306,7 +308,7 @@ def test_epub_percent_encoded_package_path_is_read(tmp_path: Path):
         zi.compress_type = zipfile.ZIP_STORED
         z.writestr(zi, "application/epub+zip")
         z.writestr("META-INF/container.xml", container)
-        z.writestr("OEBPS/my book.opf", opf)
+        z.writestr(stored_name, opf)
         z.writestr(
             "OEBPS/chapter-0.xhtml",
             '<?xml version="1.0" encoding="UTF-8"?>'

@@ -421,6 +421,34 @@ def test_convert_all_yields_one_result_per_source(
     assert len(service.requests_for("POST", r"/v1/convert/source/async")) == 3
 
 
+@pytest.mark.parametrize("ordered", [False, True])
+@pytest.mark.parametrize("yield_first", [False, True])
+def test_submit_and_retrieve_each_propagates_input_errors(
+    client: DoclingServiceClient, ordered: bool, yield_first: bool
+) -> None:
+    input_error = OSError("input manifest read failed")
+
+    def items() -> Iterator[ConversionItem]:
+        if yield_first:
+            yield ConversionItem(source=SOURCE, metadata="first")
+        raise input_error
+
+    outcomes = []
+    with pytest.raises(OSError, match="input manifest read failed") as caught:
+        for outcome in client.submit_and_retrieve_each(
+            items(), target=InBodyTarget(), max_in_flight=1, ordered=ordered
+        ):
+            outcomes.append(outcome)
+
+    assert caught.value is input_error
+    assert len(outcomes) == int(yield_first)
+    if yield_first:
+        item, result = outcomes[0]
+        assert item.metadata == "first"
+        assert not isinstance(result, BaseException)
+        assert result.status == ConversionStatus.SUCCESS
+
+
 def test_submit_returns_a_job_whose_status_can_be_polled(client, serve):
     serve.polls_before_success = 2
 
@@ -503,6 +531,36 @@ async def test_async_submit_and_retrieve_each_covers_every_item(
     assert {item.metadata for item, _ in pairs} == {"a", "b"}
     assert not [result for _, result in pairs if isinstance(result, Exception)]
     assert len(service.requests_for("POST", r"/v1/convert/source/async")) == 2
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("ordered", [False, True])
+@pytest.mark.parametrize("yield_first", [False, True])
+async def test_async_submit_and_retrieve_each_propagates_input_errors(
+    async_client_kwargs: dict[str, object], ordered: bool, yield_first: bool
+) -> None:
+    input_error = OSError("input manifest read failed")
+
+    def items() -> Iterator[ConversionItem]:
+        if yield_first:
+            yield ConversionItem(source=SOURCE, metadata="first")
+        raise input_error
+
+    outcomes = []
+    async with AsyncDoclingServiceClient(**async_client_kwargs) as remote:
+        with pytest.raises(OSError, match="input manifest read failed") as caught:
+            async for outcome in remote.submit_and_retrieve_each(
+                items(), target=InBodyTarget(), max_in_flight=1, ordered=ordered
+            ):
+                outcomes.append(outcome)
+
+    assert caught.value is input_error
+    assert len(outcomes) == int(yield_first)
+    if yield_first:
+        item, result = outcomes[0]
+        assert item.metadata == "first"
+        assert not isinstance(result, BaseException)
+        assert result.status == ConversionStatus.SUCCESS
 
 
 @pytest.mark.anyio

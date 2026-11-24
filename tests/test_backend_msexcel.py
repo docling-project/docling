@@ -28,6 +28,7 @@ from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
+from openpyxl.styles.numbers import BUILTIN_FORMATS
 from openpyxl.worksheet.merge import MergedCellRange
 from PIL import Image
 
@@ -1022,6 +1023,55 @@ def test_hyperlink_range_is_clipped_to_data(tmp_path: Path) -> None:
     assert (docs_table.num_rows, docs_table.num_cols) == (3, 2)
 
 
+def _number_sheet(rows: int, cols: int) -> Workbook:
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in range(1, rows + 1):
+        for col in range(1, cols + 1):
+            sheet.cell(row, col, row * col)
+    return workbook
+
+
+def test_row_merged_across_the_sheet_keeps_the_data_width(tmp_path: Path) -> None:
+    # The merged range covers all 16,384 columns of the row, but only 30
+    # columns hold data. The table used to have one cell for each column.
+    workbook = _number_sheet(50, 30)
+    sheet = workbook.active
+    sheet.merge_cells("A10:XFD10")
+    sheet["A10"] = "Section"
+    file_path = tmp_path / "merged-row.xlsx"
+    workbook.save(file_path)
+
+    doc = DocumentConverter().convert(file_path).document
+
+    [table] = [item.data for item in doc.tables]
+    assert (table.num_rows, table.num_cols) == (50, 30)
+    [section] = [cell for cell in table.table_cells if cell.text == "Section"]
+    assert (section.start_col_offset_idx, section.col_span) == (0, 30)
+
+
+def test_long_row_next_to_a_narrow_table_is_split(tmp_path: Path) -> None:
+    # A hyperlink range sets its target as the value of each empty cell, so
+    # the link row holds 10,000 values next to 600 rows of 30 values. One
+    # table for the bounding box of these cells would have 6,000,000 cells.
+    workbook = _number_sheet(600, 30)
+    sheet = workbook.active
+    for col in range(1, 31):
+        sheet.cell(10, col).value = None
+    sheet["A10"].hyperlink = "https://example.com/"
+    file_path = tmp_path / "hyperlink-row.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(file_path, 'ref="A10" r:id', 'ref="A10:NTP10" r:id')
+
+    doc = DocumentConverter().convert(file_path).document
+
+    tables = [item.data for item in doc.tables]
+    assert sum(table.num_rows * table.num_cols for table in tables) < 100_000
+    assert (tables[0].num_cols, tables[-1].num_cols) == (30, 30)
+    texts = [cell.text for table in tables for cell in table.table_cells]
+    assert sum(1 for text in texts if text) == 599 * 30 + 10_000
+
+
 def test_split_leading_section_label_helper() -> None:
     backend = object.__new__(MsExcelDocumentBackend)
 
@@ -1554,12 +1604,60 @@ def test_format_excel_value_matches_excel_display() -> None:
         (0, '"$"0;("$"0);"-"', "-"),
         (0, '"$"0;("$"0);', ""),
         (12.5, '0.00"$"', "12.50$"),
+        # Currencies other than $: quoted symbols and [$<symbol>-<locale>] tags.
+        (1234.5, '"€"#,##0.00', "€1,234.50"),
+        (1234.5, '"£"#,##0.00', "£1,234.50"),
+        (-1234.5, '"£"#,##0.00', "-£1,234.50"),
+        (1234.5, '#,##0.00 "€"', "1,234.50 €"),
+        (1234.5, "[$€-407] #,##0.00", "€ 1,234.50"),
+        (1234.5, "#,##0.00 [$€-407]", "1,234.50 €"),
+        (1234.5, "[$₹-4009] #,##0.00", "₹ 1,234.50"),
+        (1234.5, "[$¥-411]#,##0", "¥1,235"),
+        # Accounting formats: the * fill becomes one space, _x padding is
+        # dropped, and the zero section is its literal text.
+        (
+            1234.5,
+            '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)',
+            "$ 1,234.50",
+        ),
+        (
+            -1234.5,
+            '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)',
+            "$ (1,234.50)",
+        ),
+        (0, '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)', "$ -"),
+        (1234.5, '_("$"* #,##0_);_("$"* \\(#,##0\\);_("$"* "-"_);_(@_)', "$ 1,235"),
+        (
+            1234.5,
+            '_-[$€-407]* #,##0.00_-;-[$€-407]* #,##0.00_-;_-[$€-407]* "-"??_-;_-@_-',
+            "€ 1,234.50",
+        ),
+        (
+            -1234.5,
+            '_-[$€-407]* #,##0.00_-;-[$€-407]* #,##0.00_-;_-[$€-407]* "-"??_-;_-@_-',
+            "-€ 1,234.50",
+        ),
+        # openpyxl reports built-in 44 without its section separators.
+        (
+            1234.5,
+            '_("$"* #,##0.00_)_("$"* \\(#,##0.00\\)_("$"* "-"??_)_(@_)',
+            "$ 1,234.50",
+        ),
+        (
+            -1234.5,
+            '_("$"* #,##0.00_)_("$"* \\(#,##0.00\\)_("$"* "-"??_)_(@_)',
+            "$ (1,234.50)",
+        ),
         # Unsupported formats retain the value instead of dropping format semantics.
         (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
         (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
         (0.125, "[>=1]0%;0.0%", "0.125"),
         (12.5, '"$"0.##', "12.5"),
         (12.5, '"$0"0.00', "12.5"),
+        (12.5, '"$"0.0?', "12.5"),
+        (12.5, '"$"€0.00', "12.5"),
+        # Accounting without a currency sign or percent (built-in 43) stays raw.
+        (1234.5, '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)', "1234.5"),
     ],
 )
 def test_excel_number_format_tokens_and_sections(
@@ -1581,6 +1679,9 @@ def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None
         ("Negative", -5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
         ("Percent", 0.125, "0%", "13%"),
         ("Currency", 12.5, "[$$-409]#,##0", "$13"),
+        ("Euro", 1234.5, "[$€-407] #,##0.00", "€ 1,234.50"),
+        ("Rupee", 1234.5, "[$₹-4009] #,##0.00", "₹ 1,234.50"),
+        ("Accounting", -1234.5, BUILTIN_FORMATS[44], "$ (1,234.50)"),
         ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
     ]
     sheet.append(["Format", "Value"])

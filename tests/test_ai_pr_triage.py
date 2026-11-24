@@ -77,6 +77,7 @@ def test_sensitive_paths_force_care_and_hints_only_flag_added_lines() -> None:
     files = [
         {"filename": ".github/workflows/ci.yml", "status": "modified"},
         {"filename": "tests/sub/conftest.py", "status": "added"},
+        {"filename": "tests/data/afp/groundtruth/test_probe.py", "status": "added"},
         {
             "filename": "docling/new.py",
             "status": "renamed",
@@ -97,6 +98,7 @@ def test_sensitive_paths_force_care_and_hints_only_flag_added_lines() -> None:
     assert [f.path for f in report.forced] == [
         ".github/workflows/ci.yml",
         "tests/sub/conftest.py",
+        "tests/data/afp/groundtruth/test_probe.py",
         "AGENTS.md",
     ]
     assert [(h.path, h.kind) for h in report.hints] == [

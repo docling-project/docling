@@ -101,6 +101,16 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
         default=False,
         description=("Generate Python code that recreates the chart."),
     )
+    scale: float = Field(
+        default=2.0,
+        gt=0,
+        description=(
+            "Render scale for the chart crops sent to the model (1.0 = 72 dpi). "
+            "Small chart text needs a high scale to be read correctly. When the "
+            "pipeline stores picture images (`generate_picture_images`), the "
+            "stored image is used instead, at the pipeline `images_scale`."
+        ),
+    )
     output_format: ChartExtractionOutputFormat = Field(
         default=ChartExtractionOutputFormat.GRANITE_VISION_CHARTS,
         description=(

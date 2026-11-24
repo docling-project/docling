@@ -80,3 +80,61 @@ def test_external_plugin_loaded_when_allowed():
         EXTERNAL_PLUGIN_NAME
     )
     assert meta_by_kind["docling_test_external_ocr"].module == EXTERNAL_PLUGIN_MODULE
+
+
+NAMESPACED_PLUGIN_MODULE = "docling.docling_test_namespaced_ocr_plugin"
+NAMESPACED_PLUGIN_NAME = "docling_test_namespaced_ocr"
+
+
+@pytest.fixture
+def namespaced_external_plugin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """Install a third-party distribution that adds a module to the docling package.
+
+    The module name starts with ``docling.``, but the entry point is declared
+    by a distribution that is not Docling.
+    """
+    import docling
+
+    package_dir = tmp_path / "docling"
+    package_dir.mkdir()
+    (package_dir / "docling_test_namespaced_ocr_plugin.py").write_text(
+        EXTERNAL_PLUGIN_SOURCE
+    )
+    monkeypatch.setattr(docling, "__path__", [*docling.__path__, str(package_dir)])
+
+    dist_info = tmp_path / "docling_test_namespaced_plugin-0.1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: docling-test-namespaced-plugin\nVersion: 0.1.0\n"
+    )
+    (dist_info / "entry_points.txt").write_text(
+        f"[docling]\n{NAMESPACED_PLUGIN_NAME} = {NAMESPACED_PLUGIN_MODULE}\n"
+    )
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    sys.modules.pop(NAMESPACED_PLUGIN_MODULE, None)
+    yield
+    sys.modules.pop(NAMESPACED_PLUGIN_MODULE, None)
+
+
+@pytest.mark.usefixtures("namespaced_external_plugin")
+def test_namespaced_external_plugin_not_imported_when_disallowed():
+    factory = _load_ocr_factory(allow_external_plugins=False)
+    plugin_names = {meta.plugin_name for meta in factory.registered_meta.values()}
+
+    assert NAMESPACED_PLUGIN_MODULE not in sys.modules
+    assert NAMESPACED_PLUGIN_NAME not in plugin_names
+    assert "docling_defaults" in plugin_names
+
+
+@pytest.mark.usefixtures("namespaced_external_plugin")
+def test_namespaced_external_plugin_loaded_when_allowed():
+    factory = _load_ocr_factory(allow_external_plugins=True)
+
+    assert NAMESPACED_PLUGIN_MODULE in sys.modules
+    meta_by_kind = {meta.kind: meta for meta in factory.registered_meta.values()}
+    assert meta_by_kind["docling_test_external_ocr"].plugin_name == (
+        NAMESPACED_PLUGIN_NAME
+    )

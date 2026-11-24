@@ -236,6 +236,17 @@ def test_caption_with_partial_link_has_no_hyperlink():
     assert captions[0].hyperlink is None
 
 
+def test_malformed_link_keeps_text_without_hyperlink():
+    """A malformed URL gives no hyperlink, and the next link is not affected."""
+    doc = _convert_html(
+        b'<html><body><p><a href="https://api.example.com:{port}/v1">API</a>'
+        b' and <a href="https://example.com/ok">ok</a></p></body></html>'
+    )
+
+    links = [(item.text, item.hyperlink) for item in doc.texts if item.text.strip()]
+    assert links == [("API and ", None), ("ok", AnyUrl("https://example.com/ok"))]
+
+
 def test_table_header_rowspan_without_body_does_not_crash():
     # A table whose only row is a `th` with rowspan (no body rows to span into)
     # used to raise IndexError: get_html_table_row_col counts no rows for an
@@ -3343,3 +3354,43 @@ def test_inline_quotation_marks_follow_the_language():
         "「はい」",
         "“unknown”",
     ]
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        "<details><summary>Show example</summary><p>Run it twice</p></details>",
+        "<details><summary>Show example</summary><h5>Run it twice</h5></details>",
+    ],
+    ids=["paragraph", "heading"],
+)
+def test_details_in_table_cell_stays_in_the_cell(details: str):
+    # The content of a <details> in a table cell belongs to that cell. It was
+    # left under the body, so it came out again after the table, and the cell
+    # text ran its parts together.
+    html = (
+        "<html><body><h1>Title</h1><table>"
+        "<tr><th>Option</th><th>Notes</th></tr>"
+        f"<tr><td>retry</td><td>{details}</td></tr>"
+        "</table><p>After the table</p></body></html>"
+    ).encode()
+    doc = _convert_html(html)
+
+    assert len(doc.tables) == 1
+    cell = next(
+        c
+        for c in doc.tables[0].data.table_cells
+        if c.start_row_offset_idx == 1 and c.start_col_offset_idx == 1
+    )
+    assert isinstance(cell, RichTableCell)
+    for text in ("Show example", "Run it twice"):
+        item = next(t for t in doc.texts if t.text == text)
+        ancestor = item.parent
+        while ancestor is not None and ancestor != cell.ref:
+            ancestor = ancestor.resolve(doc).parent
+        assert ancestor == cell.ref, f"{text!r} is not inside its table cell"
+
+    markdown = doc.export_to_markdown()
+    assert markdown.count("Run it twice") == 1
+    assert "exampleRun" not in markdown
+    assert markdown.rstrip().endswith("After the table")

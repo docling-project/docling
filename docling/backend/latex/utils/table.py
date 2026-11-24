@@ -190,8 +190,15 @@ class TableHelperMixin:
                 current_row.append(None)
 
         def finish_row():
-            if current_cell_nodes:
+            # What follows the last \\ of a table is only whitespace and rules,
+            # which must not become a row of one empty cell.
+            if current_cell_nodes and (
+                current_row
+                or self._contains_math(current_cell_nodes)
+                or self._nodes_to_text(current_cell_nodes).strip()
+            ):
                 finish_cell()
+            current_cell_nodes.clear()
             if current_row:
                 rows.append(current_row[:])
             current_row.clear()
