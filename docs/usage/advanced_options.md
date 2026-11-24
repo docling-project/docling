@@ -378,6 +378,33 @@ docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
 
+### Keep the original characters in PDF text
+
+By default, the docling-parse backend normalizes some Unicode characters in the
+extracted text. For example, dash and minus variants become `-`, so
+`pages 3–5` becomes `pages 3-5`. The `do_char_normalization` backend option
+controls this step (it is passed to docling-parse
+`DecodeConfig.do_char_normalization`). Set it to `False` to keep the characters
+as the PDF encodes them:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            backend_options=PdfBackendOptions(do_char_normalization=False)
+        )
+    }
+)
+```
+
+The option applies only to the docling-parse backend. Some characters can still
+be normalized when the option is off; see the docling-parse documentation for
+the exact set.
+
 ### Recover PDF heading levels
 
 The layout model marks section headers but not how deep they sit, so by default every heading in a

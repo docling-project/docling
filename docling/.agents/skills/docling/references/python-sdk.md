@@ -89,6 +89,20 @@ on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
 
+### Keeping the original characters (docling-parse)
+
+By default, docling-parse normalizes some Unicode characters in the text it
+extracts, for example dash and minus variants become `-`. To keep the
+characters as the PDF encodes them, set the backend option:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+
+PdfFormatOption(backend_options=PdfBackendOptions(do_char_normalization=False))
+```
+
+The option applies only to the docling-parse backend.
+
 ### Choosing an OCR engine
 
 ```python
