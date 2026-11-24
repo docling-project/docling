@@ -17,6 +17,7 @@ GO_MAIN = 'package main\n\nfunc main() {\n    fmt.Println("hi")\n}\n'
 RUST_MAIN = 'fn main() {\n    let mut total = 0;\n    println!("{}", total);\n}\n'
 JAVA_CLASS = "import java.util.List;\n\npublic class App {\n    int x;\n}\n"
 CSHARP_HELLO = 'using System;\n\nConsole.WriteLine("hi");\n'
+CSHARP_NAMESPACE = "namespace MyApp.Models\n{\n    class User {}\n}\n"
 C_HELLO = '#include <stdio.h>\n\nint main() {\n    printf("hi");\n}\n'
 CPP_HELLO = '#include <iostream>\n\nint main() {\n    std::cout << "hi";\n}\n'
 SQL_QUERY = "SELECT id, name FROM users WHERE active = 1;"
@@ -38,6 +39,7 @@ BASH_SCRIPT = "#!/bin/bash\nset -euo pipefail\necho hello\n"
         (RUST_MAIN, CodeLanguageLabel.RUST),
         (JAVA_CLASS, CodeLanguageLabel.JAVA),
         (CSHARP_HELLO, CodeLanguageLabel.C_SHARP),
+        (CSHARP_NAMESPACE, CodeLanguageLabel.C_SHARP),
         (C_HELLO, CodeLanguageLabel.C),
         (CPP_HELLO, CodeLanguageLabel.C_PLUS_PLUS),
         (SQL_QUERY, CodeLanguageLabel.SQL),
@@ -75,6 +77,9 @@ def test_detect_from_content(text, expected):
         # interface/enum exist in Java and C# too, so they are not TS-distinctive.
         "public interface Repository {\n    void save();\n}",
         "public enum Color { RED, GREEN, BLUE }",
+        # A single-word namespace is valid C++ (and PHP), not only C#.
+        "namespace utils {\nint add(int a, int b) { return a + b; }\n}\n",
+        "namespace App;\n\nclass User {}\n",
         # SQL embedded in a string literal is not a SQL document.
         'cur.execute("select id from users where active = 1")',
         # Multi-line prose must not read as SQL just because a line opens with a
