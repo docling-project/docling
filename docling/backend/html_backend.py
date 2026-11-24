@@ -2873,16 +2873,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             tag: The details tag.
             doc: Currently used document.
+
+        Yields:
+            The group created for the details tag.
         """
-        self.parents[self.level + 1] = doc.add_group(
+        group = doc.add_group(
             name=tag.name,
             label=GroupLabel.SECTION,
             parent=self.parents[self.level],
             content_layer=self.content_layer,
         )
+        self.parents[self.level + 1] = group
         self.level += 1
         try:
-            yield None
+            yield group
         finally:
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -3833,8 +3837,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._walk(tag, doc)
 
         elif tag_name == "details":
-            with self._use_details(tag, doc):
+            with self._use_details(tag, doc) as details_group:
                 self._walk(tag, doc)
+            # Return the group so a table cell holding the details can claim it
+            # instead of leaving it after the table.
+            added_refs.append(details_group.get_ref())
         return added_refs
 
     @staticmethod
