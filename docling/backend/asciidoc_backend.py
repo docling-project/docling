@@ -1237,19 +1237,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     def _continue_table(
         cls, table_data: list[list[_TableCellSource]], line: str
     ) -> bool:
-        """Consume a line between |=== delimiters that is not a row.
+        """Consume a blank, wrapped or indented row line in a table, else return False.
 
-        A blank line only separates rows, and a line without a leading "|"
-        continues the cell above it. Returns False for any other line.
+        Wrapped text continues the cell above it, and each "|" in it opens a cell.
         """
         stripped = line.strip()
         if stripped == "|===" or cls._is_table_line(line):
             return False
-        if stripped and not table_data:
+        if cls._is_table_line(stripped):
+            table_data.append(cls._parse_table_cells(stripped))
+        elif stripped and not table_data:
             return False
-        if stripped:
-            cell = table_data[-1][-1]
-            cell.text = f"{cell.text} {stripped}".lstrip()
+        elif stripped:
+            head, *cells = cls._parse_table_cells(f"| {stripped}")
+            table_data[-1][-1].text = f"{table_data[-1][-1].text} {head.text}".strip()
+            table_data[-1].extend(cells)
         return True
 
     @staticmethod
