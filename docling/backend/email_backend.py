@@ -130,7 +130,8 @@ def _unflow(text: str, delsp: bool) -> str:
         if stripped.startswith(" "):
             stripped = stripped[1:]
         prefix = ">" * depth + " " if depth else ""
-        if flowing and lines and lines[-1][1] == depth and stripped != "-- ":
+        joins = flowing and lines and lines[-1][1] == depth
+        if joins and stripped and stripped != "-- ":
             lines[-1] = (lines[-1][0] + stripped, depth)
         else:
             lines.append((prefix + stripped, depth))

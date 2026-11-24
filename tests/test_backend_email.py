@@ -156,6 +156,11 @@ This is a second paragraph.
         ),
         (
             "",
+            b"Hi Bob, \n\nThis is a long line that \nwas wrapped.\n",
+            ["Hi Bob,", "This is a long line that was wrapped."],
+        ),
+        (
+            "",
             b"Thanks \n-- \nAlice\n",
             ["Thanks \n-- \nAlice"],
         ),
