@@ -894,7 +894,7 @@ def test_unexecuted_sources_release_backend(tmp_path, monkeypatch, kind):
             source, target=_target(), raises_on_error=False, **kwargs
         )
         assert result.status == ConversionStatus.FAILURE
-    assert len(unloaded) == 1 and unloaded[0]._frames == []
+    assert len(unloaded) == 1 and unloaded[0]._source is None
 
 
 def test_pipeline_target_boundary_and_invalid_call_cleanup(tmp_path, monkeypatch):

@@ -12,7 +12,14 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-RUFF_DIRECTORIES = ("docling", "tests", "docs/examples", "perfs", ".github/scripts")
+RUFF_DIRECTORIES = (
+    "docling",
+    "tests",
+    "docs/examples",
+    "scripts/benchmarking",
+    "scripts/tools",
+    ".github/scripts",
+)
 TY_DIRECTORIES = ("docling", ".github/scripts")
 TOOLING_SMOKE_TRIGGER_PATHS = (
     ".github/scripts/run_pr_fast_checks.py",

@@ -9,7 +9,10 @@ from docling_core.types.doc.base import BoundingBox, Size
 from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
-from tests.verify_utils import verify_docitems, verify_export
+from tests.verify_utils import (
+    verify_docitems,
+    verify_export,
+)
 
 
 def _make_doc_with_bbox(

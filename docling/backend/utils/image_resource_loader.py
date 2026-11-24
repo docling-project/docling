@@ -5,8 +5,8 @@
 
 Turns an image source (a URI, a local file, or a remote URL) into a DoclingDocument
 `ImageRef`, enforcing the relevant safety limits: a path-traversal guard when resolving
-relative paths, the `enable_local_fetch` / `enable_remote_fetch` toggles, and the
-base64 and remote download size caps.
+relative paths, the `enable_local_fetch` / `enable_remote_fetch` toggles, the
+base64 and remote download size caps, and a limit on the decoded image pixels.
 """
 
 import base64
@@ -22,17 +22,21 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
-from urllib.parse import urljoin, urlparse, urlsplit
+from urllib.parse import unquote, urljoin, urlparse, urlsplit
+from urllib.request import url2pathname
 
 import certifi
 import requests
 import urllib3
 from docling_core.types.doc.document import ImageRef
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import ValidationError
 from requests.utils import get_environ_proxies, select_proxy
 
+from docling.backend.utils.image import normalize_image_for_png
+from docling.datamodel.backend_options import DEFAULT_MAX_IMAGE_PIXELS
 from docling.exceptions import OperationNotAllowed
+from docling.utils.image_utils import check_image_pixels, open_image
 
 _log = logging.getLogger(__name__)
 
@@ -267,6 +271,7 @@ class ImageResourceLoader:
         enable_remote_fetch: bool = False,
         max_image_data_base64_bytes: int = 20 * 1024 * 1024,
         max_remote_image_bytes: int = 20 * 1024 * 1024,
+        max_image_pixels: int = DEFAULT_MAX_IMAGE_PIXELS,
         max_redirects: int = 5,
         headers: Optional[dict[str, str]] = None,
         header_origins: Iterable[str] = (),
@@ -275,6 +280,7 @@ class ImageResourceLoader:
         self.enable_remote_fetch = enable_remote_fetch
         self.max_image_data_base64_bytes = max_image_data_base64_bytes
         self.max_remote_image_bytes = max_remote_image_bytes
+        self.max_image_pixels = max_image_pixels
         self.max_redirects = max_redirects
         self.headers = headers
         # Only requests to these origins carry the configured `headers`.
@@ -306,7 +312,35 @@ class ImageResourceLoader:
             and not parsed_loc.netloc
         )
 
-    def resolve_relative_path(self, loc: str, base_path: Optional[str]) -> str:
+    @staticmethod
+    def normalize_local_base_path(value: str) -> str:
+        """Convert a file URI to a native path; leave other bases unchanged.
+
+        Raise ValueError for an empty path or an unsupported authority.
+        This operation does not grant permission to read local files.
+        """
+        parsed = urlparse(value)
+        if parsed.scheme.lower() != "file":
+            return value
+
+        path = parsed.path
+        if not path:
+            raise ValueError("Invalid file URI: empty path")
+        if parsed.netloc and parsed.netloc.lower() != "localhost":
+            if os.name != "nt":
+                raise ValueError(
+                    "Non-localhost file URI authorities require Windows UNC paths"
+                )
+            path = f"//{parsed.netloc}{path}"
+        return url2pathname(path)
+
+    def resolve_relative_path(
+        self, loc: str, base_path: Optional[str], *, decode_url_path: bool = False
+    ) -> str:
+        """Resolve a resource, optionally decoding local URL paths before confinement.
+
+        Native path callers keep percent characters unchanged by default.
+        """
         loc = loc.strip()
 
         # Strip file:// prefix for validation as local path
@@ -316,13 +350,22 @@ class ImageResourceLoader:
         abs_loc = loc
 
         if base_path:
+            base_path = self.normalize_local_base_path(base_path)
             if loc.startswith("//"):
                 abs_loc = "https:" + loc
             elif not loc.startswith(("http://", "https://", "data:", "#")):
                 if ImageResourceLoader.is_remote_url(base_path):
                     abs_loc = urljoin(base_path, loc)
                 elif ImageResourceLoader.is_local_path(base_path):
-                    if ImageResourceLoader.is_absolute_path(loc):
+                    if decode_url_path and not ImageResourceLoader.is_absolute_path(
+                        loc
+                    ):
+                        parsed_loc = urlsplit(loc)
+                        if not parsed_loc.scheme:
+                            loc = unquote(parsed_loc.path)
+                    if ImageResourceLoader.is_absolute_path(loc) or (
+                        decode_url_path and loc.startswith(("/", "\\"))
+                    ):
                         raise ValueError(
                             f"Absolute paths are not allowed with local base_path: '{loc}'"
                         )
@@ -347,14 +390,25 @@ class ImageResourceLoader:
         try:
             img_data = self.load_image_data(src_url, base_path)
             if img_data:
-                img = Image.open(BytesIO(img_data))
-                return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
+                img = open_image(BytesIO(img_data))
+                # open_image reads only the header: check the size before
+                # the pixels are decoded.
+                check_image_pixels(img.size, self.max_image_pixels)
+                img.load()
+                # A camera stores an orientation tag rather than rotated pixels,
+                # and a browser shows the image turned by it.
+                img = ImageOps.exif_transpose(img)
+                # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+                dpi = int(img.info.get("dpi", (72,))[0]) or 72
+                return ImageRef.from_pil(normalize_image_for_png(img), dpi=dpi)
         except (
+            Image.DecompressionBombError,
             requests.RequestException,
             urllib3.exceptions.HTTPError,
             ValidationError,
             UnidentifiedImageError,
             OperationNotAllowed,
+            OSError,
             TypeError,
             ValueError,
         ) as e:
@@ -454,6 +508,14 @@ class ImageResourceLoader:
             return self.fetch_remote(src_loc).content
         elif src_loc.startswith("data:"):
             encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
+            # Check the size before decoding: 4 base64 characters hold 3
+            # bytes, less one byte for each "=" padding character.
+            padding = len(encoded_data[-2:]) - len(encoded_data[-2:].rstrip("="))
+            decoded_size = len(encoded_data) * 3 // 4 - padding
+            if decoded_size > self.max_image_data_base64_bytes:
+                raise ValueError(
+                    f"Decoded image exceeds size limit of {self.max_image_data_base64_bytes} bytes."
+                )
             decoded_data = base64.b64decode(encoded_data)
 
             if len(decoded_data) > self.max_image_data_base64_bytes:

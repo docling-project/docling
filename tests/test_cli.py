@@ -9,7 +9,7 @@ import subprocess
 import sys
 import zipfile
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any
 
 import pytest
@@ -18,6 +18,7 @@ from click.utils import strip_ansi
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils import file as file_utils
 from PIL import Image
+from rich.console import Console
 from typer.main import get_command
 from typer.testing import CliRunner
 
@@ -30,7 +31,12 @@ from docling.cli.main import app
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
+from docling.datamodel.pipeline_options import (
+    OcrMode,
+    PdfBackend,
+    TableFormerMode,
+    VlmPipelineOptions,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
 from docling.document_converter import PdfFormatOption
 from tests.fakes.image_server import SERVER_IP, local_server, use_test_network
@@ -127,6 +133,12 @@ def test_cli_convert_help():
     assert "layour" not in result.output
     assert "input_sources" not in result.output
     assert "--output-file" in strip_ansi(result.output)
+    embedded_images_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "use_embedded_picture_images"
+    )
+    assert "--use-embedded-picture-images" in embedded_images_option.opts
     separator_option = next(
         parameter
         for parameter in convert_command.params
@@ -134,6 +146,20 @@ def test_cli_convert_help():
     )
     assert separator_option.opts == ["--reading-order-separators"]
     assert separator_option.secondary_opts == ["--no-reading-order-separators"]
+    metavar_by_name = {
+        parameter.name: parameter.metavar for parameter in convert_command.params
+    }
+    for name in (
+        "from_formats",
+        "layout_engine",
+        "table_structure_engine",
+        "ocr_engine",
+    ):
+        assert metavar_by_name[name].startswith("[")
+    assert "odf" in metavar_by_name["from_formats"]
+    assert metavar_by_name["ocr_engine"] == (
+        "[auto|easyocr|kserve_v2_ocr|nemotron-ocr|ocrmac|rapidocr|tesserocr|tesseract]"
+    )
 
 
 def test_cli_version():
@@ -149,6 +175,18 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def test_cli_convert_exits_nonzero_when_a_document_fails(tmp_path):
+    source = tmp_path / "broken.pdf"
+    source.write_bytes(b"this is not a PDF")
+    output = tmp_path / "out"
+    output.mkdir()
+
+    result = runner.invoke(app, [str(source), "--output", str(output)])
+
+    assert result.exit_code == 1
+    assert not (output / "broken.md").exists()
 
 
 def test_cli_exports_doclang(tmp_path):
@@ -224,6 +262,42 @@ def test_cli_exports_dclx(tmp_path):
     with zipfile.ZipFile(converted) as archive:
         payload = b"".join(archive.read(name) for name in archive.namelist())
     assert b"DCLX CLI" in payload
+
+
+@pytest.mark.parametrize("keep_source", [True, False])
+def test_cli_exports_dclx_with_source(tmp_path, keep_source):
+    source = tmp_path / "input.md"
+    source.write_text("# DCLX CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    args = [str(source), "--from", "md", "--to", "dclx", "--output", str(output)]
+    if keep_source:
+        args.append("--keep-source")
+    result = runner.invoke(app, args)
+
+    assert result.exit_code == 0
+    with zipfile.ZipFile(output / "input.dclx") as archive:
+        names = archive.namelist()
+        if keep_source:
+            assert archive.read("source.md") == source.read_bytes()
+            assert b'name="input.md"' in archive.read("source-metadata.xml")
+            assert b"text/markdown" in archive.read("[Content_Types].xml")
+        else:
+            assert not [name for name in names if name.startswith("source")]
+
+
+def test_archive_source_needs_a_local_file(tmp_path, caplog):
+    from types import SimpleNamespace
+
+    from docling.cli.main import _archive_source
+
+    local = tmp_path / "input.md"
+    local.write_text("# Hi", encoding="utf-8")
+    assert _archive_source(SimpleNamespace(input=SimpleNamespace(file=local))) == local
+    # a stream input only has a name, even when a file of that name exists
+    stream = SimpleNamespace(input=SimpleNamespace(file=PurePath(str(local))))
+    assert _archive_source(stream) is None
+    assert "not a local file" in caplog.text
 
 
 def test_cli_exports_to_exact_output_file(tmp_path):
@@ -435,6 +509,52 @@ def test_cli_picture_description_max_new_tokens(
     )
 
 
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [([], False), (["--heading-hierarchy"], True)],
+)
+def test_cli_heading_hierarchy_flag(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    args: list[str],
+    expected: bool,
+) -> None:
+    captured_pdf_option: PdfFormatOption | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pdf_option
+            captured_pdf_option = format_options[InputFormat.PDF]
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(app, [source, "--output", str(tmp_path / "out"), *args])
+
+    assert result.exit_code == 0, result.output
+    assert captured_pdf_option is not None
+    assert (
+        captured_pdf_option.pipeline_options.heading_hierarchy_options.enabled
+        is expected
+    )
+
+
 def test_cli_vlm_max_new_tokens(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -485,6 +605,199 @@ def test_cli_vlm_max_new_tokens(
         captured_pdf_option.pipeline_options.vlm_options.model_spec.max_new_tokens
         == 321
     )
+
+
+def _invoke_cli_with_fake_converter(
+    monkeypatch: pytest.MonkeyPatch, args: list[str]
+) -> tuple[Any, dict[str, Any]]:
+    """Run `docling convert` and capture what it passes to the converter."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options) -> None:
+            captured["allowed_formats"] = allowed_formats
+            captured["format_options"] = format_options
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    return runner.invoke(app, args), captured
+
+
+def test_cli_vlm_model_selects_vlm_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from docling.datamodel.pipeline_options import VlmConvertOptions
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [source, "--vlm-model", "surya_ocr2_5", "--output", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    pdf_option = captured["format_options"][InputFormat.PDF]
+    assert pdf_option.pipeline_cls is VlmPipeline
+    assert (
+        pdf_option.pipeline_options.vlm_options.model_spec
+        == VlmConvertOptions.from_preset("surya_ocr2_5").model_spec
+    )
+
+
+@pytest.mark.parametrize("pipeline", ["standard", "legacy", "native", "asr"])
+def test_cli_vlm_model_rejects_conflicting_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pipeline: str
+) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            source,
+            "--pipeline",
+            pipeline,
+            "--vlm-model",
+            "surya_ocr2_5",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "format_options" not in captured
+
+
+def test_cli_vlm_and_asr_models_route_mixed_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            source,
+            "--vlm-model",
+            "surya_ocr2_5",
+            "--asr-model",
+            "whisper_base",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    format_options = captured["format_options"]
+    assert format_options[InputFormat.PDF].pipeline_cls is VlmPipeline
+    assert format_options[InputFormat.AUDIO].pipeline_cls is AsrPipeline
+
+
+def test_cli_default_pipeline_stays_standard_without_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch, [source, "--output", str(tmp_path)]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (
+        captured["format_options"][InputFormat.PDF].pipeline_cls is StandardPdfPipeline
+    )
+
+
+@pytest.mark.parametrize("convert_media", [False, True])
+def test_cli_convert_media_transcribes_slide_media(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    convert_media: bool,
+) -> None:
+    """--convert-media transcribes slide media with the model of --asr-model."""
+    source = "./tests/data/pptx/sources/powerpoint_sample.pptx"
+    args = [source, "--asr-model", "whisper_base", "--output", str(tmp_path)]
+    if convert_media:
+        args.append("--convert-media")
+    result, captured = _invoke_cli_with_fake_converter(monkeypatch, args)
+
+    assert result.exit_code == 0, result.output
+    format_options = captured["format_options"]
+    for input_format in (InputFormat.PPTX, InputFormat.ODP):
+        options = format_options[input_format].pipeline_options
+        assert options.do_media_conversion is convert_media
+        if convert_media:
+            assert options.media_asr_options == (
+                format_options[InputFormat.AUDIO].pipeline_options.asr_options
+            )
+    # without --convert-media, --asr-model is not used for a presentation
+    assert ("--asr-model has no effect" in caplog.text) is not convert_media
+
+
+def test_cli_asr_pipeline_accepts_only_audio_and_video(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    audio_file = tmp_path / "recording.mp3"
+    audio_file.write_bytes(b"audio")
+    artifacts_path = tmp_path / "models"
+    artifacts_path.mkdir()
+
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            str(audio_file),
+            "--pipeline",
+            "asr",
+            "--artifacts-path",
+            str(artifacts_path),
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert set(captured["allowed_formats"]) == {InputFormat.AUDIO, InputFormat.VIDEO}
+    audio_options = captured["format_options"][InputFormat.AUDIO].pipeline_options
+    assert audio_options.artifacts_path == artifacts_path
+
+    result, _ = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [str(audio_file), "--pipeline", "asr", "--from", "pdf"],
+    )
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize(
+    ("file_name", "expect_warning"), [("doc.pdf", True), ("recording.mp3", False)]
+)
+def test_cli_asr_model_warns_when_no_input_can_use_it(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    file_name: str,
+    expect_warning: bool,
+) -> None:
+    source = tmp_path / file_name
+    source.write_bytes(b"content")
+
+    result, _ = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [str(source), "--asr-model", "whisper_base", "--output", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert ("--asr-model has no effect" in caplog.text) is expect_warning
 
 
 def test_cli_html_fetches_local_images_per_input(tmp_path):
@@ -1164,6 +1477,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
             "7",
             "--release-native-memory-every-n-pages",
             "64",
+            "--use-embedded-picture-images",
         ],
     )
 
@@ -1173,6 +1487,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
     assert captured_backend_options.release_native_memory_every_n_pages == 64
+    assert captured_backend_options.include_bitmap_images is True
 
 
 # Pipeline and backend selection are independent in the CLI routing, so pair
@@ -1606,6 +1921,126 @@ def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
     assert ocr_options.kind == "easyocr"
 
 
+def _flatten_error_box(output: str) -> str:
+    """Join the lines of a rich error box into one line of text."""
+    return re.sub(r"[\s│]+", " ", strip_ansi(output))
+
+
+def test_cli_ocr_option_sets_engine_fields(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch,
+        [
+            "--ocr-engine",
+            "rapidocr",
+            "--ocr-option",
+            "model_size=tiny",
+            "--ocr-option",
+            "text_score=0.6",
+            "--ocr-option",
+            'lang=["en"]',
+            "--ocr-option",
+            "use_det=false",
+        ],
+        tmp_path,
+        "ocr_options",
+    )
+    assert result.exit_code == 0, result.output
+    assert ocr_options.model_size == "tiny"
+    assert ocr_options.text_score == 0.6
+    assert ocr_options.lang == ["en"]
+    assert ocr_options.use_det is False
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected"),
+    [
+        (
+            ["--ocr-engine", "rapidocr", "--ocr-option", "model_sise=tiny"],
+            "unknown key 'model_sise' for engine 'rapidocr'",
+        ),
+        (
+            ["--ocr-engine", "rapidocr", "--ocr-option", "model_size=huge"],
+            "model_size:",
+        ),
+        (
+            ["--ocr-engine", "rapidocr", "--ocr-option", "model_size"],
+            "expected KEY=VALUE",
+        ),
+        (
+            [
+                "--ocr-engine",
+                "rapidocr",
+                "--ocr-lang",
+                "en",
+                "--ocr-option",
+                'lang=["de"]',
+            ],
+            "also set by --ocr-lang",
+        ),
+        (
+            ["--table-mode", "fast", "--table-structure-option", "mode=accurate"],
+            "also set by --table-mode",
+        ),
+        (
+            ["--layout-option", "no_such_key=1"],
+            "unknown key 'no_such_key'",
+        ),
+    ],
+)
+def test_cli_engine_option_rejects_invalid_input(
+    tmp_path, monkeypatch, extra_args, expected
+):
+    result, _ = _capture_cli_engine_options(
+        monkeypatch, extra_args, tmp_path, "ocr_options"
+    )
+    assert result.exit_code == 2
+    assert expected in _flatten_error_box(result.output)
+
+
+def test_cli_table_structure_option_sets_engine_fields(tmp_path, monkeypatch):
+    result, table_options = _capture_cli_engine_options(
+        monkeypatch,
+        [
+            "--table-structure-option",
+            "mode=fast",
+            "--table-structure-option",
+            "do_cell_matching=false",
+        ],
+        tmp_path,
+        "table_structure_options",
+    )
+    assert result.exit_code == 0, result.output
+    assert table_options.mode == TableFormerMode.FAST
+    assert table_options.do_cell_matching is False
+
+
+def test_cli_deprecated_psm_still_sets_tesseract_psm(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--ocr-engine", "tesseract", "--psm", "4"],
+        tmp_path,
+        "ocr_options",
+    )
+    assert result.exit_code == 0, result.output
+    assert ocr_options.psm == 4
+
+
+def test_cli_options_lists_engine_fields(monkeypatch):
+    # The CLI console reads `COLUMNS` at import time, so a narrow CI terminal
+    # would truncate the table. Give the command a wide console instead.
+    monkeypatch.setattr("docling.cli.main.console", Console(width=200))
+    result = runner.invoke(app, ["options", "ocr", "rapidocr"])
+    assert result.exit_code == 0, result.output
+    assert "model_size" in result.output
+    assert "[tiny|small|medium]" in result.output
+
+
+def test_cli_options_rejects_unknown_engine():
+    result = runner.invoke(app, ["options", "layout", "no_such_engine"])
+    assert result.exit_code == 2
+    assert "unknown engine 'no_such_engine'" in _flatten_error_box(result.output)
+
+
 @pytest.mark.parametrize(
     ("extra_args", "expected"),
     [
@@ -1760,6 +2195,24 @@ def _capture_cli_asr_pipeline_options(monkeypatch, extra_args, tmp_path):
     return result, captured.get("asr_pipeline_options")
 
 
+def test_cli_transformers_asr_flags_reach_pipeline_options(tmp_path, monkeypatch):
+    from docling.datamodel.asr_model_specs import GRANITE_SPEECH_5_0_2B
+
+    result, options = _capture_cli_asr_pipeline_options(
+        monkeypatch,
+        [
+            "--asr-model",
+            "granite_speech_5_0_2b",
+            "--asr-language",
+            "de",
+        ],
+        tmp_path,
+    )
+    assert result.exit_code == 0, result.output
+    assert options.asr_options.language == "de"
+    assert GRANITE_SPEECH_5_0_2B.language is None
+
+
 def test_cli_allow_external_plugins_reaches_asr_pipeline_options(tmp_path, monkeypatch):
     """Regression test for #3284: `--allow-external-plugins` and
     `--enable-remote-services` were parsed correctly but never passed into
@@ -1895,3 +2348,23 @@ def test_cli_native_pipeline_parser_threads(
     assert captured["pipeline_options"].parser_threads == 3
     assert captured["backend_options"].parser_threads == 3
     assert captured["pipeline_options"].accelerator_options.num_threads == 7
+
+
+def test_form_fields_with_doctags_are_rejected_before_reading_inputs(
+    tmp_path: Path,
+) -> None:
+    # DocTags has no tokens for form fields and its export raises on them. The
+    # source does not exist: the options alone are refused, nothing is read.
+    result = runner.invoke(
+        app,
+        [
+            str(tmp_path / "missing.pdf"),
+            "--extract-form-fields",
+            "--to",
+            "doctags",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 2  # usage error, not the missing-input abort
+    assert "--extract-form-fields cannot be combined" in strip_ansi(result.output)

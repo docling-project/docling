@@ -710,8 +710,13 @@ class LayoutPostprocessor:
                 b=max(cell.rect.to_bounding_box().b for cell in cluster.cells),
             )
 
-            if cluster.label == DocItemLabel.TABLE:
-                # For tables, take union of current bbox and cells bbox
+            if cluster.label in {
+                DocItemLabel.TABLE,
+                DocItemLabel.CHECKBOX_SELECTED,
+                DocItemLabel.CHECKBOX_UNSELECTED,
+            }:
+                # For tables, take union of current bbox and cells bbox; a
+                # checkbox keeps its drawn box, which holds no text cell
                 cluster.bbox = BoundingBox(
                     l=min(cluster.bbox.l, cells_bbox.l),
                     t=min(cluster.bbox.t, cells_bbox.t),

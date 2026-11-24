@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import sys
 import zipfile
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -40,7 +41,7 @@ from docling.backend.opendocument_backend import (
     OdsDocumentBackend,
     OdtDocumentBackend,
 )
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
@@ -52,6 +53,7 @@ from odfdo import (
     Bookmark,
     Cell,
     Document as OdfDocument,
+    DrawGroup,
     DrawPage,
     Element,
     Frame,
@@ -259,6 +261,122 @@ def test_odt_section_preserves_split_list_continuation(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odt_hidden_section_goes_to_invisible_layer(tmp_path: Path):
+    """A hidden section (``text:display="none"``) is left out of the export.
+
+    Its content, nested sections included, stays available in
+    ``ContentLayer.INVISIBLE``, the same as a hidden ODS sheet or ODP slide.
+    """
+    path = tmp_path / "hidden_section.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(Paragraph("Question"))
+    hidden = Section(name="Answers")
+    hidden.set_attribute("text:display", "none")
+    hidden.append(Header(1, "Answer key"))
+    table = Table("Answers", width=1, height=1)
+    table.set_value("A1", "42")
+    hidden.append(table)
+    nested = Section(name="Notes")
+    nested.append(Paragraph("Nested note"))
+    hidden.append(nested)
+    body.append(hidden)
+    shown = Section(name="Shown")
+    shown.append(Paragraph("Shown section"))
+    body.append(shown)
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    hidden_texts = [
+        item.text
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.INVISIBLE}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert document.export_to_markdown() == "Question\n\nShown section"
+    assert hidden_texts == ["Answer key", "Nested note"]
+    assert document.tables[0].content_layer == ContentLayer.INVISIBLE
+
+
+def test_odt_hidden_text_is_left_out(tmp_path: Path):
+    """Text with the Hidden font effect (``text:display="none"``) is left out.
+
+    A hidden paragraph or heading goes to ``ContentLayer.INVISIBLE``. A hidden
+    span, and hidden text in a list item or a table cell, is dropped. The
+    setting is inherited from a parent style.
+    """
+    source = OdfDocument("text")
+    source.body.clear()
+    hidden_char = Style("text", name="Hidden")
+    hidden_char.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_char)
+    hidden_run = Style("text", name="T1")
+    hidden_run.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_run, automatic=True)
+    inherited_run = Style("text", name="T2", parent_style="Hidden")
+    inherited_run.set_properties(area="text", **{"fo:font-weight": "bold"})
+    source.insert_style(inherited_run, automatic=True)
+    hidden_para = Style("paragraph", name="P1", parent_style="Standard")
+    hidden_para.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_para, automatic=True)
+
+    paragraph = Paragraph("Shown start.")
+    paragraph.append(Span(" Hidden run.", style="T1"))
+    paragraph.append(Span(" Hidden by parent style.", style="T2"))
+    paragraph.append(" Shown end.")
+    source.body.append(paragraph)
+    source.body.append(Paragraph("Hidden paragraph.", style="P1"))
+    heading = Header(1, "Hidden heading")
+    heading.set_attribute("text:style-name", "P1")
+    source.body.append(heading)
+    item_paragraph = Paragraph("Item")
+    item_paragraph.append(Span(" hidden", style="T1"))
+    item = ListItem()
+    item.append(item_paragraph)
+    odf_list = OdfList()
+    odf_list.append(item)
+    source.body.append(odf_list)
+    run_cell = Cell()
+    cell_paragraph = Paragraph("Shown cell")
+    cell_paragraph.append(Span(" hidden", style="T1"))
+    run_cell.append(cell_paragraph)
+    paragraph_cell = Cell()
+    paragraph_cell.append(Paragraph("Shown paragraph"))
+    paragraph_cell.append(Paragraph("Hidden cell paragraph", style="P1"))
+    row = Row()
+    row.append(run_cell)
+    row.append(paragraph_cell)
+    table = Table("Table1")
+    table.append(row)
+    source.body.append(table)
+
+    document = _convert_odt_source(source, tmp_path / "hidden_text.odt")
+
+    hidden_texts = [
+        item.text
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.INVISIBLE}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert hidden_texts == ["Hidden paragraph.", "Hidden heading"]
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Shown cell",
+        "Shown paragraph",
+    ]
+    assert document.export_to_markdown(compact_tables=True) == (
+        "Shown start. Shown end.\n\n"
+        "- Item\n\n"
+        "| Shown cell | Shown paragraph |\n"
+        "| - | - |"
+    )
+
+
 def test_ods_conversion(ods_path: Path):
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(ods_path)
     doc = res.document
@@ -398,6 +516,39 @@ def test_ods_merged_cells(tmp_path: Path):
     assert anchor.text == "merged"
 
 
+def test_ods_typed_cells_keep_their_displayed_text(tmp_path: Path):
+    # A typed cell stores its value in office:*-value attributes and the text
+    # the spreadsheet displays in text:p. The table shows the displayed text.
+    path = tmp_path / "typed_cells.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    t = Table("S", width=5, height=1)
+    t.set_cell("A1", Cell(1 / 3, text="0.33", cell_type="float"))
+    percentage = Cell(0.125, cell_type="percentage")
+    # odfdo writes its own text for a percentage cell and ignores ``text``.
+    percentage.get_element("text:p").text = "12.50%"
+    t.set_cell("B1", percentage)
+    t.set_cell(
+        "C1", Cell(1234.5, text="$1,234.50", cell_type="currency", currency="USD")
+    )
+    t.set_cell("D1", Cell(True, text="TRUE", cell_type="boolean"))
+    t.set_cell("E1", Cell(datetime(2024, 3, 5), text="03/05/24", cell_type="date"))
+    body.append(t)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    cells = res.document.tables[0].data.table_cells
+    assert [c.text for c in cells] == [
+        "0.33",
+        "12.50%",
+        "$1,234.50",
+        "TRUE",
+        "03/05/24",
+    ]
+
+
 def test_ods_oversized_spans_clamped_to_table_size(tmp_path: Path):
     # Declared spans far beyond the sheet must not size the table: it keeps the
     # shape of its real cells, and the spans stop at its edges.
@@ -488,6 +639,65 @@ def test_ods_rich_table_cell_defines_data_bounds(tmp_path: Path):
     assert rich_cell == "Rich title"
     assert isinstance(table.data.table_cells[0], RichTableCell)
     assert cell_texts[(0, 1)] == "plain"
+
+
+def test_ods_sheet_anchored_picture_is_kept(tmp_path: Path):
+    # A picture anchored to the sheet is stored in <table:shapes>, not in a cell
+    image_path = tmp_path / "sheet_image.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+
+    path = tmp_path / "sheet_image.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Sheet1", width=2, height=2)
+    body.append(table)
+    cell = table.get_cell("B2")
+    cell.append(Frame.image_frame(doc.add_file(str(image_path)), size=("1cm", "1cm")))
+    table.set_cell("B2", cell)
+    shapes = Element.from_tag("table:shapes")
+    shapes.append(
+        Frame.image_frame(
+            doc.add_file(str(image_path)), size=("1cm", "1cm"), position=("1cm", "1cm")
+        )
+    )
+    table.insert(shapes, position=0)
+    doc.save(str(path))
+
+    pictures = DocumentConverter().convert(path).document.pictures
+    # One picture from the cell and one from the sheet, neither of them twice
+    assert len(pictures) == 2
+    assert all(p.image is not None for p in pictures)
+
+
+def test_ods_sheet_anchored_vector_picture_is_skipped(tmp_path: Path):
+    # A vector picture cannot become a bitmap, so it is skipped like a cell picture
+    image_path = tmp_path / "sheet_image.svg"
+    image_path.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2">'
+        '<rect width="2" height="2" fill="red"/></svg>'
+    )
+
+    path = tmp_path / "sheet_image_vector.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Sheet1", width=1, height=1)
+    body.append(table)
+    shapes = Element.from_tag("table:shapes")
+    shapes.append(
+        Frame.image_frame(
+            doc.add_file(str(image_path)), size=("1cm", "1cm"), position=("1cm", "1cm")
+        )
+    )
+    table.insert(shapes, position=0)
+    doc.save(str(path))
+
+    result = DocumentConverter().convert(path)
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.document.pictures == []
 
 
 def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
@@ -626,6 +836,67 @@ def test_odt_text_document_nested_lists():
     assert parent_group_3_0_1.parent == item_by_text["numbered list 3"].get_ref()
 
 
+def test_odt_list_item_with_only_an_image_has_no_text(tmp_path: Path):
+    """A list item takes its text from the text runs, as a paragraph does. So an
+    item with only a footnote, or only an image or a chart with no alt text, gets
+    no text. The item keeps its number and its nested list. The footnote body is
+    a footnote item. The image and the chart are the ones of text_document_02.odt."""
+    source = OdfDocument("tests/data/odf/sources/text_document_02.odt")
+    style = Style("list", name="Numbered")
+    style.set_level_style(1, num_format="1", suffix=".")
+    style.set_level_style(2, num_format="1", suffix=")")
+    source.insert_style(style)
+    body = source.body
+    frames = {frame.name: frame.clone for frame in body.get_frames()}
+    body.clear()
+    image, chart, footnote = Paragraph(), Paragraph(), Paragraph()
+    image.append(frames["Image1"])
+    chart.append(frames["Object1"])
+    footnote.append(Note(citation="1", body="Note body."))
+    nested = OdfList(style="Numbered")
+    nested.append(ListItem("Nested one"))
+    odf_list = OdfList(style="Numbered")
+    for children in [
+        [Paragraph("First")],
+        [image],
+        [chart],
+        [footnote],
+        [image.clone, nested],
+        [Paragraph("Last")],
+    ]:
+        item = ListItem()
+        for child in children:
+            item.append(child)
+        odf_list.append(item)
+    body.append(odf_list)
+    path = tmp_path / "list_item_with_only_an_image.odt"
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+    list_items = [
+        item
+        for item, _level in document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [(item.text, item.enumerated, item.marker) for item in list_items] == [
+        ("First", True, "1."),
+        ("", True, "2."),
+        ("", True, "3."),
+        ("", True, "4."),
+        ("", True, "5."),
+        ("Nested one", True, "1)"),
+        ("Last", True, "6."),
+    ]
+    nested_group = list_items[5].parent.resolve(document)
+    assert nested_group.parent == list_items[4].get_ref()
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Note body."]
+
+
 def test_odt_text_document_title_and_subtitle():
     path = Path("tests/data/odf/sources/text_document_01.odt")
 
@@ -686,9 +957,9 @@ def test_odt_hyperlink_preserved(tmp_path: Path):
         )
         for item in res.document.texts
     ] == [
-        ("Watch", None),
+        ("Watch ", None),
         ("the example talk", "https://example.com/talk"),
-        ("for context.", None),
+        (" for context.", None),
     ]
     assert res.document.export_to_markdown().strip() == (
         "Watch [the example talk](https://example.com/talk) for context."
@@ -737,6 +1008,45 @@ def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
     assert footnote_texts == [
         "This is the footnote body text that should not vanish."
     ], "the footnote body must be recovered, not silently dropped"
+
+
+def test_odt_footnote_in_table_cell_is_not_spliced(tmp_path: Path):
+    """A footnote cited in a table cell stays out of the cell text, as it does in
+    a paragraph. Its body is a footnote item."""
+    path = tmp_path / "table_footnote.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(
+        Element.from_tag(
+            '<table:table table:name="T"><table:table-row>'
+            "<table:table-cell><text:p>Year</text:p></table:table-cell>"
+            "<table:table-cell><text:p>Revenue</text:p></table:table-cell>"
+            "</table:table-row><table:table-row>"
+            "<table:table-cell><text:p>2024</text:p></table:table-cell>"
+            "<table:table-cell><text:p>42 EUR"
+            '<text:note text:id="n1" text:note-class="footnote">'
+            "<text:note-citation>1</text:note-citation>"
+            "<text:note-body><text:p>Audited figures.</text:p></text:note-body>"
+            "</text:note></text:p></table:table-cell>"
+            "</table:table-row></table:table>"
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Year",
+        "Revenue",
+        "2024",
+        "42 EUR",
+    ]
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Audited figures."]
 
 
 def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
@@ -990,7 +1300,7 @@ def test_odt_preserves_hyperlinks_in_block_text(
             str(item.hyperlink) if item.hyperlink is not None else None,
         )
         for item in inline_items
-    ] == [("Read", None), ("details", "#details"), ("now", None)]
+    ] == [("Read ", None), ("details", "#details"), (" now", None)]
     assert result.document.export_to_markdown().strip() == (
         f"{expected_markdown} Read [details](#details) now"
     )
@@ -1446,6 +1756,52 @@ def test_odp_nested_textbox_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odp_grouped_shapes_keep_their_text(tmp_path: Path):
+    path = tmp_path / "grouped_shapes.odp"
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+
+    def shape(text: str) -> Element:
+        return Element.from_tag(
+            '<draw:custom-shape svg:width="6cm" svg:height="2cm">'
+            f"<text:p>{text}</text:p>"
+            '<draw:enhanced-geometry draw:type="rectangle"/></draw:custom-shape>'
+        )
+
+    page = DrawPage("page1", name="Slide One")
+    page.append(
+        Frame.text_frame("Before", size=("10cm", "2cm"), position=("1cm", "1cm"))
+    )
+    group = DrawGroup()
+    group.append(shape("Grouped shape"))
+    group.append(
+        Frame.text_frame("Grouped frame", size=("6cm", "2cm"), position=("1cm", "4cm"))
+    )
+    inner = DrawGroup()
+    inner.append(shape("Nested group"))
+    group.append(inner)
+    page.append(group)
+    page.append(shape("After"))
+    body.append(page)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    texts = [
+        item.text
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "text"
+    ]
+
+    assert texts == [
+        "Before",
+        "Grouped shape",
+        "Grouped frame",
+        "Nested group",
+        "After",
+    ]
+
+
 def test_odp_presentation_with_mixed_slide_content():
     path = Path("tests/data/odf/sources/odf_presentation_02.odp")
 
@@ -1577,6 +1933,57 @@ def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocume
 def test_e2e_odf_conversions(odf_documents):
     """Test end-to-end conversions for all ODF files."""
     _test_e2e_odf_conversions_impl(odf_documents)
+
+
+def test_ods_singleton_with_formatting_or_link_stays_a_table(tmp_path: Path):
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    source = OdfDocument("spreadsheet")
+    source.body.clear()
+    bold_style = Style("text", name="bold_style")
+    bold_style.set_properties(area="text", **{"fo:font-weight": "bold"})
+    source.insert_style(bold_style, automatic=True)
+
+    bold_paragraph = Paragraph()
+    bold_paragraph.append(Span("bold", style="bold_style"))
+    link_paragraph = Paragraph()
+    link_paragraph.append(Link("https://example.com/", text="site"))
+    plain_paragraph = Paragraph()
+    plain_paragraph.append(Span("span", style="no_such_style"))
+
+    sheet = Table("Sheet1", width=1, height=7)
+    for name, paragraph in (
+        ("A1", bold_paragraph),
+        ("A3", link_paragraph),
+        ("A5", plain_paragraph),
+    ):
+        cell = Cell()
+        cell.set_attribute("office:value-type", "string")
+        cell.append(paragraph)
+        sheet.set_cell(name, cell)
+    sheet.set_value("A7", "value")
+    source.body.append(sheet)
+    path = tmp_path / "singletons.ods"
+    source.save(path)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(treat_singleton_as_text=True)
+            )
+        },
+    )
+    document = converter.convert(path).document
+
+    bold, link = (table.data.table_cells[0] for table in document.tables)
+    assert isinstance(bold, RichTableCell)
+    assert bold.ref.resolve(document).children[0].resolve(document).formatting.bold
+    assert isinstance(link, RichTableCell)
+    run = link.ref.resolve(document).children[0].resolve(document)
+    assert (run.text, str(run.hyperlink)) == ("site", "https://example.com/")
+    assert {"span", "value"} <= {item.text for item in document.texts}
 
 
 def test_ods_treat_singleton_as_text(tmp_path: Path):
@@ -1711,6 +2118,48 @@ def test_ods_gap_tolerance(tmp_path: Path):
     assert merged_table.prov[0].bbox.r == 3, "Merged table should end at column 3"
 
 
+@pytest.mark.parametrize(
+    ("note", "expected_shapes"),
+    [
+        # The blank merged row A4:C4 only separates the two tables.
+        (None, [(3, 3), (2, 3)]),
+        # A value in the same row makes A4:C4 part of one table.
+        ("note", [(6, 4)]),
+    ],
+)
+def test_ods_blank_merged_separator_row_splits_tables(
+    tmp_path: Path, note: str | None, expected_shapes: list[tuple[int, int]]
+) -> None:
+    """The ODS counterpart of the XLSX regression test for #4965."""
+    path = tmp_path / "separator.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    sheet = Table("Sheet1", width=4, height=6)
+    for row_idx, row in enumerate(
+        [
+            [None, "2025", "2026"],
+            ["GDP", 1.5, 2],
+            ["CPI", 3.1, 2.9],
+            [None, None, None, note],
+            [None, "Q1", "Q2"],
+            ["Profits", 384, 276.9],
+        ]
+    ):
+        for col_idx, value in enumerate(row):
+            if value is not None:
+                sheet.set_value((col_idx, row_idx), value)
+    sheet.set_span("A4:C4")
+    body.append(sheet)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    assert [
+        (table.data.num_rows, table.data.num_cols) for table in res.document.tables
+    ] == expected_shapes
+
+
 def test_ods_sheet_names_filter(tmp_path: Path):
     """Test that sheet_names option filters sheets correctly."""
     from docling.datamodel.backend_options import OdsBackendOptions
@@ -1819,6 +2268,93 @@ def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
         ["a", "1"],
         ["b", "2"],
     ]
+
+
+@pytest.mark.parametrize("axis", ["rows", "columns"])
+def test_ods_repeated_content_is_limited(
+    tmp_path: Path, axis: str, caplog: pytest.LogCaptureFixture
+):
+    """Test a sheet that repeats a cell with content ten million times.
+
+    The trailing padding is removed, but a repetition with content is not. The
+    backend expanded each copy several times, so a file of less than 1 KB used
+    minutes of CPU time and gigabytes of memory. The copies over
+    ``max_repeated_cells`` are not converted, and the cells written after the
+    repetition are kept.
+    """
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    path = tmp_path / f"repeated_{axis}.ods"
+    doc = OdfDocument("spreadsheet")
+    doc.body.clear()
+    sheet = Table("Sheet1")
+    if axis == "rows":
+        repeated = Row(repeated=10_000_000)
+        repeated.append_cell(Cell("A"))
+        sheet.append_row(repeated)
+        last = Row()
+        last.append_cell(Cell("end"))
+        sheet.append_row(last)
+    else:
+        row = Row()
+        row.append_cell(Cell("A", repeated=10_000_000))
+        row.append_cell(Cell("end"))
+        sheet.append_row(row)
+    doc.body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(max_repeated_cells=100)
+            )
+        },
+    )
+    with caplog.at_level(logging.WARNING):
+        tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    cells = [cell.text for row in tables[0].data.grid for cell in row]
+    assert cells == ["A"] * 101 + ["end"]
+    assert "max_repeated_cells" in caplog.text
+
+
+@pytest.mark.parametrize("hidden", [False, True], ids=["visible", "hidden"])
+def test_ods_offset_table_keeps_unclamped_page_size(hidden: bool):
+    """Offset ODS tables preserve their full extent on visible and hidden sheets."""
+    ods = OdfDocument("spreadsheet")
+    ods.body.clear()
+
+    sheet = Table("Sheet")
+    if hidden:
+        sheet.set_attribute("table:display", "false")
+    sheet.set_value("B2", "a")
+    sheet.set_value("C2", "b")
+    sheet.set_value("B3", "1")
+    sheet.set_value("C3", "2")
+    ods.body.append(sheet)
+
+    buf = BytesIO()
+    ods.save(buf)
+    buf.seek(0)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.ODS])
+    doc = converter.convert(DocumentStream(name="offset.ods", stream=buf)).document
+
+    assert doc.pages[1].size.width == 3.0
+    assert doc.pages[1].size.height == 3.0
+
+    reloaded = DoclingDocument.model_validate_json(doc.model_dump_json())
+    tables = [
+        item
+        for item, _ in reloaded.iterate_items(included_content_layers=set(ContentLayer))
+        if isinstance(item, TableItem)
+    ]
+    assert len(tables) == 1
+    bbox = tables[0].prov[0].bbox
+    assert (bbox.l, bbox.t, bbox.r, bbox.b) == (1.0, 1.0, 3.0, 3.0)
 
 
 def _build_odt_with_external_image_href(path: Path, href: str) -> Path:
@@ -1943,3 +2479,338 @@ def test_odp_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
     ]
     assert document.export_to_markdown() == "# Visible slide\n\nPresented text"
     assert hidden_texts == ["Hidden slide", "Backup text"]
+
+
+def test_odp_speaker_notes_go_to_notes_layer(tmp_path: Path):
+    """The speaker notes of a slide (``presentation:notes``) are kept.
+
+    As in the PowerPoint backend, they go under the slide group in
+    ``ContentLayer.NOTES``. The slide thumbnail and the slide number and date
+    fields of a notes page are not notes.
+    """
+    field = (
+        '<draw:frame presentation:class="{}"><draw:text-box><text:p>{}</text:p>'
+        "</draw:text-box></draw:frame>"
+    )
+    notes_pages = [
+        "<presentation:notes>"
+        '<draw:page-thumbnail draw:page-number="1" presentation:class="page"/>'
+        '<draw:frame presentation:class="notes"><draw:text-box>'
+        "<text:p>First note.</text:p>"
+        "<text:list><text:list-item><text:p>Point one</text:p></text:list-item>"
+        "<text:list-item><text:p>Point two</text:p></text:list-item></text:list>"
+        "<text:p>Last note.</text:p>"
+        "</draw:text-box></draw:frame>"
+        + field.format("page-number", "1")
+        + "</presentation:notes>",
+        "<presentation:notes>"
+        + field.format("page-number", "2")
+        + field.format("date-time", "17/10/2026")
+        + "</presentation:notes>",
+    ]
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+    for index, notes in enumerate(notes_pages):
+        page = DrawPage(f"page{index + 1}", name=f"Slide {index + 1}")
+        page.append(
+            Frame.text_frame(
+                [f"Slide text {index + 1}"],
+                size=("10cm", "2cm"),
+                position=("1cm", "1cm"),
+            )
+        )
+        page.append(Element.from_tag(notes))
+        body.append(page)
+    path = tmp_path / "notes.odp"
+    doc.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+    )
+
+    notes_items = [
+        item
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.NOTES}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert [item.text for item in notes_items] == [
+        "First note.",
+        "Point one",
+        "Point two",
+        "Last note.",
+    ]
+    first_slide = document.groups[0]
+    assert all(
+        item.parent == first_slide.get_ref()
+        or item.parent.resolve(document).parent == first_slide.get_ref()
+        for item in notes_items
+    )
+    assert document.export_to_markdown() == (
+        "# Slide 1\n\nSlide text 1\n\n# Slide 2\n\nSlide text 2"
+    )
+
+
+def _odt_master(source: OdfDocument, name: str) -> Element:
+    masters = source.styles.get_element("office:master-styles")
+    assert masters is not None
+    for master in masters.children:
+        if master.get_attribute("style:name") == name:
+            return master
+    master = Element.from_tag(f'<style:master-page style:name="{name}"/>')
+    masters.append(master)
+    return master
+
+
+def _convert_odt_source(source: OdfDocument, path: Path) -> DoclingDocument:
+    source.save(str(path))
+    return DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+
+
+def test_odt_header_footer_structure_and_body(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(Header(1, "Body heading"))
+    source.body.append(Paragraph("Body paragraph."))
+    baseline = _convert_odt_source(source, tmp_path / "baseline.odt")
+    master = _odt_master(source, "Standard")
+    header = Element.from_tag(
+        '<style:header><text:h text:outline-level="2">Header heading</text:h>'
+        '<text:p>Header text<office:annotation office:name="comment">'
+        "<dc:creator>Header reviewer</dc:creator><dc:date>2026-01-01</dc:date>"
+        "<text:p>Header note</text:p></office:annotation>.</text:p>"
+        "<text:list><text:list-item><text:p>Header list</text:p>"
+        "</text:list-item></text:list></style:header>"
+    )
+    table = Table("HeaderTable", width=1, height=1)
+    table.set_value("A1", "Header cell")
+    header.append(table)
+    image_path = tmp_path / "header.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+    header.append(
+        Frame.image_frame(source.add_file(str(image_path)), size=("1cm", "1cm"))
+    )
+    master.append(header)
+    master.append(
+        Element.from_tag("<style:footer><text:p>Footer text</text:p></style:footer>")
+    )
+    document = _convert_odt_source(source, tmp_path / "furniture.odt")
+
+    assert document.export_to_markdown() == baseline.export_to_markdown()
+    furniture = [
+        group
+        for group in document.groups
+        if group.content_layer == ContentLayer.FURNITURE
+    ]
+    assert [group.name for group in furniture if group.label == GroupLabel.SECTION] == [
+        "page header",
+        "page footer",
+    ]
+    header_group = furniture[0]
+    assert header_group.parent.cref == document.body.self_ref
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == ["Header heading", "Header text.", "Header list", "Footer text"]
+    assert len(document.tables) == 1
+    assert document.tables[0].content_layer == ContentLayer.FURNITURE
+    assert document.tables[0].data.table_cells[0].text == "Header cell"
+    assert len(document.pictures) == 1
+    assert document.pictures[0].content_layer == ContentLayer.FURNITURE
+    paragraph = next(item for item in document.texts if item.text == "Header text.")
+    assert paragraph.parent.resolve(document) == header_group
+    assert len(paragraph.comments) == 1
+    assert [
+        child.resolve(document).text
+        for child in paragraph.comments[0].resolve(document).children
+    ] == ["[author: Header reviewer, time: 2026-01-01]: Header note"]
+
+
+@pytest.mark.parametrize(
+    "variant",
+    ["header", "header-left", "header-first", "footer", "footer-left", "footer-first"],
+)
+@pytest.mark.parametrize("display", [None, "true", "false", "0"])
+def test_odt_header_footer_variants(tmp_path: Path, variant: str, display: str | None):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(Paragraph("Body"))
+    attribute = f' style:display="{display}"' if display is not None else ""
+    _odt_master(source, "Standard").append(
+        Element.from_tag(
+            f"<style:{variant}{attribute}><text:p>{variant}</text:p></style:{variant}>"
+        )
+    )
+    _odt_master(source, "Unused").append(
+        Element.from_tag("<style:header><text:p>Unused header</text:p></style:header>")
+    )
+    document = _convert_odt_source(source, tmp_path / "variants.odt")
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == ([] if display in ("false", "0") else [variant])
+
+
+@pytest.mark.parametrize("explicit_first", [False, True])
+def test_odt_master_references_and_next_cycle(tmp_path: Path, explicit_first: bool):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(
+        Element.from_tag('<text:p text:style-name="Child">First</text:p>')
+        if explicit_first
+        else Paragraph("First")
+    )
+    source.body.append(
+        Element.from_tag('<text:p text:style-name="Child">Second</text:p>')
+    )
+    source.body.append(
+        Element.from_tag('<text:p text:style-name="Child">Repeated</text:p>')
+    )
+    source.body.append(
+        Element.from_tag(
+            '<table:table table:name="BodyTable" table:style-name="TablePage"><table:table-row><table:table-cell><text:p text:style-name="Ignored">Cell</text:p></table:table-cell></table:table-row></table:table>'
+        )
+    )
+    automatic = source.content.get_element("office:automatic-styles")
+    assert automatic is not None
+    for xml in (
+        '<style:style style:name="Child" style:family="paragraph" style:parent-style-name="Parent"/>',
+        '<style:style style:name="Parent" style:family="paragraph" style:master-page-name="Custom"/>',
+        '<style:style style:name="Ignored" style:family="paragraph" style:master-page-name="Unused"/>',
+        '<style:style style:name="TablePage" style:family="table" style:master-page-name="TableMaster"/>',
+    ):
+        target = (
+            source.styles.get_element("office:styles")
+            if 'style:name="Parent"' in xml
+            else automatic
+        )
+        assert target is not None
+        target.append(Element.from_tag(xml))
+    for name in ("Standard", "Custom", "TableMaster", "Next", "Unused"):
+        _odt_master(source, name).append(
+            Element.from_tag(f"<style:header><text:p>{name}</text:p></style:header>")
+        )
+    _odt_master(source, "Custom").set_attribute("style:next-style-name", "Next")
+    _odt_master(source, "Next").set_attribute("style:next-style-name", "Custom")
+    document = _convert_odt_source(source, tmp_path / "masters.odt")
+    expected = ([] if explicit_first else ["Standard"]) + [
+        "Custom",
+        "TableMaster",
+        "Next",
+    ]
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == expected
+
+
+def test_odt_first_master_fallback_and_empty_header(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(Paragraph("Body"))
+    master = _odt_master(source, "Standard")
+    master.set_attribute("style:name", "FirstDeclared")
+    master.append(Element.from_tag("<style:header><text:p/></style:header>"))
+    master.append(
+        Element.from_tag(
+            "<style:footer><text:p>Fallback footer</text:p></style:footer>"
+        )
+    )
+    document = _convert_odt_source(source, tmp_path / "fallback.odt")
+    assert [
+        group.name
+        for group in document.groups
+        if group.content_layer == ContentLayer.FURNITURE
+    ] == ["page footer"]
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == ["Fallback footer"]
+
+
+def test_odt_master_variant_order_and_shared_text(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    master = _odt_master(source, "Standard")
+    # XML storage order does not define extraction order. Equal definitions stay distinct.
+    variants = [
+        "footer-first",
+        "footer-left",
+        "footer",
+        "header-first",
+        "header-left",
+        "header",
+    ]
+    for variant in variants:
+        master.append(
+            Element.from_tag(
+                f"<style:{variant}><text:p>Same text</text:p></style:{variant}>"
+            )
+        )
+    document = _convert_odt_source(source, tmp_path / "ordered.odt")
+    assert [group.name for group in document.groups] == ["page header"] * 3 + [
+        "page footer"
+    ] * 3
+    assert [item.text for item in document.texts] == ["Same text"] * 6
+
+
+def test_odt_table_cell_is_rich_only_when_more_than_plain_text(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    sub_style = Style("text", name="sub_style")
+    sub_style.set_properties(area="text", **{"style:text-position": "sub 58%"})
+    source.insert_style(sub_style, automatic=True)
+    italic_style = Style("text", name="italic_style")
+    italic_style.set_properties(area="text", **{"fo:font-style": "italic"})
+    source.insert_style(italic_style, automatic=True)
+    script_paragraph = Paragraph()
+    script_paragraph.append("H")
+    script_paragraph.append(Span("2", style="sub_style"))
+    script_paragraph.append("O")
+    italic_paragraph = Paragraph()
+    italic_paragraph.append(Span("word", style="italic_style"))
+    link_paragraph = Paragraph()
+    link_paragraph.append(Link("https://example.com/", text="site"))
+    plain_paragraph = Paragraph()
+    plain_paragraph.append(Span("word", style="no_such_style"))
+    row = Row()
+    for paragraph in (
+        script_paragraph,
+        italic_paragraph,
+        link_paragraph,
+        plain_paragraph,
+    ):
+        cell = Cell()
+        # A typed cell has a value, so only its runs can make it rich.
+        cell.set_attribute("office:value-type", "string")
+        cell.append(paragraph)
+        row.append(cell)
+    table = Table("Table1")
+    table.append(row)
+    source.body.append(table)
+
+    document = _convert_odt_source(source, tmp_path / "table_sub.odt")
+
+    rich, italic, link, plain = document.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+    assert plain.text == "word"
+    assert isinstance(italic, RichTableCell)
+    assert italic.ref.resolve(document).children[0].resolve(document).formatting.italic
+    assert isinstance(link, RichTableCell)
+    assert (
+        str(link.ref.resolve(document).children[0].resolve(document).hyperlink)
+        == "https://example.com/"
+    )
+    assert isinstance(rich, RichTableCell)
+    inline = rich.ref.resolve(document).children[0].resolve(document)
+    assert inline.label == GroupLabel.INLINE
+    runs = [child.resolve(document) for child in inline.children]
+    assert [run.text for run in runs] == ["H", "2", "O"]
+    assert runs[1].formatting.script == Script.SUB
+    assert "H<sub>2</sub>O" in document.export_to_html()

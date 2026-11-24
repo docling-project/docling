@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -18,6 +17,7 @@ from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
     check_min_engine_version,
     extract_generation_stoppers,
+    generation_stopper_stop_reason,
     preprocess_image_batch,
 )
 from docling.models.inference_engines.vlm.base import (
@@ -28,16 +28,13 @@ from docling.models.inference_engines.vlm.base import (
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
-
-# Global lock for MLX model calls - MLX models are not thread-safe
-# All MLX models share this lock to prevent concurrent MLX operations
-_MLX_GLOBAL_LOCK = threading.Lock()
 
 # mlx-vlm injects enable_thinking=False into processor.apply_chat_template for any
 # processor whose signature accepts **kwargs. Models whose chat template does not
@@ -154,7 +151,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Download or locate model artifacts
         repo_cache_folder = repo_id.replace("/", "--")
         if self.artifacts_path is None:
-            artifacts_path = self.download_models(repo_id, revision=revision)
+            artifacts_path = self.download_models(
+                repo_id,
+                revision=revision,
+                trust_remote_code=self.options.trust_remote_code,
+            )
         elif (self.artifacts_path / repo_cache_folder).exists():
             artifacts_path = self.artifacts_path / repo_cache_folder
         else:
@@ -241,7 +242,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # MLX models are not thread-safe - use global lock to serialize access
-        with _MLX_GLOBAL_LOCK:
+        with MLX_GLOBAL_LOCK:
             _log.debug("MLX model: Acquired global lock for thread safety")
 
             for input_data in input_batch:
@@ -273,14 +274,15 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     "verbose": False,
                     "temperature": input_data.temperature,
                 }
-                if self.options.repetition_penalty is not None:
-                    generation_kwargs["repetition_penalty"] = (
-                        self.options.repetition_penalty
+                for key in ("repetition_penalty", "repetition_context_size"):
+                    if key in input_data.extra_generation_config:
+                        generation_kwargs[key] = input_data.extra_generation_config[key]
+                generation_kwargs.update(
+                    self.options.model_dump(
+                        include={"repetition_penalty", "repetition_context_size"},
+                        exclude_none=True,
                     )
-                if self.options.repetition_context_size is not None:
-                    generation_kwargs["repetition_context_size"] = (
-                        self.options.repetition_context_size
-                    )
+                )
 
                 # Use stream_generate for proper stop string handling
                 for token in self.stream_generate(
@@ -319,7 +321,9 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                                     _log.info(
                                         f"Stopping generation due to GenerationStopper: {type(stopper).__name__}"
                                     )
-                                    stop_reason = "custom_criteria"
+                                    stop_reason = generation_stopper_stop_reason(
+                                        stopper
+                                    ).value
                                     break
                             except Exception as e:
                                 _log.warning(

@@ -53,9 +53,9 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from docling_core.types.doc.items.group import ListGroup
-from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.items.text import ListItem, TextItem
 from PIL import Image
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -92,6 +92,7 @@ from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import open_image
 
 _log = logging.getLogger(__name__)
 
@@ -430,6 +431,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             options = IWorkBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
+        self.page_range = in_doc.limits.page_range
 
         self._presentation = _open_container(
             path_or_stream, self._read_document, _KEYNOTE_KIND, self.document_hash
@@ -552,7 +554,10 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         size = Size(width=self._presentation.width, height=self._presentation.height)
 
         render_chart = _chart_renderer(self.options)
+        start_page, end_page = self.page_range
         for index, slide in enumerate(self._presentation.slides):
+            if not start_page <= index + 1 <= end_page:
+                continue
             doc.add_page(page_no=index + 1, size=size)
             group = doc.add_group(name=f"slide-{index}", label=GroupLabel.CHAPTER)
             _add_slide(doc, slide, group, index + 1, render_chart)
@@ -602,6 +607,22 @@ class _ListStack:
         """End the list, so the next item starts a new one."""
         self._groups.clear()
 
+    def _sub_list_parent(self) -> NodeItem | None:
+        """Return the node that the next list group goes under.
+
+        A sub-list belongs to the list item above it, so it goes under the
+        last item of the innermost open group. A list group directly inside a
+        list group is not valid.
+        """
+        if not self._groups:
+            return self._parent
+        group = self._groups[-1]
+        if group.children:
+            last_child = group.children[-1].resolve(self._doc)
+            if isinstance(last_child, ListItem):
+                return last_child
+        return group
+
     def group_for(self, depth: int) -> ListGroup:
         """Return the group a list item at ``depth`` belongs in, opening it if needed.
 
@@ -614,10 +635,7 @@ class _ListStack:
         del self._groups[depth + 1 :]
         while len(self._groups) <= depth:
             self._groups.append(
-                self._doc.add_list_group(
-                    name="list",
-                    parent=self._groups[-1] if self._groups else self._parent,
-                )
+                self._doc.add_list_group(name="list", parent=self._sub_list_parent())
             )
         return self._groups[depth]
 
@@ -797,7 +815,7 @@ def _picture_image(picture: Picture) -> ImageRef | None:
     if picture.data is None:
         return None
     try:
-        with Image.open(BytesIO(picture.data)) as opened:
+        with open_image(picture.data) as opened:
             return ImageRef.from_pil(image=normalize_image_for_png(opened), dpi=72)
     except (OSError, ValueError) as exc:
         # Pages stores whatever the author placed, including formats Pillow
@@ -1042,9 +1060,9 @@ def _uniform(runs: list[Run]) -> bool:
 def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     """Resolve a link's address to a URL or a local path.
 
-    A Pages document can link to a file next to it as well as to a URL, and an
-    address Pydantic will not accept is dropped rather than allowed to fail the
-    whole conversion.
+    A Pages document can link to a file next to it as well as to a URL. An
+    address ``urlparse`` or Pydantic will not accept is dropped rather than
+    allowed to fail the whole conversion.
 
     Args:
         address: The address the document recorded, if any.
@@ -1054,11 +1072,13 @@ def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     """
     if not address:
         return None
-    if not urlparse(address).scheme:
-        return Path(address)
     try:
+        # ``urlparse`` raises ValueError for a bracketed host that is not IPv6,
+        # before Pydantic gets a chance to reject the address.
+        if not urlparse(address).scheme:
+            return Path(address)
         return AnyUrl(address)
-    except ValidationError:
+    except ValueError:
         _log.debug("Skipping malformed Pages hyperlink address: %r", address)
         return None
 

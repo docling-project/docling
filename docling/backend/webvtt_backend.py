@@ -19,6 +19,7 @@ from docling_core.types.doc.webvtt import (
     WebVTTCueComponent,
     WebVTTCueComponentWithTerminator,
     WebVTTCueItalicSpan,
+    WebVTTCueRubyTextSpan,
     WebVTTCueTextSpan,
     WebVTTCueUnderlineSpan,
     WebVTTCueVoiceSpan,
@@ -30,6 +31,7 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import UTF8_BOM_ENCODING
 
 _log = logging.getLogger(__name__)
 
@@ -68,16 +70,16 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.content: str = ""
-        # utf-8-sig drops a leading BOM. The WebVTT file body grammar allows an
-        # optional U+FEFF before the "WEBVTT" signature, and keeping it makes
-        # verify_signature() reject the file. Equivalent to utf-8 without a BOM.
+        # The WebVTT file body grammar allows an optional U+FEFF before the
+        # "WEBVTT" signature, and keeping it makes verify_signature() reject the
+        # file. UTF8_BOM_ENCODING drops it, and reads as utf-8 when there is none.
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.content = TextIOWrapper(
-                    BytesIO(self.path_or_stream.getvalue()), encoding="utf-8-sig"
+                    BytesIO(self.path_or_stream.getvalue()), encoding=UTF8_BOM_ENCODING
                 ).read()
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8-sig") as f:
+                with open(self.path_or_stream, encoding=UTF8_BOM_ENCODING) as f:
                     self.content = f.read()
         except Exception as e:
             raise DocumentLoadError(
@@ -133,7 +135,12 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                     parents[-1].copy_meta("") if parents else AnnotatedText(text="")
                 )
                 component: WebVTTCueComponent = comp.component
-                if isinstance(component, WebVTTCueTextSpan):
+                # Ruby text (`<rt>`) is a reading aid for the base text before it,
+                # e.g. furigana. Kept, it would be glued to that base text, as in
+                # "東京とうきょう", so it is left out like in the Word backend.
+                if isinstance(component, WebVTTCueRubyTextSpan):
+                    pass
+                elif isinstance(component, WebVTTCueTextSpan):
                     item.text = component.text
                     # a line terminator inside a nested span starts a new paragraph,
                     # so the current paragraph is always the last one
@@ -187,6 +194,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
 
         if vtt.title:
             doc.add_title(vtt.title, content_layer=ContentLayer.BODY)
+        track = doc.add_track() if vtt.cue_blocks else None
         for block in vtt.cue_blocks:
             cue_text = []
             parents = []
@@ -201,10 +209,13 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                         text=item.text,
                         formatting=item.formatting,
                         item=item,
+                        parent=track,
                     )
                 else:
                     group = doc.add_inline_group(
-                        "WebVTT cue span", content_layer=ContentLayer.BODY
+                        "WebVTT cue span",
+                        content_layer=ContentLayer.BODY,
+                        parent=track,
                     )
                     for item in par.items:
                         _add_text_item(

@@ -34,7 +34,7 @@ This is a collection of FAQ collected from the user questions on <https://github
     So, because ... depends on both numpy (>=2.0.2,<3.0.0) and docling (^2.7.0), version solving failed.
     ```
 
-    Numpy is only adding Python 3.13 support starting in some 2.x.y version. In order to prepare for 3.13, Docling depends on a 2.x.y for 3.13, otherwise depending an 1.x.y version. If you are allowing 3.13 in your pyproject.toml, Poetry will try to find some way to reconcile Docling's numpy version for 3.13 (some 2.x.y) with LangChain's version for that (some 1.x.y) — leading to the error above.
+    Numpy is only adding Python 3.13 support starting in some 2.x.y version. In order to prepare for 3.13, Docling depends on a 2.x.y for 3.13, otherwise depending on a 1.x.y version. If you are allowing 3.13 in your pyproject.toml, Poetry will try to find some way to reconcile Docling's numpy version for 3.13 (some 2.x.y) with LangChain's version for that (some 1.x.y) — leading to the error above.
 
     Check if Python 3.13 is among the Python versions allowed by your pyproject.toml and if so, remove it and try again.
     E.g., if you have python = "^3.10", use python = ">=3.10,<3.13" instead.
@@ -72,12 +72,12 @@ This is a collection of FAQ collected from the user questions on <https://github
 
     ### I get this error ImportError: libGL.so.1: cannot open shared object file: No such file or directory
 
-    This error orginates from conflicting OpenCV distribution in some Docling third-party dependencies.
+    This error originates from conflicting OpenCV distribution in some Docling third-party dependencies.
     `opencv-python` and `opencv-python-headless` both define the same python package `cv2` and, if installed together,
     this often creates conflicts. Moreover, the `opencv-python` package (which is more common) depends on the OpenGL UI
     framework, which is usually not included for headless environments like Docker containers or remote VMs.
 
-    When you encouter the error above, you have two possibilities.
+    When you encounter the error above, you have two possibilities.
 
     Solution 1: Force the headless OpenCV (preferred)
 
@@ -208,7 +208,7 @@ This is a collection of FAQ collected from the user questions on <https://github
     ### `HybridChunker` triggers warning: 'Token indices sequence length is longer than the specified maximum sequence length for this model'
 
     **TLDR**:
-    In the context of the `HybridChunker`, this is a known & ancitipated "false alarm".
+    In the context of the `HybridChunker`, this is a known & anticipated "false alarm".
 
     **Details**:
 
@@ -269,7 +269,7 @@ This is a collection of FAQ collected from the user questions on <https://github
     This requires having the [flash-attn](https://pypi.org/project/flash-attn/) package installed. Below are two alternative ways for installing it:
 
     ```shell
-    # Building from sources (required the CUDA dev environment)
+    # Building from sources (requires the CUDA dev environment)
     pip install flash-attn
 
     # Using pre-built wheels (not available in all possible setups)

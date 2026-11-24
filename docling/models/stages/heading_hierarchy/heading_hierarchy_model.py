@@ -33,58 +33,36 @@ drive the style fallback.
 """
 
 import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from statistics import median
 
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DocItemLabel, DoclingDocument
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage
 
+from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import HeadingHierarchyOptions
+from docling.datamodel.pipeline_options import (
+    DEFAULT_NUMBERING_SCHEMES,
+    HeadingHierarchyOptions,
+)
+from docling.models.stages.heading_hierarchy.numbering_lexicon import (
+    KeywordLexicon,
+    is_roman_numeral,
+)
 from docling.utils.font_style import parse_font_style, weight_class
 from docling.utils.pdf_outline import _PdfOutlineItem
 
-# Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
-# the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).
-_DEFAULT_FAMILY_ORDER = [
-    "part",  # PART I / TITLE I / BOOK I
-    "chapter",  # CHAPTER 1
-    "division",  # DIVISION I / Division 1 / Division A
-    "subdivision",  # SUBDIVISION A / Subdivision a
-    "article",  # ARTICLE 1 / SECTION 1 / Clause / § 1
-    "roman_u",  # I. II. III.
-    "arabic",  # 1. 2. 3.  (and dotted 1.1, 1.1.1 by depth)
-    "alpha_u",  # A. B. C.
-    "alpha_l",  # (a) (b) (c)
-    "roman_l",  # (i) (ii) (iii)
-]
+_DEFAULT_FAMILY_ORDER = list(DEFAULT_NUMBERING_SCHEMES)
+_DEFAULT_LEXICON = KeywordLexicon()
 
 # Single characters that are valid Roman numerals and therefore ambiguous with alpha markers
 # (e.g. "I." may be Roman "1" or alpha "9"). Resolved in :func:`_resolve_ambiguous`.
 _ROMAN_SINGLES = set("IVXLCDMivxlcdm")
 
-# Canonical Roman-numeral validator (1..3999), case-insensitive via ``.upper()``.
-_ROMAN_RE = re.compile(
-    r"^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$", re.IGNORECASE
-)
-
-_KW_PART = re.compile(r"^(part|title|book)\b", re.IGNORECASE)
-# Skip statute citations like "Chapter A-15" (letter-dash-digit); real chapters still match.
-_KW_CHAPTER = re.compile(r"^(chapter)\b(?!\s+[a-z]-\d)", re.IGNORECASE)
-_KW_ARTICLE = re.compile(
-    r"^(article|section|clause|schedule|annex|appendix|rule)\b", re.IGNORECASE
-)
-# "Division"/"Subdivision" are ordinary words too ("Division of Powers"), so -- unlike
-# part/chapter/article -- they only count as numbering when an explicit enumerator (an
-# Arabic index, a Roman numeral, or a single letter) follows. The enumerator must be
-# terminated by whitespace, end-of-string, or separator punctuation, so a French elision
-# such as "Division d'appel" (a letter followed by an apostrophe) is not read as a marker.
-_KW_ENUM = r"\s+(\d+|[a-z]|[ivxlcdm]+)(?=\s|$|[.,:;)\]\u2013\u2014-])"
-_KW_DIVISION = re.compile(r"^division" + _KW_ENUM, re.IGNORECASE)
-_KW_SUBDIVISION = re.compile(r"^subdivision" + _KW_ENUM, re.IGNORECASE)
 _SECTION_SYMBOL = re.compile(r"^§+\s*\d")  # § 1 / §§ 1.2
 _SEP = r"(?:[)\]]|[:\-\u2013\u2014](?=\s|$))"
 # Dotted decimal outline (1.1, 1.1.1, ...), terminated by punctuation/space/end.
@@ -107,10 +85,6 @@ class _Marker:
     ambiguous: bool = False  # single-letter Roman/alpha that needs context to resolve
 
 
-def _is_roman(token: str) -> bool:
-    return bool(token) and _ROMAN_RE.fullmatch(token) is not None
-
-
 def _classify_letter(token: str) -> _Marker | None:
     """Classify a bare alpha/Roman token (``A``, ``iv``, ``i`` ...) into a marker."""
     upper = token.isupper()
@@ -123,38 +97,23 @@ def _classify_letter(token: str) -> _Marker | None:
         return _Marker(family="alpha_u" if upper else "alpha_l", token=token)
     # Multi-letter tokens only count as numbering if they are valid Roman numerals;
     # otherwise they are plain words (e.g. "Summary."), not a numbered heading.
-    if _is_roman(token):
+    if is_roman_numeral(token):
         return _Marker(family="roman_u" if upper else "roman_l", token=token)
     return None
 
 
-def _keyword_enumerator(m: re.Match[str] | None) -> bool:
-    """True when a keyword match carries a real enumerator (digit, letter, or Roman).
-
-    Multi-letter tokens are only accepted when they are valid Roman numerals, so
-    "Division Civil Remedies" (all Roman-numeral letters) is not mistaken for a marker.
-    """
-    if m is None:
-        return False
-    tok = m.group(1)
-    return tok.isdigit() or len(tok) == 1 or _is_roman(tok)
-
-
-def _parse_marker(text: str) -> _Marker | None:
+def _parse_marker(
+    text: str, lexicon: KeywordLexicon = _DEFAULT_LEXICON
+) -> _Marker | None:
     """Extract the leading numbering marker from a heading, or None if unnumbered."""
     s = (text or "").strip()
     if not s:
         return None
 
-    if _KW_PART.match(s):
-        return _Marker(family="part")
-    if _keyword_enumerator(_KW_DIVISION.match(s)):
-        return _Marker(family="division")
-    if _keyword_enumerator(_KW_SUBDIVISION.match(s)):
-        return _Marker(family="subdivision")
-    if _KW_CHAPTER.match(s):
-        return _Marker(family="chapter")
-    if _KW_ARTICLE.match(s) or _SECTION_SYMBOL.match(s):
+    family = lexicon.family(s)
+    if family is not None:
+        return _Marker(family=family)
+    if _SECTION_SYMBOL.match(s):
         return _Marker(family="article")
 
     m = _DOTTED.match(s)
@@ -247,11 +206,13 @@ def _resolve_bare_arabic(
 
 
 def _infer_from_numbering(
-    headings: list[SectionHeaderItem], options: HeadingHierarchyOptions
+    headings: list[SectionHeaderItem],
+    options: HeadingHierarchyOptions,
+    lexicon: KeywordLexicon,
 ) -> dict[int, int]:
     """Map heading index -> level from numbering markers (relative, compressed levels)."""
     order = options.numbering_schemes or _DEFAULT_FAMILY_ORDER
-    markers = [_parse_marker(h.text) for h in headings]
+    markers = [_parse_marker(h.text, lexicon) for h in headings]
     _resolve_ambiguous(markers)
     _resolve_bare_arabic(headings, markers)
 
@@ -283,6 +244,9 @@ class _HeadingStyle:
 
 # Share of the heading's characters that must be italic for the heading to count as italic.
 _ITALIC_RATIO = 0.6
+
+# Layout labels whose text lines the style signal reads.
+_STYLE_LABELS = frozenset({DocItemLabel.SECTION_HEADER, DocItemLabel.LIST_ITEM})
 
 
 def _is_all_caps(text: str) -> bool:
@@ -403,40 +367,35 @@ def _infer_from_style(
 
 # --------------------------------------------------------------------------------- bookmarks
 
-# Leading numbering marker stripped before fuzzy-matching a title, so a bookmark "Definitions"
-# matches an on-page heading "1.1 Definitions" (and vice-versa).
-_LEADING_MARKER = re.compile(
-    r"^\s*(?:"
-    r"(?:part|title|book|division|subdivision|chapter|article|section|clause|schedule|annex|appendix|rule)"
-    r"\b[\s.:]*[0-9ivxlcdm]*"
-    r"|§+\s*[0-9.]+"
-    r"|\(?[0-9]+(?:\.[0-9]+)*[.)\]]?"
-    r"|\(?[A-Za-z]{1,2}(?:[.)\]]|(?=\s*[:\-\u2013\u2014]))"
-    r")[\s.:)\-\u2013\u2014]*",
-    re.IGNORECASE,
-)
-
 
 def _norm(text: str) -> str:
-    """Lower-case, collapse whitespace and trim outer punctuation for matching."""
-    s = re.sub(r"\s+", " ", (text or "").lower()).strip()
+    """Lower-case, collapse whitespace and trim outer punctuation for matching.
+
+    NFC-normalize first, so canonically equivalent spellings (a composed accent
+    vs. the same accent as a combining character) compare equal.
+    """
+    s = re.sub(r"\s+", " ", unicodedata.normalize("NFC", text or "").lower()).strip()
     # Trim leading/trailing punctuation (incl. unicode dash variants) and underscores.
     return re.sub(r"^[\W_]+|[\W_]+$", "", s)
 
 
-def _strip_marker(text: str) -> str:
-    return _LEADING_MARKER.sub("", text or "", count=1)
+def _strip_marker(text: str, lexicon: KeywordLexicon = _DEFAULT_LEXICON) -> str:
+    """Strip the leading numbering marker, so a bookmark "Definitions" matches an on-page
+    heading "1.1 Definitions" (and vice-versa)."""
+    return lexicon.strip_marker(text)
 
 
-def _match_score(cand_text: str, bm_title: str) -> float:
+def _match_score(
+    cand_text: str, bm_title: str, lexicon: KeywordLexicon = _DEFAULT_LEXICON
+) -> float:
     """Fuzzy similarity in 0..1 between a detected heading and a bookmark title.
 
     Both strings are compared with and without their leading numbering marker (bookmarks often
     omit or carry a different marker), and containment of one normalized title in the other
     boosts the score (bookmarks are frequently truncated).
     """
-    variants_a = {_norm(cand_text), _norm(_strip_marker(cand_text))} - {""}
-    variants_b = {_norm(bm_title), _norm(_strip_marker(bm_title))} - {""}
+    variants_a = {_norm(cand_text), _norm(_strip_marker(cand_text, lexicon))} - {""}
+    variants_b = {_norm(bm_title), _norm(_strip_marker(bm_title, lexicon))} - {""}
     best = 0.0
     for a in variants_a:
         for b in variants_b:
@@ -463,6 +422,7 @@ def _infer_from_bookmarks(
     document: DoclingDocument,
     outline: list[_PdfOutlineItem],
     options: HeadingHierarchyOptions,
+    lexicon: KeywordLexicon,
 ) -> dict[int, int]:
     """Match the PDF outline to detected headings/list-items and return authoritative levels.
 
@@ -498,7 +458,7 @@ def _infer_from_bookmarks(
                 continue
             if bm.page_no is not None and page_no is not None and page_no != bm.page_no:
                 continue
-            score = _match_score(item.text, title)
+            score = _match_score(item.text, title, lexicon)
             if score < threshold:
                 continue
             dist = (
@@ -555,6 +515,44 @@ class HeadingHierarchyModel:
 
     def __init__(self, options: HeadingHierarchyOptions):
         self.options = options
+        self._lexicon = KeywordLexicon(
+            options.numbering_keywords, options.numbering_number_words
+        )
+
+    def retain_parsed_lines(self, page: Page) -> SegmentedPdfPage | None:
+        """Return the part of a finished page's ``parsed_page`` that this stage reads later.
+
+        The pipeline releases the parsed pages before assembly to save memory, but the style
+        signal reads the text lines of the headings during assembly. Only the text lines that
+        overlap a section header, or a list item that a bookmark can promote, are kept.
+        """
+        parsed = page.parsed_page
+        layout = page.predictions.layout
+        if not (self.options.enabled and self.options.use_style) or (
+            parsed is None or layout is None
+        ):
+            return None
+        height = parsed.dimension.height
+        boxes = [
+            cluster.bbox.to_top_left_origin(height)
+            for cluster in layout.clusters
+            if cluster.label in _STYLE_LABELS
+        ]
+        lines = [
+            cell
+            for cell in parsed.textline_cells
+            if any(
+                box.overlaps(cell.rect.to_bounding_box().to_top_left_origin(height))
+                for box in boxes
+            )
+        ]
+        return SegmentedPdfPage(
+            dimension=parsed.dimension,
+            char_cells=[],
+            word_cells=[],
+            textline_cells=lines,
+            has_lines=bool(lines),
+        )
 
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         document = conv_res.document
@@ -594,7 +592,9 @@ class HeadingHierarchyModel:
         # has to run before the heading list is collected.
         bookmark_levels: dict[int, int] = {}
         if self.options.use_bookmarks and outline:
-            bookmark_levels = _infer_from_bookmarks(document, outline, self.options)
+            bookmark_levels = _infer_from_bookmarks(
+                document, outline, self.options, self._lexicon
+            )
 
         headings = [
             item for item in document.texts if isinstance(item, SectionHeaderItem)
@@ -609,7 +609,10 @@ class HeadingHierarchyModel:
             if level is not None:
                 levels[i] = level
         if self.options.use_numbering:
-            for i, level in _infer_from_numbering(headings, self.options).items():
+            numbering_levels = _infer_from_numbering(
+                headings, self.options, self._lexicon
+            )
+            for i, level in numbering_levels.items():
                 levels.setdefault(i, level)  # do not override a bookmark-derived level
         if self.options.use_style and parsed_pages:
             for i, level in _infer_from_style(

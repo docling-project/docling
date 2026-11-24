@@ -197,6 +197,26 @@ def test_backend_reports_missing_dependency_with_install_hint(
     assert "actionable-error-raised" in result.stdout
 
 
+def test_lightonocr_parser_reports_missing_markdown_dependency() -> None:
+    result = _run_with_blocked_module(
+        "marko",
+        "from docling.utils.lightonocr_utils import parse_lightonocr_markdown\n"
+        "from docling_core.types.doc import Size\n"
+        "try:\n"
+        "    parse_lightonocr_markdown(\n"
+        "        '![text](0,0,1000,1000)\\nRent: 1000',\n"
+        "        Size(width=600, height=800), page_no=1,\n"
+        "    )\n"
+        "except ImportError as exc:\n"
+        "    assert \"pip install 'docling-slim[format-markdown]'\" in str(exc), str(exc)\n"
+        "    print('actionable-error-raised')\n"
+        "else:\n"
+        "    raise AssertionError('expected ImportError when marko is missing')\n",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "actionable-error-raised" in result.stdout
+
+
 def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
     # The service client reaches docling.utils.pdf_outline (via noop_backend ->
     # datamodel.document, which needs only the _PdfOutlineItem model), so a
@@ -288,11 +308,8 @@ def test_office_and_latex_backends_convert_without_pypdfium2(
     assert result.returncode == 0, result.stderr
 
 
-def test_powerpoint_uses_shared_pypdfium2_guard() -> None:
-    # PowerPoint used to gate the shared converter factory behind its own
-    # pypdfium2 import. On slim installs that bypassed the factory entirely, so
-    # users never saw its actionable install hint. Multiple backend instances
-    # must now reach the shared guard while the warning is still emitted once.
+def test_powerpoint_uses_shared_docling_parse_guard() -> None:
+    # PowerPoint must use the shared guard and warn once across backend instances.
     body = (
         "import logging\n"
         "from docling.backend.mspowerpoint_backend import "
@@ -305,10 +322,10 @@ def test_powerpoint_uses_shared_pypdfium2_guard() -> None:
         "    assert backend._get_libreoffice_converter() is None\n"
     )
 
-    result = _run_with_blocked_module("pypdfium2", body)
+    result = _run_with_blocked_module("docling_parse", body)
 
     assert result.returncode == 0, result.stderr
-    assert result.stderr.count("format-pdf-pypdfium2") == 1, result.stderr
+    assert result.stderr.count("format-pdf-docling") == 1, result.stderr
 
 
 def test_converter_constructs_without_chart_extraction_dependency() -> None:

@@ -45,7 +45,7 @@ from docling.backend.iwork.iwa import (
 from docling.backend.iwork.legacy import legacy_formatting
 from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.document_converter import DocumentConverter
 from docling.exceptions import DocumentLoadError
@@ -538,6 +538,39 @@ def test_legacy_page_furniture_stays_out_of_the_body(tmp_path: Path):
     assert recovered["Running header"] == DocItemLabel.PAGE_HEADER
     assert recovered["Page footer"] == DocItemLabel.PAGE_FOOTER
     assert recovered["A footnote body"] == DocItemLabel.FOOTNOTE
+
+
+def test_sub_list_belongs_to_the_item_above_it(tmp_path: Path):
+    """A deeper item opens a sub-list under the list item above it, not directly
+    under the outer list group, as in the other backends."""
+    namespace = "http://developer.apple.com/namespaces/sf"
+    bullet = '<sf:list-label-typeinfo><sf:text-label sf:type="bullet" sf:format="*"/></sf:list-label-typeinfo>'
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:stylesheet>
+        <sf:liststyle sf:ident="ls-bullet">
+          <sf:list-label-typeinfo sf:type="none"/>{bullet}{bullet}{bullet}
+        </sf:liststyle>
+      </sf:stylesheet>
+      <sf:text-storage><sf:text-body>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="1">outer one</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="2">inner a</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="3">inner a.1</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="2">inner b</sf:p>
+        <sf:p sf:list-style="ls-bullet" sf:list-level="1">outer two</sf:p>
+      </sf:text-body></sf:text-storage>
+    </sf:document>""".encode()
+
+    source = _write_pages(tmp_path / "nested.pages", {"index.xml": xml})
+    doc = _backend(source).convert()
+    items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+
+    outer = items["outer one"].parent
+    assert items["outer two"].parent == outer
+    inner = items["inner a"].parent.resolve(doc)
+    assert inner.parent == items["outer one"].get_ref()
+    assert items["inner b"].parent == inner.get_ref()
+    assert items["inner a.1"].parent.resolve(doc).parent == items["inner a"].get_ref()
 
 
 def test_modern_table_is_extracted_from_the_tile_storage():
@@ -1138,6 +1171,48 @@ def test_legacy_hyperlink_survives_as_a_run_of_its_own():
     assert len(linked) == 1
     assert linked[0].text == "www.oasis-open.org"
     assert str(linked[0].hyperlink).startswith("http://www.oasis-open.org")
+
+
+@pytest.mark.parametrize(
+    ("address", "expected"),
+    [
+        ("https://[broken", None),
+        ("https://example.org/valid", "https://example.org/valid"),
+        ("notes.docx", "notes.docx"),
+    ],
+)
+def test_legacy_malformed_hyperlink_keeps_the_following_paragraph(
+    tmp_path: Path, address: str, expected: str | None
+):
+    """``urlparse`` rejects a bracketed host before the URL check can.
+
+    The link text and the next paragraph stay. A usable address is still kept.
+    """
+    namespace = "http://developer.apple.com/namespaces/sf"
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:text-storage><sf:text-body>
+        <sf:p><sf:link href="{address}">Link text</sf:link></sf:p>
+        <sf:p>Following text</sf:p>
+      </sf:text-body></sf:text-storage>
+    </sf:document>""".encode()
+    source = _write_pages(tmp_path / "link.pages", {"index.xml": xml})
+
+    result = DocumentConverter(allowed_formats=[InputFormat.IWORK_PAGES]).convert(
+        source
+    )
+
+    assert result.status == ConversionStatus.SUCCESS
+    linked = [item for item in result.document.texts if item.hyperlink is not None]
+    if expected is None:
+        assert linked == []
+    else:
+        assert [str(item.hyperlink) for item in linked] == [expected]
+    markdown = result.document.export_to_markdown()
+    assert "Link text" in markdown
+    assert "Following text" in markdown
+    if expected is None:
+        assert address not in markdown
 
 
 def test_modern_hyperlink_is_read_from_the_smart_field_table(tmp_path: Path):

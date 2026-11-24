@@ -37,8 +37,13 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VideoPipelineOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrMlxAudioOptions,
+    InlineAsrTransformersOptions,
+)
 from docling.pipeline.asr_transcriber import (
     _AsrModelFactory,
+    _keep_media,
     _merge_into_sentences,
 )
 from docling.pipeline.base_pipeline import BasePipeline
@@ -83,6 +88,21 @@ def _video_mimetype(filename: str) -> str:
     return _VIDEO_SUFFIX_TO_MIMETYPE.get(suffix, "video/mp4")
 
 
+def _gives_finished_phrases(asr_options: object) -> bool:
+    """Tell if the items already have their final times and speakers.
+
+    Granite Speech Plus gives timed phrases with almost no punctuation. A merge to
+    sentences would join them to one item, and it would lose the speaker changes.
+    """
+    return (
+        isinstance(
+            asr_options, (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions)
+        )
+        and asr_options.model_family == "granite_plus"
+        and (asr_options.word_timestamps or asr_options.speaker_attribution)
+    )
+
+
 def _extract_audio(video_path: Path, wav_path: Path, runner: FfmpegRunner) -> bool:
     """Extract audio track from video to a 16kHz mono WAV. Returns True on success."""
     argv = [
@@ -115,6 +135,7 @@ class VideoPipeline(BasePipeline):
             asr_options=self.pipeline_options.asr_options,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
+            enable_remote_services=pipeline_options.enable_remote_services,
         )
 
     @classmethod
@@ -150,10 +171,13 @@ class VideoPipeline(BasePipeline):
         _log.info("Processing video document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._process_video(conv_res)
+        if self.pipeline_options.keep_media:
+            _keep_media(conv_res)
         return conv_res
 
     def _process_video(self, conv_res: ConversionResult) -> None:
         # 1. Resolve input to a local path
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         temp_video: Path | None = None
 
@@ -215,7 +239,8 @@ class VideoPipeline(BasePipeline):
                 audio_ok = _extract_audio(video_path, wav_path, runner)
                 if audio_ok and wav_path.exists() and wav_path.stat().st_size > 0:
                     transcript_items = self._asr_model.transcribe(wav_path)
-                    transcript_items = _merge_into_sentences(transcript_items)
+                    if not _gives_finished_phrases(self.pipeline_options.asr_options):
+                        transcript_items = _merge_into_sentences(transcript_items)
                     # Run diarization while WAV is still available
                     if self.pipeline_options.enable_diarization:
                         try:
@@ -304,6 +329,7 @@ class VideoPipeline(BasePipeline):
                 events.append((frame.timestamp, 0, frame))
 
             events.sort(key=lambda e: (e[0], e[1]))
+            track = conv_res.document.add_track() if events else None
 
             for _, event_type, payload in events:
                 if event_type == 0:
@@ -312,9 +338,10 @@ class VideoPipeline(BasePipeline):
                         conv_res.document.add_picture(
                             image=ImageRef.from_pil(frame.image, dpi=72),
                             content_layer=ContentLayer.BODY,
+                            parent=track,
                             source=TrackSource(
                                 start_time=frame.timestamp,
-                                end_time=frame.timestamp + 0.001,
+                                end_time=frame.timestamp,
                                 identifier=(
                                     f"scene:{frame.scene_id}"
                                     if frame.scene_id is not None
@@ -335,6 +362,7 @@ class VideoPipeline(BasePipeline):
                             label=DocItemLabel.TEXT,
                             text=item.text,
                             content_layer=ContentLayer.BODY,
+                            parent=track,
                             source=TrackSource(
                                 start_time=item.start_time,
                                 end_time=item.end_time,

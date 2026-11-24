@@ -28,6 +28,7 @@ from docling.models.base_model import (
     BaseModelWithOptions,
     ItemAndImageEnrichmentElement,
 )
+from docling.utils.image_utils import to_rgb
 
 _USAGE_META_NAMESPACE = "docling"
 _USAGE_META_FIELD_NAME = "usage"
@@ -105,7 +106,7 @@ class PictureDescriptionBaseModel(
                 describe_image = False
             if describe_image:
                 elements.append(el.item)
-                images.append(el.image.convert("RGB"))
+                images.append(to_rgb(el.image))
 
         outputs = self._annotate_images(images)
 

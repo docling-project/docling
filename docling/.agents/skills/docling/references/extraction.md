@@ -14,9 +14,11 @@ from pydantic import BaseModel
 from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
 from docling.document_extractor import DocumentExtractor
 
+
 class Invoice(BaseModel):
     bill_no: str
     total: float
+
 
 extractor = DocumentExtractor()
 target = ExtractionTarget.from_pydantic(

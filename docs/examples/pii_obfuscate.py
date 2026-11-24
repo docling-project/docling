@@ -2,7 +2,7 @@
 # Detect and obfuscate PII using a Hugging Face NER model.
 #
 # What this example does
-# - Converts a PDF and saves original Markdown with embedded images.
+# - Converts a PDF; saving unredacted Markdown requires --save-original.
 # - Runs a HF token-classification pipeline (NER) to detect PII-like entities.
 # - Obfuscates occurrences in TextItem and TableItem by stable, type-based IDs.
 #
@@ -19,9 +19,10 @@
 # - To use GLiNER instead of HF pipeline:
 #     python docs/examples/pii_obfuscate.py --engine gliner
 #   or set env var `PII_ENGINE=gliner`.
-# - The script writes original and obfuscated Markdown to `scratch/`.
+# - By default only the obfuscated Markdown is saved to `scratch/`.
 #
 # Notes
+# - Embedded images are not redacted and may still contain PII.
 # - This is a simple demonstration. For production PII detection, consider
 #   specialized models/pipelines and thorough evaluation.
 # %%
@@ -34,7 +35,6 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from docling_core.types.doc import ImageRefMode, TableItem, TextItem
-from tabulate import tabulate
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -332,6 +332,11 @@ def main():
         default=os.getenv("PII_ENGINE", "hf"),
         help="NER engine: 'hf' (Transformers) or 'gliner' (GLiNER)",
     )
+    parser.add_argument(
+        "--save-original",
+        action="store_true",
+        help="Also save unredacted Markdown, which may contain personal information.",
+    )
     args = parser.parse_args()
 
     # Ensure output dir exists
@@ -354,9 +359,10 @@ def main():
     conv_doc = conv_res.document
     doc_filename = conv_res.input.file.name
 
-    # Save markdown with embedded pictures in original text
-    md_filename = output_dir / f"{doc_filename}-with-images-orig.md"
-    conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
+    # Unredacted output is opt-in because it may expose personal information.
+    if args.save_original:
+        md_filename = output_dir / f"{doc_filename}-with-images-orig.md"
+        conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
 
     # Build NER pipeline and obfuscator
     if args.engine == "gliner":
@@ -370,9 +376,8 @@ def main():
 
     for element, _level in conv_res.document.iterate_items():
         if isinstance(element, TextItem):
-            element.orig = element.text
             element.text = obfuscator.obfuscate_text(element.text)
-            # print(element.orig, " => ", element.text)
+            element.orig = element.text
 
         elif isinstance(element, TableItem):
             for cell in element.data.table_cells:
@@ -382,15 +387,9 @@ def main():
     md_filename = output_dir / f"{doc_filename}-with-images-pii-obfuscated.md"
     conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
 
-    # Optional: log mapping summary
+    # Do not log original entity values or their replacement mappings.
     if obfuscator.entity_map:
-        data = []
-        for key, val in obfuscator.entity_map.items():
-            data.append([key, val])
-
-        _log.info(
-            f"Obfuscated entities:\n\n{tabulate(data)}",
-        )
+        _log.info("Obfuscated %d unique entities", len(obfuscator.entity_map))
 
 
 if __name__ == "__main__":

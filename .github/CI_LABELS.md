@@ -84,8 +84,51 @@ example `bug`, `enhancement`, `docx`, `markdown`, `ocr`, or `table structure`.
 Rules map the conventional-commit title (`fix` → `bug`, scope `(docx)` →
 `docx`) and the changed source paths to labels, and the model can add up to
 three more. The list is in `.github/scripts/pr_topic_labels.py`. The workflow
-adds topic labels only on the first triage of a PR, never creates a label, and
-never removes one, so maintainers can correct them.
+adds topic and classification labels only on the first triage of a PR and
+never removes them, so maintainers can correct them. It creates only `chore`
+and `priority:critical` if they are missing. All other labels must exist.
+
+### Issue and PR classification
+
+Issues and PRs use the same classification rules and format allowlist:
+
+| Group | Labels |
+| --- | --- |
+| Severity | `priority:critical`, `priority:high`, `priority:medium`, `priority:low` |
+| Application | `bug` (fix), `enhancement`, `chore` |
+| Format | Existing PR format labels, such as `pdf`, `docx`, `xlsx`, and `html` |
+
+The `priority:*` labels record the assessed impact. For bugs and chores,
+critical means a supported security impact, data loss, or a widespread
+outage. High means a major core failure without a practical workaround.
+Medium means a limited failure with a workaround. Low means a minor defect or
+maintenance task. For enhancements, the priority records the assessed value:
+high unblocks a core workflow for many users, medium improves a commonly used
+feature, and low is a niche or cosmetic improvement. An enhancement is never
+critical.
+The model leaves a group empty if the report gives too little information.
+The rules are in `.github/ai-triage/classification-rules.md`.
+
+Existing severity and application labels take precedence. For PRs, a
+conventional-commit title also takes precedence over the model's application
+choice. The workflow does not add a second label in either group.
+
+The `AI Issue Triage` workflow runs when an issue is opened, reopened, or
+edited. It reads the title and body, validates the model answer, and applies
+labels in a separate job with write access. It does not download attachments
+or execute issue content. The model uses the same `BOB_API_KEY`, `BOB_TEAM_ID`,
+and `BOB_TRIAGE_MAX_COST` settings as PR triage.
+
+When the workflow adds labels, it also adds one advisory comment to record
+that the issue was classified. Later runs preserve maintainer corrections,
+including removed labels. An issue that changes or closes during analysis
+receives no labels from that analysis. If analysis fails or adds no labels,
+the workflow adds no comment, so the issue stays unclassified. A later edit,
+`/ai triage`, or a manual run then classifies it again:
+
+```bash
+gh workflow run "AI Issue Triage" -f issue=1234
+```
 
 ### `/ai` commands
 

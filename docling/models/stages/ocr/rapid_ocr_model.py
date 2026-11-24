@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, Type, get_args
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc.page import TextCell
+from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -32,6 +33,7 @@ from docling.utils.ocr_language import (
     OcrLanguageResolver,
     OcrLanguageSupport,
 )
+from docling.utils.orientation import ocr_box_to_bounding_rectangle
 from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress, safe_version
 
@@ -56,6 +58,14 @@ _RAPIDOCR_V4V5_MODEL_TYPE = "mobile"
 # Inference backends docling supports, derived from the RapidOcrOptions.backend
 # annotation so the two cannot drift.
 _RAPIDOCR_BACKENDS: frozenset[str] = frozenset(get_args(RapidOcrBackend))
+
+# detect_orientation: a line with at least this score is read with confidence, and a
+# region with fewer lines is too small to judge its orientation.
+_ORIENTATION_CONFIDENCE_SCORE = 0.8
+_ORIENTATION_MIN_LINES = 3
+
+# A line read by RapidOCR: its box as four corner points, its text and its score
+_OcrLine = tuple[list[list[float]], str, float]
 
 # Canonical BCP-47 to PP-OCR recognizer codes. The PP-OCRv6 set comes from the
 # installed `rapidocr`; the v4/v5 sets below have no upstream equivalent to read,
@@ -462,6 +472,20 @@ def _validate_rapidocr_model_size(
             ) from err
 
 
+def _reads_well(lines: list[_OcrLine]) -> bool:
+    """Whether enough lines were found and at least half are read with confidence."""
+    confident = sum(
+        1 for _, _, score in lines if score >= _ORIENTATION_CONFIDENCE_SCORE
+    )
+    return len(lines) >= _ORIENTATION_MIN_LINES and 2 * confident >= len(lines)
+
+
+def _confident_chars(lines: list[_OcrLine]) -> int:
+    return sum(
+        len(text) for _, text, score in lines if score >= _ORIENTATION_CONFIDENCE_SCORE
+    )
+
+
 class RapidOcrModel(BaseOcrModel):
     _model_repo_folder = "RapidOcr"
 
@@ -622,15 +646,19 @@ class RapidOcrModel(BaseOcrModel):
 
             params = {
                 # Global settings (these are still correct)
-                "Global.text_score": self.options.text_score,
+                # detect_orientation judges a reading by all its lines, so it applies
+                # text_score itself, after that.
+                "Global.text_score": 0.0
+                if self.options.detect_orientation
+                else self.options.text_score,
                 "Global.font_path": font_path,
+                "Global.log_level": "info" if self.options.print_verbose else "warning",
                 # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
                 "EngineConfig.onnxruntime.use_cuda": use_cuda,
                 "EngineConfig.onnxruntime.cuda_ep_cfg.device_id": gpu_id,
                 # Engine-level OpenVINO settings
                 "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
-                # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
                 "Det.model_path": det_model_path,
                 "Det.use_cuda": use_cuda,
@@ -769,22 +797,17 @@ class RapidOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
-                        im = numpy.array(high_res_image)
-                        result = self.reader(
-                            im,
-                            use_det=self.options.use_det,
-                            use_cls=self.options.use_cls,
-                            use_rec=self.options.use_rec,
-                        )
-                        if result is None or result.boxes is None:
+                        result = self._read(high_res_image)
+                        if result is None:
                             _log.warning("RapidOCR returned empty result!")
                             continue
-                        result = list(
-                            zip(result.boxes.tolist(), result.txts, result.scores)
-                        )
+                        orientation, im_size = 0, high_res_image.size
+                        if self.options.detect_orientation:
+                            result, orientation, im_size = self._read_upright(
+                                high_res_image, result
+                            )
 
                         del high_res_image
-                        del im
 
                         if result is not None:
                             cells = [
@@ -794,20 +817,22 @@ class RapidOcrModel(BaseOcrModel):
                                     orig=line[1],
                                     confidence=line[2],
                                     from_ocr=True,
-                                    rect=BoundingRectangle.from_bounding_box(
+                                    rect=ocr_box_to_bounding_rectangle(
+                                        # Corners 0 and 2 of RapidOCR's quadrilateral
+                                        # span the line box
                                         BoundingBox.from_tuple(
                                             coord=(
-                                                (line[0][0][0] / self.scale)
-                                                + ocr_rect.l,
-                                                (line[0][0][1] / self.scale)
-                                                + ocr_rect.t,
-                                                (line[0][2][0] / self.scale)
-                                                + ocr_rect.l,
-                                                (line[0][2][1] / self.scale)
-                                                + ocr_rect.t,
+                                                line[0][0][0],
+                                                line[0][0][1],
+                                                line[0][2][0],
+                                                line[0][2][1],
                                             ),
                                             origin=CoordOrigin.TOPLEFT,
-                                        )
+                                        ),
+                                        original_offset=ocr_rect,
+                                        scale=self.scale,
+                                        orientation=orientation,
+                                        im_size=im_size,
                                     ),
                                 )
                                 for ix, line in enumerate(result)
@@ -822,6 +847,44 @@ class RapidOcrModel(BaseOcrModel):
                     self.draw_ocr_rects_and_cells(conv_res, page, ocr_rects)
 
                 yield page
+
+    def _read(self, image: Image.Image) -> list[_OcrLine] | None:
+        result = self.reader(
+            numpy.asarray(image),
+            use_det=self.options.use_det,
+            use_cls=self.options.use_cls,
+            use_rec=self.options.use_rec,
+        )
+        if result is None or result.boxes is None:
+            return None
+        return list(zip(result.boxes.tolist(), result.txts, result.scores))
+
+    def _read_upright(
+        self, image: Image.Image, lines: list[_OcrLine]
+    ) -> tuple[list[_OcrLine], int, tuple[int, int]]:
+        """Read a poorly read region again at the other orientations.
+
+        Keeps the first orientation that reads well with at least twice the confidently
+        read characters. Returns the lines that score at least `text_score`, the
+        orientation they were read at (the image turned with ``rotate(-orientation)``,
+        as in the Tesseract engines) and the size of the image they were read on.
+        """
+        orientation, im_size = 0, image.size
+        if len(lines) >= _ORIENTATION_MIN_LINES and not _reads_well(lines):
+            needed = 2 * _confident_chars(lines)
+            # RapidOCR turns tall line crops a quarter turn counter-clockwise, so it
+            # reads a region turned counter-clockwise upside down: try that fix first.
+            for turn in (90, 180, 270):
+                turned = image.rotate(-turn, expand=True)
+                turned_lines = self._read(turned) or []
+                if (
+                    _reads_well(turned_lines)
+                    and _confident_chars(turned_lines) >= needed
+                ):
+                    lines, orientation, im_size = turned_lines, turn, turned.size
+                    break
+        lines = [line for line in lines if line[2] >= self.options.text_score]
+        return lines, orientation, im_size
 
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:

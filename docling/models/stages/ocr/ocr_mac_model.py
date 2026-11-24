@@ -3,7 +3,6 @@
 
 import logging
 import sys
-import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional, Type
@@ -172,18 +171,12 @@ class OcrMacModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
 
-                        with tempfile.NamedTemporaryFile(
-                            suffix=".png", mode="w"
-                        ) as image_file:
-                            fname = image_file.name
-                            high_res_image.save(fname)
-
-                            boxes = self.reader_RIL(
-                                fname,
-                                recognition_level=self.options.recognition,
-                                framework=self.options.framework,
-                                language_preference=self._native_codes or None,
-                            ).recognize()
+                        boxes = self.reader_RIL(
+                            high_res_image,
+                            recognition_level=self.options.recognition,
+                            framework=self.options.framework,
+                            language_preference=self._native_codes or None,
+                        ).recognize()
 
                         im_width, im_height = high_res_image.size
                         cells = []

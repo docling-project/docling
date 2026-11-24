@@ -395,6 +395,20 @@ def test_page_count_is_the_number_of_slides():
     assert backend.page_count() == 3
 
 
+def test_page_range_selects_the_slides_to_convert():
+    """Only the slides in ``page_range`` are converted, as in the PowerPoint and
+    ODP backends, and each keeps its page number and its group name."""
+    doc = DocumentConverter().convert(KEYNOTE_2013, page_range=(2, 3)).document
+
+    assert sorted(doc.pages) == [2, 3]
+    assert [
+        group.name for group in doc.groups if group.label == GroupLabel.CHAPTER
+    ] == ["slide-1", "slide-2"]
+    assert [
+        item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)
+    ] == ["Slide 1", _BODY_SENTENCE, "Slide 3"]
+
+
 def test_keynote_backend_accepts_a_stream():
     stream = BytesIO(KEYNOTE_2013.read_bytes())
     in_doc = InputDocument(

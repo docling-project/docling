@@ -4,16 +4,18 @@
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
+from zlib import crc32
 
 import openpyxl
 import pytest
 from docx import Document
 from docx.shared import Inches
 from openpyxl.drawing.image import Image as XlImage
-from PIL import Image, ImageCms
+from PIL import Image, ImageCms, ImageFile, __version__ as PILLOW_VERSION
 from pptx import Presentation
 
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.base_models import ConversionStatus
 from docling.document_converter import DocumentConverter
@@ -113,6 +115,103 @@ def test_cmyk_xlsx_picture_is_not_rendered_by_libreoffice(
     assert image.size == (200, 100)
 
 
+@pytest.mark.parametrize(
+    "chunk_type, payload",
+    [
+        pytest.param(
+            b"cHRM",
+            b"",
+            marks=pytest.mark.skipif(
+                int(PILLOW_VERSION.split(".")[0]) < 13,
+                reason="Pillow before 13 accepts truncated cHRM chunks",
+            ),
+        ),
+        (b"gAMA", b"\x00\x00"),
+        (b"tRNS", b"\x00\x00"),
+    ],
+)
+@pytest.mark.parametrize("render_available", [True, False])
+def test_docx_truncated_png_uses_picture_fallback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    chunk_type: bytes,
+    payload: bytes,
+    render_available: bool,
+) -> None:
+    monkeypatch.setattr(ImageFile, "LOAD_TRUNCATED_IMAGES", False)
+    rendered_elements: list[object] = []
+
+    def render(
+        self: MsWordDocumentBackend,
+        elements: object,
+        element_tag: str | list[str] | None = None,
+    ) -> Image.Image | None:
+        assert element_tag == ["drawing", "pict"]
+        rendered_elements.append(elements)
+        return Image.new("RGB", (240, 120), "green") if render_available else None
+
+    monkeypatch.setattr(MsWordDocumentBackend, "_convert_elements_via_docx", render)
+    png = BytesIO()
+    Image.new("RGB", (200, 100), "red").save(png, format="PNG")
+    png.seek(0)
+    source = Document()
+    source.add_paragraph("Before damaged picture")
+    source.add_picture(png, width=Inches(2))
+    source.add_paragraph("After damaged picture")
+    healthy_png = BytesIO()
+    Image.new("RGB", (200, 100), "blue").save(healthy_png, format="PNG")
+    healthy_png.seek(0)
+    source.add_picture(healthy_png, width=Inches(2))
+    template = BytesIO()
+    source.save(template)
+    template.seek(0)
+
+    # Insert a short ancillary chunk with a valid CRC after the PNG IHDR chunk.
+    chunk = len(payload).to_bytes(4, "big") + chunk_type + payload
+    chunk += crc32(chunk_type + payload).to_bytes(4, "big")
+    png_bytes = png.getvalue()
+    damaged_png = png_bytes[:33] + chunk + png_bytes[33:]
+    path = tmp_path / "truncated.docx"
+    with ZipFile(template) as src, ZipFile(path, "w") as dst:
+        for entry in src.infolist():
+            data = (
+                damaged_png
+                if entry.filename == "word/media/image1.png"
+                else src.read(entry.filename)
+            )
+            dst.writestr(entry, data)
+
+    result = DocumentConverter().convert(path)
+    assert result.status == ConversionStatus.SUCCESS
+    assert len(rendered_elements) == 1
+    doc = result.document
+    assert [text.text for text in doc.texts] == [
+        "Before damaged picture",
+        "After damaged picture",
+    ]
+    assert [ref.cref for ref in doc.body.children] == [
+        "#/texts/0",
+        "#/pictures/0",
+        "#/texts/1",
+        "#/pictures/1",
+    ]
+    assert len(doc.pictures) == 2
+    image_ref = doc.pictures[0].image
+    if render_available:
+        assert image_ref is not None
+        image = image_ref.pil_image
+        assert image is not None
+        assert image.size == (240, 120)
+        assert image.getpixel((0, 0)) == (0, 128, 0)
+    else:
+        assert image_ref is None
+    healthy_ref = doc.pictures[1].image
+    assert healthy_ref is not None
+    healthy_image = healthy_ref.pil_image
+    assert healthy_image is not None
+    assert healthy_image.getpixel((0, 0)) == (0, 0, 255)
+
+
 def test_embedded_icc_profile_is_used() -> None:
     # LAB also requires conversion for PNG and has a profile Pillow can generate.
     image = Image.new("LAB", (2, 2), (128, 180, 80))
@@ -139,6 +238,25 @@ def test_pa_preserves_per_pixel_alpha_in_png() -> None:
         assert decoded.mode == "RGBA"
         assert decoded.getpixel((0, 0)) == (10, 20, 30, 40)
         assert decoded.getpixel((1, 0)) == (10, 20, 30, 200)
+
+
+def test_integer_image_preserves_png_values() -> None:
+    image = Image.new("I", (6, 1))
+    image.putdata([-1, 0, 255, 256, 65535, 65536])
+    buffer = BytesIO()
+
+    normalize_image_for_png(image).save(buffer, format="PNG")
+
+    buffer.seek(0)
+    with Image.open(buffer) as decoded:
+        assert [decoded.getpixel((x, 0)) for x in range(6)] == [
+            0,
+            0,
+            255,
+            256,
+            65535,
+            65535,
+        ]
 
 
 @pytest.mark.parametrize(

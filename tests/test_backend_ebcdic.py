@@ -262,6 +262,32 @@ def test_truncated_record_is_reported(employee_layout):
         _backend(truncated, EbcdicBackendOptions(layout=employee_layout)).convert()
 
 
+def test_record_length_shorter_than_layout_is_reported():
+    layout = EbcdicLayout(
+        record_length_field=EbcdicField(
+            name="length", size=2, type=EbcdicFieldType.UNSIGNED_INTEGER
+        ),
+        records=[
+            EbcdicRecordLayout(
+                name="line",
+                fields=[
+                    EbcdicField(name="sku", size=4),
+                    EbcdicField(
+                        name="quantity", size=3, type=EbcdicFieldType.PACKED_DECIMAL
+                    ),
+                    EbcdicField(name="id", size=4, type=EbcdicFieldType.INTEGER),
+                ],
+            )
+        ],
+    )
+    # The length prefix covers the SKU and two of the three quantity bytes.
+    body = _text("B200", 4) + _packed(12, 3)[:2]
+    data = (2 + len(body)).to_bytes(2, "big") + body
+
+    with pytest.raises(EbcdicDecodeError, match="'line' ends inside 'quantity'"):
+        _backend(data, EbcdicBackendOptions(layout=layout)).convert()
+
+
 def test_unknown_record_type_is_reported():
     layout = EbcdicLayout(
         record_type_field=EbcdicField(name="kind", size=1),

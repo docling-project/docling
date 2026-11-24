@@ -3,6 +3,7 @@
 
 import logging
 import os
+import unicodedata
 import warnings
 from datetime import datetime
 from enum import Enum
@@ -23,7 +24,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import deprecated
+from typing_extensions import Self, deprecated
 
 from docling.datamodel import (
     asr_model_specs,
@@ -61,7 +62,10 @@ from docling.datamodel.object_detection_engine_options import (
 from docling.datamodel.picture_classification_options import (
     DocumentPictureClassifierOptions,
 )
-from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    ApiAsrOptions,
+    InlineAsrOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -195,6 +199,16 @@ class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure model using Granite Vision (VLM-based)."""
 
     kind: ClassVar[str] = "granite_vision_table"
+    scale: Annotated[
+        float,
+        Field(
+            gt=0,
+            description=(
+                "Render scale for the table crops sent to the model (1.0 = 72 dpi). "
+                "Small table text needs a higher scale to be read correctly."
+            ),
+        ),
+    ] = 2.0
 
 
 class OcrOptions(BaseOptions):
@@ -264,6 +278,23 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
+    replace_broken_text_layer: Annotated[
+        bool,
+        Field(
+            description=(
+                "Replace a broken PDF text layer with OCR, page by page. When enabled,"
+                " Docling checks the visible text layer of each page. A page whose"
+                " text layer is broken, for example from a font whose glyphs were not"
+                " mapped to real characters, is read with full-page OCR, and its OCR"
+                " text is used instead of its PDF text for that page only. Its"
+                " `parse_score` drops to 0 and keeps describing the PDF text layer. A"
+                " low `parse_score` alone does not replace a page. Other pages, and"
+                " pages without a text layer, keep the usual behavior."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
@@ -320,10 +351,13 @@ class OcrAutoOptions(OcrOptions):
     """Automatic OCR engine selection based on system availability.
 
     When this option is used, Docling probes the runtime environment at
-    pipeline initialization and selects the best available OCR engine
-    (e.g., EasyOCR if GPU is present, Tesseract otherwise). The requested
-    languages are forwarded to whichever engine is chosen, and an engine with
-    no model for them is skipped in favour of the next candidate.
+    pipeline initialization and selects the first available OCR engine, in
+    this order: OcrMac on macOS, Nemotron OCR on Linux with CUDA, RapidOCR
+    with onnxruntime, EasyOCR, and RapidOCR with torch. Tesseract is never
+    selected automatically; use `TesseractOcrOptions` or
+    `TesseractCliOcrOptions` for it. The requested languages are forwarded to
+    whichever engine is chosen, and an engine with no model for them is
+    skipped in favour of the next candidate.
 
     Notes:
         `lang` is forwarded to whichever engine is selected. The default empty
@@ -426,6 +460,17 @@ class RapidOcrOptions(OcrOptions):
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
+    detect_orientation: Annotated[
+        bool,
+        Field(
+            description=(
+                "Read an OCR region again at the other three orientations when fewer than half of its "
+                "lines are read with confidence, and keep the first orientation that reads well. Unlike "
+                "`use_cls`, which flips single text lines by 180 degrees, this also fixes pages turned "
+                "by 90 or 270 degrees."
+            )
+        ),
+    ] = False
     use_rec: Annotated[
         bool | None,
         Field(
@@ -926,8 +971,9 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
         dict[str, Any],
         Field(
             description=(
-                "Additional query parameters to include in API requests. Service-specific parameters for customizing "
-                "API behavior beyond standard options."
+                "Additional fields for the JSON body of API requests, for example `model`, `max_completion_tokens` "
+                "or `temperature`. They are not sent as URL query parameters. Put query parameters, such as the "
+                "`api-version` of Azure OpenAI, in `url`."
             )
         ),
     ] = {}
@@ -1118,6 +1164,16 @@ detailed descriptions of image content.
 """
 
 
+class NemotronParseOptions(BaseModel):
+    """Nemotron 3.5 Parse stages. Single-pass preserves the preset defaults."""
+
+    passes: Literal["single", "double", "triple"] = "single"
+    triple_regions: Literal["detector", "union"] = "union"
+    crop_batch_size: int = Field(
+        default=8, ge=1, description="Maximum crops per engine batch"
+    )
+
+
 class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based document conversion.
 
@@ -1151,6 +1207,11 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 
     batch_size: int = Field(
         default=1, description="Batch size for processing multiple pages"
+    )
+
+    nemotron_parse: NemotronParseOptions = Field(
+        default_factory=NemotronParseOptions,
+        description="Multi-pass options for the nemotron_parse_v3_5 response format",
     )
 
     force_backend_text: bool = Field(
@@ -1229,15 +1290,22 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V3_5)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_MINERU2_PRO)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_MINICPM_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_08B)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_4B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_FALCON_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_CHANDRA_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_SURYA_OCR2_5)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2_MLX)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_MOCR)
 
@@ -1520,6 +1588,37 @@ class ConvertPipelineOptions(PipelineOptions):
             )
         ),
     ] = _default_chart_extraction_options
+    do_media_conversion: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert the video and audio files that slides play (PPTX, ODP) with the audio or video "
+                "pipeline. The transcript, and the sampled frames of a video, go in the track of each "
+                "media object. Needs the `asr` extra and ffmpeg. A linked file "
+                "is fetched only when the backend options `enable_remote_fetch` or `enable_local_fetch` "
+                "allow it. Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Hold the video and audio files that slides play (PPTX, ODP) in the track of each "
+                "media object, so that e.g. a DocLang archive stores them. A linked file is fetched "
+                "only when the backend options `enable_remote_fetch` or `enable_local_fetch` allow it. "
+                "Only formats that the simple pipeline converts use this option."
+            )
+        ),
+    ] = False
+    media_asr_options: Annotated[
+        InlineAsrOptions,
+        Field(
+            description=(
+                "Speech recognition model for the media files of `do_media_conversion`."
+            )
+        ),
+    ] = asr_model_specs.WHISPER_TINY
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -1810,14 +1909,27 @@ class AsrPipelineOptions(PipelineOptions):
     """
 
     asr_options: Annotated[
-        InlineAsrOptions,
+        InlineAsrOptions | ApiAsrOptions,
         Field(
             description=(
                 "Automatic Speech Recognition (ASR) model configuration for audio transcription. Specifies which "
-                "ASR model to use (e.g., Whisper variants) and model-specific parameters for speech-to-text conversion."
+                "ASR model to use (e.g., Whisper variants) and model-specific parameters for speech-to-text conversion. "
+                "Use `ApiAsrOptions` (with `enable_remote_services=True`) to transcribe with an OpenAI-compatible "
+                "server instead of a model loaded in this process."
             )
         ),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the audio (or video) of the transcript "
+                "track, so that e.g. a DocLang archive stores it. The document then "
+                "holds the input's local path. Only file inputs are supported; for a "
+                "stream, no media is kept."
+            )
+        ),
+    ] = False
 
 
 from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
@@ -1836,9 +1948,19 @@ class VideoPipelineOptions(PipelineOptions):
     """
 
     asr_options: Annotated[
-        InlineAsrOptions,
+        InlineAsrOptions | ApiAsrOptions,
         Field(description="ASR model configuration for the video audio track."),
     ] = asr_model_specs.WHISPER_TINY
+    keep_media: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reference the input file as the video of the track, so that e.g. a "
+                "DocLang archive stores it. The document then holds the input's local "
+                "path. Only file inputs are supported; for a stream, no media is kept."
+            )
+        ),
+    ] = False
 
     frame_sampling_mode: Annotated[
         VideoFrameSamplingMode,
@@ -2050,6 +2172,28 @@ class VlmExtractionPipelineOptions(PipelineOptions):
         return self
 
 
+# Keyword families of the heading numbering signal, highest hierarchy level first.
+NUMBERING_KEYWORD_FAMILIES: tuple[str, ...] = (
+    "part",  # PART I / TITLE I / BOOK I
+    "chapter",  # CHAPTER 1
+    "division",  # DIVISION I / Division 1 / Division A
+    "subdivision",  # SUBDIVISION A / Subdivision a
+    "article",  # ARTICLE 1 / SECTION 1 / Clause / § 1
+)
+# Numeral schemes, which follow the keyword families. ``dotted`` shares the ``arabic``
+# rank and is ordered below it by its segment depth (1.1 below 1.).
+NUMBERING_NUMERAL_SCHEMES: tuple[str, ...] = (
+    "roman_u",  # I. II. III.
+    "arabic",  # 1. 2. 3.  (and dotted 1.1, 1.1.1 by depth)
+    "alpha_u",  # A. B. C.
+    "alpha_l",  # (a) (b) (c)
+    "roman_l",  # (i) (ii) (iii)
+)
+DEFAULT_NUMBERING_SCHEMES: tuple[str, ...] = (
+    NUMBERING_KEYWORD_FAMILIES + NUMBERING_NUMERAL_SCHEMES
+)
+
+
 class HeadingHierarchyOptions(BaseModel):
     """Options for inferring section-header levels in the PDF/image pipeline.
 
@@ -2067,10 +2211,9 @@ class HeadingHierarchyOptions(BaseModel):
           When a bookmark confidently matches a detected heading it is authoritative; entries
           that match nothing fall back to numbering/style, so partial/noisy outlines never
           degrade the numbering result.
-        - ``use_style`` requires the parsed PDF cells to still be available when the
-          heading-hierarchy step runs, i.e.
-          ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
-          silently skipped (numbering still applies).
+        - ``use_style`` reads the text lines of the headings from the parsed PDF cells. The PDF
+          pipeline keeps those lines until the heading-hierarchy step has run, so
+          ``PdfPipelineOptions.generate_parsed_pages`` is not needed.
     """
 
     enabled: Annotated[
@@ -2110,7 +2253,7 @@ class HeadingHierarchyOptions(BaseModel):
             description=(
                 "Use the visual style of the heading (font size, and with `use_font_style` also "
                 "weight, slant and letter case) as a fallback for headings without recognizable "
-                "numbering. Requires `generate_parsed_pages=True`."
+                "numbering."
             )
         ),
     ] = True
@@ -2146,11 +2289,42 @@ class HeadingHierarchyOptions(BaseModel):
             description=(
                 "Optional override of the numbering-scheme precedence (highest level first). "
                 "Known schemes: 'part', 'chapter', 'division', 'subdivision', 'article', "
-                "'roman_u', 'arabic', 'alpha_u', 'alpha_l', 'roman_l'. When None, a default "
-                "legal/regulatory ordering is used."
+                "'roman_u', 'arabic', 'alpha_u', 'alpha_l', 'roman_l', plus any family that "
+                "`numbering_keywords` defines. When None, a default legal/regulatory ordering "
+                "is used."
             )
         ),
     ] = None
+    numbering_keywords: Annotated[
+        dict[str, list[str]],
+        Field(
+            description=(
+                "Extra keyword markers for the numbering signal, as a mapping from a scheme "
+                "family to its words, for documents that are not in English. A key is one of "
+                "'part', 'chapter', 'division', 'subdivision', 'article', or a new family "
+                "name that `numbering_schemes` must then list. A word given here replaces "
+                "the built-in family of that word. Matching ignores letter case. Words in "
+                "'division' and 'subdivision' count only when an enumerator follows; words "
+                "in every other family also count when they stand alone. Write the dot of "
+                "an abbreviation as part of the word ('art.'). Empty by default."
+            ),
+            examples=[
+                {"chapter": ["rozdział"], "article": ["art.", "artykuł"]},
+            ],
+        ),
+    ] = {}
+    numbering_number_words: Annotated[
+        list[str],
+        Field(
+            description=(
+                "Extra number words that count as the enumerator after a keyword marker, in "
+                "addition to the English ones ('one', 'first', ...). For example "
+                "['pierwszy', 'drugi'] lets 'DZIAŁ PIERWSZY' count as a marker. Matching "
+                "ignores letter case. Empty by default."
+            ),
+            examples=[["premier", "deuxième"]],
+        ),
+    ] = []
     max_level: Annotated[
         int,
         Field(
@@ -2171,6 +2345,81 @@ class HeadingHierarchyOptions(BaseModel):
             ),
         ),
     ] = 0.8
+
+    @field_validator("numbering_keywords", mode="after")
+    @classmethod
+    def _validate_numbering_keywords(
+        cls, value: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        reserved = {*NUMBERING_NUMERAL_SCHEMES, "dotted"}
+        owner: dict[str, str] = {}
+        cleaned: dict[str, list[str]] = {}
+        for family, words in value.items():
+            if not family.strip():
+                raise ValueError("numbering_keywords has an empty family name")
+            if family in reserved:
+                raise ValueError(
+                    f"numbering_keywords cannot add words to the numeral scheme {family!r}"
+                )
+            cleaned[family] = [word.strip() for word in words]
+            for word in cleaned[family]:
+                if not word:
+                    raise ValueError(
+                        f"numbering_keywords[{family!r}] contains an empty word"
+                    )
+                key = unicodedata.normalize("NFC", word).casefold()
+                if owner.setdefault(key, family) != family:
+                    raise ValueError(
+                        f"numbering_keywords lists {word!r} in the families "
+                        f"{owner[key]!r} and {family!r}"
+                    )
+        return cleaned
+
+    @field_validator("numbering_number_words", mode="after")
+    @classmethod
+    def _validate_numbering_number_words(cls, value: list[str]) -> list[str]:
+        cleaned = [word.strip() for word in value]
+        if not all(cleaned):
+            raise ValueError("numbering_number_words contains an empty word")
+        return cleaned
+
+    @model_validator(mode="after")
+    def _validate_keyword_families_are_ordered(self) -> Self:
+        known = {*NUMBERING_KEYWORD_FAMILIES, *(self.numbering_schemes or ())}
+        unplaced = [family for family in self.numbering_keywords if family not in known]
+        if unplaced:
+            raise ValueError(
+                f"numbering_keywords defines the new families {unplaced}; list them in "
+                "numbering_schemes to give them a place in the hierarchy"
+            )
+        return self
+
+
+class ScriptPositionOptions(BaseModel):
+    """Options for recovering superscript and subscript text in the PDF pipeline.
+
+    When ``enabled``, characters drawn smaller than their line and raised or lowered against
+    it (footnote markers, "1st", "mc2", "H2O") are marked with ``formatting.script``. A text
+    item holding them keeps its place, and its text moves into an inline group of runs.
+
+    Notes:
+        - Character positions are read with pypdfium2 whichever backend parsed the page; the
+          step is skipped with a warning when pypdfium2 is not installed.
+        - Body text, list items and footnotes are handled; headings, captions, tables, code,
+          formulas, OCR text and invisible text (such as an OCR layer over a scan) are left
+          unchanged.
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable recovery of superscript and subscript text for the PDF pipeline. "
+                "When disabled (default), raised and lowered text stays part of its plain "
+                "text item (unchanged behavior)."
+            )
+        ),
+    ] = False
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
@@ -2199,6 +2448,21 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    extract_form_fields: Annotated[
+        bool,
+        Field(
+            description=(
+                "Extract native interactive PDF widgets (AcroForm) as format-neutral fillable field values, "
+                "each with a field key from printed text associated by page geometry: text in or beside "
+                "its cell, or a whole paragraph that inlines the widget. A widget in a detected table goes "
+                "into its table cell, keyed only by text printed in that same cell; row and column "
+                "headers are not used as keys or hints. Requires the docling-parse backend, which supplies "
+                "page widgets; table cells need table structure. Raw widget metadata remains available only "
+                "on retained parsed pages. Scanned or flattened forms and backends without page widgets are "
+                "unaffected."
+            )
+        ),
+    ] = False
     do_ocr: Annotated[
         bool,
         Field(
@@ -2303,6 +2567,15 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    use_embedded_picture_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use a directly extracted embedded PDF image for a picture when its region contains exactly one safe "
+                "image. Falls back to the rendered page crop for all other cases."
+            )
+        ),
+    ] = False
     generate_table_images: Annotated[
         bool,
         Field(
@@ -2343,6 +2616,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = HeadingHierarchyOptions()
+    script_position_options: Annotated[
+        ScriptPositionOptions,
+        Field(
+            description=(
+                "Configuration for recovering superscript and subscript text, such as "
+                "footnote markers, ordinals and chemical formulas. Disabled by default; when "
+                "enabled, text items holding raised or lowered characters become inline "
+                "groups whose runs carry formatting.script."
+            )
+        ),
+    ] = ScriptPositionOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 

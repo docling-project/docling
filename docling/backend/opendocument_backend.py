@@ -19,6 +19,7 @@ Known gaps to improve:
 
 from __future__ import annotations
 
+import functools
 import logging
 import re
 from collections.abc import Callable
@@ -43,6 +44,7 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
+    PictureItem,
     PictureMeta,
     ProvenanceItem,
     RichTableCell,
@@ -63,9 +65,12 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.media import load_linked_media, media_kind, media_ref
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils._inline_runs import trim_run_edges
+from docling.utils.image_utils import open_image
 
 _ODFDO_AVAILABLE: bool = False
 _ODFDO_IMPORT_ERROR: ImportError | None = None
@@ -162,6 +167,12 @@ class _OdfTextRun:
 
 _ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
+# Shapes of a notes page that show the slide or a field, not the speaker notes:
+# the slide thumbnail, and the slide number, date, header and footer fields.
+_ODP_NOTES_PAGE_FIELD_CLASSES = frozenset(
+    {"page", "page-number", "date-time", "header", "footer"}
+)
+
 
 def _odf_hyperlink_from_href(href: str | None) -> AnyUrl | Path | None:
     if href is None:
@@ -194,6 +205,68 @@ def _load_odf_document(
         ) from e
 
 
+# Style families looked up by the backends, with the tag odfdo matches for each.
+_ODF_INDEXED_STYLE_TAGS = {
+    "drawing-page": "style:style",
+    "list": "text:list-style",
+    "paragraph": "style:style",
+    "text": "style:style",
+}
+
+
+class _OdfAutomaticStyleIndex:
+    """Look up named styles of ``content.xml`` in a dict.
+
+    ``OdfDocument.get_style()`` scans every style in the container for each new
+    name, which is quadratic for documents with thousands of automatic styles
+    (common in files exported from Word). The index returns what odfdo would:
+    the first style in document order with that family and name. Anything it
+    does not hold goes to odfdo.
+    """
+
+    def __init__(self, odf_obj: OdfDocument) -> None:
+        self._odf_get_style = odf_obj.get_style
+        self._content = odf_obj.content
+        self._styles: dict[tuple[str, str], Any] | None = None
+
+    def _build(self) -> dict[tuple[str, str], Any]:
+        styles: dict[tuple[str, str], Any] = {}
+        for query in ("//office:font-face-decls", "//office:automatic-styles"):
+            container = self._content.get_element(query)
+            if container is None:
+                continue
+            for style in container.children:
+                name = style.attributes.get("style:name")
+                if not name:
+                    continue
+                if style.tag == "text:list-style":
+                    family = "list"
+                else:
+                    family = style.attributes.get("style:family", "")
+                if _ODF_INDEXED_STYLE_TAGS.get(family) == style.tag:
+                    styles.setdefault((family, name), style)
+        return styles
+
+    def get_style(
+        self,
+        family: str,
+        name_or_element: Any = None,
+        display_name: str | None = None,
+    ) -> Any:
+        if (
+            family in _ODF_INDEXED_STYLE_TAGS
+            and isinstance(name_or_element, str)
+            and name_or_element
+            and display_name is None
+        ):
+            if self._styles is None:
+                self._styles = self._build()
+            style = self._styles.get((family, name_or_element))
+            if style is not None:
+                return style
+        return self._odf_get_style(family, name_or_element, display_name)
+
+
 class _OdfBaseBackend(DeclarativeDocumentBackend):
     """Shared loading / validation logic for ODT, ODS and ODP backends."""
 
@@ -215,6 +288,15 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
         self.odf_obj: OdfDocument = _load_odf_document(
             path_or_stream, self.document_hash
         )
+        # get_style() runs an XPath query over the whole document and is called for
+        # every paragraph and text run; styles do not change during conversion.
+        self.odf_obj.get_style = functools.cache(  # type: ignore[method-assign]
+            _OdfAutomaticStyleIndex(self.odf_obj).get_style
+        )
+        # On each miss, get_style() finds the style containers again with
+        # "//office:..." queries that walk the whole part, body included.
+        for part in (self.odf_obj.content, self.odf_obj.styles):
+            part.get_element = functools.cache(part.get_element)  # type: ignore[method-assign]
         if self._odf_type and self.odf_obj.get_type() != self._odf_type:
             raise RuntimeError(
                 f"Expected an OpenDocument {self._odf_type!r} but got "
@@ -264,6 +346,84 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
                 item,
                 bodies[0].get_elements("descendant::text:p | descendant::text:h"),
             )
+
+
+# The rows that odfdo expands when it traverses a table (``odfdo.table._XP_ROW``).
+_ODF_TABLE_ROWS_XPATH = (
+    "table:table-row|table:table-rows/table:table-row|"
+    "table:table-header-rows/table:table-row|"
+    "table:table-row-group/child::table:table-row"
+)
+_ODF_ROW_CELLS_XPATH = "table:table-cell|table:covered-table-cell"
+_ODF_ROWS_REPEATED = "table:number-rows-repeated"
+_ODF_COLUMNS_REPEATED = "table:number-columns-repeated"
+
+
+class _OdfRepeatBudget:
+    """Limit the cells that repeated rows and cells add to a spreadsheet.
+
+    odfdo expands ``table:number-rows-repeated`` and
+    ``table:number-columns-repeated`` each time it traverses a sheet, and the
+    backend traverses each sheet several times. A small file can declare
+    millions of copies. The copies of all sheets share one budget. A repetition
+    that does not fit is reduced to the copies that fit, and to one copy when the
+    budget is spent. The cells written in the file are always kept.
+    """
+
+    def __init__(self, cells: int) -> None:
+        self._remaining = cells
+
+    def fit(self, table: OdfTable) -> int:
+        """Reduce the repetitions of a sheet to the remaining budget.
+
+        The attributes change in the XML tree only. The caller must refresh the
+        odfdo caches of the table when cells were removed.
+
+        Returns:
+            The number of declared cells that were removed.
+        """
+        removed = 0
+        for row in table.get_elements(_ODF_TABLE_ROWS_XPATH):
+            width = 0
+            for cell in row.get_elements(_ODF_ROW_CELLS_XPATH):
+                declared, kept = self._fit_repeat(cell, _ODF_COLUMNS_REPEATED, cost=1)
+                removed += declared - kept
+                width += kept
+            # A row without cells still costs one step of each traversal.
+            declared, kept = self._fit_repeat(
+                row, _ODF_ROWS_REPEATED, cost=max(width, 1)
+            )
+            removed += (declared - kept) * width
+        return removed
+
+    def _fit_repeat(
+        self, element: Element, attribute: str, cost: int
+    ) -> tuple[int, int]:
+        """Fit the copies of one row or cell into the budget.
+
+        Args:
+            element: The ``table:table-row`` or ``table:table-cell`` element.
+            attribute: The repetition attribute of the element.
+            cost: The cells that each added copy creates.
+
+        Returns:
+            The declared and the kept number of copies.
+        """
+        value = element.get_attribute(attribute)
+        if not isinstance(value, str):
+            return (1, 1)
+        # odfdo yields no copy for a count below one.
+        declared = max(int(value), 0)
+        if declared <= 1:
+            return (declared, declared)
+        kept = 1 + min(declared - 1, self._remaining // cost)
+        self._remaining -= (kept - 1) * cost
+        if kept < declared:
+            if kept == 1:
+                element.del_attribute(attribute)
+            else:
+                element.set_attribute(attribute, str(kept))
+        return (declared, kept)
 
 
 def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
@@ -332,6 +492,21 @@ def _odf_span(attrs: dict[str, str], key: str) -> int:
 
 def _clean_odf_text_lines(text: str) -> list[str]:
     return [line for line in (line.strip() for line in text.splitlines()) if line]
+
+
+def _odf_text_without_notes(element: Any) -> str:
+    """Return the recursive text of an element without its footnotes and endnotes.
+
+    odfdo reads a ``text:note`` as its citation and body. The body is added as
+    its own footnote item (see ``_OdfBaseBackend._add_footnotes``), and the text
+    runs of a paragraph skip the note, so it is left out here too.
+    """
+    if element.get_element("descendant::text:note") is None:
+        return element.text_recursive
+    clone = element.clone
+    for note in clone.get_elements("descendant::text:note"):
+        Element.delete(note)
+    return clone.text_recursive
 
 
 def _formatting_or_none(formatting: Formatting) -> Formatting | None:
@@ -421,6 +596,40 @@ def _formatting_from_odf_text_style(
     return _formatting_or_none(formatting)
 
 
+# The style family of the text:style-name of the elements that can hide text.
+_ODF_TEXT_STYLE_FAMILIES = {
+    "text:p": "paragraph",
+    "text:h": "paragraph",
+    "text:span": "text",
+    "text:a": "text",
+}
+
+
+def _odf_hides_text(odf_obj: OdfDocument, element: Any) -> bool:
+    """Return True if the style of ``element`` hides its text.
+
+    Writer saves the Hidden font effect as ``text:display="none"`` in the text
+    properties of a paragraph or character style. The first style in the
+    parent chain that sets it decides.
+    """
+    family = _ODF_TEXT_STYLE_FAMILIES.get(element.tag)
+    style_name = element.attributes.get("text:style-name")
+    seen: set[str] = set()
+    while family is not None and style_name and style_name not in seen:
+        seen.add(style_name)
+        style = odf_obj.get_style(family, style_name)
+        if style is None:
+            break
+        properties = style.get_element("style:text-properties")
+        display = (
+            None if properties is None else properties.get_attribute("text:display")
+        )
+        if display is not None:
+            return display == "none"
+        style_name = style.attributes.get("style:parent-style-name")
+    return False
+
+
 def _odf_text_runs(
     element: Any,
     odf_obj: OdfDocument | None,
@@ -489,28 +698,20 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
             merged_runs[-1].text += run.text
             continue
 
-        text = run.text
-        if merged_runs and merged_runs[-1].hyperlink != run.hyperlink:
-            # A hyperlink boundary is a hard edge: strip the whitespace right
-            # at the boundary so it doesn't double up with the separator the
-            # markdown/inline serializer already inserts between runs.
-            merged_runs[-1].text = merged_runs[-1].text.rstrip()
-            text = text.lstrip()
+        # A hyperlink boundary is not special under the whitespace contract: the
+        # boundary space stays in whichever plain run owns it, and the serializer
+        # places it outside the link markup. No stripping here.
         merged_runs.append(
-            _OdfTextRun(text=text, formatting=run.formatting, hyperlink=run.hyperlink)
+            _OdfTextRun(
+                text=run.text, formatting=run.formatting, hyperlink=run.hyperlink
+            )
         )
 
-    while merged_runs and merged_runs[0].text.strip() == "":
-        merged_runs.pop(0)
-    if merged_runs:
-        merged_runs[0].text = merged_runs[0].text.lstrip()
-
-    while merged_runs and merged_runs[-1].text.strip() == "":
-        merged_runs.pop()
-    if merged_runs:
-        merged_runs[-1].text = merged_runs[-1].text.rstrip()
-
-    return [run for run in merged_runs if run.text]
+    return trim_run_edges(
+        merged_runs,
+        get_text=lambda run: run.text,
+        with_text=lambda run, text: _OdfTextRun(text, run.formatting, run.hyperlink),
+    )
 
 
 def _odf_text_from_runs(runs: list[_OdfTextRun]) -> str:
@@ -603,6 +804,8 @@ def _add_odf_heading(
     comments: _OdfComments | None = None,
 ) -> None:
     level = max(1, element.get_attribute_integer("text:outline-level") or 1)
+    if odf_obj is not None and _odf_hides_text(odf_obj, element):
+        content_layer = ContentLayer.INVISIBLE
     runs = _odf_text_runs(element, odf_obj)
     item = _add_odf_rich_block(
         doc,
@@ -649,6 +852,10 @@ def _add_odf_paragraph(
     image_loader: ImageResourceLoader | None = None,
     comments: _OdfComments | None = None,
 ) -> None:
+    if odf_obj is not None and _odf_hides_text(odf_obj, element):
+        # Writer does not show it: keep it, like a hidden section, but out of
+        # the default exports.
+        content_layer = ContentLayer.INVISIBLE
     chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
     images = element.get_images()
     image_count = _add_odf_images(
@@ -715,10 +922,10 @@ def _odf_element_text_lines(element: Any) -> list[str]:
             lines.extend(_odf_element_text_lines(child))
         if lines:
             return lines
-        return _clean_odf_text_lines(element.text_recursive)
+        return _clean_odf_text_lines(_odf_text_without_notes(element))
 
     if isinstance(element, (Header, Paragraph)):
-        return _clean_odf_text_lines(element.text_recursive)
+        return _clean_odf_text_lines(_odf_text_without_notes(element))
 
     child_lines: list[str] = []
     for child in getattr(element, "children", []):
@@ -726,7 +933,7 @@ def _odf_element_text_lines(element: Any) -> list[str]:
     if child_lines:
         return child_lines
 
-    return _clean_odf_text_lines(element.text_recursive)
+    return _clean_odf_text_lines(_odf_text_without_notes(element))
 
 
 def _odf_list_item_content(
@@ -896,10 +1103,10 @@ def _odf_cell_has_rich_content(cell: Any) -> bool:
             if _odf_list_has_renderable_content(child):
                 return True
         elif isinstance(child, Header):
-            if _clean_odf_text_lines(child.text_recursive):
+            if _clean_odf_text_lines(_odf_text_without_notes(child)):
                 return True
         elif isinstance(child, Paragraph):
-            if _clean_odf_text_lines(child.text_recursive):
+            if _clean_odf_text_lines(_odf_text_without_notes(child)):
                 non_empty_paragraphs += 1
             if child.get_images():
                 return True
@@ -922,10 +1129,13 @@ def _odf_cell_text(cell: Any) -> str:
     if _odf_cell_has_rich_content(cell):
         return _strip_odf_image_reference_text(child_text, cell.get_images())
 
-    if cell.value is not None:
-        return str(cell.value)
+    # The text:p content is the text the application displays (a rounded
+    # number, a percentage, a currency or date format). The typed value is
+    # only a fallback for a cell that stores no text.
     if child_text:
         return child_text
+    if cell.value is not None:
+        return str(cell.value)
     if cell.children:
         return ""
 
@@ -940,8 +1150,17 @@ def _odf_cell_has_content(cell: Any) -> bool:
     return _odf_cell_text(cell) != "" or _odf_cell_has_images(cell)
 
 
-def _odf_cell_is_rich(cell: Any) -> bool:
-    return _odf_cell_has_rich_content(cell)
+def _odf_cell_has_styled_run(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return any(
+        run.formatting is not None or run.hyperlink is not None
+        for child in cell.children
+        if isinstance(child, Paragraph)
+        for run in _odf_text_runs(child, odf_obj)
+    )
+
+
+def _odf_cell_is_rich(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return _odf_cell_has_rich_content(cell) or _odf_cell_has_styled_run(cell, odf_obj)
 
 
 def _image_ref_from_odf_image(
@@ -973,7 +1192,7 @@ def _image_ref_from_odf_image(
     if image_data is None:
         return None
 
-    pil_image = PILImage.open(BytesIO(image_data))
+    pil_image = open_image(image_data)
     pil_image.load()
     return ImageRef.from_pil(image=normalize_image_for_png(pil_image), dpi=72)
 
@@ -1059,6 +1278,49 @@ def _add_odf_images(
     return image_count
 
 
+def _add_odf_media_track(
+    doc: DoclingDocument,
+    frame: Frame,
+    parent: NodeItem,
+    odf_obj: OdfDocument,
+    pictures: list[PictureItem],
+) -> None:
+    """Turn the video or audio that a frame plays into a track.
+
+    The media is a ``draw:plugin`` in the frame, next to a ``draw:image``
+    preview that is already a picture. The track takes the place of the first
+    such picture, with its image as the cover. A frame without one gets a track
+    without a cover, so the media keeps its place.
+    """
+    plugin = frame.get_element("draw:plugin")
+    if plugin is None:
+        return
+    location = (plugin.get_attribute_string("xlink:href") or "").removeprefix("./")
+    if not location:
+        return
+    # LibreOffice may declare its generic "application/vnd.sun.star.media" type.
+    # The manifest entry of an embedded file, or else the extension, then tells
+    # video from audio.
+    kind = media_kind(plugin.get_attribute_string("draw:mime-type")) or media_kind(
+        odf_obj.manifest.get_media_type(location), location
+    )
+    if kind is None or (ref := media_ref(kind, location)) is None:
+        return
+    media = {kind: ref}
+    if not pictures:
+        doc.add_track(parent=parent, **media)
+        return
+    picture = pictures[0]
+    doc.insert_track(
+        sibling=picture,
+        image=picture.image,
+        prov=picture.prov[0] if picture.prov else None,
+        content_layer=picture.content_layer,
+        **media,
+    )
+    doc.delete_items(node_items=[picture])
+
+
 def _add_odf_child(
     doc: DoclingDocument,
     element: Any,
@@ -1110,6 +1372,10 @@ def _add_odf_child(
             comments=comments,
         )
     elif isinstance(element, Section):
+        # Writer saves a section hidden with Format > Sections > Hide as
+        # text:display="none", so its content is not shown or printed.
+        if element.get_attribute("text:display") == "none":
+            content_layer = ContentLayer.INVISIBLE
         _add_odf_children(
             doc,
             element.children,
@@ -1409,10 +1675,11 @@ def _add_odf_list(
                 marker=marker,
                 enumerated=current_enumerated,
                 parent=list_group,
-                # Prefer the run-derived text: odfdo's own text_recursive
-                # renders hyperlinked children as "[text](href)" markdown,
-                # which would otherwise leak into the plain item text.
-                text=runs[0].text if runs else text,
+                # Use only the run-derived text: odfdo's own text_recursive
+                # renders hyperlinked children as "[text](href)" markdown, an
+                # image or a chart as "(href)" and a footnote as its citation
+                # and body, which would otherwise leak into the plain item text.
+                text=runs[0].text if runs else "",
                 content_layer=content_layer,
                 formatting=runs[0].formatting if runs else None,
                 hyperlink=runs[0].hyperlink if runs else None,
@@ -1546,7 +1813,7 @@ def _add_table_from_odf(
                 "row_header": False,
             }
 
-            if _odf_cell_is_rich(cell):
+            if _odf_cell_is_rich(cell, odf_obj):
                 group = doc.add_group(
                     label=GroupLabel.UNSPECIFIED,
                     name=f"rich_cell_group_{len(doc.tables) - 1}_{adjusted_col}_{adjusted_row}",
@@ -1581,6 +1848,7 @@ def _table_region_has_rich_cell(
     max_row: int,
     min_col: int,
     max_col: int,
+    odf_obj: OdfDocument | None,
 ) -> bool:
     for row_idx, row in enumerate(table.traverse()):
         if row_idx < min_row or row_idx > max_row:
@@ -1588,7 +1856,9 @@ def _table_region_has_rich_cell(
         for col_idx, cell in enumerate(row.traverse()):
             if col_idx < min_col or col_idx > max_col:
                 continue
-            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(cell):
+            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(
+                cell, odf_obj
+            ):
                 return True
     return False
 
@@ -1701,13 +1971,141 @@ class OdtDocumentBackend(_OdfBaseBackend):
             )
 
         comments = self._detach_annotations()
+        self._detach_hidden_text()
         self._walk(self.odf_obj.body.children, parent=None, doc=doc, comments=comments)
         self._add_footnotes(doc, comments)
         comments.attach_rest(doc)
+        self._add_header_footer(doc)
         return doc
 
-    def _detach_annotations(self) -> _OdfComments:
-        """Remove the comments (``office:annotation``) from the body.
+    def _used_master_pages(self) -> list[Element]:
+        """Return potentially used page definitions, without laying out pages."""
+        if "styles.xml" not in self.odf_obj.container.get_parts():
+            return []
+        container = self.odf_obj.styles.get_element("office:master-styles")
+        if container is None:
+            return []
+        masters = {
+            master.get_attribute("style:name"): master
+            for master in container.get_elements("style:master-page")
+        }
+        if not masters:
+            return []
+
+        style_masters: dict[tuple[str, str | None], str | None] = {}
+
+        def master_for_style(family: str, name: str | None) -> str | None:
+            key = (family, name)
+            if key in style_masters:
+                return style_masters[key]
+            visited: set[str | None] = set()
+            master_name = None
+            while name not in visited:
+                cached_key = (family, name)
+                if cached_key in style_masters:
+                    master_name = style_masters[cached_key]
+                    break
+                visited.add(name)
+                style = self.odf_obj.get_style(family, name)
+                if style is None:
+                    break
+                master_name = style.get_attribute("style:master-page-name")
+                if master_name:
+                    break
+                name = style.get_attribute("style:parent-style-name")
+                if name is None:
+                    break
+            # Parent lookup conservatively retains potentially used definitions.
+            for visited_name in visited:
+                style_masters[(family, visited_name)] = master_name
+            return master_name
+
+        selected: list[str] = []
+        seen: set[str] = set()
+
+        def select(name: str | None) -> None:
+            if name and name in masters and name not in seen:
+                seen.add(name)
+                selected.append(name)
+
+        first = True
+        for block in self.odf_obj.body.get_elements(
+            "descendant::text:p | descendant::text:h | descendant::table:table"
+        ):
+            ancestor = block.parent
+            while ancestor is not None and ancestor != self.odf_obj.body:
+                if ancestor.tag in (
+                    "table:table",
+                    "draw:frame",
+                    "text:note",
+                    "office:annotation",
+                    "text:tracked-changes",
+                ) or (
+                    ancestor.tag == "text:section"
+                    and ancestor.get_attribute("text:display") == "none"
+                ):
+                    break
+                ancestor = ancestor.parent
+            if ancestor is not None and ancestor != self.odf_obj.body:
+                continue
+            family = "table" if block.tag == "table:table" else "paragraph"
+            name = block.get_attribute(
+                "table:style-name" if family == "table" else "text:style-name"
+            )
+            master_name = master_for_style(family, name)
+            if first and not master_name:
+                # Non-normative producer fallback: LibreOffice uses Standard.
+                select("Standard" if "Standard" in masters else next(iter(masters)))
+            first = False
+            select(master_name)
+        if first:
+            select("Standard" if "Standard" in masters else next(iter(masters)))
+        # A next style can be used on a subsequent page. No page count is inferred.
+        for name in selected:
+            select(masters[name].get_attribute("style:next-style-name"))
+        return [masters[name] for name in selected]
+
+    def _add_header_footer(self, doc: DoclingDocument) -> None:
+        for master in self._used_master_pages():
+            for tag in (
+                "header",
+                "header-left",
+                "header-first",
+                "footer",
+                "footer-left",
+                "footer-first",
+            ):
+                part = master.get_element(f"style:{tag}")
+                if part is None or part.attributes.get("style:display") in (
+                    "false",
+                    "0",
+                ):
+                    continue
+                comments = self._detach_annotations(part)
+                self._detach_hidden_text(part)
+                if not part.text_content.strip() and not part.get_elements(
+                    "descendant::table:table | descendant::draw:image | descendant::draw:object"
+                ):
+                    comments.attach_rest(doc)
+                    continue
+                parent = doc.add_group(
+                    label=GroupLabel.SECTION,
+                    name="page header" if tag.startswith("header") else "page footer",
+                    content_layer=ContentLayer.FURNITURE,
+                )
+                _add_odf_children(
+                    doc,
+                    part.children,
+                    parent=parent,
+                    content_layer=ContentLayer.FURNITURE,
+                    odf_obj=self.odf_obj,
+                    image_loader=self._image_loader,
+                    comments=comments,
+                )
+                comments.attach_rest(doc)
+
+    def _detach_annotations(self, root: Element | None = None) -> _OdfComments:
+        """Remove the comments (``office:annotation``) from a body or furniture part.
 
         The text paths for paragraphs, headings, list items and table cells all
         read an annotation's creator, date and body as inline text, so the
@@ -1718,7 +2116,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
         backend. A thread is keyed by the paragraph or heading around its first
         comment.
         """
-        body = self.odf_obj.body
+        body = self.odf_obj.body if root is None else root
         # The walk drops deleted tracked-change text, so drop its comments too.
         for annotation in body.get_elements(
             "descendant::text:tracked-changes//office:annotation"
@@ -1796,6 +2194,34 @@ class OdtDocumentBackend(_OdfBaseBackend):
             threads.append((anchors[start], thread))
         return _OdfComments(threads)
 
+    def _detach_hidden_text(self, root: Element | None = None) -> None:
+        """Remove the hidden text that has no content layer of its own.
+
+        The text paths for list items, table cells and notes read text that
+        Writer hides (``text:display="none"``) as shown text. A hidden span is
+        removed. So is a hidden paragraph or heading in a list item, a table
+        cell or a note; any other one is kept and goes to the invisible layer.
+        """
+        body = self.odf_obj.body if root is None else root
+        for paragraph in body.get_elements("descendant::text:p | descendant::text:h"):
+            if _odf_hides_text(self.odf_obj, paragraph) and (
+                paragraph.get_element(
+                    "ancestor::text:list-item | ancestor::table:table-cell"
+                    " | ancestor::text:note"
+                )
+                is not None
+            ):
+                Element.delete(paragraph)
+        for span in body.get_elements("descendant::text:span | descendant::text:a"):
+            if not _odf_hides_text(self.odf_obj, span):
+                continue
+            paragraph = span.get_element(
+                "(ancestor::text:p | ancestor::text:h)[last()]"
+            )
+            # A hidden paragraph keeps all of its text in the invisible layer.
+            if paragraph is None or not _odf_hides_text(self.odf_obj, paragraph):
+                Element.delete(span)
+
     def _walk(
         self,
         elements: list[Any],
@@ -1869,6 +2295,17 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 self._hide_slide(doc, slide_group)
         return doc
 
+    @override
+    def load_media(self, location: str) -> bytes | None:
+        if location in self.odf_obj.get_parts():
+            part = self.odf_obj.get_part(location)
+            if isinstance(part, bytes):
+                return part
+        base_path = (
+            str(self.path_or_stream) if isinstance(self.path_or_stream, Path) else None
+        )
+        return load_linked_media(location, self.options, base_path)
+
     @staticmethod
     def _hide_slide(doc: DoclingDocument, slide_group: NodeItem) -> None:
         """Move the content of a hidden slide to the invisible layer.
@@ -1910,7 +2347,11 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     ) -> None:
         seen_text_content = False
         for element in page.children:
-            if getattr(element, "tag", None) in {"anim:par", "presentation:notes"}:
+            tag = getattr(element, "tag", None)
+            if tag == "presentation:notes":
+                self._walk_slide_notes(element, parent=parent, doc=doc)
+                continue
+            if tag == "anim:par":
                 continue
             has_text = bool(
                 _clean_odf_text_lines(getattr(element, "text_recursive", ""))
@@ -1918,19 +2359,56 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             is_title = self._is_slide_title_element(element, not seen_text_content)
             if has_text:
                 seen_text_content = True
-            if isinstance(element, Frame):
-                self._walk_slide_frame(
-                    element,
-                    parent=parent,
-                    doc=doc,
-                    is_title=is_title,
-                )
-            else:
+            self._walk_slide_element(element, parent=parent, doc=doc, is_title=is_title)
+
+    def _walk_slide_element(
+        self, element: Any, parent: NodeItem, doc: DoclingDocument, *, is_title: bool
+    ) -> None:
+        if getattr(element, "tag", None) == "draw:g":
+            # Shapes in a group keep their own text; walk them like slide children.
+            for child in element.children:
+                self._walk_slide_element(child, parent=parent, doc=doc, is_title=False)
+        elif isinstance(element, Frame):
+            self._walk_slide_frame(
+                element,
+                parent=parent,
+                doc=doc,
+                is_title=is_title,
+            )
+        else:
+            self._walk_textbox_children(
+                element.children,
+                parent=parent,
+                doc=doc,
+                is_title=is_title,
+            )
+
+    def _walk_slide_notes(
+        self, notes: Element, parent: NodeItem, doc: DoclingDocument
+    ) -> None:
+        """Add the speaker notes of a slide to the notes content layer.
+
+        As in the PowerPoint backend, the notes go under the group of their
+        slide. A notes page also shows a thumbnail of the slide and can show
+        the slide number, date, header and footer, which are not notes.
+        """
+        for element in notes.children:
+            if (
+                element.get_attribute("presentation:class")
+                in _ODP_NOTES_PAGE_FIELD_CLASSES
+            ):
+                continue
+            textboxes = (
+                element.get_elements("descendant::draw:text-box")
+                if isinstance(element, Frame)
+                else [element]
+            )
+            for textbox in textboxes:
                 self._walk_textbox_children(
-                    element.children,
+                    textbox.children,
                     parent=parent,
                     doc=doc,
-                    is_title=is_title,
+                    content_layer=ContentLayer.NOTES,
                 )
 
     @staticmethod
@@ -1981,6 +2459,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 image_loader=self._image_loader,
             )
 
+        first_picture = len(doc.pictures)
         _add_odf_images(
             doc,
             frame.get_images(),
@@ -1989,6 +2468,9 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             self.odf_obj,
             image_loader=self._image_loader,
             skip_object_replacements=chart_count > 0,
+        )
+        _add_odf_media_track(
+            doc, frame, parent, self.odf_obj, doc.pictures[first_picture:]
         )
 
         for textbox in frame.get_elements("descendant::draw:text-box"):
@@ -2006,6 +2488,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         doc: DoclingDocument,
         *,
         is_title: bool = False,
+        content_layer: ContentLayer | None = None,
     ) -> None:
         previous_list_state: _OdfListState | None = None
         for el in elements:
@@ -2015,7 +2498,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     doc,
                     el,
                     parent=parent,
-                    content_layer=None,
+                    content_layer=content_layer,
                     odf_obj=self.odf_obj,
                 )
             elif isinstance(el, Paragraph):
@@ -2025,14 +2508,14 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     _odf_text_runs(el, self.odf_obj),
                     label=DocItemLabel.TITLE if is_title else DocItemLabel.TEXT,
                     parent=parent,
-                    content_layer=None,
+                    content_layer=content_layer,
                 )
             elif isinstance(el, OdfList):
                 previous_list_state = _add_odf_list(
                     doc,
                     el,
                     parent=parent,
-                    content_layer=None,
+                    content_layer=content_layer,
                     odf_obj=self.odf_obj,
                     enumerated=False,
                     continued_state=previous_list_state,
@@ -2104,6 +2587,8 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             else None
         )
 
+        max_repeated_cells = cast(OdsBackendOptions, self.options).max_repeated_cells
+        repeat_budget = _OdfRepeatBudget(max_repeated_cells)
         start_page, end_page = self.page_range
         page_no = 0
         for sheet_idx, table in enumerate(self.odf_obj.body.tables):
@@ -2122,6 +2607,18 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             # style. odfdo expands each repetition when it traverses the sheet, so
             # remove the trailing padding first. Cells with content are kept.
             table.rstrip(aggressive=True)
+            removed = repeat_budget.fit(table)
+            if removed > 0:
+                _log.warning(
+                    "Sheet %s repeats more cells than the limit of %s repeated "
+                    "cells (max_repeated_cells). %s repeated cells were not "
+                    "converted.",
+                    table.name,
+                    max_repeated_cells,
+                    removed,
+                )
+                # Remove the new trailing empty cells and refresh odfdo's caches.
+                table.rstrip(aggressive=True)
 
             # Add page for this sheet
             page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
@@ -2174,7 +2671,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             min_row, max_row, min_col, max_col = data_table["bounds"]
             table_data = data_table["data"]
             has_rich_content = _table_region_has_rich_cell(
-                table, min_row, max_row, min_col, max_col
+                table, min_row, max_row, min_col, max_col, self.odf_obj
             )
 
             # Check if this is a singleton (1x1 table)
@@ -2254,12 +2751,41 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
         # Build a map of cell contents for quick lookup
         cell_map: dict[tuple[int, int], bool] = {}
+        rows_with_values: set[int] = set()
+        blank_spans: list[tuple[int, int, int, int]] = []
+        last_row, last_col = 0, 0
         for row_idx, row in enumerate(table.traverse()):
+            last_row = row_idx
             for col_idx, cell in enumerate(row.traverse()):
-                has_data = _odf_cell_has_content(cell) or (
-                    cell.tag == "table:covered-table-cell"
+                last_col = max(last_col, col_idx)
+                has_value = _odf_cell_has_content(cell)
+                if has_value:
+                    rows_with_values.add(row_idx)
+                elif cell.tag != "table:covered-table-cell":
+                    attrs = cell.attributes
+                    row_span = _odf_span(attrs, "table:number-rows-spanned")
+                    col_span = _odf_span(attrs, "table:number-columns-spanned")
+                    if row_span > 1 or col_span > 1:
+                        blank_spans.append(
+                            (
+                                row_idx,
+                                row_idx + row_span - 1,
+                                col_idx,
+                                col_idx + col_span - 1,
+                            )
+                        )
+                cell_map[(row_idx, col_idx)] = (
+                    has_value or cell.tag == "table:covered-table-cell"
                 )
-                cell_map[(row_idx, col_idx)] = has_data
+
+        # A blank merged range whose rows hold no value is a separator row. It
+        # does not connect the tables above and below it.
+        for top, bottom, left, right in blank_spans:
+            bottom, right = min(bottom, last_row), min(right, last_col)
+            if rows_with_values.isdisjoint(range(top, bottom + 1)):
+                for r in range(top, bottom + 1):
+                    for c in range(left, right + 1):
+                        cell_map[(r, c)] = False
 
         # Helper: Check if a cell has content
         def has_content(r: int, c: int) -> bool:
@@ -2272,61 +2798,59 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 return False
             return cell_map.get((r, c), False)
 
-        # Scan for table starts
-        for ri in range(overall_min_row, overall_max_row + 1):
-            for ci in range(overall_min_col, overall_max_col + 1):
-                if (ri, ci) in visited:
-                    continue
+        # Scan for table starts in row-major order. Only cells with content can
+        # start a table, so the scan does not walk the empty part of the bounds.
+        for ri, ci in sorted(key for key, value in cell_map.items() if value):
+            if (ri, ci) in visited:
+                continue
 
-                if not has_content(ri, ci):
-                    continue
+            if not has_content(ri, ci):
+                continue
 
-                # Found a new table start - use flood fill to find its bounds
-                table_cells: set[tuple[int, int]] = set()
-                queue = collections.deque([(ri, ci)])
-                table_cells.add((ri, ci))
+            # Found a new table start - use flood fill to find its bounds
+            table_cells: set[tuple[int, int]] = set()
+            queue = collections.deque([(ri, ci)])
+            table_cells.add((ri, ci))
 
-                min_r, max_r = ri, ri
-                min_c, max_c = ci, ci
+            min_r, max_r = ri, ri
+            min_c, max_c = ci, ci
 
-                # Phase 1: Flood Fill
-                while queue:
-                    curr_r, curr_c = queue.popleft()
+            # Phase 1: Flood Fill
+            while queue:
+                curr_r, curr_c = queue.popleft()
 
-                    # Update bounds
-                    min_r = min(min_r, curr_r)
-                    max_r = max(max_r, curr_r)
-                    min_c = min(min_c, curr_c)
-                    max_c = max(max_c, curr_c)
+                # Update bounds
+                min_r = min(min_r, curr_r)
+                max_r = max(max_r, curr_r)
+                min_c = min(min_c, curr_c)
+                max_c = max(max_c, curr_c)
 
-                    # Check neighbors in 4 directions with gap tolerance
-                    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                # Check neighbors in 4 directions with gap tolerance
+                directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
-                    for dr, dc in directions:
-                        for step in range(1, GAP_TOLERANCE + 2):
-                            nr, nc = curr_r + (dr * step), curr_c + (dc * step)
+                for dr, dc in directions:
+                    for step in range(1, GAP_TOLERANCE + 2):
+                        nr, nc = curr_r + (dr * step), curr_c + (dc * step)
 
-                            if (nr, nc) in table_cells:
-                                break
+                        if (nr, nc) in table_cells:
+                            break
 
-                            if has_content(nr, nc):
-                                table_cells.add((nr, nc))
-                                queue.append((nr, nc))
-                                break
+                        if has_content(nr, nc):
+                            table_cells.add((nr, nc))
+                            queue.append((nr, nc))
+                            break
 
-                # Mark all cells in this table as visited
-                visited.update(table_cells)
+            # Mark all cells in this table as visited
+            visited.update(table_cells)
 
-                # Phase 2: Extract data for this table region
-                # Create a sub-table with just this region
-                data = _table_data_from_odf(
-                    table, min_row=min_r, max_row=max_r, min_col=min_c, max_col=max_c
-                )
+            # Phase 2: Extract data for this table region
+            # Create a sub-table with just this region
+            data = _table_data_from_odf(
+                table, min_row=min_r, max_row=max_r, min_col=min_c, max_col=max_c
+            )
 
-                if data is not None:
-                    tables.append(
-                        {"bounds": (min_r, max_r, min_c, max_c), "data": data}
-                    )
+            if data is not None:
+                tables.append({"bounds": (min_r, max_r, min_c, max_c), "data": data})
 
         return tables
 
@@ -2340,26 +2864,21 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     ) -> None:
         """Find and extract images from an ODS sheet."""
         try:
-            # Get all images in the table
-            images = table.get_images()
+            # Pictures anchored to a cell are added with that cell. The ones
+            # anchored to the sheet itself are in <table:shapes>.
+            images = table.get_elements("table:shapes//draw:image")
             for img in images:
                 try:
-                    # Get the image data
-                    image_data = img.get_data()
-                    if image_data:
-                        # Convert to PIL Image
-                        from io import BytesIO
-
-                        pil_image = PILImage.open(BytesIO(image_data))
-
-                        # Try to get position information
-                        # ODF images are typically anchored to cells
+                    image_ref = _image_ref_from_odf_image(
+                        self.odf_obj, img, image_loader=self._image_loader
+                    )
+                    if image_ref is not None:
                         # For now, use a default position
                         anchor = (0, 0, 1, 1)
 
                         doc.add_picture(
                             parent=parent,
-                            image=ImageRef.from_pil(image=pil_image, dpi=72),
+                            image=image_ref,
                             caption=None,
                             prov=ProvenanceItem(
                                 page_no=page_no,
@@ -2377,28 +2896,36 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
     @staticmethod
     def _find_page_size(doc: DoclingDocument, page_no: int) -> tuple[float, float]:
-        """Calculate page size based on the bounding boxes of all items on the page."""
-        left: float = -1.0
-        top: float = -1.0
-        right: float = -1.0
-        bottom: float = -1.0
+        """Compute page dimensions from item bounding boxes.
 
-        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+        Width and height are the largest ``r`` and ``b`` bbox values on the
+        page, in every content layer. Bboxes count cells from ``(0, 0)``, so
+        the extent is the maximum edge.
+
+        Args:
+            doc: Document containing converted page items.
+            page_no: 1-based page number to measure.
+
+        Returns:
+            The (width, height) of the page in cell-index units.
+        """
+        width: float = 0.0
+        height: float = 0.0
+
+        for item, _ in doc.iterate_items(
+            traverse_pictures=True,
+            page_no=page_no,
+            included_content_layers=set(ContentLayer),
+        ):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                if provenance.bbox is None:
+                if provenance.page_no != page_no:
                     continue
-                bbox = provenance.bbox
-                left = min(left, bbox.l) if left != -1 else bbox.l
-                right = max(right, bbox.r) if right != -1 else bbox.r
-                top = min(top, bbox.t) if top != -1 else bbox.t
-                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+                width = max(width, provenance.bbox.r)
+                height = max(height, provenance.bbox.b)
 
-        # Return dimensions, defaulting to (0, 0) if no items found
-        if left == -1 or right == -1:
-            return (0.0, 0.0)
-        return (right - left, bottom - top)
+        return (width, height)
 
     @staticmethod
     def _get_sheet_content_layer(table: OdfTable) -> ContentLayer | None:

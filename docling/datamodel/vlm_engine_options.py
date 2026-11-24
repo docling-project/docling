@@ -44,6 +44,14 @@ class AutoInlineVlmEngineOptions(BaseVlmEngineOptions):
         description="Prefer VLLM over Transformers when both are available on CUDA",
     )
 
+    trust_remote_code: bool = Field(
+        default=False,
+        description=(
+            "Allow execution of custom code from the model repo in the selected "
+            "engine. Presets that need it without a default opt-in require this."
+        ),
+    )
+
 
 # =============================================================================
 # TRANSFORMERS ENGINE OPTIONS
