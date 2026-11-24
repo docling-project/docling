@@ -13,3 +13,4 @@ from docling_core.transforms.chunker.hierarchical_chunker import (
     HierarchicalChunker,
 )
 from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
+from docling_core.transforms.chunker.line_chunker import LineBasedTokenChunker
