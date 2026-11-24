@@ -1855,8 +1855,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 axis = self._category_axis(chart, x_chart)
                 categories = self._category_labels(chart, axis, x_chart, max_rows)
                 corner = self._axis_title_text(axis) if axis is not None else ""
-            for ser, series in self._plot_series(x_chart):
-                name = self._cell_text(series.name) if series.name is not None else ""
+            for ser, _ in self._plot_series(x_chart):
+                # python-pptx's series.name reads cached references only, not c:tx/c:v.
+                names = ser.xpath("./c:tx/c:v/text() | ./c:tx/c:strRef//c:v/text()")
+                name = names[0] if names else ""
                 values = self._series_values(ser, x_chart, max_rows)
                 columns.append((name, values))
 
