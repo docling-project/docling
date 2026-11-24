@@ -248,6 +248,25 @@ def test_pipeline_is_only_sent_when_set(client, recorder, pipeline, expected):
     assert _submitted_options(recorder).get("pipeline") == expected
 
 
+def test_spreadsheet_options_are_only_sent_when_set(client, recorder):
+    """Unset spreadsheet options must stay unset, so the backend default applies."""
+    client.submit(SOURCE, options=ConvertDocumentsOptions(), target=InBodyTarget())
+    received = _submitted_options(recorder)
+    assert received.get("spreadsheet_gap_tolerance") is None
+    assert received.get("spreadsheet_treat_singleton_as_text") is None
+
+    client.submit(
+        SOURCE,
+        options=ConvertDocumentsOptions(
+            spreadsheet_gap_tolerance=25, spreadsheet_treat_singleton_as_text=True
+        ),
+        target=InBodyTarget(),
+    )
+    received = _submitted_options(recorder)
+    assert received["spreadsheet_gap_tolerance"] == 25
+    assert received["spreadsheet_treat_singleton_as_text"] is True
+
+
 # -- the file-upload route uses a different encoder ----------------------
 
 
