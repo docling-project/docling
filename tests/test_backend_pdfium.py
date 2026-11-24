@@ -170,7 +170,9 @@ def test_pdfium_intersects_only_where_content_is():
 
 def test_pdfium_intersects_ignores_invisible_text():
     """Text drawn with rendering mode 3 paints nothing, so it must not count as content."""
-    doc_backend = _get_backend(Path("./tests/data/pdf/invisible_text_layer.pdf"))
+    doc_backend = _get_backend(
+        Path("./tests/data/pdf/fixtures/invisible_text_layer.pdf")
+    )
     try:
         page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
 
