@@ -592,11 +592,18 @@ class _ChandraDocumentBuilder:
             and not any(child.tag == "pre" for child in node.elements())
         ):
             text = node.text().strip("\n\r")
+            code_node = node
+            if node.tag == "pre":
+                code_node = next(
+                    (child for child in node.elements() if child.tag == "code"), node
+                )
             self.doc.add_code(
                 text=text,
                 parent=parent,
                 prov=self._text_prov(prov, text),
-                code_language=detect_code_language(text, hint=node.attrs.get("class")),
+                code_language=detect_code_language(
+                    text, hint=code_node.attrs.get("class") or node.attrs.get("class")
+                ),
             )
         elif node.tag == "math":
             text = node.text().strip()
