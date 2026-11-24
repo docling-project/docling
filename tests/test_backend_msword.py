@@ -432,6 +432,55 @@ def _declare_huge_point_count(chart: str) -> str:
     return re.sub(r'<c:ptCount val="\d+"/>', f'<c:ptCount val="{10**11}"/>', chart)
 
 
+@pytest.mark.parametrize("literal", [False, True], ids=["cached", "literal"])
+def test_chart_text_keeps_numeric_spelling(literal: bool):
+    """Text categories, series names and linked titles keep their exact spelling."""
+    # On main "1.10" became "1.1" (two categories with one label), "007" became "7".
+    categories = ["1.1", "1.10", "007", "02134"]
+    names = ["001", "002", "2.50"]
+
+    def rewrite(chart_xml: str) -> str:
+        root = etree.fromstring(chart_xml.encode("utf-8"))
+        ns = {"c": root.nsmap["c"]}
+        c = f"{{{ns['c']}}}"
+        for series, name in zip(root.findall(".//c:ser", ns), names):
+            tx = series.find("c:tx", ns)
+            if literal:
+                tx.clear()
+                etree.SubElement(tx, f"{c}v").text = name
+            else:
+                tx.find(".//c:v", ns).text = name
+            cat = series.find("c:cat", ns)
+            cache = cat.find("c:strRef/c:strCache", ns)
+            for point, label in zip(cache.findall("c:pt/c:v", ns), categories):
+                point.text = label
+            if literal:
+                cat.remove(cat.find("c:strRef", ns))
+                cache.tag = f"{c}strLit"
+                cat.append(cache)
+        title = root.find("c:chart/c:title", ns)
+        title.clear()
+        title.append(
+            etree.fromstring(
+                f'<c:tx xmlns:c="{ns["c"]}"><c:strRef><c:f>Sheet1!$A$1</c:f>'
+                '<c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>2025.10</c:v>'
+                "</c:pt></c:strCache></c:strRef></c:tx>"
+            )
+        )
+        return etree.tostring(root, encoding="unicode")
+
+    stream = DocumentStream(name="chart.docx", stream=_docx_with_chart_xml(rewrite))
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+    chart = _single_chart_picture(doc)
+
+    assert chart.caption_text(doc) == "2025.10"
+    # Numeric values are still normalized ("4.3", "2").
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == [
+        ["", *names],
+        *[[label, *row[1:]] for label, row in zip(categories, EXPECTED_CHART_GRID[1:])],
+    ]
+
+
 def _add_point_at_huge_index(chart: str) -> str:
     far_point = f'<c:pt idx="{10**9}"><c:v>9</c:v></c:pt>'
     return chart.replace('<c:ptCount val="4"/>', '<c:ptCount val="4"/>' + far_point, 1)
