@@ -206,6 +206,10 @@ result = converter.convert("report.pdf")
 
 CLI equivalent: `docling report.pdf --pipeline native --from pdf`.
 
+If the backend ends early, check `result.status` and `result.errors` for the
+missing requested pages. Pass `raises_on_error=False` to inspect the result when
+no pages could be converted.
+
 ## VLM pipeline (local inference)
 
 Processes each page as an image through a vision-language model, replacing the
