@@ -12,7 +12,6 @@ from email.message import EmailMessage, Message
 from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
-from typing import cast
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -100,18 +99,33 @@ class _BodyParagraph:
     content_layer: ContentLayer
 
 
-def _decode_text_part(part: Message) -> str:
-    """Decode a text part the way mailparser decodes it into `text_plain`.
+def _get_plain_text_flows(message: Message) -> list[bool | None]:
+    """Describe the flow of each plain-text body part, in the order of ``text_plain``.
 
-    The declared charset is tried first, then UTF-8 with replacement characters, so
-    the result matches mailparser's text also when the charset is wrong.
+    A part is a body part when it has content and is not an attachment, like the
+    parts that mailparser adds to ``text_plain``.
+
+    Args:
+        message: The parsed message.
+
+    Returns:
+        One value per part: ``None`` for fixed text, otherwise whether the part
+        has ``delsp=yes``.
     """
-    # a non-multipart part, like every text/plain part, decodes to bytes
-    payload = cast(bytes, part.get_payload(decode=True))
-    try:
-        return payload.decode(part.get_content_charset("utf-8"))
-    except (LookupError, UnicodeError):
-        return payload.decode("utf-8", "replace")
+    flows: list[bool | None] = []
+    for part in message.walk():
+        if part.get_content_type() != "text/plain" or not part.get_payload(decode=True):
+            continue
+        disposition = part.get_content_disposition()
+        if disposition == "attachment" or (
+            part.get_filename() is not None and disposition != "inline"
+        ):
+            continue
+        if str(part.get_param("format", "")).lower() == "flowed":
+            flows.append(str(part.get_param("delsp", "")).lower() == "yes")
+        else:
+            flows.append(None)
+    return flows
 
 
 def _unflow(text: str, delsp: bool) -> str:
@@ -600,19 +614,15 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
-            # mailparser keeps only the decoded text of a part, so the flowed
-            # parts are found again by their text.
-            flowed = {
-                _decode_text_part(part): str(part.get_param("delsp", "")).lower()
-                == "yes"
-                for part in self.mail.message.walk()
-                if part.get_content_type() == "text/plain"
-                and str(part.get_param("format", "")).lower() == "flowed"
-            }
+            # mailparser keeps only the decoded text of each part, so the flow of a
+            # part is found by its position. Without a match, the text is kept as is.
+            flows = _get_plain_text_flows(self.mail.message)
+            if len(flows) != len(self.mail.text_plain):
+                flows = [None] * len(self.mail.text_plain)
             paragraphs: list[_BodyParagraph] = []
-            for part in self.mail.text_plain:
-                if part in flowed:
-                    part = _unflow(part, flowed[part])
+            for part, delsp in zip(self.mail.text_plain, flows):
+                if delsp is not None:
+                    part = _unflow(part, delsp)
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
                     for paragraph in self._split_paragraphs(part)

@@ -191,6 +191,33 @@ def test_email_backend_joins_soft_line_breaks_of_flowed_text(
     assert [item.text for item in doc.texts[2:]] == expected
 
 
+def test_email_backend_unflows_only_the_flowed_part():
+    raw_email = (
+        b"From: alice@example.com\nSubject: Mixed\nMIME-Version: 1.0\n"
+        b'Content-Type: multipart/mixed; boundary="B"\n\n'
+        b'--B\nContent-Type: text/plain; charset="utf-8"; format=flowed\n\n'
+        b"Same text \nhere.\n"
+        b'--B\nContent-Type: text/plain; charset="utf-8"\n'
+        b'Content-Disposition: attachment; filename="notes.txt"\n\n'
+        b"Attached text \nstays.\n"
+        b'--B\nContent-Type: text/plain; charset="utf-8"\n\n'
+        b"Same text \nhere.\n"
+        b"--B--\n"
+    )
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(DocumentStream(name="mixed.eml", stream=BytesIO(raw_email)))
+        .document
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "Mixed",
+        "From: alice@example.com",
+        "Same text here.",
+        "Same text \nhere.",
+    ]
+
+
 def test_email_backend_keeps_cc_recipients():
     """Cc recipients are part of who the message was addressed to."""
     raw_email = b"""From: Alice Example <alice@example.com>
