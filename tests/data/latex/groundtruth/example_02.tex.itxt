@@ -10,7 +10,7 @@ item-0 at level 0: unspecified: group _root_
 \nabla \times \ ... \mathbf{B}}{\partial t}
 \end{equation}
   item-9 at level 1: section_header: Table Example
-  item-10 at level 1: table with [4x3]
+  item-10 at level 1: table with [3x3]
     item-10 at level 2: caption: Sample table
   item-11 at level 1: caption: Sample table
   item-12 at level 1: section_header: References
