@@ -277,9 +277,6 @@ _PARA_BREAKERS = {
     "td",
 }
 
-# Same names as a list, the form bs4 documents for matching several tag names.
-_PARA_BREAKER_NAMES: Final = sorted(_PARA_BREAKERS)
-
 # Elements whose end tag may be omitted, mapped to (ancestors that a new
 # element implicitly closes, ancestors that stop the search).
 _IMPLIED_END_TAGS: Final = {
@@ -354,6 +351,24 @@ def _parse_ol_start(value: str) -> Optional[int]:
         return None
     start = int(digits or "0")
     return start if start <= _OL_START_MAX else None
+
+
+def _has_descendant_named(tag: Tag, names: set[str]) -> bool:
+    """Return whether an element inside `tag` has one of the given names.
+
+    This gives the same answer as `tag.find(list(names)) is not None`, but
+    `find()` builds a `SoupStrainer` on every call. On the small subtree of a
+    single element that costs more than the search itself, and the backend
+    runs such checks once per element.
+
+    Args:
+        tag: The element whose descendants are searched.
+        names: The tag names to look for.
+
+    Returns:
+        True if a descendant element has one of the names.
+    """
+    return any(isinstance(node, Tag) and node.name in names for node in tag.descendants)
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -1970,7 +1985,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for tag in soup.find_all(list(_IMPLIED_END_TAGS)):
             closes, stops = _IMPLIED_END_TAGS[tag.name]
             while True:
-                open_tag = tag.find_parent(list(closes | stops))
+                # Same as `tag.find_parent(...)`, without building a
+                # `SoupStrainer` for each element.
+                open_tag = next(
+                    (
+                        parent
+                        for parent in tag.parents
+                        if parent.name in closes or parent.name in stops
+                    ),
+                    None,
+                )
                 if open_tag is None or open_tag.name in stops:
                     break
                 parent = tag.parent
@@ -2012,7 +2036,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         paragraphs = [
             p
             for p in soup.find_all("p")
-            if isinstance(p, Tag) and p.find(_PARA_BREAKER_NAMES) is not None
+            if isinstance(p, Tag) and _has_descendant_named(p, _PARA_BREAKERS)
         ]
 
         for p in paragraphs:
@@ -2456,14 +2480,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         # the <br> tag itself has no rendered bbox.
                         _flush_buffer()
                     continue
-                has_block_descendants = bool(
-                    node.find(_BLOCK_TAGS)
-                    or node.find("input")
-                    or node.find(
-                        lambda item: (
-                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
-                        )
+                # One pass over the subtree instead of three `find()` calls,
+                # which each build a `SoupStrainer` first.
+                has_block_descendants = any(
+                    isinstance(item, Tag)
+                    and (
+                        item.name in _BLOCK_TAGS
+                        or item.name == "input"
+                        or self._is_custom_checkbox_tag(item)
                     )
+                    for item in node.descendants
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
                 if self._is_form_container(node):
