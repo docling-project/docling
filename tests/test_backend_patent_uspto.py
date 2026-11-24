@@ -297,8 +297,85 @@ def test_table_cell_scripts_are_rich_cells(sup: str, sub: str) -> None:
             ("\u22121", Script.SUPER),
         ],
     ]
-    # the document hierarchy stays valid
     assert "ZnSO<sub>4</sub>" in doc.export_to_html()
+
+
+def test_table_cell_script_runs_match_stripped_cell_text() -> None:
+    """The runs of a rich cell add up to the stripped cell text.
+
+    A whitespace-only run at the start or the end of the entry must not leave
+    a space at the edge of the next or previous run.
+    """
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody><row>"
+        "<entry> <sub> 4</sub>x</entry>"
+        "<entry>y<sup>2 </sup> </entry>"
+        "</row></tbody></tgroup></table>"
+    )
+    doc = DoclingDocument(name="scripts")
+    item = doc.add_table(data=TableData(num_rows=0, num_cols=0, table_cells=[]))
+    table_parser = XmlTable(xml)
+    table = table_parser.parse()
+    assert table is not None
+    item.data = table
+
+    table_parser.add_rich_cells(doc, item)
+
+    runs = []
+    for cell in item.data.table_cells:
+        assert isinstance(cell, RichTableCell)
+        group = cell.ref.resolve(doc)
+        texts = [child.resolve(doc) for child in group.children]
+        assert "".join(text.text for text in texts) == cell.text
+        runs.append([(text.text, text.formatting.script) for text in texts])
+    assert runs == [
+        [("4", Script.SUB), ("x", Script.BASELINE)],
+        [("y", Script.BASELINE), ("2", Script.SUPER)],
+    ]
+
+
+def test_table_cell_scripts_after_dropped_and_cleared_rows() -> None:
+    """Rich cells stay on their own cell after an empty row and a cleared row.
+
+    An empty row is dropped from the table. A row with more entries than columns
+    keeps its place but is cleared, and its scripts must not become rich cells.
+    """
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody>"
+        "<row><entry>a<sub>1</sub></entry><entry>b</entry></row>"
+        "<row><entry></entry><entry></entry></row>"
+        "<row><entry>c<sub>8</sub></entry><entry>d</entry><entry>e</entry></row>"
+        "<row><entry>f</entry><entry>g<sup>2</sup></entry></row>"
+        "</tbody></tgroup></table>"
+    )
+    doc = DoclingDocument(name="scripts")
+    item = doc.add_table(data=TableData(num_rows=0, num_cols=0, table_cells=[]))
+    table_parser = XmlTable(xml)
+    table = table_parser.parse()
+    assert table is not None
+    item.data = table
+
+    table_parser.add_rich_cells(doc, item)
+
+    assert (item.data.num_rows, item.data.num_cols) == (3, 2)
+    grid_text = [[cell.text for cell in row] for row in item.data.grid]
+    assert grid_text == [["a1", "b"], ["", ""], ["f", "g2"]]
+    rich = {}
+    for cell in item.data.table_cells:
+        if isinstance(cell, RichTableCell):
+            group = cell.ref.resolve(doc)
+            texts = [child.resolve(doc) for child in group.children]
+            rich[(cell.start_row_offset_idx, cell.start_col_offset_idx)] = [
+                (text.text, text.formatting.script) for text in texts
+            ]
+    assert rich == {
+        (0, 0): [("a", Script.BASELINE), ("1", Script.SUB)],
+        (2, 1): [("g", Script.BASELINE), ("2", Script.SUPER)],
+    }
 
 
 def test_extract_raw_tables_matches_line_leading_tables():

@@ -48,7 +48,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, unique
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final
+from typing import Final, TypeAlias
 from xml.sax import SAXParseException
 from xml.sax.handler import ContentHandler, feature_external_ges, feature_external_pes
 from xml.sax.xmlreader import AttributesImpl
@@ -78,7 +78,7 @@ from docling.exceptions import DocumentLoadError
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
-    from bs4 import BeautifulSoup, Tag
+    from bs4 import BeautifulSoup, NavigableString, Tag
     from defusedxml.common import DefusedXmlException
     from defusedxml.sax import make_parser
 
@@ -1506,8 +1506,11 @@ class PatentUsptoAppV1(PatentUspto):
 
 
 # Script elements of the ICE, application v1 and grant v2.5 formats.
-_TABLE_SUPERSCRIPTS: Final[list[str]] = ["sup", "superscript", "SP"]
-_TABLE_SUBSCRIPTS: Final[list[str]] = ["sub", "subscript", "SB"]
+_TABLE_SUPERSCRIPTS: Final[frozenset[str]] = frozenset({"sup", "superscript", "SP"})
+_TABLE_SUBSCRIPTS: Final[frozenset[str]] = frozenset({"sub", "subscript", "SB"})
+
+# Text runs of a table entry: the text and its script.
+_ScriptRuns: TypeAlias = list[tuple[str, Script]]
 
 
 class XmlTable:
@@ -1546,7 +1549,7 @@ class XmlTable:
         self.empty_text = ""
         self._soup = BeautifulSoup(input, features="xml")
         # script runs of the rich cells, by cell index in the table data
-        self._cell_runs: dict[int, list[tuple[str, Script]]] = {}
+        self._cell_runs: dict[int, _ScriptRuns] = {}
 
     def _create_tg_range(self, tgs: list[ColInfo]) -> dict[int, ColInfoType]:
         """Create a unified range along the table groups.
@@ -1653,6 +1656,7 @@ class XmlTable:
         Returns:
             A docling table object.
         """
+        self._cell_runs = {}
         tgs_align: list[XmlTable.ColInfo] = []
         tg_secs = table("tgroup")
         if tg_secs:
@@ -1713,7 +1717,7 @@ class XmlTable:
 
                         ncols = 0
                         local_row: list[TableCell] = []
-                        local_runs: dict[int, list[tuple[str, Script]]] = {}
+                        local_runs: dict[int, _ScriptRuns] = {}
                         is_row_empty = True
                         if entry_secs:
                             wrong_nbr_cols = False
@@ -1810,7 +1814,7 @@ class XmlTable:
         return dl_table
 
     @staticmethod
-    def _get_script_runs(entry: Tag) -> list[tuple[str, Script]] | None:
+    def _get_script_runs(entry: Tag) -> _ScriptRuns | None:
         """Split the text of a table entry into runs of the same script.
 
         Args:
@@ -1820,8 +1824,10 @@ class XmlTable:
             The text runs and their script, or None if the entry has no
             superscript or subscript text.
         """
-        runs: list[tuple[str, Script]] = []
+        runs: _ScriptRuns = []
         for string in entry.strings:
+            if not isinstance(string, NavigableString):
+                continue
             script = Script.BASELINE
             for parent in string.parents:
                 if parent is entry:
@@ -1838,12 +1844,14 @@ class XmlTable:
                 runs.append((str(string), script))
 
         # strip the runs as the cell text is stripped
-        if runs:
-            runs[0] = (runs[0][0].lstrip(), runs[0][1])
-            runs[-1] = (runs[-1][0].rstrip(), runs[-1][1])
-        runs = [run for run in runs if run[0]]
-        if all(script == Script.BASELINE for _, script in runs):
+        while runs and not runs[0][0].strip():
+            runs.pop(0)
+        while runs and not runs[-1][0].strip():
+            runs.pop()
+        if not runs or all(script == Script.BASELINE for _, script in runs):
             return None
+        runs[0] = (runs[0][0].lstrip(), runs[0][1])
+        runs[-1] = (runs[-1][0].rstrip(), runs[-1][1])
 
         return runs
 
@@ -1852,6 +1860,10 @@ class XmlTable:
 
         Each rich cell refers to an inline group under the table. The inline
         group has one text item for each run, with the script of the run.
+
+        Call this method once, after `parse`, with the table item whose data is
+        the `TableData` that `parse` returned. The cells are found by their
+        index in that data.
 
         Args:
             doc: The document that holds the table.
