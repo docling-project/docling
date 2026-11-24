@@ -13,6 +13,7 @@ from docling.datamodel.pipeline_options import (
     VlmConvertOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.vlm_prompts import DocLangTask, doclang_prompt
 
 
 class CropTask(BaseModel):
@@ -31,16 +32,21 @@ class CropTask(BaseModel):
 # Granite for Docling is trained on `<doclang> [<task>]` prompts for single
 # elements; without `<layout>` in the task list the reply carries no location
 # tokens, which is what we want because the layout model owns the boxes.
-DOCLANG_OCR_TASK = CropTask(prompt="<doclang> [<ocr>]", response_prefix="<doclang>")
+DOCLANG_OCR_TASK = CropTask(
+    prompt=doclang_prompt([DocLangTask.OCR]), response_prefix="<doclang>"
+)
 DOCLANG_TABLE_TASK = CropTask(
-    prompt="<doclang> [<table>]", response_prefix="<doclang><table>"
+    prompt=doclang_prompt([DocLangTask.TABLE]), response_prefix="<doclang><table>"
 )
 DOCLANG_FORMULA_TASK = CropTask(
-    prompt="<doclang> [<formula>]", response_prefix="<doclang><formula>"
+    prompt=doclang_prompt([DocLangTask.FORMULA]),
+    response_prefix="<doclang><formula>",
 )
 # A code element opens with a `<label>` naming its language, which only the model
 # can tell; prefilling past `<code>` makes it skip the label and derail.
-DOCLANG_CODE_TASK = CropTask(prompt="<doclang> [<code>]", response_prefix="<doclang>")
+DOCLANG_CODE_TASK = CropTask(
+    prompt=doclang_prompt([DocLangTask.CODE]), response_prefix="<doclang>"
+)
 
 
 def _default_crop_tasks() -> dict[DocItemLabel, CropTask]:

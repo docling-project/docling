@@ -654,6 +654,56 @@ def test_cli_vlm_model_selects_vlm_pipeline(
     )
 
 
+def test_cli_doclang_tasks_set_the_page_prompt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            source,
+            "--vlm-model",
+            "granite_for_docling_2b",
+            "--doclang-tasks",
+            "table, layout,detailed",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    vlm_options = captured["format_options"][
+        InputFormat.PDF
+    ].pipeline_options.vlm_options
+    assert vlm_options.page_prompt() == "<doclang> [<table>, <layout>, <detailed>]"
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        # Unknown task
+        ["--vlm-model", "granite_for_docling_2b", "--doclang-tasks", "table,chart"],
+        # Only separators
+        ["--vlm-model", "granite_for_docling_2b", "--doclang-tasks", " , "],
+        # Preset without the doclang format
+        ["--vlm-model", "granite_docling", "--doclang-tasks", "table"],
+        # No VLM pipeline
+        ["--doclang-tasks", "table"],
+    ],
+)
+def test_cli_doclang_tasks_rejects_invalid_use(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, args: list[str]
+) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch, [source, *args, "--output", str(tmp_path)]
+    )
+
+    assert result.exit_code != 0
+    assert "--doclang-tasks" in result.output
+    assert "format_options" not in captured
+
+
 @pytest.mark.parametrize("pipeline", ["standard", "legacy", "native", "asr"])
 def test_cli_vlm_model_rejects_conflicting_pipeline(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pipeline: str

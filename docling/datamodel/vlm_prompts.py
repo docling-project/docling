@@ -3,12 +3,53 @@
 
 """Shared VLM prompt constants owned by the datamodel layer."""
 
+from collections.abc import Iterable
+from enum import Enum
+
 # Default Docling page-conversion prompt (gets augmented with layout objects
 # in the layout-aware pipeline).
 DOCLING_BASE_PAGE_PROMPT = "Convert this page to docling."
 
 # Full-page conversion prompt for Granite for Docling models that emit doclang.
 DOCLANG_PAGE_PROMPT = "<doclang>"
+
+
+class DocLangTask(str, Enum):
+    """A task that Granite for Docling can do on a page: ``<doclang> [<task>, ...]``.
+
+    The model is trained on the tasks in any order, so the order in a prompt has
+    no effect.
+    """
+
+    OCR = "ocr"
+    LAYOUT = "layout"
+    TABLE = "table"
+    PICTURE = "picture"
+    DETAILED = "detailed"
+    FORMULA = "formula"
+    CODE = "code"
+    CAPTION = "caption"
+    SECTION_HEADER = "section_header"
+    LIST = "list"
+    FOOTNOTE = "footnote"
+    PAGE_HEADER = "page_header"
+    PAGE_FOOTER = "page_footer"
+    SMILES = "smiles"
+    CLASSIFICATION = "classification"
+    DESCRIPTION = "description"
+
+
+def doclang_prompt(tasks: Iterable[DocLangTask] | None = None) -> str:
+    """Build a Granite for Docling prompt.
+
+    Without tasks the prompt converts the full page (``<doclang>``). With tasks
+    it asks only for them, for example ``<doclang> [<table>, <layout>]``.
+    """
+    names = list(dict.fromkeys(DocLangTask(task).value for task in tasks or ()))
+    if not names:
+        return DOCLANG_PAGE_PROMPT
+    return f"{DOCLANG_PAGE_PROMPT} [{', '.join(f'<{name}>' for name in names)}]"
+
 
 CHANDRA_ALLOWED_TAGS = (
     "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "

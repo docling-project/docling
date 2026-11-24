@@ -251,6 +251,20 @@ converter = DocumentConverter(
 result = converter.convert("report.pdf")
 ```
 
+To select what a Granite for Docling preset extracts, pass `doclang` tasks. The
+model returns only those elements; without `DocLangTask.LAYOUT` they have no
+bounding boxes, and `DocLangTask.DETAILED` adds picture descriptions:
+
+```python
+from docling.datamodel.pipeline_options import DocLangOptions, VlmConvertOptions
+from docling.datamodel.vlm_prompts import DocLangTask
+
+vlm_options = VlmConvertOptions.from_preset(
+    "granite_for_docling_2b",
+    doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]),
+)  # prompt: "<doclang> [<table>, <layout>]"
+```
+
 For Nemotron 3.5 Parse, use the stage preset API. It defaults to single-pass:
 
 ```python
@@ -340,7 +354,11 @@ Model presets (`docling.datamodel.vlm_model_specs`):
 |---|---|---|---|
 | `GRANITEDOCLING_TRANSFORMERS` | HF Transformers | CPU/GPU | Default (CLI `--vlm-model granite_docling`) |
 | `GRANITE_FOR_DOCLING_500M_TRANSFORMERS` | HF Transformers | CPU/GPU | DocLang (CLI `--vlm-model granite_for_docling_500m`) |
+| `GRANITE_FOR_DOCLING_500M_MLX` | MLX (Apple Silicon) | MPS | DocLang, needs mlx-vlm 0.8.1 or later |
 | `GRANITE_FOR_DOCLING_500M_VLLM` | vLLM | GPU | DocLang, in-process vLLM |
+| `GRANITE_FOR_DOCLING_2B_TRANSFORMERS` | HF Transformers | CPU/GPU | DocLang, long pages (CLI `--vlm-model granite_for_docling_2b`) |
+| `GRANITE_FOR_DOCLING_2B_MLX` | MLX (Apple Silicon) | MPS | DocLang 2B, needs mlx-vlm 0.8.1 or later |
+| `GRANITE_FOR_DOCLING_2B_VLLM` | vLLM | GPU | DocLang 2B, in-process vLLM |
 | `SMOLDOCLING_TRANSFORMERS` | HF Transformers | CPU/GPU | Lighter (CLI `--vlm-model smoldocling`) |
 | `GRANITEDOCLING_VLLM` | vLLM | GPU | High-throughput batch |
 | `GRANITEDOCLING_MLX` | MLX | Apple MPS | M-series Macs |

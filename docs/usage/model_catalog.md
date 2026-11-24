@@ -244,7 +244,8 @@ Languages are given as BCP-47 tags for every engine; see
 | Preset ID | Model | Parameters | Transformers | MLX | API (OpenAI-compatible) | vLLM | Output Format |
 |-----------|-------|------------|--------------|-----|-------------------------|------|---------------|
 | `granite_docling` | Granite-Docling-258M | 258M | ✅ | ✅ | Ollama | ❌ | DocTags |
-| `granite_for_docling_500m` | Granite-for-Docling-500M | 494M | ✅ | ❌ | OpenAI-compatible | ✅ | DocLang |
+| `granite_for_docling_500m` | Granite-for-Docling-500M | 494M | ✅ | ✅ | OpenAI-compatible | ✅ | DocLang |
+| `granite_for_docling_2b` | Granite-for-Docling-2B | 2.2B | ✅ | ✅ | OpenAI-compatible | ✅ | DocLang |
 | `smoldocling` | SmolDocling-256M | 256M | ✅ | ✅ | ❌ | ❌ | DocTags |
 | `deepseek_ocr` | DeepSeek-OCR-3B | 3B | ❌ | ❌ | Ollama<br/>LM Studio | ❌ | Markdown |
 | `granite_vision` | Granite-Vision-3.3-2B | 2B | ✅ | ❌ | Ollama<br/>LM Studio | ✅ | Markdown |
@@ -267,7 +268,9 @@ Languages are given as BCP-47 tags for every engine; see
 | `surya_ocr2_5` | Surya-OCR-2.5 | 689M | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout blocks with HTML tables and math |
 | `minicpm_ocr` | MiniCPM-OCR 1.0 | 1.3B | ✅ | ❌ | OpenAI-compatible | ❌ | Markdown |
 
-`granite_for_docling_500m` emits [doclang](https://doclang.ai/) from [`docling-project/granite-for-docling-500m`](https://huggingface.co/docling-project/granite-for-docling-500m). Transformers and in-process vLLM need a release that includes the `GraniteForDoclingForConditionalGeneration` architecture (or `trust_remote_code` on the Hub repo). Decode with `skip_special_tokens=False`. Pass `extra_processor_kwargs={"fine_route": True}` (vLLM: `mm_processor_kwargs`) for the 4×-token fine connector on dense pages. No MLX export is published yet.
+`granite_for_docling_500m` and `granite_for_docling_2b` emit [doclang](https://doclang.ai/) from [`ibm-granite/granite-for-docling-500m`](https://huggingface.co/ibm-granite/granite-for-docling-500m) and [`ibm-granite/granite-for-docling-2b`](https://huggingface.co/ibm-granite/granite-for-docling-2b). The Transformers engine needs Transformers 5.23.0 or later, which includes the native `GraniteDoclingForConditionalGeneration` architecture. In-process vLLM and `vllm serve` run the model on vLLM's Transformers modeling backend. They need a vLLM version with DeepStack support in that backend (later than 0.34.0), and Transformers 5.23.0 or later in the same environment. The MLX engine needs mlx-vlm 0.8.1 or later and loads the same repositories; no separate MLX weights are necessary. On Apple Silicon, the automatic engine selection uses MLX when that mlx-vlm version is installed, and Transformers if not. The preset does not run remote code. Decode with `skip_special_tokens=False`. Pass `extra_processor_kwargs={"fine_route": True}` in the engine override (Transformers and MLX; vLLM: `mm_processor_kwargs`) for the 4×-token fine connector on dense pages (500M only; the 2B model has no fine path and always uses 256 image tokens per tile). The 2B preset allows 16384 new tokens for long pages.
+
+To extract only some elements, select DocLang tasks: `--doclang-tasks table,layout` on the CLI, or `VlmConvertOptions.from_preset("granite_for_docling_2b", doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]))` in Python. The prompt becomes `<doclang> [<table>, <layout>]`. The tasks are `ocr`, `layout`, `table`, `picture`, `detailed`, `formula`, `code`, `caption`, `section_header`, `list`, `footnote`, `page_header`, `page_footer`, `smiles`, `classification` and `description`. Without `layout` the elements have no bounding boxes. `detailed` adds picture descriptions. The order has no effect.
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 

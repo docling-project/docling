@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from PIL import Image
 
 from docling.datamodel.base_models import Page, VlmStopReason
-from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.pipeline_options import DocLangOptions, VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
     TransformersPromptStyle,
@@ -16,6 +16,7 @@ from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
     TransformersVlmEngineOptions,
 )
+from docling.datamodel.vlm_prompts import DocLangTask
 from docling.models.inference_engines.vlm.base import VlmEngineOutput, VlmEngineType
 from docling.models.stages.vlm_convert.vlm_convert_model import (
     VlmConvertModel,
@@ -106,6 +107,28 @@ def test_call_uses_model_spec_generation_settings() -> None:
     assert engine_input.max_new_tokens == model_spec.max_new_tokens
     assert engine_input.stop_strings == model_spec.stop_strings
     assert engine_input.extra_generation_config == model_spec.extra_generation_config
+
+
+def test_call_sends_the_doclang_task_prompt_with_each_page() -> None:
+    model, _ = _build_model()
+    model.options = VlmConvertOptions.from_preset(
+        "granite_for_docling_2b",
+        engine_options=AutoInlineVlmEngineOptions(),
+        doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]),
+    )
+    pages = []
+    for page_no in (1, 2):
+        page = Page(page_no=page_no)
+        page._image_cache = {model.options.scale: Image.new("RGB", (8, 8), "white")}
+        page._default_image_scale = model.options.scale
+        pages.append(page)
+
+    list(model(SimpleNamespace(timings={}), pages))
+
+    assert [engine_input.prompt for engine_input in model.engine.batches[-1]] == [
+        "<doclang> [<table>, <layout>]",
+        "<doclang> [<table>, <layout>]",
+    ]
 
 
 def test_process_images_merges_transformers_override_runtime_input_config() -> None:

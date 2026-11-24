@@ -256,6 +256,10 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         self.processor, self.config, input_data.prompt, num_images=1
                     )
 
+                # Prefill the reply: the model continues from the prefix.
+                response_prefix = input_data.response_prefix or ""
+                formatted_prompt += response_prefix
+
                 # Extract custom stopping criteria
                 custom_stoppers = extract_generation_stoppers(
                     input_data.extra_generation_config
@@ -265,7 +269,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 start_time = time.time()
                 _log.debug("Starting MLX generation...")
 
-                output_text = ""
+                output_text = response_prefix
                 num_tokens = 0
                 stop_reason = "unspecified"
 
@@ -274,6 +278,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     "verbose": False,
                     "temperature": input_data.temperature,
                 }
+                # mlx-vlm forwards these to the processor, for example
+                # fine_route for Granite for Docling.
+                generation_kwargs.update(
+                    input_data.extra_generation_config.get("extra_processor_kwargs", {})
+                )
                 for key in ("repetition_penalty", "repetition_context_size"):
                     if key in input_data.extra_generation_config:
                         generation_kwargs[key] = input_data.extra_generation_config[key]

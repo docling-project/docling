@@ -374,7 +374,7 @@ class VllmVlmEngine(BaseVlmEngine):
             prompts.append(formatted_prompt)
 
         # Build vLLM inputs. extra_processor_kwargs maps to vLLM's
-        # mm_processor_kwargs (e.g. fine_route for GraniteForDocling).
+        # mm_processor_kwargs (e.g. fine_route for GraniteDocling).
         mm_kwargs = first_input.extra_generation_config.get(
             "mm_processor_kwargs"
         ) or first_input.extra_generation_config.get("extra_processor_kwargs")
@@ -430,9 +430,7 @@ class VllmVlmEngine(BaseVlmEngine):
             _engine_output_from_vllm_request(
                 output,
                 response_prefix=(
-                    input_data.response_prefix
-                    if prompt is not None
-                    else None
+                    input_data.response_prefix if prompt is not None else None
                 ),
                 generation_time=generation_time / len(input_batch),
                 model_id=model_id,

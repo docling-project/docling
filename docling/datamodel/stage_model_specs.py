@@ -969,64 +969,98 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     },
 }
 
-# Shared Granite for Docling 500M spec (doclang-native architecture).
-# Hub ID matches the Transformers model card and vLLM supported_models entry.
-# No MLX export is published yet — omit an MLX engine_override so auto-inline
-# does not try mlx-vlm.
+
+# Shared Granite for Docling specs (doclang-native architecture).
+# Transformers ships the architecture natively as ``granite_docling``
+# (GraniteDoclingForConditionalGeneration) from 5.23.0, so no remote code
+# runs on load.
+# Hub IDs match the Transformers model card.
+# mlx-vlm supports the architecture from 0.8.1 and loads the Transformers
+# checkpoint directly, so MLX uses the same repository. The MLX override makes
+# auto-inline select MLX on Apple Silicon. With an older mlx-vlm, auto-inline
+# uses Transformers.
 # Extra processor knobs (Transformers extra_processor_kwargs / vLLM
-# mm_processor_kwargs): fine_route=True uses the 4x-token fine connector when
-# the checkpoint has use_fine_route. Leave it off unless the page is dense or
-# the density router selected the fine path.
-GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE = {
-    "name": "Granite-for-Docling-500M",
-    "default_repo_id": "docling-project/granite-for-docling-500m",
-    "stop_strings": ["</doclang>", "<|end_of_text|>"],
-    "max_new_tokens": 8192,
-    "trust_remote_code": True,
-    "extra_generation_config": {"skip_special_tokens": False},
-    "supported_engines": {
-        VlmEngineType.TRANSFORMERS,
-        VlmEngineType.VLLM,
-        VlmEngineType.AUTO_INLINE,
-        VlmEngineType.API,
-        VlmEngineType.API_OPENAI,
-    },
-    "engine_overrides": {
-        VlmEngineType.TRANSFORMERS: EngineModelConfig(
-            torch_dtype="bfloat16",
-            extra_config={
-                "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-                "transformers_prompt_style": TransformersPromptStyle.CHAT,
-                "torch_dtype": "bfloat16",
-                "extra_generation_config": {"skip_special_tokens": False},
-            },
-        ),
-        VlmEngineType.VLLM: EngineModelConfig(
-            extra_config={
-                "dtype": "bfloat16",
-                "max_model_len": 32768,
-                "transformers_prompt_style": TransformersPromptStyle.CHAT,
-                "extra_generation_config": {"skip_special_tokens": False},
-            }
-        ),
-    },
-    "api_overrides": {
-        VlmEngineType.API: ApiModelConfig(
-            params={
-                "model": "docling-project/granite-for-docling-500m",
-                "max_tokens": 8192,
-                "skip_special_tokens": False,
-            }
-        ),
-        VlmEngineType.API_OPENAI: ApiModelConfig(
-            params={
-                "model": "docling-project/granite-for-docling-500m",
-                "max_tokens": 8192,
-                "skip_special_tokens": False,
-            }
-        ),
-    },
-}
+# mm_processor_kwargs / mlx-vlm generation kwargs): fine_route=True uses the
+# 4x-token fine connector when the checkpoint has use_fine_route (the 500M
+# model; the 2B model has no fine path). Leave it off unless the page is dense
+# or the density router selected the fine path.
+# vLLM runs GraniteDoclingForConditionalGeneration through its Transformers
+# modeling backend, so the vLLM environment also needs transformers>=5.23.0.
+# That backend supports DeepStack only in vLLM versions later than 0.34.0. The
+# override has no min_engine_version, because a build from the vLLM main branch
+# that has the support reports a version such as 0.34.0rc1.dev1171.
+# vLLM and OpenAI-compatible servers drop a matched stop string from the reply
+# by default; include_stop_str_in_output keeps the closing </doclang> that the
+# DocLang parser needs.
+def _granite_for_docling_model_spec_base(
+    *, name: str, repo_id: str, max_new_tokens: int
+) -> dict[str, Any]:
+    api_params = {
+        "model": repo_id,
+        "max_tokens": max_new_tokens,
+        "skip_special_tokens": False,
+        "include_stop_str_in_output": True,
+    }
+    return {
+        "name": name,
+        "default_repo_id": repo_id,
+        "stop_strings": ["</doclang>", "<|end_of_text|>"],
+        "max_new_tokens": max_new_tokens,
+        "extra_generation_config": {"skip_special_tokens": False},
+        "supported_engines": {
+            VlmEngineType.MLX,
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.VLLM,
+            VlmEngineType.AUTO_INLINE,
+            VlmEngineType.API,
+            VlmEngineType.API_OPENAI,
+        },
+        "engine_overrides": {
+            VlmEngineType.MLX: EngineModelConfig(min_engine_version="0.8.1"),
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.23.0",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "torch_dtype": "bfloat16",
+                    "extra_generation_config": {"skip_special_tokens": False},
+                },
+            ),
+            # 32768 tokens hold the largest page (a 55-tile spread is about
+            # 14.2k prompt tokens on the 2B model) plus the reply.
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "dtype": "bfloat16",
+                    "max_model_len": 32768,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "extra_generation_config": {
+                        "skip_special_tokens": False,
+                        "include_stop_str_in_output": True,
+                    },
+                }
+            ),
+        },
+        "api_overrides": {
+            VlmEngineType.API: ApiModelConfig(params=dict(api_params)),
+            VlmEngineType.API_OPENAI: ApiModelConfig(params=dict(api_params)),
+        },
+    }
+
+
+GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
+    name="Granite-for-Docling-500M",
+    repo_id="ibm-granite/granite-for-docling-500m",
+    max_new_tokens=8192,
+)
+
+# The 2B model is trained to continue long pages (newspapers, exams), so it gets
+# a larger reply budget, as its model card suggests.
+GRANITE_FOR_DOCLING_2B_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
+    name="Granite-for-Docling-2B",
+    repo_id="ibm-granite/granite-for-docling-2b",
+    max_new_tokens=16384,
+)
 
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
 PIXTRAL_MODEL_SPEC_BASE = {
@@ -1207,6 +1241,22 @@ VLM_CONVERT_GRANITE_FOR_DOCLING_500M = StageModelPreset(
     ),
     model_spec=VlmModelSpec(
         **GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE,
+        prompt=DOCLANG_PAGE_PROMPT,
+        response_format=ResponseFormat.DOCLANG,
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_GRANITE_FOR_DOCLING_2B = StageModelPreset(
+    preset_id="granite_for_docling_2b",
+    name="Granite-for-Docling-2B",
+    description=(
+        "IBM Granite for Docling 2B doclang model for document conversion "
+        "(2.2B parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        **GRANITE_FOR_DOCLING_2B_MODEL_SPEC_BASE,
         prompt=DOCLANG_PAGE_PROMPT,
         response_format=ResponseFormat.DOCLANG,
     ),

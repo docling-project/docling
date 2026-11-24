@@ -73,6 +73,7 @@ class _AvailableModels(str, Enum):
     GRANITEDOCLING = "granitedocling"
     GRANITEDOCLING_MLX = "granitedocling_mlx"
     GRANITE_FOR_DOCLING_500M = "granite_for_docling_500m"
+    GRANITE_FOR_DOCLING_2B = "granite_for_docling_2b"
     SMOLDOCLING = "smoldocling"
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
@@ -330,6 +331,8 @@ def download(
         with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
         with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
         with_granite_for_docling_500m=_AvailableModels.GRANITE_FOR_DOCLING_500M
+        in to_download,
+        with_granite_for_docling_2b=_AvailableModels.GRANITE_FOR_DOCLING_2B
         in to_download,
         with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
         with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,

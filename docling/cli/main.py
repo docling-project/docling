@@ -169,6 +169,7 @@ from docling.datamodel.pipeline_options import (
     BaseLayoutOptions,
     BaseTableStructureOptions,
     ConvertPipelineOptions,
+    DocLangOptions,
     HeadingHierarchyOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
@@ -193,6 +194,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrOptions,
     InlineAsrTransformersOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
@@ -200,6 +202,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
+from docling.datamodel.vlm_prompts import DocLangTask
 from docling.utils.profiling import ProfilingItem
 from docling.utils.progress import ProgressPrinter
 
@@ -309,6 +312,24 @@ def _resolve_pipeline(
             param_hint="--vlm-model",
         )
     return ProcessingPipeline.VLM
+
+
+def _parse_doclang_tasks(value: str) -> list[DocLangTask]:
+    """Parse the comma-separated --doclang-tasks value."""
+    names = [name.strip().lower() for name in value.split(",") if name.strip()]
+    if not names:
+        raise typer.BadParameter(
+            "Give at least one task, or leave out the option to convert the full page.",
+            param_hint="--doclang-tasks",
+        )
+    valid = [task.value for task in DocLangTask]
+    unknown = [name for name in names if name not in valid]
+    if unknown:
+        raise typer.BadParameter(
+            f"Unknown task(s): {', '.join(unknown)}. Valid tasks: {', '.join(valid)}.",
+            param_hint="--doclang-tasks",
+        )
+    return [DocLangTask(name) for name in names]
 
 
 def _name_matches_format(name: str, format: InputFormat) -> bool:
@@ -1119,6 +1140,20 @@ def convert(  # noqa: C901
             help="Override max_new_tokens for VLM conversion generation.",
         ),
     ] = None,
+    doclang_tasks: Annotated[
+        str | None,
+        typer.Option(
+            "--doclang-tasks",
+            help=(
+                "Comma-separated tasks for a doclang --vlm-model such as "
+                "granite_for_docling_2b, for example 'table,layout'. The model "
+                "returns only these elements. Without layout the elements have no "
+                "bounding boxes. detailed adds picture descriptions. Valid tasks: "
+                + ", ".join(task.value for task in DocLangTask)
+                + ". By default the model converts the full page."
+            ),
+        ),
+    ] = None,
     trust_remote_code: Annotated[
         bool,
         typer.Option(
@@ -1760,6 +1795,15 @@ def convert(  # noqa: C901
     from_formats = _expand_from_formats(from_formats)
 
     pipeline = _resolve_pipeline(pipeline, vlm_model)
+    parsed_doclang_tasks = (
+        _parse_doclang_tasks(doclang_tasks) if doclang_tasks is not None else None
+    )
+    if parsed_doclang_tasks is not None and pipeline != ProcessingPipeline.VLM:
+        raise typer.BadParameter(
+            "--doclang-tasks needs a doclang --vlm-model, such as "
+            "granite_for_docling_2b.",
+            param_hint="--doclang-tasks",
+        )
 
     if pipeline == ProcessingPipeline.ASR:
         # Only audio and video have a transcription route. Other formats would
@@ -2245,7 +2289,22 @@ def convert(  # noqa: C901
 
             # Use the new preset system
             try:
-                pipeline_options.vlm_options = VlmConvertOptions.from_preset(vlm_model)
+                if (
+                    parsed_doclang_tasks is not None
+                    and VlmConvertOptions.get_preset(
+                        vlm_model
+                    ).model_spec.response_format
+                    != ResponseFormat.DOCLANG
+                ):
+                    raise typer.BadParameter(
+                        f"--vlm-model {vlm_model} does not use the doclang format. "
+                        "Use a doclang preset, such as granite_for_docling_2b.",
+                        param_hint="--doclang-tasks",
+                    )
+                pipeline_options.vlm_options = VlmConvertOptions.from_preset(
+                    vlm_model,
+                    doclang=DocLangOptions(tasks=parsed_doclang_tasks),
+                )
                 if vlm_max_new_tokens is not None:
                     pipeline_options.vlm_options.model_spec.max_new_tokens = (
                         vlm_max_new_tokens
