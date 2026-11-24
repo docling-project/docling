@@ -964,8 +964,9 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
         dict[str, Any],
         Field(
             description=(
-                "Additional query parameters to include in API requests. Service-specific parameters for customizing "
-                "API behavior beyond standard options."
+                "Additional fields for the JSON body of API requests, for example `model`, `max_completion_tokens` "
+                "or `temperature`. They are not sent as URL query parameters. Put query parameters, such as the "
+                "`api-version` of Azure OpenAI, in `url`."
             )
         ),
     ] = {}
