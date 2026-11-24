@@ -1,7 +1,7 @@
-"""Chunk a document into retrieval-ready pieces with chunk().
+"""Export retrieval-ready chunks through the normal convert endpoint.
 
-`chunk()` converts a source and splits it with the requested chunker in one call,
-returning the chunks plus the documents they came from.
+The convert endpoint writes one JSON object per line to a `.chunks.jsonl` file.
+Use a zip target when the client needs to retrieve those chunks locally.
 
 Run from the repository root:
 
@@ -11,11 +11,17 @@ Run from the repository root:
 from __future__ import annotations
 
 import os
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 from dotenv import load_dotenv
 
-from docling.service_client import ChunkerKind, DoclingServiceClient
+from docling.datamodel.base_models import OutputFormat
+from docling.datamodel.service.chunking import HybridChunkerOptions
+from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.service.targets import ZipTarget
+from docling.service_client import DoclingServiceClient, RawServiceResult
 
 load_dotenv()  # DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY from env or a .env
 
@@ -27,13 +33,32 @@ def main() -> None:
         url=os.environ["DOCLING_SERVICE_URL"],
         api_key=os.environ.get("DOCLING_SERVICE_API_KEY", ""),
     ) as client:
-        response = client.chunk(source=SOURCE, chunker=ChunkerKind.HIERARCHICAL)
-        print(
-            len(response.chunks), "chunks from", len(response.documents), "document(s)"
+        job = client.submit(
+            source=SOURCE,
+            options=ConvertDocumentsOptions(
+                to_formats=[OutputFormat.CHUNKS],
+                chunking_options=HybridChunkerOptions(
+                    use_markdown_tables=True,
+                ),
+            ),
+            target=ZipTarget(),
         )
-        for chunk in response.chunks[:3]:
+        result = job.result()
+        if not isinstance(result, RawServiceResult):
+            raise TypeError("Expected the conversion result to be a zip archive.")
+
+        with ZipFile(BytesIO(result.content)) as archive:
+            chunk_files = [
+                name for name in archive.namelist() if name.endswith(".chunks.jsonl")
+            ]
+            if len(chunk_files) != 1:
+                raise ValueError("Expected one chunks.jsonl file in the archive.")
+            chunks = archive.read(chunk_files[0]).decode("utf-8").splitlines()
+
+        print(len(chunks), "chunks")
+        for chunk in chunks[:3]:
             print("---")
-            print(chunk.text[:300])
+            print(chunk[:300])
 
 
 if __name__ == "__main__":
