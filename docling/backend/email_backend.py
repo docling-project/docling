@@ -112,11 +112,28 @@ def _get_param(part: Message, name: str) -> str:
     return collapse_rfc2231_value(part.get_param(name, "")).lower()
 
 
+def _is_plain_text_body(part: Message, inside_attachment: bool) -> bool:
+    """Tell whether mailparser adds a ``text/plain`` part to ``text_plain``.
+
+    Args:
+        part: The ``text/plain`` part.
+        inside_attachment: Whether an enclosing part is an attachment.
+
+    Returns:
+        True if the part is a body part, False if it is an attachment.
+    """
+    disposition = part.get_content_disposition()
+    if part.get_filename():
+        return disposition == "inline" and not inside_attachment
+    return disposition != "attachment"
+
+
 def _get_plain_text_flows(message: Message) -> list[bool | None]:
     """Describe the flow of each plain-text body part, in the order of ``text_plain``.
 
-    A part is a body part when it has content and is not an attachment, like the
-    parts that mailparser adds to ``text_plain``.
+    A part is a body part when it has content and mailparser adds it to
+    ``text_plain``: it is not an attachment and it is not a named part inside an
+    attachment container.
 
     Args:
         message: The parsed message.
@@ -126,12 +143,25 @@ def _get_plain_text_flows(message: Message) -> list[bool | None]:
         has ``delsp=yes``.
     """
     flows: list[bool | None] = []
+    attachment_descendants: set[Message] = set()
     for part in message.walk():
-        if part.get_content_type() != "text/plain" or not part.get_payload(decode=True):
+        inside_attachment = part in attachment_descendants
+        children = part.get_payload()
+        if isinstance(children, list):
+            disposition = part.get_content_disposition()
+            if (
+                inside_attachment
+                or disposition not in (None, "inline")
+                or (disposition != "inline" and part.get_filename())
+            ):
+                attachment_descendants.update(
+                    child for child in children if isinstance(child, Message)
+                )
             continue
-        disposition = part.get_content_disposition()
-        if disposition == "attachment" or (
-            part.get_filename() is not None and disposition != "inline"
+        if (
+            part.get_content_type() != "text/plain"
+            or not _is_plain_text_body(part, inside_attachment)
+            or not part.get_payload(decode=True)
         ):
             continue
         if _get_param(part, "format") == "flowed":

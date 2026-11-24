@@ -259,6 +259,31 @@ def test_email_backend_unflows_only_the_flowed_part() -> None:
     ]
 
 
+def test_email_backend_ignores_flowed_parts_inside_attachment_containers() -> None:
+    raw_email = (
+        b"From: alice@example.com\nSubject: Nested\nMIME-Version: 1.0\n"
+        b'Content-Type: multipart/mixed; boundary="B"\n\n'
+        b'--B\nContent-Type: multipart/mixed; boundary="C"\n'
+        b'Content-Disposition: attachment; filename="bundle.bin"\n\n'
+        b'--C\nContent-Type: text/plain; charset="utf-8"; format=flowed\n'
+        b'Content-Disposition: inline; filename="inner.txt"\n\n'
+        b"Inner text \nstays.\n"
+        b"--C--\n"
+        b'--B\nContent-Type: text/plain; charset="utf-8"\n'
+        b'Content-Disposition: x-custom; filename=""\n\n'
+        b"Fixed text \nkeeps its break.\n"
+        b"--B--\n"
+    )
+
+    doc = _convert_raw_email(raw_email)
+
+    assert [item.text for item in doc.texts] == [
+        "Nested",
+        "From: alice@example.com",
+        "Fixed text \nkeeps its break.",
+    ]
+
+
 def test_email_backend_keeps_cc_recipients():
     """Cc recipients are part of who the message was addressed to."""
     raw_email = b"""From: Alice Example <alice@example.com>
