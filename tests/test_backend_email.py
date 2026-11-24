@@ -1282,20 +1282,35 @@ def test_msg_strips_trailing_nul_from_properties_and_body():
     Ensure subject, sender, recipients, attachments, and bodies have \x00 stripped
     so that From: header and text items do not leak null bytes. See #5535.
     """
-    from unittest.mock import PropertyMock, patch
+    from unittest.mock import MagicMock, PropertyMock, patch
 
     from oxmsg import Message as OxMsgMessage
 
     data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
 
+    recipient_mock = MagicMock()
+    recipient_mock.name = "Bob\x00"
+    recipient_mock.email_address = "bob@example.com\x00"
+    recipient_mock.properties.int_prop_value.return_value = 1
+
+    attachment_mock = MagicMock()
+    attachment_mock.file_name = "test\x00.pdf\x00"
+    attachment_mock.mime_type = "application/pdf\x00"
+
     subject_mock = PropertyMock(return_value="Subject With Null\x00")
     sender_mock = PropertyMock(return_value='"Alice\x00" <alice@example.com\x00>')
     body_mock = PropertyMock(return_value="Body text with trailing null\x00")
+    html_body_mock = PropertyMock(return_value="<p>HTML body with trailing null\x00</p>")
+    recipients_mock = PropertyMock(return_value=[recipient_mock])
+    attachments_mock = PropertyMock(return_value=[attachment_mock])
 
     with (
         patch.object(OxMsgMessage, "subject", subject_mock),
         patch.object(OxMsgMessage, "sender", sender_mock),
         patch.object(OxMsgMessage, "body", body_mock),
+        patch.object(OxMsgMessage, "html_body", html_body_mock),
+        patch.object(OxMsgMessage, "recipients", recipients_mock),
+        patch.object(OxMsgMessage, "attachments", attachments_mock),
     ):
         rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
 
@@ -1307,6 +1322,7 @@ def test_msg_strips_trailing_nul_from_properties_and_body():
             backend=EmailDocumentBackend,
         ),
         path_or_stream=BytesIO(rfc822),
+        options=EmailBackendOptions(list_attachments=True),
     )
     assert backend.is_valid()
     doc = backend.convert()
@@ -1318,5 +1334,21 @@ def test_msg_strips_trailing_nul_from_properties_and_body():
     assert "\x00" not in markdown
     assert "From:" in markdown
     assert "Alice" in markdown
+    assert "To:" in markdown
+    assert "Bob" in markdown
     assert "Subject With Null" in markdown
     assert "Body text with trailing null" in markdown
+    assert "test.pdf" in markdown
+    assert "application/pdf" in markdown
+
+    # Verify OLE stream fallback stripping in _recover_msg_body
+    mock_msg = MagicMock()
+    mock_msg.properties.int_prop_value.return_value = 1252
+    mock_ole = MagicMock()
+    mock_ole.exists.return_value = True
+    mock_ole.openstream.return_value.read.return_value = b"Recovered body with null\x00"
+    mock_ole_cm = MagicMock()
+    mock_ole_cm.__enter__.return_value = mock_ole
+    with patch("olefile.OleFileIO", return_value=mock_ole_cm):
+        result = EmailDocumentBackend._recover_msg_body(b"dummy", mock_msg)
+    assert result == "Recovered body with null"
