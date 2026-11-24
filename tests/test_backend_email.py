@@ -155,6 +155,11 @@ This is a second paragraph.
             ["日本語の長い文章を折り返しました。"],
         ),
         (
+            "",
+            b"Thanks \n-- \nAlice\n",
+            ["Thanks \n-- \nAlice"],
+        ),
+        (
             # latin-1 bytes in a part that declares utf-8
             "",
             b"Caf\xe9 au lait was \nsoft wrapped here.\n",
