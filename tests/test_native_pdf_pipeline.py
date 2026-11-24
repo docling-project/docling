@@ -265,3 +265,16 @@ def test_native_pipeline_reports_missing_pages(
         returned_pages
     )
     assert ("did not return" in caplog.text) == bool(missing_pages)
+
+
+def test_native_pipeline_reports_pages_skipped_by_the_timeout() -> None:
+    """Each page that the document timeout left unread gets its own error."""
+    result = _convert(MULTIPAGE_PDF, document_timeout=1e-9)
+
+    converted_pages = set(result.document.pages)
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    assert len(converted_pages) == 1
+    assert all(error.category == FailureCategory.TIMEOUT for error in result.errors)
+    assert sorted(
+        error.page_no for error in result.errors if error.page_no is not None
+    ) == sorted({1, 2, 3, 4} - converted_pages)

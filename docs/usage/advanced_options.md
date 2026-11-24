@@ -380,8 +380,9 @@ docling --pipeline native --from pdf --parser-threads 8 FILE
 If the backend ends before returning all requested pages, the native pipeline
 logs a warning and records an error for each missing page. If any pages were
 converted, the result is `PARTIAL_SUCCESS`. If none were converted, the result
-is `FAILURE`. Use `--fail-on partial` to make the CLI exit with code 1 for a
-partial conversion.
+is `FAILURE`. If `document_timeout` stops the conversion, each page that was not
+converted gets a `TIMEOUT` error. Use `--fail-on partial` to make the CLI exit
+with code 1 for a partial conversion.
 
 
 ### Recover PDF heading levels

@@ -144,6 +144,16 @@ class NativePdfPipeline(ConvertPipeline):
                             category=FailureCategory.TIMEOUT,
                         )
                     )
+                    conv_res.errors.extend(
+                        ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.__class__.__name__,
+                            error_message=f"Page {page_no} was not converted before the document timeout.",
+                            category=FailureCategory.TIMEOUT,
+                            page_no=page_no,
+                        )
+                        for page_no in sorted(unreturned_page_nos)
+                    )
                     conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                     break
             else:
