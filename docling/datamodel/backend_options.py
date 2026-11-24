@@ -334,10 +334,10 @@ class PdfBackendOptions(BaseBackendOptions):
         True,
         description=(
             "Passed to docling-parse `DecodeConfig.do_char_normalization`. "
-            "When enabled, docling-parse replaces U+2012 to U+2015 (figure "
-            "dash, en dash, em dash, horizontal bar) and U+2212 (minus sign) "
-            "with '-'. Disable this to keep these characters. The hyphens "
-            "U+2010 and U+2011 always become '-'."
+            "When enabled, docling-parse normalizes some Unicode characters "
+            "in the extracted text, for example dash and minus variants "
+            "become '-'. Disable this to keep the characters as the PDF "
+            "encodes them."
         ),
     )
     include_bitmap_images: bool = Field(

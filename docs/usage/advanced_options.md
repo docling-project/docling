@@ -378,13 +378,14 @@ docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
 
-### Keep dashes and minus signs in PDF text
+### Keep the original characters in PDF text
 
-The `do_char_normalization` backend option is passed to docling-parse
-`DecodeConfig.do_char_normalization`. By default, the docling-parse backend
-replaces U+2012 to U+2015 (figure dash, en dash, em dash, horizontal bar) and
-U+2212 (minus sign) with `-`. Thus `pages 3–5` becomes `pages 3-5`, and `−12`
-becomes `-12`. Set `do_char_normalization=False` to keep these characters:
+By default, the docling-parse backend normalizes some Unicode characters in the
+extracted text. For example, dash and minus variants become `-`, so
+`pages 3–5` becomes `pages 3-5`. The `do_char_normalization` backend option
+controls this step (it is passed to docling-parse
+`DecodeConfig.do_char_normalization`). Set it to `False` to keep the characters
+as the PDF encodes them:
 
 ```python
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -400,9 +401,9 @@ doc_converter = DocumentConverter(
 )
 ```
 
-The hyphen (U+2010) and the non-breaking hyphen (U+2011) always become `-`.
-The option applies only to the docling-parse backend. The pypdfium2 backend does
-not replace these characters.
+The option applies only to the docling-parse backend. Some characters can still
+be normalized when the option is off; see the docling-parse documentation for
+the exact set.
 
 ### Recover PDF heading levels
 
