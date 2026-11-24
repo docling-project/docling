@@ -151,6 +151,15 @@ MACROS_IGNORED = frozenset(
         "hyphenation",
         "overfullrule",
         "protect",
+        # Drawing commands. Their arguments are lengths and column ranges, not
+        # text. pylatexenc only drops them when the argument spec is known.
+        "cline",
+        "cmidrule",
+        "toprule",
+        "midrule",
+        "bottomrule",
+        "specialrule",
+        "rule",
     ]
 )
 

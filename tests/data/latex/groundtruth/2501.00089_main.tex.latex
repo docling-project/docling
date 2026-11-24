@@ -140,7 +140,7 @@ l cc cc[t!] 5
 
 Comparison of performance using a SFNet and a CNN with PCA-based dimensionality reduction.
 
-2cRMSE: Metallicity 2cRMSE: Spectral Lines (lr)2-3(lr)4-5 $k$ SFNet PCA SFNet PCA 2  $0.0858 \pm 0.0004$  0.1753  $0.2418 \pm 0.0002$  0.2806 3  $0.0862 \pm 0.0011$  0.2032  $0.2395 \pm 0.0014$  0.2646 4  $0.0862 \pm 0.0013$  0.1034  $0.2383 \pm 0.0003$  0.2646 6  $0.0875 \pm 0.0007$  0.1020  $0.2394 \pm 0.0009$  0.2419 8  $0.0852 \pm 0.0004$  0.0921  $0.2389 \pm 0.0012$  0.2396
+2cRMSE: Metallicity 2cRMSE: Spectral Lines $k$ SFNet PCA SFNet PCA 2  $0.0858 \pm 0.0004$  0.1753  $0.2418 \pm 0.0002$  0.2806 3  $0.0862 \pm 0.0011$  0.2032  $0.2395 \pm 0.0014$  0.2646 4  $0.0862 \pm 0.0013$  0.1034  $0.2383 \pm 0.0003$  0.2646 6  $0.0875 \pm 0.0007$  0.1020  $0.2394 \pm 0.0009$  0.2419 8  $0.0852 \pm 0.0004$  0.0921  $0.2389 \pm 0.0012$  0.2396
 
 For both metallicity and spectral line fluxes, $>95\%$ of the variance is explained using the top $k=8$ principal components. For metallicity (left panel of Figure[fig:pca-comparison]), we find that the CNN + PCA performs poorly on the validation set for all values of $k$. Meanwhile, the SFNet can reconstruct metallicity with only $k=2$ explainable features, reinforcing our results found in Section[ssec:metallicity]. We interpret this as evidence that the metallicity cannot be linearly combined using a small number of principal components of features extracted via a typical CNN.
 
