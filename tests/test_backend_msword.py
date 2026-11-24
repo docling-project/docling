@@ -3275,6 +3275,46 @@ def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expec
     ]
 
 
+@pytest.mark.parametrize(
+    ("properties", "elements", "expected"),
+    [
+        ("", ["a", "b"], r"\left(a|b\right)"),
+        (
+            '<m:dPr><m:sepChr m:val=","/></m:dPr>',
+            ["x", "y", "z"],
+            r"\left(x,y,z\right)",
+        ),
+        (
+            '<m:dPr><m:begChr m:val="{"/><m:endChr m:val="}"/></m:dPr>',
+            ["a", "b"],
+            r"\left\{a|b\right\}",
+        ),
+        ('<m:dPr><m:sepChr m:val=""/></m:dPr>', ["a", "b"], r"\left(ab\right)"),
+    ],
+    ids=["default-separator", "comma-separator", "braces", "empty-separator"],
+)
+def test_equation_delimiter_keeps_every_element(
+    tmp_path, properties, elements, expected
+):
+    """A delimiter keeps each of its elements, with the separator between them."""
+    content = "".join(f"<m:e><m:r><m:t>{text}</m:t></m:r></m:e>" for text in elements)
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:d>{properties}{content}</m:d></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / "equation_delimiter.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
 def test_symbol_font_case_and_whitespace_resilience(tmp_path):
     """Symbol font detection handles case and whitespace variations defensively."""
     docx_path = tmp_path / "symbol_font_casing.docx"
