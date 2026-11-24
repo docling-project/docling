@@ -2366,6 +2366,24 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    form_field_keying: Annotated[
+        Literal["geometric", "classifier"],
+        Field(
+            description=(
+                "How extract_form_fields chooses the key of each widget outside detected tables. "
+                "'geometric': a small integer program over geometric key candidates. 'classifier': a "
+                "gradient-boosted tree model, evaluated with numpy on the CPU, scores the geometric "
+                "candidates together with candidates from the page's words (a part of a text line, "
+                "stacked lines, a caption along the row, a column header) and keeps the best per "
+                "widget. It needs form_field_classifier_path. Widgets in detected tables are keyed "
+                "from their own cell in both modes, and a page without word cells uses 'geometric'."
+            )
+        ),
+    ] = "geometric"
+    form_field_classifier_path: Annotated[
+        Path | None,
+        Field(description=("The tree model (.npz) of form_field_keying='classifier'.")),
+    ] = None
     do_ocr: Annotated[
         bool,
         Field(

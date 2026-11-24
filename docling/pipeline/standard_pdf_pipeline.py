@@ -677,7 +677,9 @@ class StandardPdfPipeline(ConvertPipeline):
             )
         )
         self.form_field_model = PdfFormFieldModel(
-            enabled=self.pipeline_options.extract_form_fields
+            enabled=self.pipeline_options.extract_form_fields,
+            keying=self.pipeline_options.form_field_keying,
+            classifier_path=self.pipeline_options.form_field_classifier_path,
         )
 
         table_factory = get_table_structure_factory(

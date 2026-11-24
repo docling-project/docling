@@ -62,6 +62,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `do_ocr` | Run OCR (default engine EasyOCR) |
 | `do_table_structure` | Detect table structure |
 | `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields with keys from printed text |
+| `form_field_keying` / `form_field_classifier_path` | Choose field keys with the geometric integer program (default) or a tree classifier over geometric and word candidates |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
 | `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
@@ -88,6 +89,12 @@ the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
 on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
+
+`form_field_keying="classifier"` with `form_field_classifier_path` (a `.npz`
+tree model) chooses the keys of widgets outside detected tables with a tree
+classifier on the CPU. It also proposes parts of text lines, stacked lines, row
+captions and column headers as keys. Pages without word cells use the geometric
+keying.
 
 ### Choosing an OCR engine
 

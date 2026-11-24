@@ -223,6 +223,20 @@ cells need `do_table_structure=True`. Raw widget metadata is not stored in the
 that PDF-specific data is needed. Field items are not supported by the DocTags
 export.
 
+By default, an integer program chooses the keys over geometric candidates.
+With `form_field_keying="classifier"` and `form_field_classifier_path` (CLI:
+`--form-field-keying classifier --form-field-classifier PATH`), a small
+gradient-boosted tree model chooses them instead, for widgets outside detected
+tables. The model scores the geometric candidates together with candidates
+built from the page's words: a part of a text line (for example, "Name" and
+"Date of birth" on the line "Name ____ Date of birth ____"), up to three stacked
+lines, a caption along the widget's row, or a header above it in its column.
+Each widget takes its best candidate. The model file holds the trees as arrays,
+and numpy evaluates them on the CPU. Widgets in detected tables keep the keys of
+their own cells, and a page without word cells uses the integer program. A text
+line leaves the body only when the keys use all of its words; a line that is
+only partly a key stays in the body.
+
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata

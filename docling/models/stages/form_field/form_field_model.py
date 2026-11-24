@@ -23,9 +23,10 @@ import logging
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from docling_core.types.doc import BoundingBox, DocItemLabel
-from docling_core.types.doc.page import PdfWidget
+from docling_core.types.doc.page import PdfTextCell, PdfWidget
 
 from docling.datamodel.base_models import (
     Cluster,
@@ -47,7 +48,12 @@ from docling.models.stages.form_field.keying import (
     is_skipped,
     regions,
 )
+from docling.models.stages.form_field.keying.classifier import (
+    STATUS as CLASSIFIED,
+    classify,
+)
 from docling.models.stages.form_field.keying.rules import THIN
+from docling.models.stages.form_field.keying.trees import TreeEnsemble
 from docling.utils.form_fields import without_whitespace
 from docling.utils.profiling import TimeRecorder
 
@@ -98,8 +104,13 @@ def _printable(cluster: Cluster) -> set[int]:
     return {cell.index for cell in cluster.cells if cell.text.strip()}
 
 
-def _assign(page: Page) -> Assignment:
-    """Key the page's widgets from its layout, table structure and printed rules."""
+def _assign(page: Page, trees: TreeEnsemble | None = None) -> Assignment:
+    """Key the page's widgets from its layout, table structure and printed rules.
+
+    With ``trees``, the classifier chooses the keys of values outside detected
+    tables, reading also the page's words; a page without word cells (no
+    text layer) uses the geometric keying.
+    """
     assert page.size is not None and page.parsed_page is not None
     assert page.predictions.layout is not None
     structure = page.predictions.tablestructure
@@ -122,6 +133,33 @@ def _assign(page: Page) -> Assignment:
             *(page._backend.get_shape_lines() or []),
             *(page._backend.get_thin_shape_boxes(max_thickness=THIN) or []),
         ]
+    if trees is not None and page.parsed_page.word_cells:
+        height = page.size.height
+        words = []
+        for cell in page.parsed_page.word_cells:
+            box = cell.rect.to_bounding_box().to_top_left_origin(height)
+            # A widget's own appearance (a filled value, a check mark) is no key.
+            painted = isinstance(cell, PdfTextCell) and cell.widget
+            words.append((cell.text, box.as_tuple(), painted))
+        lines = [
+            cell.rect.to_bounding_box().to_top_left_origin(height).as_tuple()
+            for cell in page.parsed_page.textline_cells
+        ]
+        return classify(
+            page.parsed_page.widgets,
+            page.predictions.layout.clusters,
+            table_cells,
+            (page.size.width, height),
+            rules,
+            words,
+            lines,
+            trees,
+        )
+    if trees is not None:
+        _log.debug(
+            "Page %d has no word cells; its form fields are keyed geometrically",
+            page.page_no,
+        )
     return assign(
         page.parsed_page.widgets,
         page.predictions.layout.clusters,
@@ -360,8 +398,21 @@ class PdfFormFieldModel(BasePageModel):
     # text that merely equals a field value by coincidence.
     _DUPLICATE_CONTAINMENT_THRESHOLD = 0.6
 
-    def __init__(self, *, enabled: bool) -> None:
+    def __init__(
+        self,
+        *,
+        enabled: bool,
+        keying: str = "geometric",
+        classifier_path: Path | None = None,
+    ) -> None:
         self.enabled = enabled
+        self._trees: TreeEnsemble | None = None
+        if enabled and keying == "classifier":
+            if classifier_path is None:
+                raise ValueError(
+                    "form_field_keying='classifier' needs form_field_classifier_path"
+                )
+            self._trees = TreeEnsemble.load(classifier_path)
 
     @classmethod
     def _cluster_text(cls, cluster: Cluster) -> str:
@@ -463,8 +514,8 @@ class PdfFormFieldModel(BasePageModel):
         """Compute the page's field items and edits without touching the page."""
         assert page.size is not None and page.parsed_page is not None
         assert page.predictions.layout is not None
-        assignment = _assign(page)
-        if assignment.solver_status != "optimal":
+        assignment = _assign(page, self._trees)
+        if assignment.solver_status not in ("optimal", CLASSIFIED):
             _log.warning(
                 "Form field keying abstained on page %d (%s); free-form values are "
                 "kept without keys",

@@ -1291,6 +1291,24 @@ def convert(  # noqa: C901
             ),
         ),
     ] = False,
+    form_field_keying: Annotated[
+        Literal["geometric", "classifier"],
+        typer.Option(
+            ...,
+            help=(
+                "How --extract-form-fields chooses field keys outside detected tables: "
+                "a geometric integer program, or a tree classifier over geometric and "
+                "word candidates (needs --form-field-classifier)."
+            ),
+        ),
+    ] = "geometric",
+    form_field_classifier: Annotated[
+        Path | None,
+        typer.Option(
+            ...,
+            help="The tree model (.npz) of --form-field-keying classifier.",
+        ),
+    ] = None,
     reading_order_separators: Annotated[
         bool,
         typer.Option(
@@ -2039,6 +2057,8 @@ def convert(  # noqa: C901
                 ocr_options=ocr_options,
                 do_table_structure=tables,
                 extract_form_fields=extract_form_fields,
+                form_field_keying=form_field_keying,
+                form_field_classifier_path=form_field_classifier,
                 use_reading_order_separators=reading_order_separators,
                 heading_hierarchy_options=HeadingHierarchyOptions(
                     enabled=heading_hierarchy
