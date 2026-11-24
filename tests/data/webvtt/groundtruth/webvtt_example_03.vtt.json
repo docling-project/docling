@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "name": "webvtt_example_03",
   "origin": {
     "mimetype": "text/vtt",
@@ -18,55 +18,7 @@
     "self_ref": "#/body",
     "children": [
       {
-        "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
-      },
-      {
-        "$ref": "#/texts/2"
-      },
-      {
-        "$ref": "#/texts/3"
-      },
-      {
-        "$ref": "#/texts/4"
-      },
-      {
-        "$ref": "#/texts/5"
-      },
-      {
-        "$ref": "#/texts/6"
-      },
-      {
-        "$ref": "#/texts/7"
-      },
-      {
-        "$ref": "#/texts/8"
-      },
-      {
-        "$ref": "#/texts/9"
-      },
-      {
-        "$ref": "#/texts/10"
-      },
-      {
-        "$ref": "#/texts/11"
-      },
-      {
-        "$ref": "#/texts/12"
-      },
-      {
-        "$ref": "#/texts/13"
-      },
-      {
-        "$ref": "#/texts/14"
-      },
-      {
-        "$ref": "#/texts/15"
-      },
-      {
-        "$ref": "#/texts/16"
+        "$ref": "#/tracks/0"
       }
     ],
     "content_layer": "body",
@@ -78,7 +30,7 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -99,7 +51,7 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -120,7 +72,7 @@
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -141,7 +93,7 @@
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -161,7 +113,7 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -182,7 +134,7 @@
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -203,7 +155,7 @@
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -224,7 +176,7 @@
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -245,7 +197,7 @@
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -266,7 +218,7 @@
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -287,7 +239,7 @@
     {
       "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -308,7 +260,7 @@
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -329,7 +281,7 @@
     {
       "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -350,7 +302,7 @@
     {
       "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -371,7 +323,7 @@
     {
       "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -392,7 +344,7 @@
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -413,7 +365,7 @@
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/tracks/0"
       },
       "children": [],
       "content_layer": "body",
@@ -436,5 +388,72 @@
   "tables": [],
   "key_value_items": [],
   "form_items": [],
+  "tracks": [
+    {
+      "self_ref": "#/tracks/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
+        },
+        {
+          "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/16"
+        }
+      ],
+      "content_layer": "body",
+      "label": "track",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": []
+    }
+  ],
   "pages": {}
 }

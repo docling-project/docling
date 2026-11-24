@@ -57,21 +57,26 @@ def test_format_rules_give_the_format_label(
     title: str, path: str, expected: set[str]
 ) -> None:
     labels = set(topics.deterministic_topics(title, [path] if path else []))
-    assert labels - {"bug"} == expected
+    assert labels - {"bug", "chore"} == expected
 
 
 def test_documentation_label_only_when_all_source_changes_are_docs() -> None:
     assert topics.deterministic_topics(
         "chore: update guide", ["docs/usage.md", "README.md"]
-    ) == ["documentation"]
+    ) == ["chore", "documentation"]
     assert "documentation" not in topics.deterministic_topics(
         "chore: update", ["docs/usage.md", "docling/cli/main.py"]
     )
 
 
 def test_unknown_title_types_and_scopes_add_nothing() -> None:
-    assert topics.deterministic_topics("chore(release): 2.0", []) == []
+    assert topics.deterministic_topics("release(version): 2.0", []) == []
     assert topics.deterministic_topics("Not a conventional title", []) == []
+
+
+@pytest.mark.parametrize("kind", ["chore", "ci", "build", "refactor", "style", "test"])
+def test_maintenance_titles_use_the_chore_label(kind: str) -> None:
+    assert topics.deterministic_topics(f"{kind}: update tooling", []) == ["chore"]
 
 
 def test_model_topics_are_validated_and_limited() -> None:

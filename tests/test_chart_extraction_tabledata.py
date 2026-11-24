@@ -4,28 +4,39 @@
 """Regression tests for chart extraction presets and CSV table semantics."""
 
 import sys
+from io import BytesIO
 from types import ModuleType
 
 import pandas as pd
 import pytest
 from docling_core.types.doc import (
+    BoundingBox,
+    CoordOrigin,
     DescriptionMetaField,
     DoclingDocument,
     PictureClassificationMetaField,
     PictureMeta,
+    ProvenanceItem,
+    Size,
     TableData,
     TabularChartMetaField,
 )
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
 
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.base_models import (
+    InputFormat,
+    ItemAndImageEnrichmentElement,
+    Page,
+)
 from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
     ChartExtractionVlmEngineOptions,
 )
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
     MlxVlmEngineOptions,
@@ -305,3 +316,44 @@ def test_legacy_chart_preset_uses_its_csv_prompt_and_parser() -> None:
     assert engine.prompts == [options.model_spec.prompt]
     assert picture.meta.tabular_chart is not None
     assert picture.meta.tabular_chart.chart_data.num_rows == 2
+
+
+def test_chart_crop_uses_configured_scale() -> None:
+    """Without a stored picture image, charts are cropped at the preset scale."""
+    buf = BytesIO()
+    Image.new("RGB", (200, 100), "white").save(buf, format="PNG")
+    buf.seek(0)
+    in_doc = InputDocument(
+        path_or_stream=buf,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        filename="page.png",
+    )
+    page = Page(page_no=1, size=Size(width=200, height=100))
+    page._backend = in_doc._backend.load_page(0)
+    conv_res = ConversionResult(input=in_doc, pages=[page])
+    picture = conv_res.document.add_picture(
+        prov=ProvenanceItem(
+            page_no=1,
+            bbox=BoundingBox(l=20, t=10, r=120, b=60, coord_origin=CoordOrigin.TOPLEFT),
+            charspan=(0, 0),
+        )
+    )
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[PictureClassificationPrediction(class_name="bar_chart")]
+        )
+    )
+    model = ChartExtractionVlmEngineModel(
+        enabled=False,
+        artifacts_path=None,
+        options=ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4"),
+        accelerator_options=AcceleratorOptions(),
+    )
+    model.enabled = True
+
+    element = model.prepare_element(conv_res, picture)
+
+    assert element is not None
+    # 100 x 50 pt chart at the default scale 4
+    assert element.image.size == (400, 200)

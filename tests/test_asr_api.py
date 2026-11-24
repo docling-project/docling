@@ -200,7 +200,7 @@ class TestApiAsrConversion:
         assert request["path"] == "/v1/audio/transcriptions"
         assert request["authorization"] == "Bearer secret"
         assert request["file"]["filename"] == "sample_10s.mp3"
-        assert request["file"]["content_type"] == "audio/mp3"
+        assert request["file"]["content_type"] == "audio/mpeg"
         assert request["file"]["size"] == SAMPLE_AUDIO.stat().st_size
         assert request["fields"] == {
             "response_format": ["verbose_json"],

@@ -56,7 +56,9 @@ class EnvironmentHandlerMixin:
         _tikz_futures: list[Future[Any]]
         _tikz_untrusted_warned: bool
         _suppress_image_path_caption: bool
+        _input_stack: set[str]
 
+        def _read_input(self, node: Any) -> tuple[str, list] | None: ...
         def _process_nodes(
             self,
             nodes: Any,
@@ -357,7 +359,7 @@ class EnvironmentHandlerMixin:
         items: list[list] = []
 
         if node.nodelist is not None:
-            for n in node.nodelist:
+            for n in self._splice_list_inputs(node.nodelist):
                 if isinstance(n, LatexMacroNode) and n.macroname == "item":
                     items.append([n] if n.nodeargd and n.nodeargd.argnlist else [])
                 elif items:
@@ -383,6 +385,30 @@ class EnvironmentHandlerMixin:
             self._process_list_item(
                 item_nodes, doc, list_group, formatting, enumerated=enumerated
             )
+
+    def _splice_list_inputs(self, nodes) -> list:
+        """Replace each ``\\input`` in a list body with the nodes of its file.
+
+        ``\\input`` is plain text inclusion in LaTeX, so an ``\\item`` in the
+        file starts a new item of the enclosing list.
+        """
+        spliced: list = []
+        for n in nodes:
+            if not (
+                isinstance(n, LatexMacroNode) and n.macroname in ("input", "include")
+            ):
+                spliced.append(n)
+                continue
+            loaded = self._read_input(n)
+            if loaded is None:
+                continue
+            resolved, sub_nodes = loaded
+            self._input_stack.add(resolved)
+            try:
+                spliced.extend(self._splice_list_inputs(sub_nodes))
+            finally:
+                self._input_stack.discard(resolved)
+        return spliced
 
     def _process_list_item(
         self,

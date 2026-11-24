@@ -135,6 +135,7 @@ def test_remote_converts_local_file(tmp_path, _patch_client):
     assert client.health_called
     # Local files are sent as Path objects.
     assert client.captured_sources == [source]
+    assert "from_formats" not in client.captured_options.model_fields_set
 
 
 @pytest.mark.parametrize(

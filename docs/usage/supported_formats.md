@@ -37,13 +37,34 @@ unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
 
+In Markdown prose, inline HTML `<br>` tags become hard line breaks in paragraphs,
+headings, and list items. Code spans, code blocks, and escaped tags stay literal.
+The document representation keeps heading line breaks; Markdown export normalizes
+them to spaces in plain headings. Headings with formatted inline content follow
+the existing Markdown hard-break serialization. Inline HTML inside Markdown table
+cells follows separate handling.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
+
+Video and audio on PPTX and ODP slides become tracks, with their poster frame or
+icon as the cover. The `video` or `audio` of the track gives the path of the media
+file inside the package, or the link of a linked file. Set `keep_media=True` in the
+pipeline options to hold the media file in the track, and `do_media_conversion=True`
+to also transcribe it (`--keep-media` and `--convert-media` on the CLI)
+(see [Video and audio in slides](processing_audio_media.md#video-and-audio-in-slides)).
 
 Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
 text in `<footer>` elements is retained in the furniture content layer. Default
 Markdown exports omit this layer; include `ContentLayer.FURNITURE` in
 `included_content_layers` to export it.
+
+Email conversion also reads the calendar parts of a message, such as meeting
+invitations, cancellations and attached `.ics` files. Their events are added under
+a "Calendar" heading after the body, with the same fields as iCalendar input. An
+event that the message carries both inline and as an attachment is added once. An
+event description that repeats the body text, as Outlook writes it, is left out. Set
+`EmailBackendOptions.parse_calendar_invitations` to `False` to leave them out.
 
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula

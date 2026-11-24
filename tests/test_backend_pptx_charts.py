@@ -390,3 +390,64 @@ def test_text_axis_categories_follow_the_shown_number_format(
 def test_serial_to_iso(text: str, date1904: bool, expected: str):
     """Excel serials map to ISO dates in both date systems; other text stays."""
     assert _serial_to_iso(text, date1904) == expected
+
+
+def _set_point_counts(plot: Any, count: int) -> None:
+    from pptx.oxml.ns import qn
+
+    for point_count in plot.iter(qn("c:ptCount")):
+        point_count.set("val", str(count))
+
+
+def _add_value_point(plot: Any, index: int, value: str) -> None:
+    from lxml import etree
+    from pptx.oxml.ns import qn
+
+    num_cache = plot.find(f"{qn('c:ser')}/{qn('c:val')}/{qn('c:numRef')}")
+    num_cache = num_cache.find(qn("c:numCache"))
+    point = etree.SubElement(num_cache, qn("c:pt"), idx=str(index))
+    etree.SubElement(point, qn("c:v")).text = value
+
+
+def test_large_declared_point_count_adds_no_rows(tmp_path: Path):
+    """The chart table follows the cached points, not the declared ``c:ptCount``.
+
+    Before, a list entry was made for each declared category and value, so a
+    small chart part could use much time and memory. Now a point at an index
+    past the table size limit is dropped as well.
+    """
+    prs, plot = _single_plot_deck("barChart")
+    _set_point_counts(plot, 10**11)
+    _add_value_point(plot, 10**9, "99")
+    path = tmp_path / "huge_point_count.pptx"
+    prs.save(path)
+
+    assert _grid(_only_chart(path)) == [
+        ["", "2026"],
+        ["Q1", "10"],
+        ["Q2", "20"],
+        ["Q3", "30"],
+    ]
+
+
+def test_sparse_points_stay_aligned_with_the_categories(tmp_path: Path):
+    """A value at a higher index than the categories gets its own row.
+
+    The indexes without a cached point give empty cells, so the values stay
+    in line with the categories.
+    """
+    prs, plot = _single_plot_deck("barChart")
+    _set_point_counts(plot, 6)
+    _add_value_point(plot, 5, "60")
+    path = tmp_path / "sparse_points.pptx"
+    prs.save(path)
+
+    assert _grid(_only_chart(path)) == [
+        ["", "2026"],
+        ["Q1", "10"],
+        ["Q2", "20"],
+        ["Q3", "30"],
+        ["", ""],
+        ["", ""],
+        ["", "60"],
+    ]

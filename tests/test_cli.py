@@ -9,7 +9,7 @@ import subprocess
 import sys
 import zipfile
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any
 
 import pytest
@@ -262,6 +262,42 @@ def test_cli_exports_dclx(tmp_path):
     with zipfile.ZipFile(converted) as archive:
         payload = b"".join(archive.read(name) for name in archive.namelist())
     assert b"DCLX CLI" in payload
+
+
+@pytest.mark.parametrize("keep_source", [True, False])
+def test_cli_exports_dclx_with_source(tmp_path, keep_source):
+    source = tmp_path / "input.md"
+    source.write_text("# DCLX CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    args = [str(source), "--from", "md", "--to", "dclx", "--output", str(output)]
+    if keep_source:
+        args.append("--keep-source")
+    result = runner.invoke(app, args)
+
+    assert result.exit_code == 0
+    with zipfile.ZipFile(output / "input.dclx") as archive:
+        names = archive.namelist()
+        if keep_source:
+            assert archive.read("source.md") == source.read_bytes()
+            assert b'name="input.md"' in archive.read("source-metadata.xml")
+            assert b"text/markdown" in archive.read("[Content_Types].xml")
+        else:
+            assert not [name for name in names if name.startswith("source")]
+
+
+def test_archive_source_needs_a_local_file(tmp_path, caplog):
+    from types import SimpleNamespace
+
+    from docling.cli.main import _archive_source
+
+    local = tmp_path / "input.md"
+    local.write_text("# Hi", encoding="utf-8")
+    assert _archive_source(SimpleNamespace(input=SimpleNamespace(file=local))) == local
+    # a stream input only has a name, even when a file of that name exists
+    stream = SimpleNamespace(input=SimpleNamespace(file=PurePath(str(local))))
+    assert _archive_source(stream) is None
+    assert "not a local file" in caplog.text
 
 
 def test_cli_exports_to_exact_output_file(tmp_path):
@@ -680,6 +716,33 @@ def test_cli_default_pipeline_stays_standard_without_model(
     assert (
         captured["format_options"][InputFormat.PDF].pipeline_cls is StandardPdfPipeline
     )
+
+
+@pytest.mark.parametrize("convert_media", [False, True])
+def test_cli_convert_media_transcribes_slide_media(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    convert_media: bool,
+) -> None:
+    """--convert-media transcribes slide media with the model of --asr-model."""
+    source = "./tests/data/pptx/sources/powerpoint_sample.pptx"
+    args = [source, "--asr-model", "whisper_base", "--output", str(tmp_path)]
+    if convert_media:
+        args.append("--convert-media")
+    result, captured = _invoke_cli_with_fake_converter(monkeypatch, args)
+
+    assert result.exit_code == 0, result.output
+    format_options = captured["format_options"]
+    for input_format in (InputFormat.PPTX, InputFormat.ODP):
+        options = format_options[input_format].pipeline_options
+        assert options.do_media_conversion is convert_media
+        if convert_media:
+            assert options.media_asr_options == (
+                format_options[InputFormat.AUDIO].pipeline_options.asr_options
+            )
+    # without --convert-media, --asr-model is not used for a presentation
+    assert ("--asr-model has no effect" in caplog.text) is not convert_media
 
 
 def test_cli_asr_pipeline_accepts_only_audio_and_video(

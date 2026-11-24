@@ -11,12 +11,14 @@ decoding stay out of the default pytest lane.
 from __future__ import annotations
 
 import builtins
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 from docling.utils.speaker_diarization import (
     DiarizationResult,
     SpeakerSegment,
+    _import_webrtcvad,
     assign_speakers,
     diarize,
 )
@@ -143,3 +145,27 @@ def test_diarize_returns_empty_result_when_dependencies_missing(
     assert result.segments == []
     assert result.num_speakers == 0
     assert result.speaker_ids == []
+
+
+def test_webrtcvad_imports_without_pkg_resources(monkeypatch, tmp_path: Path) -> None:
+    # webrtcvad 2.0.10 starts like this; setuptools 82+ has no pkg_resources.
+    (tmp_path / "webrtcvad.py").write_text(
+        "import pkg_resources\n"
+        "__version__ = pkg_resources.get_distribution('webrtcvad').version\n"
+    )
+    dist_info = tmp_path / "webrtcvad-2.0.10.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: webrtcvad\nVersion: 2.0.10\n"
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setitem(sys.modules, "pkg_resources", None)
+    monkeypatch.delitem(sys.modules, "webrtcvad", raising=False)
+
+    try:
+        _import_webrtcvad()
+
+        assert sys.modules["webrtcvad"].__version__ == "2.0.10"
+        assert sys.modules.get("pkg_resources") is None
+    finally:
+        sys.modules.pop("webrtcvad", None)
