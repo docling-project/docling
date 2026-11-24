@@ -497,18 +497,20 @@ def test_v1_predict_tables_keeps_a_complete_structure(conv_res, caplog):
     assert not caplog.records
 
 
-def test_v1_predict_tables_does_not_decode_a_table_without_words(conv_res, monkeypatch):
+@pytest.mark.parametrize(
+    ("do_cell_matching", "otsl_seq", "shape", "children_text"),
+    [
+        pytest.param(True, [], (0, 0), [["Total"]], id="cell-matching"),
+        pytest.param(False, COMPLETE_SEQ, (2, 2), [], id="no-cell-matching"),
+    ],
+)
+def test_v1_predict_tables_decodes_a_table_without_words_only_without_cell_matching(
+    conv_res, do_cell_matching, otsl_seq, shape, children_text
+):
     """With cell matching, the cells come only from the words in the table.
     A table without words is thus empty, and its structure is not decoded."""
     model = _v1_model(COMPLETE_SEQ, (2, 2), [])
-    decode = model.tf_predictor.multi_table_predict
-    decoded = []
-
-    def counted_decode(page_input, table_bboxes, do_matching=True):
-        decoded.append(table_bboxes)
-        return decode(page_input, table_bboxes, do_matching=do_matching)
-
-    monkeypatch.setattr(model.tf_predictor, "multi_table_predict", counted_decode)
+    model.do_cell_matching = do_cell_matching
     # Two thirds of the line lie inside the table box, and no cluster holds it.
     edge_line = _text_cell(6, BoundingBox(l=150, t=280, r=350, b=310), "Total")
     table = _table_cluster()
@@ -517,7 +519,8 @@ def test_v1_predict_tables_does_not_decode_a_table_without_words(conv_res, monke
     (prediction,) = model.predict_tables(conv_res, [page])
 
     tbl = prediction.table_map[table.id]
-    assert decoded == []
-    assert (tbl.num_rows, tbl.num_cols, tbl.table_cells) == (0, 0, [])
-    (child,) = table.children
-    assert [cell.text for cell in child.cells] == ["Total"]
+    assert tbl.otsl_seq == otsl_seq
+    assert (tbl.num_rows, tbl.num_cols, tbl.table_cells) == (*shape, [])
+    assert [
+        [cell.text for cell in child.cells] for child in table.children
+    ] == children_text
