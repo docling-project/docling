@@ -100,7 +100,15 @@ class _BodyParagraph:
 
 
 def _get_param(part: Message, name: str) -> str:
-    """Return a lower-case content-type parameter, also when RFC 2231 encoded."""
+    """Return a lowercase content-type parameter, also when RFC 2231 encoded.
+
+    Args:
+        part: The message part.
+        name: The parameter name.
+
+    Returns:
+        The lowercase parameter value, or an empty string if it is not set.
+    """
     return collapse_rfc2231_value(part.get_param(name, "")).lower()
 
 
@@ -134,12 +142,20 @@ def _get_plain_text_flows(message: Message) -> list[bool | None]:
 
 
 def _unflow(text: str, delsp: bool) -> str:
-    """Join the soft line breaks of a `format=flowed` text (RFC 3676, 4.2).
+    """Join the soft line breaks of a ``format=flowed`` text (RFC 3676, 4.2).
 
     A line ending in a space continues on the next line with the same quote
-    depth. With `delsp=yes`, used for languages written without spaces, that
-    space is not part of the text. The signature separator `-- ` is never
-    flowed.
+    depth. An empty line and the signature separator ``-- `` end a paragraph.
+    The quote marks of a quoted line are normalized to ``>`` followed by one
+    space.
+
+    Args:
+        text: The decoded text of the part.
+        delsp: Whether the part has ``delsp=yes``, so that the space before a
+            soft line break is not part of the text.
+
+    Returns:
+        The text with the soft line breaks joined.
     """
     lines: list[str] = []
     pending: list[str] = []
@@ -625,12 +641,11 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             if len(flows) != len(self.mail.text_plain):
                 flows = [None] * len(self.mail.text_plain)
             paragraphs: list[_BodyParagraph] = []
-            for part, delsp in zip(self.mail.text_plain, flows):
-                if delsp is not None:
-                    part = _unflow(part, delsp)
+            for raw_text, delsp in zip(self.mail.text_plain, flows):
+                text = raw_text if delsp is None else _unflow(raw_text, delsp)
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-                    for paragraph in self._split_paragraphs(part)
+                    for paragraph in self._split_paragraphs(text)
                 )
             if paragraphs:
                 return paragraphs
