@@ -1300,7 +1300,9 @@ def test_msg_strips_trailing_nul_from_properties_and_body():
     subject_mock = PropertyMock(return_value="Subject With Null\x00")
     sender_mock = PropertyMock(return_value='"Alice\x00" <alice@example.com\x00>')
     body_mock = PropertyMock(return_value="Body text with trailing null\x00")
-    html_body_mock = PropertyMock(return_value="<p>HTML body with trailing null\x00</p>")
+    html_body_mock = PropertyMock(
+        return_value="<p>HTML body with trailing null\x00</p>"
+    )
     recipients_mock = PropertyMock(return_value=[recipient_mock])
     attachments_mock = PropertyMock(return_value=[attachment_mock])
 
