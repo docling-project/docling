@@ -13,7 +13,7 @@ from html import unescape
 from html.entities import html5
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Literal, cast
+from typing import Literal, cast
 
 import yaml
 from docling_core.types.doc import (
@@ -33,12 +33,13 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
-from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
+from pydantic import AnyUrl, BaseModel, Field
 from typing_extensions import Annotated, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.hyperlink import parse_hyperlink
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.markdown_html import (
     MarkdownHTMLDocumentBackend,
@@ -238,9 +239,6 @@ def _strip_frontmatter(text: str) -> str:
     return text[match.end() :] if isinstance(meta, dict) else text
 
 
-_LINK_DEST: Final = TypeAdapter(AnyUrl | Path | None)
-
-
 def _text_run_piece(node: marko.inline.RawText | marko.inline.Literal) -> str:
     """Return the final text of a run, with every `&` kept as an entity.
 
@@ -346,9 +344,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         Returns:
             An `AnyUrl` or `Path` instance, or `None` when the destination
-            cannot be parsed.
+            is empty or is a malformed URL.
         """
-        return _LINK_DEST.validate_python(dest)
+        return parse_hyperlink(dest)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
         pattern = r"_+"
