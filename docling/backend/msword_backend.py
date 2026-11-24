@@ -2110,6 +2110,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         template is kept: ``1.1.%2`` gives ``1.1.3`` for the third heading of
         level 1.
 
+        A level without ``w:lvlText``, or with an empty one, shows no number. A
+        template without ``%N`` is shown as it is.
+
         Returns ``None`` for a template that only joins the decimal counters of
         level 0 to ``ilvl``, such as ``%1.%2.``. The caller then writes the
         counters joined with dots (``1.2``).
@@ -2120,15 +2123,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         lvl_text_element = lvl_element.find("w:lvlText", namespaces=_OOXML_NAMESPACES)
         lvl_text = (
             lvl_text_element.get(self.XML_KEY) if lvl_text_element is not None else None
-        )
-        if not lvl_text:
-            return None
+        ) or ""
 
         referenced_levels = [
             int(digit) - 1 for digit in _LEVEL_PLACEHOLDER.findall(lvl_text)
         ]
-        if not referenced_levels:
-            return None
         num_fmts = {
             level: self._get_level_num_fmt(numid, level)
             for level in set(referenced_levels)

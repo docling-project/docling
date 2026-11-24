@@ -18,14 +18,14 @@ _NUM_ID = 91
 
 
 def _numbered_headings_docx(
-    levels: list[tuple[str, str]],
+    levels: list[tuple[str, str | None]],
     headings: list[tuple[str, int]],
     starts: dict[int, int] | None = None,
 ):
     """Build a document whose heading styles use one numbering definition.
 
     ``levels`` gives the ``(w:numFmt, w:lvlText)`` of each numbering level, from
-    level 0. The style ``Heading N`` uses level ``N - 1``, as in a Word document
+    level 0. A ``w:lvlText`` of ``None`` leaves out the element. The style ``Heading N`` uses level ``N - 1``, as in a Word document
     with numbered headings. ``starts`` maps a level to its ``w:start``, which is
     1 by default. ``headings`` are ``(text, heading level)`` pairs. A heading
     level of 0 gives a paragraph without a heading style.
@@ -35,7 +35,9 @@ def _numbered_headings_docx(
     numbering = document.part.numbering_part.element
     level_xml = "".join(
         f'<w:lvl w:ilvl="{ilvl}"><w:start w:val="{starts.get(ilvl, 1)}"/>'
-        f'<w:numFmt w:val="{num_fmt}"/><w:lvlText w:val="{lvl_text}"/></w:lvl>'
+        f'<w:numFmt w:val="{num_fmt}"/>'
+        + ("" if lvl_text is None else f'<w:lvlText w:val="{lvl_text}"/>')
+        + "</w:lvl>"
         for ilvl, (num_fmt, lvl_text) in enumerate(levels)
     )
     # All w:abstractNum elements come before the first w:num.
@@ -251,6 +253,30 @@ def test_heading_number_starts_a_skipped_level_again_after_its_parent(tmp_path):
         "2 Engine",
         "1.1 Wires",
     ]
+
+
+def test_heading_template_without_a_placeholder_is_the_heading_number(tmp_path):
+    """A template without %N is shown as it is, and an empty one shows no number."""
+    document = _numbered_headings_docx(
+        [("decimal", "Annex"), ("decimal", "")],
+        [("Deck", 1), ("Mooring", 2), ("Engine", 1)],
+    )
+
+    doc = _convert_docx(document, tmp_path)
+
+    assert _heading_texts(doc) == ["Annex Deck", "Mooring", "Annex Engine"]
+
+
+def test_heading_level_without_a_template_shows_no_number(tmp_path):
+    """A level without w:lvlText shows no number."""
+    document = _numbered_headings_docx(
+        [("decimal", None)],
+        [("Deck", 1), ("Engine", 1)],
+    )
+
+    doc = _convert_docx(document, tmp_path)
+
+    assert _heading_texts(doc) == ["Deck", "Engine"]
 
 
 def test_plain_decimal_template_gives_the_counters_joined_with_dots(tmp_path):
