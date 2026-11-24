@@ -372,15 +372,16 @@ doc_converter = DocumentConverter(
 Set `generate_page_images=False` to skip rendering. `parser_threads` configures
 docling-parse independently of model-inference `accelerator_options.num_threads`.
 
-If the backend ends before returning all requested pages, the native pipeline
-logs a warning and records an error for each missing page. If any pages were
-converted, the result is `PARTIAL_SUCCESS`. If none were converted, the result is
-`FAILURE`. Use `--fail-on partial` to make the CLI exit with code 1 for a partial conversion.
-
 ```sh
 docling --pipeline native --from pdf FILE
 docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
+
+If the backend ends before returning all requested pages, the native pipeline
+logs a warning and records an error for each missing page. If any pages were
+converted, the result is `PARTIAL_SUCCESS`. If none were converted, the result
+is `FAILURE`. Use `--fail-on partial` to make the CLI exit with code 1 for a
+partial conversion.
 
 
 ### Recover PDF heading levels
