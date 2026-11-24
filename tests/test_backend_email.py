@@ -1273,3 +1273,50 @@ def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     for payload in meaningful:
         assert payload not in rfc822
         assert b64encode(payload) not in flat
+
+
+def test_msg_strips_trailing_nul_from_properties_and_body():
+    """Verify that trailing NUL characters (\x00) from 8-bit .msg streams are stripped.
+
+    Non-Unicode .msg files can have PtypString8 streams ending with null terminators.
+    Ensure subject, sender, recipients, attachments, and bodies have \x00 stripped
+    so that From: header and text items do not leak null bytes. See #5535.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    subject_mock = PropertyMock(return_value="Subject With Null\x00")
+    sender_mock = PropertyMock(return_value='"Alice\x00" <alice@example.com\x00>')
+    body_mock = PropertyMock(return_value="Body text with trailing null\x00")
+
+    with (
+        patch.object(OxMsgMessage, "subject", subject_mock),
+        patch.object(OxMsgMessage, "sender", sender_mock),
+        patch.object(OxMsgMessage, "body", body_mock),
+    ):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="test_nul.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    doc = backend.convert()
+    markdown = doc.export_to_markdown()
+
+    # Verify no null character survives in text items or markdown
+    for item in doc.texts:
+        assert "\x00" not in item.text
+    assert "\x00" not in markdown
+    assert "From:" in markdown
+    assert "Alice" in markdown
+    assert "Subject With Null" in markdown
+    assert "Body text with trailing null" in markdown
