@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage, Message
-from email.utils import format_datetime, formataddr
+from email.utils import collapse_rfc2231_value, format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
 
@@ -99,6 +99,11 @@ class _BodyParagraph:
     content_layer: ContentLayer
 
 
+def _get_param(part: Message, name: str) -> str:
+    """Return a lower-case content-type parameter, also when RFC 2231 encoded."""
+    return collapse_rfc2231_value(part.get_param(name, "")).lower()
+
+
 def _get_plain_text_flows(message: Message) -> list[bool | None]:
     """Describe the flow of each plain-text body part, in the order of ``text_plain``.
 
@@ -121,8 +126,8 @@ def _get_plain_text_flows(message: Message) -> list[bool | None]:
             part.get_filename() is not None and disposition != "inline"
         ):
             continue
-        if str(part.get_param("format", "")).lower() == "flowed":
-            flows.append(str(part.get_param("delsp", "")).lower() == "yes")
+        if _get_param(part, "format") == "flowed":
+            flows.append(_get_param(part, "delsp") == "yes")
         else:
             flows.append(None)
     return flows

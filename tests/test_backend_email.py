@@ -160,6 +160,11 @@ This is a second paragraph.
             ["Hi Bob,", "This is a long line that was wrapped."],
         ),
         (
+            "; delsp*=us-ascii''YES",
+            b"Wrapped \nline.\n",
+            ["Wrappedline."],
+        ),
+        (
             "",
             b"Thanks \n-- \nAlice\n",
             ["Thanks \n-- \nAlice"],
