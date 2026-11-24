@@ -3248,6 +3248,42 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("properties", "expected"),
+    [
+        ("", r"\int_{0}^{1}x"),
+        ('<m:naryPr><m:limLoc m:val="subSup"/></m:naryPr>', r"\int_{0}^{1}x"),
+        (
+            '<m:naryPr><m:chr m:val="\N{N-ARY SUMMATION}"/></m:naryPr>',
+            r"\sum_{0}^{1}x",
+        ),
+    ],
+    ids=["no-properties", "no-operator-character", "sum"],
+)
+def test_equation_nary_defaults_to_integral(tmp_path, properties, expected):
+    """An n-ary operator with no operator character is an integral."""
+    content = (
+        "<m:sub><m:r><m:t>0</m:t></m:r></m:sub>"
+        "<m:sup><m:r><m:t>1</m:t></m:r></m:sup>"
+        "<m:e><m:r><m:t>x</m:t></m:r></m:e>"
+    )
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:nary>{properties}{content}</m:nary></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / "equation_nary.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
+@pytest.mark.parametrize(
     ("tag", "expected"),
     [
         ("d", r"\left(x\right)"),
