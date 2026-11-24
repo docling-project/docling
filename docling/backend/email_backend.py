@@ -122,23 +122,34 @@ def _unflow(text: str, delsp: bool) -> str:
     space is not part of the text. The signature separator `-- ` is never
     flowed.
     """
-    lines: list[tuple[str, int]] = []
-    flowing = False
+    lines: list[str] = []
+    pending: list[str] = []
+    pending_depth = 0
     for line in re.sub(r"\r\n|\r", "\n", text).split("\n"):
         stripped = line.lstrip(">")
         depth = len(line) - len(stripped)
         if stripped.startswith(" "):
             stripped = stripped[1:]
-        prefix = ">" * depth + " " if depth else ""
-        joins = flowing and lines and lines[-1][1] == depth
-        if joins and stripped and stripped != "-- ":
-            lines[-1] = (lines[-1][0] + stripped, depth)
-        else:
-            lines.append((prefix + stripped, depth))
+        joins = (
+            bool(pending)
+            and depth == pending_depth
+            and stripped != ""
+            and stripped != "-- "
+        )
+        if pending and not joins:
+            lines.append("".join(pending))
+            pending = []
+        piece = stripped if joins else ">" * depth + (" " if depth else "") + stripped
         flowing = stripped.endswith(" ") and stripped != "-- "
-        if flowing and delsp:
-            lines[-1] = (lines[-1][0][:-1], depth)
-    return "\n".join(line for line, _ in lines)
+        if flowing:
+            pending.append(piece[:-1] if delsp else piece)
+            pending_depth = depth
+        else:
+            lines.append("".join([*pending, piece]))
+            pending = []
+    if pending:
+        lines.append("".join(pending))
+    return "\n".join(lines)
 
 
 def _is_calendar_part(part: Message) -> bool:
