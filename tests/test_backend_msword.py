@@ -2081,6 +2081,31 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     assert formatting["Plain text"].bold is False
 
 
+def test_double_strikethrough_run_is_strikethrough(tmp_path):
+    """A run with `<w:dstrike>` is struck through, as a run with `<w:strike>` is."""
+    doc = Document()
+    para = doc.add_paragraph()
+    para.add_run("Plain ")
+    para.add_run("single").font.strike = True
+    para.add_run(" and ")
+    para.add_run("double").font.double_strike = True
+
+    docx_path = tmp_path / "double_strike.docx"
+    doc.save(docx_path)
+
+    doc = _convert(docx_path)
+    struck = [
+        item.text
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+        and item.formatting is not None
+        and item.formatting.strikethrough
+    ]
+
+    assert struck == ["single", "double"]
+    assert doc.export_to_markdown() == "Plain ~~single~~ and ~~double~~"
+
+
 def test_cyclic_based_on_chain_does_not_hang(tmp_path):
     """A ``basedOn`` cycle between paragraph styles must not stall the conversion.
 
