@@ -3380,6 +3380,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._last_child_item(doc, self.parents[self._get_level() - 1]), CodeItem
         )
         p_style_id, p_level = self._get_label_and_level(paragraph)
+        if not text and "Heading" in p_style_id:
+            return elem_ref
+
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
         if numid == 0:
@@ -3582,14 +3585,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
         self._update_history(p_style_id, p_level, numid, ilevel)
+        self._record_paragraph_items(para_element, elem_ref, comment_ids)
+        return elem_ref
 
-        # Store mapping of paragraph element to created items for comment linking
+    def _record_paragraph_items(
+        self,
+        para_element: BaseOxmlElement,
+        elem_ref: list[RefItem],
+        comment_ids: set[str],
+    ) -> None:
+        """Record created items and comment links for a paragraph."""
         if elem_ref:
             self.paragraph_to_items[para_element] = elem_ref
             if comment_ids:
                 self.paragraph_comment_map[para_element] = list(comment_ids)
-
-        return elem_ref
 
     def _add_body_text_items(
         self,
