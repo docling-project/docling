@@ -565,7 +565,7 @@ def test_latex_description_list_edge_cases():
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
     assert [item.text for item in list_items] == [
         "Term: Bold term definition",
-        "Dash bullet",
+        "\u2013: Dash bullet",
         "Plain item",
         "Empty term definition",
         "Spaced: Multiple spaces after term",

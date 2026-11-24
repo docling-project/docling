@@ -34,9 +34,9 @@ item-0 at level 0: unspecified: group _root_
   item-31 at level 1: list: group list
     item-32 at level 2: list_item: Knowledge: (1) On educational be ... strength in Chinese factual knowledge.
     item-33 at level 2: list_item: Code, Math, and Reasoning: (1) D ... s across diverse technical benchmarks.
-  item-34 at level 1: text: In the remainder of this paper,  ... re research (Section[sec:conclusion]).
+  item-34 at level 1: text: In the remainder of this paper,  ... e research (Section [sec:conclusion]).
   item-35 at level 1: section_header: Architecture
-  item-36 at level 1: text: We first introduce the basic arc ... to the settings of DeepSeek-V2[dsvii].
+  item-36 at level 1: text: We first introduce the basic arc ... o the settings of DeepSeek-V2 [dsvii].
   item-37 at level 1: section: group figure
     item-38 at level 2: picture
       item-38 at level 3: caption: Illustration of the basic architecture of DeepSeek-V3. Following DeepSeek-V2, we adopt MLA and DeepSeekMoE for efficient inference and economical training.
@@ -72,7 +72,7 @@ item-0 at level 0: unspecified: group _root_
       item-66 at level 3: formula: W^{UK},W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}
       item-67 at level 3: text:  are the up-projection matrices for keys and values, respectively; 
       item-68 at level 3: formula: W^{KR} \in \mathbb{R}^{d_h^R \times d}
-      item-69 at level 3: text:  is the matrix used to produce t ... nal Embedding (RoPE)[su2024roformer]; 
+      item-69 at level 3: text:  is the matrix used to produce t ... al Embedding (RoPE) [su2024roformer]; 
       item-70 at level 3: formula: \operatorname{RoPE}(\cdot)
       item-71 at level 3: text:  denotes the operation that applies RoPE matrices; and 
       item-72 at level 3: formula: [\cdot;\cdot]
@@ -80,7 +80,7 @@ item-0 at level 0: unspecified: group _root_
       item-74 at level 3: formula: \color{blue} \mathbf{c}_{t}^{KV}
       item-75 at level 3: text:  and 
       item-76 at level 3: formula: \color{blue}\mathbf{k}_{t}^{R}
-      item-77 at level 3: text: ) need to be cached during gener ... lti-Head Attention (MHA)[transformer].
+      item-77 at level 3: text: ) need to be cached during gener ... ti-Head Attention (MHA) [transformer].
   item-78 at level 1: text: For the attention queries, we al ... the activation memory during training:
   item-79 at level 1: formula: \begin{align}
     \mathbf{c}_{t} ... }; \mathbf{q}_{t, i}^{R}],
@@ -330,8 +330,8 @@ item-0 at level 0: unspecified: group _root_
   item-302 at level 1: section_header: Compute Clusters
   item-303 at level 1: text: DeepSeek-V3 is trained on a clus ... utilized to facilitate communications.
   item-304 at level 1: section_header: Training Framework
-  item-305 at level 1: text: The training of DeepSeek-V3 is s ... nd ZeRO-1 Data Parallelism (DP)[zero].
-  item-306 at level 1: text: In order to facilitate efficient ... t using costly Tensor Parallelism(TP).
+  item-305 at level 1: text: The training of DeepSeek-V3 is s ... d ZeRO-1 Data Parallelism (DP) [zero].
+  item-306 at level 1: text: In order to facilitate efficient ...  using costly Tensor Parallelism (TP).
   item-307 at level 1: section_header: DualPipe and Computation-Communication Overlap
   item-308 at level 1: section: group figure
     item-309 at level 2: picture
@@ -423,7 +423,7 @@ item-0 at level 0: unspecified: group _root_
       item-391 at level 3: formula: N_c\times N_c
       item-392 at level 3: text:  elements. The associated dequan ... ceptable range of training randomness.
   item-393 at level 1: section_header: Mixed Precision Framework
-  item-394 at level 1: text: Building upon widely adopted tec ... ustrated in Figure[fig:fp8_framework].
+  item-394 at level 1: text: Building upon widely adopted tec ... strated in Figure [fig:fp8_framework].
   item-395 at level 1: text: Firstly, in order to accelerate  ... nificantly reduces memory consumption.
   item-396 at level 1: text: Despite the efficiency advantage ... ks in our distributed training system.
   item-397 at level 1: section: group figure
@@ -521,7 +521,7 @@ item-0 at level 0: unspecified: group _root_
       item-486 at level 3: text:  is set to 1, i.e., besides the  ... hich 37B are activated for each token.
   item-487 at level 1: text: 
     item-488 at level 2: inline: group group
-      item-489 at level 3: text: Training Hyper-Parameters. We em ... r[adamW] with hyper-parameters set to 
+      item-489 at level 3: text: Training Hyper-Parameters. We em ...  [adamW] with hyper-parameters set to 
       item-490 at level 3: formula: \beta_1=0.9
       item-491 at level 3: text: , 
       item-492 at level 3: formula: \beta_2=0.95
@@ -548,8 +548,8 @@ item-0 at level 0: unspecified: group _root_
       item-513 at level 3: text:  is set to 0.3 for the first 10T ...  to 0.1 for the remaining 4.8T tokens.
   item-514 at level 1: section: group figure
     item-515 at level 2: picture
-      item-515 at level 3: caption: Evaluation results on the Needle In A Haystack (NIAH) tests. DeepSeek-V3 performs well across all context window lengths up to 128K.
-    item-516 at level 2: caption: Evaluation results on the Needle ... all context window lengths up to 128K.
+      item-515 at level 3: caption: Evaluation results on the ”Needle In A Haystack” (NIAH) tests. DeepSeek-V3 performs well across all context window lengths up to 128K.
+    item-516 at level 2: caption: Evaluation results on the ”Needl ... all context window lengths up to 128K.
   item-517 at level 1: section_header: Long Context Extension
   item-518 at level 1: text: 
     item-519 at level 2: inline: group group
@@ -577,15 +577,15 @@ item-0 at level 0: unspecified: group _root_
   item-541 at level 1: text: Reference disambiguation dataset ...  WinoGrande [sakaguchi2019winogrande].
   item-542 at level 1: text: Language modeling datasets include Pile [pile].
   item-543 at level 1: text: Chinese understanding and culture datasets include CCPM [li2021ccpm].
-  item-544 at level 1: text: Math datasets include GSM8K[gsm8 ... MGSM [mgsm], and CMath [wei2023cmath].
-  item-545 at level 1: text: Code datasets include HumanEval[ ... P[mbpp], and CRUXEval[gu2024cruxeval].
+  item-544 at level 1: text: Math datasets include GSM8K [gsm ... MGSM [mgsm], and CMath [wei2023cmath].
+  item-545 at level 1: text: Code datasets include HumanEval  ... [mbpp], and CRUXEval [gu2024cruxeval].
   item-546 at level 1: text: Standardized exams include AGIEv ... udes both English and Chinese subsets.
-  item-547 at level 1: text: Following our previous work[dsvi ... ong models using different tokenizers.
+  item-547 at level 1: text: Following our previous work [dsv ... ong models using different tokenizers.
   item-548 at level 1: table with [38x9]
     item-548 at level 2: caption: Comparison among DeepSeek-V3-Base and other representative open-source base models. All models are evaluated in our internal framework and share the same evaluation setting. Scores with a gap not exceeding 0.3 are considered to be at the same level. DeepSeek-V3-Base achieves the best performance on most benchmarks, especially on math and code tasks.
   item-549 at level 1: caption: Comparison among DeepSeek-V3-Bas ... ks, especially on math and code tasks.
   item-550 at level 1: section_header: Evaluation Results
-  item-551 at level 1: text: In Table[tab:main], we compare t ... oming the strongest open-source model.
+  item-551 at level 1: text: In Table [tab:main], we compare  ... oming the strongest open-source model.
   item-552 at level 1: text: From a more detailed perspective ... series, DROP, C-Eval, CMMLU, and CCPM.
   item-553 at level 1: text: Due to our efficient architectur ... han training 72B or 405B dense models.
   item-554 at level 1: table with [16x6]
@@ -593,9 +593,9 @@ item-0 at level 0: unspecified: group _root_
   item-555 at level 1: caption: Ablation results for the MTP str ...  on most of the evaluation benchmarks.
   item-556 at level 1: section_header: Discussion
   item-557 at level 1: section_header: Ablation Studies for Multi-Token Prediction
-  item-558 at level 1: text: In Table[tab:ablation_nextn], we ...  on most of the evaluation benchmarks.
+  item-558 at level 1: text: In Table [tab:ablation_nextn], w ...  on most of the evaluation benchmarks.
   item-559 at level 1: section_header: Ablation Studies for the Auxiliary-Loss-Free Balancing Strategy
-  item-560 at level 1: text: In Table[tab:ablation_noaux_tc], ...  on most of the evaluation benchmarks.
+  item-560 at level 1: text: In Table [tab:ablation_noaux_tc] ...  on most of the evaluation benchmarks.
   item-561 at level 1: table with [16x6]
     item-561 at level 2: caption: Ablation results for the auxiliary-loss-free balancing strategy. Compared with the purely auxiliary-loss-based method, the auxiliary-loss-free strategy consistently achieves better model performance on most of the evaluation benchmarks.
   item-562 at level 1: caption: Ablation results for the auxilia ...  on most of the evaluation benchmarks.
@@ -605,8 +605,8 @@ item-0 at level 0: unspecified: group _root_
   item-566 at level 1: text: In addition, although the batch- ... inference_deployment], to overcome it.
   item-567 at level 1: section: group figure
     item-568 at level 2: picture
-      item-568 at level 3: caption: Expert load of auxiliary-loss-free and auxiliary-loss-based models on three domains in the Pile test set. The auxiliary-loss-free model shows greater expert specialization patterns than the auxiliary-loss-based one. The relative expert load denotes the ratio between the actual expert load and the theoretically balanced expert load. Due to space constraints, we only present the results of two layers as an example, with the results of all layers provided in Appendix[app:detailed_expert_load].
-    item-569 at level 2: caption: Expert load of auxiliary-loss-fr ... in Appendix[app:detailed_expert_load].
+      item-568 at level 3: caption: Expert load of auxiliary-loss-free and auxiliary-loss-based models on three domains in the Pile test set. The auxiliary-loss-free model shows greater expert specialization patterns than the auxiliary-loss-based one. The relative expert load denotes the ratio between the actual expert load and the theoretically balanced expert load. Due to space constraints, we only present the results of two layers as an example, with the results of all layers provided in Appendix [app:detailed_expert_load].
+    item-569 at level 2: caption: Expert load of auxiliary-loss-fr ... n Appendix [app:detailed_expert_load].
   item-570 at level 1: section_header: Post-Training
   item-571 at level 1: section_header: Supervised Fine-Tuning
   item-572 at level 1: paragraph: We curate our instruction-tuning ... tailored to its specific requirements.
@@ -630,7 +630,7 @@ item-0 at level 0: unspecified: group _root_
   item-590 at level 1: section_header: Group Relative Policy Optimization
   item-591 at level 1: text: 
     item-592 at level 2: inline: group group
-      item-593 at level 3: text: Similar to DeepSeek-V2[dsvii], w ... tead. Specifically, for each question 
+      item-593 at level 3: text: Similar to DeepSeek-V2 [dsvii],  ... tead. Specifically, for each question 
       item-594 at level 3: formula: q
       item-595 at level 3: text: , GRPO samples a group of outputs 
       item-596 at level 3: formula: \{o_1, o_2, \cdots, o_G\}
@@ -667,13 +667,13 @@ item-0 at level 0: unspecified: group _root_
   item-618 at level 1: paragraph: We incorporate prompts from dive ...  where available SFT data are limited.
   item-619 at level 1: section_header: Evaluations
   item-620 at level 1: section_header: Evaluation Settings
-  item-621 at level 1: text: Evaluation Benchmarks. Apart fro ... WE-Bench Verified[swe_verified], Aider
+  item-621 at level 1: text: Evaluation Benchmarks. Apart fro ... E-Bench Verified [swe_verified], Aider
   item-622 at level 1: footnote: https://aider.chat
-  item-623 at level 1: text: , LiveCodeBench[livecodebench] ( ... ust 2024 to November 2024), Codeforces
+  item-623 at level 1: text: , LiveCodeBench [livecodebench]  ... ust 2024 to November 2024), Codeforces
   item-624 at level 1: footnote: https://codeforces.com
   item-625 at level 1: text: , Chinese National High School Mathematics Olympiad (CNMO 2024)
   item-626 at level 1: footnote: https://www.cms.org.cn/Home/comp/comp/cid/12.html
-  item-627 at level 1: text: , and American Invitational Math ... xamination 2024 (AIME 2024)[AIME2024].
+  item-627 at level 1: text: , and American Invitational Math ... amination 2024 (AIME 2024) [AIME2024].
   item-628 at level 1: text: Compared Baselines. We conduct c ... rformed through their respective APIs.
   item-629 at level 1: text: Detailed Evaluation Configuratio ... rompts from the simple-evals framework
   item-630 at level 1: footnote: https://github.com/openai/simple-evals
@@ -682,7 +682,7 @@ item-0 at level 0: unspecified: group _root_
     item-632 at level 2: caption: Comparison between DeepSeek-V3 and other representative chat models. All models are evaluated in a configuration that limits the output length to 8K. Benchmarks containing fewer than 1000 samples are tested multiple times using varying temperature settings to derive robust final results. DeepSeek-V3 stands as the best-performing open-source model, and also exhibits competitive performance against frontier closed-source models.
   item-633 at level 1: caption: Comparison between DeepSeek-V3 a ... against frontier closed-source models.
   item-634 at level 1: section_header: Standard Evaluation
-  item-635 at level 1: text: Table[tab:chat] presents the eva ... els like GPT-4o and Claude-3.5-Sonnet.
+  item-635 at level 1: text: Table [tab:chat] presents the ev ... els like GPT-4o and Claude-3.5-Sonnet.
   item-636 at level 1: text: English Benchmarks. MMLU is a wi ... r competitors by a substantial margin.
   item-637 at level 1: text: In long-context understanding be ... re to user-defined format constraints.
   item-638 at level 1: text: Code and Math Benchmarks. Coding ... pabilities in algorithm-focused tasks.
@@ -703,11 +703,11 @@ item-0 at level 0: unspecified: group _root_
   item-651 at level 1: section_header: Discussion
   item-652 at level 1: section_header: Distillation from DeepSeek-R1
   item-653 at level 1: paragraph: We ablate the contribution of di ... he expert checkpoints described above.
-  item-654 at level 1: text: Table[tab:distill] demonstrates  ... tings for DeepSeek-V3 in distillation.
+  item-654 at level 1: text: Table [tab:distill] demonstrates ... tings for DeepSeek-V3 in distillation.
   item-655 at level 1: paragraph: Our research suggests that knowl ... portant direction for future research.
   item-656 at level 1: table with [5x5]
-    item-656 at level 2: caption: The contribution of distillation from DeepSeek-R1. The evaluation settings of LiveCodeBench and MATH-500 are the same as in Table[tab:chat].
-  item-657 at level 1: caption: The contribution of distillation ... 00 are the same as in Table[tab:chat].
+    item-656 at level 2: caption: The contribution of distillation from DeepSeek-R1. The evaluation settings of LiveCodeBench and MATH-500 are the same as in Table [tab:chat].
+  item-657 at level 1: caption: The contribution of distillation ... 0 are the same as in Table [tab:chat].
   item-658 at level 1: section_header: Self-Rewarding
   item-659 at level 1: text: Rewards play a pivotal role in R ... del capabilities in general scenarios.
   item-660 at level 1: section_header: Multi-Token Prediction Evaluation
@@ -738,7 +738,7 @@ item-0 at level 0: unspecified: group _root_
   item-684 at level 1: section_header: Discussion About Block-Wise Quantization
   item-685 at level 1: text: Although our tile-wise fine-grai ... by a block-wise quantization approach.
   item-686 at level 1: section_header: Expert Specialization Patterns o ... ux-Loss-Based and Aux-Loss-Free Models
-  item-687 at level 1: text: We record the expert load of the ... d in Figure[fig:detailed_expert_load].
+  item-687 at level 1: text: We record the expert load of the ...  in Figure [fig:detailed_expert_load].
   item-688 at level 1: section: group figure
     item-689 at level 2: text: [Layers 1-7]
     item-690 at level 2: picture

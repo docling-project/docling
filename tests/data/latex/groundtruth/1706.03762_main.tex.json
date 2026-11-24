@@ -3551,8 +3551,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section[sec:attention].",
-      "text": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section[sec:attention]."
+      "orig": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section [sec:attention].",
+      "text": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section [sec:attention]."
     },
     {
       "self_ref": "#/texts/60",
@@ -3748,8 +3748,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure[fig:model-arch], respectively.",
-      "text": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure[fig:model-arch], respectively."
+      "orig": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure [fig:model-arch], respectively.",
+      "text": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure [fig:model-arch], respectively."
     },
     {
       "self_ref": "#/texts/76",
@@ -4051,8 +4051,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure[fig:multi-head-att]).   The input consists of queries and keys of dimension ",
-      "text": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure[fig:multi-head-att]).   The input consists of queries and keys of dimension "
+      "orig": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure [fig:multi-head-att]).   The input consists of queries and keys of dimension ",
+      "text": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure [fig:multi-head-att]).   The input consists of queries and keys of dimension "
     },
     {
       "self_ref": "#/texts/100",
@@ -4880,8 +4880,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att].",
-      "text": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att]."
+      "orig": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure [fig:multi-head-att].",
+      "text": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure [fig:multi-head-att]."
     },
     {
       "self_ref": "#/texts/167",
@@ -5211,8 +5211,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ") all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att].",
-      "text": ") all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att]."
+      "orig": ") all values in the input of the softmax which correspond to illegal connections.  See Figure [fig:multi-head-att].",
+      "text": ") all values in the input of the softmax which correspond to illegal connections.  See Figure [fig:multi-head-att]."
     },
     {
       "self_ref": "#/texts/193",
@@ -5710,8 +5710,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.",
-      "text": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."
+      "orig": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table [tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.",
+      "text": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table [tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."
     },
     {
       "self_ref": "#/texts/233",
@@ -6755,8 +6755,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We used the Adam optimizer[kingma2014adam] with ",
-      "text": "We used the Adam optimizer[kingma2014adam] with "
+      "orig": "We used the Adam optimizer [kingma2014adam] with ",
+      "text": "We used the Adam optimizer [kingma2014adam] with "
     },
     {
       "self_ref": "#/texts/314",
@@ -7526,8 +7526,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than ",
-      "text": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than "
+      "orig": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table [tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than ",
+      "text": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table [tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than "
     },
     {
       "self_ref": "#/texts/372",
@@ -7574,8 +7574,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took ",
-      "text": ".  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took "
+      "orig": ".  The configuration of this model is listed in the bottom line of Table [tab:variations].  Training took ",
+      "text": ".  The configuration of this model is listed in the bottom line of Table [tab:variations].  Training took "
     },
     {
       "self_ref": "#/texts/376",
@@ -8267,8 +8267,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations].",
-      "text": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations]."
+      "orig": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table [tab:variations].",
+      "text": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table [tab:variations]."
     },
     {
       "self_ref": "#/texts/430",
@@ -8279,8 +8279,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.",
-      "text": "In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."
+      "orig": "In Table [tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.",
+      "text": "In Table [tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."
     },
     {
       "self_ref": "#/texts/431",
@@ -8307,8 +8307,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In Table[tab:variations] rows (B), we observe that reducing the attention key size ",
-      "text": "In Table[tab:variations] rows (B), we observe that reducing the attention key size "
+      "orig": "In Table [tab:variations] rows (B), we observe that reducing the attention key size ",
+      "text": "In Table [tab:variations] rows (B), we observe that reducing the attention key size "
     },
     {
       "self_ref": "#/texts/433",
@@ -8448,8 +8448,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We performed only a small number of experiments to select the dropout, both attention and residual (section[sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + ",
-      "text": "We performed only a small number of experiments to select the dropout, both attention and residual (section[sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + "
+      "orig": "We performed only a small number of experiments to select the dropout, both attention and residual (section [sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + ",
+      "text": "We performed only a small number of experiments to select the dropout, both attention and residual (section [sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + "
     },
     {
       "self_ref": "#/texts/444",
@@ -8532,8 +8532,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our results in Table[tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16].",
-      "text": "Our results in Table[tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16]."
+      "orig": "Our results in Table [tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16].",
+      "text": "Our results in Table [tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16]."
     },
     {
       "self_ref": "#/texts/451",
@@ -8642,8 +8642,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[layernorm2016] JimmyLei Ba, JamieRyan Kiros, and GeoffreyE Hinton. Layer normalization. arXiv preprint arXiv:1607.06450, 2016.",
-      "text": "[layernorm2016] JimmyLei Ba, JamieRyan Kiros, and GeoffreyE Hinton. Layer normalization. arXiv preprint arXiv:1607.06450, 2016.",
+      "orig": "[layernorm2016] Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton. Layer normalization. arXiv preprint arXiv:1607.06450, 2016.",
+      "text": "[layernorm2016] Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton. Layer normalization. arXiv preprint arXiv:1607.06450, 2016.",
       "enumerated": false,
       "marker": ""
     },
@@ -8670,8 +8670,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[DBLP:journals/corr/BritzGLL17] Denny Britz, Anna Goldie, Minh-Thang Luong, and QuocV. Le. Massive exploration of neural machine translation architectures. CoRR, abs/1703.03906, 2017.",
-      "text": "[DBLP:journals/corr/BritzGLL17] Denny Britz, Anna Goldie, Minh-Thang Luong, and QuocV. Le. Massive exploration of neural machine translation architectures. CoRR, abs/1703.03906, 2017.",
+      "orig": "[DBLP:journals/corr/BritzGLL17] Denny Britz, Anna Goldie, Minh-Thang Luong, and Quoc V. Le. Massive exploration of neural machine translation architectures. CoRR, abs/1703.03906, 2017.",
+      "text": "[DBLP:journals/corr/BritzGLL17] Denny Britz, Anna Goldie, Minh-Thang Luong, and Quoc V. Le. Massive exploration of neural machine translation architectures. CoRR, abs/1703.03906, 2017.",
       "enumerated": false,
       "marker": ""
     },
@@ -8684,8 +8684,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[cheng2016long] Jianpeng Cheng, LiDong, and Mirella Lapata. Long short-term memory-networks for machine reading. arXiv preprint arXiv:1601.06733, 2016.",
-      "text": "[cheng2016long] Jianpeng Cheng, LiDong, and Mirella Lapata. Long short-term memory-networks for machine reading. arXiv preprint arXiv:1601.06733, 2016.",
+      "orig": "[cheng2016long] Jianpeng Cheng, Li Dong, and Mirella Lapata. Long short-term memory-networks for machine reading. arXiv preprint arXiv:1601.06733, 2016.",
+      "text": "[cheng2016long] Jianpeng Cheng, Li Dong, and Mirella Lapata. Long short-term memory-networks for machine reading. arXiv preprint arXiv:1601.06733, 2016.",
       "enumerated": false,
       "marker": ""
     },
@@ -8740,8 +8740,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[dyer-rnng:16] Chris Dyer, Adhiguna Kuncoro, Miguel Ballesteros, and NoahA. Smith. Recurrent neural network grammars. In Proc. of NAACL, 2016.",
-      "text": "[dyer-rnng:16] Chris Dyer, Adhiguna Kuncoro, Miguel Ballesteros, and NoahA. Smith. Recurrent neural network grammars. In Proc. of NAACL, 2016.",
+      "orig": "[dyer-rnng:16] Chris Dyer, Adhiguna Kuncoro, Miguel Ballesteros, and Noah A. Smith. Recurrent neural network grammars. In Proc. of NAACL, 2016.",
+      "text": "[dyer-rnng:16] Chris Dyer, Adhiguna Kuncoro, Miguel Ballesteros, and Noah A. Smith. Recurrent neural network grammars. In Proc. of NAACL, 2016.",
       "enumerated": false,
       "marker": ""
     },
@@ -8754,8 +8754,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[JonasFaceNet2017] Jonas Gehring, Michael Auli, David Grangier, Denis Yarats, and YannN. Dauphin. Convolutional sequence to sequence learning. arXiv preprint arXiv:1705.03122v2, 2017.",
-      "text": "[JonasFaceNet2017] Jonas Gehring, Michael Auli, David Grangier, Denis Yarats, and YannN. Dauphin. Convolutional sequence to sequence learning. arXiv preprint arXiv:1705.03122v2, 2017.",
+      "orig": "[JonasFaceNet2017] Jonas Gehring, Michael Auli, David Grangier, Denis Yarats, and Yann N. Dauphin. Convolutional sequence to sequence learning. arXiv preprint arXiv:1705.03122v2, 2017.",
+      "text": "[JonasFaceNet2017] Jonas Gehring, Michael Auli, David Grangier, Denis Yarats, and Yann N. Dauphin. Convolutional sequence to sequence learning. arXiv preprint arXiv:1705.03122v2, 2017.",
       "enumerated": false,
       "marker": ""
     },
@@ -8782,8 +8782,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[he2016deep] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770778, 2016.",
-      "text": "[he2016deep] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770778, 2016.",
+      "orig": "[he2016deep] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770–778, 2016.",
+      "text": "[he2016deep] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770–778, 2016.",
       "enumerated": false,
       "marker": ""
     },
@@ -8810,8 +8810,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[hochreiter1997] Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 9(8):17351780, 1997.",
-      "text": "[hochreiter1997] Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 9(8):17351780, 1997.",
+      "orig": "[hochreiter1997] Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 9(8):1735–1780, 1997.",
+      "text": "[hochreiter1997] Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 9(8):1735–1780, 1997.",
       "enumerated": false,
       "marker": ""
     },
@@ -8824,8 +8824,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[huang-harper:2009:EMNLP] Zhongqiang Huang and Mary Harper. Self-training PCFG grammars with latent annotations across languages. In Proceedings of the 2009 Conference on Empirical Methods in Natural Language Processing, pages 832841. ACL, August 2009.",
-      "text": "[huang-harper:2009:EMNLP] Zhongqiang Huang and Mary Harper. Self-training PCFG grammars with latent annotations across languages. In Proceedings of the 2009 Conference on Empirical Methods in Natural Language Processing, pages 832841. ACL, August 2009.",
+      "orig": "[huang-harper:2009:EMNLP] Zhongqiang Huang and Mary Harper. Self-training PCFG grammars with latent annotations across languages. In Proceedings of the 2009 Conference on Empirical Methods in Natural Language Processing, pages 832–841. ACL, August 2009.",
+      "text": "[huang-harper:2009:EMNLP] Zhongqiang Huang and Mary Harper. Self-training PCFG grammars with latent annotations across languages. In Proceedings of the 2009 Conference on Empirical Methods in Natural Language Processing, pages 832–841. ACL, August 2009.",
       "enumerated": false,
       "marker": ""
     },
@@ -8880,8 +8880,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[NalBytenet2017] Nal Kalchbrenner, Lasse Espeholt, Karen Simonyan, Aaron vanden Oord, Alex Graves, and Koray Kavukcuoglu. Neural machine translation in linear time. arXiv preprint arXiv:1610.10099v2, 2017.",
-      "text": "[NalBytenet2017] Nal Kalchbrenner, Lasse Espeholt, Karen Simonyan, Aaron vanden Oord, Alex Graves, and Koray Kavukcuoglu. Neural machine translation in linear time. arXiv preprint arXiv:1610.10099v2, 2017.",
+      "orig": "[NalBytenet2017] Nal Kalchbrenner, Lasse Espeholt, Karen Simonyan, Aaron van den Oord, Alex Graves, and Koray Kavukcuoglu. Neural machine translation in linear time. arXiv preprint arXiv:1610.10099v2, 2017.",
+      "text": "[NalBytenet2017] Nal Kalchbrenner, Lasse Espeholt, Karen Simonyan, Aaron van den Oord, Alex Graves, and Koray Kavukcuoglu. Neural machine translation in linear time. arXiv preprint arXiv:1610.10099v2, 2017.",
       "enumerated": false,
       "marker": ""
     },
@@ -8894,8 +8894,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[structuredAttentionNetworks] Yoon Kim, Carl Denton, Luong Hoang, and AlexanderM. Rush. Structured attention networks. In International Conference on Learning Representations, 2017.",
-      "text": "[structuredAttentionNetworks] Yoon Kim, Carl Denton, Luong Hoang, and AlexanderM. Rush. Structured attention networks. In International Conference on Learning Representations, 2017.",
+      "orig": "[structuredAttentionNetworks] Yoon Kim, Carl Denton, Luong Hoang, and Alexander M. Rush. Structured attention networks. In International Conference on Learning Representations, 2017.",
+      "text": "[structuredAttentionNetworks] Yoon Kim, Carl Denton, Luong Hoang, and Alexander M. Rush. Structured attention networks. In International Conference on Learning Representations, 2017.",
       "enumerated": false,
       "marker": ""
     },
@@ -8936,8 +8936,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[lin2017structured] Zhouhan Lin, Minwei Feng, Cicero Nogueirados Santos, MoYu, Bing Xiang, Bowen Zhou, and Yoshua Bengio. A structured self-attentive sentence embedding. arXiv preprint arXiv:1703.03130, 2017.",
-      "text": "[lin2017structured] Zhouhan Lin, Minwei Feng, Cicero Nogueirados Santos, MoYu, Bing Xiang, Bowen Zhou, and Yoshua Bengio. A structured self-attentive sentence embedding. arXiv preprint arXiv:1703.03130, 2017.",
+      "orig": "[lin2017structured] Zhouhan Lin, Minwei Feng, Cicero Nogueira dos Santos, Mo Yu, Bing Xiang, Bowen Zhou, and Yoshua Bengio. A structured self-attentive sentence embedding. arXiv preprint arXiv:1703.03130, 2017.",
+      "text": "[lin2017structured] Zhouhan Lin, Minwei Feng, Cicero Nogueira dos Santos, Mo Yu, Bing Xiang, Bowen Zhou, and Yoshua Bengio. A structured self-attentive sentence embedding. arXiv preprint arXiv:1703.03130, 2017.",
       "enumerated": false,
       "marker": ""
     },
@@ -8950,8 +8950,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[multiseq2seq] Minh-Thang Luong, QuocV. Le, Ilya Sutskever, Oriol Vinyals, and Lukasz Kaiser. Multi-task sequence to sequence learning. arXiv preprint arXiv:1511.06114, 2015.",
-      "text": "[multiseq2seq] Minh-Thang Luong, QuocV. Le, Ilya Sutskever, Oriol Vinyals, and Lukasz Kaiser. Multi-task sequence to sequence learning. arXiv preprint arXiv:1511.06114, 2015.",
+      "orig": "[multiseq2seq] Minh-Thang Luong, Quoc V. Le, Ilya Sutskever, Oriol Vinyals, and Lukasz Kaiser. Multi-task sequence to sequence learning. arXiv preprint arXiv:1511.06114, 2015.",
+      "text": "[multiseq2seq] Minh-Thang Luong, Quoc V. Le, Ilya Sutskever, Oriol Vinyals, and Lukasz Kaiser. Multi-task sequence to sequence learning. arXiv preprint arXiv:1511.06114, 2015.",
       "enumerated": false,
       "marker": ""
     },
@@ -8964,8 +8964,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[luong2015effective] Minh-Thang Luong, Hieu Pham, and ChristopherD Manning. Effective approaches to attention-based neural machine translation. arXiv preprint arXiv:1508.04025, 2015.",
-      "text": "[luong2015effective] Minh-Thang Luong, Hieu Pham, and ChristopherD Manning. Effective approaches to attention-based neural machine translation. arXiv preprint arXiv:1508.04025, 2015.",
+      "orig": "[luong2015effective] Minh-Thang Luong, Hieu Pham, and Christopher D Manning. Effective approaches to attention-based neural machine translation. arXiv preprint arXiv:1508.04025, 2015.",
+      "text": "[luong2015effective] Minh-Thang Luong, Hieu Pham, and Christopher D Manning. Effective approaches to attention-based neural machine translation. arXiv preprint arXiv:1508.04025, 2015.",
       "enumerated": false,
       "marker": ""
     },
@@ -8978,8 +8978,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[marcus1993building] MitchellP Marcus, MaryAnn Marcinkiewicz, and Beatrice Santorini. Building a large annotated corpus of english: The penn treebank. Computational linguistics, 19(2):313330, 1993.",
-      "text": "[marcus1993building] MitchellP Marcus, MaryAnn Marcinkiewicz, and Beatrice Santorini. Building a large annotated corpus of english: The penn treebank. Computational linguistics, 19(2):313330, 1993.",
+      "orig": "[marcus1993building] Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini. Building a large annotated corpus of english: The penn treebank. Computational linguistics, 19(2):313–330, 1993.",
+      "text": "[marcus1993building] Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini. Building a large annotated corpus of english: The penn treebank. Computational linguistics, 19(2):313–330, 1993.",
       "enumerated": false,
       "marker": ""
     },
@@ -8992,8 +8992,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[mcclosky-etAl:2006:NAACL] David McClosky, Eugene Charniak, and Mark Johnson. Effective self-training for parsing. In Proceedings of the Human Language Technology Conference of the NAACL, Main Conference, pages 152159. ACL, June 2006.",
-      "text": "[mcclosky-etAl:2006:NAACL] David McClosky, Eugene Charniak, and Mark Johnson. Effective self-training for parsing. In Proceedings of the Human Language Technology Conference of the NAACL, Main Conference, pages 152159. ACL, June 2006.",
+      "orig": "[mcclosky-etAl:2006:NAACL] David McClosky, Eugene Charniak, and Mark Johnson. Effective self-training for parsing. In Proceedings of the Human Language Technology Conference of the NAACL, Main Conference, pages 152–159. ACL, June 2006.",
+      "text": "[mcclosky-etAl:2006:NAACL] David McClosky, Eugene Charniak, and Mark Johnson. Effective self-training for parsing. In Proceedings of the Human Language Technology Conference of the NAACL, Main Conference, pages 152–159. ACL, June 2006.",
       "enumerated": false,
       "marker": ""
     },
@@ -9034,8 +9034,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[petrov-EtAl:2006:ACL] Slav Petrov, Leon Barrett, Romain Thibaux, and Dan Klein. Learning accurate, compact, and interpretable tree annotation. In Proceedings of the 21st International Conference on Computational Linguistics and 44th Annual Meeting of the ACL, pages 433440. ACL, July 2006.",
-      "text": "[petrov-EtAl:2006:ACL] Slav Petrov, Leon Barrett, Romain Thibaux, and Dan Klein. Learning accurate, compact, and interpretable tree annotation. In Proceedings of the 21st International Conference on Computational Linguistics and 44th Annual Meeting of the ACL, pages 433440. ACL, July 2006.",
+      "orig": "[petrov-EtAl:2006:ACL] Slav Petrov, Leon Barrett, Romain Thibaux, and Dan Klein. Learning accurate, compact, and interpretable tree annotation. In Proceedings of the 21st International Conference on Computational Linguistics and 44th Annual Meeting of the ACL, pages 433–440. ACL, July 2006.",
+      "text": "[petrov-EtAl:2006:ACL] Slav Petrov, Leon Barrett, Romain Thibaux, and Dan Klein. Learning accurate, compact, and interpretable tree annotation. In Proceedings of the 21st International Conference on Computational Linguistics and 44th Annual Meeting of the ACL, pages 433–440. ACL, July 2006.",
       "enumerated": false,
       "marker": ""
     },
@@ -9090,8 +9090,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[srivastava2014dropout] Nitish Srivastava, GeoffreyE Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Dropout: a simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(1):19291958, 2014.",
-      "text": "[srivastava2014dropout] Nitish Srivastava, GeoffreyE Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Dropout: a simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(1):19291958, 2014.",
+      "orig": "[srivastava2014dropout] Nitish Srivastava, Geoffrey E Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Dropout: a simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(1):1929–1958, 2014.",
+      "text": "[srivastava2014dropout] Nitish Srivastava, Geoffrey E Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Dropout: a simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(1):1929–1958, 2014.",
       "enumerated": false,
       "marker": ""
     },
@@ -9104,8 +9104,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[sukhbaatar2015] Sainbayar Sukhbaatar, Arthur Szlam, Jason Weston, and Rob Fergus. End-to-end memory networks. In C.Cortes, N.D. Lawrence, D.D. Lee, M.Sugiyama, and R.Garnett, editors, Advances in Neural Information Processing Systems 28, pages 24402448. Curran Associates, Inc., 2015.",
-      "text": "[sukhbaatar2015] Sainbayar Sukhbaatar, Arthur Szlam, Jason Weston, and Rob Fergus. End-to-end memory networks. In C.Cortes, N.D. Lawrence, D.D. Lee, M.Sugiyama, and R.Garnett, editors, Advances in Neural Information Processing Systems 28, pages 24402448. Curran Associates, Inc., 2015.",
+      "orig": "[sukhbaatar2015] Sainbayar Sukhbaatar, Arthur Szlam, Jason Weston, and Rob Fergus. End-to-end memory networks. In C. Cortes, N. D. Lawrence, D. D. Lee, M. Sugiyama, and R. Garnett, editors, Advances in Neural Information Processing Systems 28, pages 2440–2448. Curran Associates, Inc., 2015.",
+      "text": "[sukhbaatar2015] Sainbayar Sukhbaatar, Arthur Szlam, Jason Weston, and Rob Fergus. End-to-end memory networks. In C. Cortes, N. D. Lawrence, D. D. Lee, M. Sugiyama, and R. Garnett, editors, Advances in Neural Information Processing Systems 28, pages 2440–2448. Curran Associates, Inc., 2015.",
       "enumerated": false,
       "marker": ""
     },
@@ -9118,8 +9118,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[sutskever14] Ilya Sutskever, Oriol Vinyals, and QuocVV Le. Sequence to sequence learning with neural networks. In Advances in Neural Information Processing Systems, pages 31043112, 2014.",
-      "text": "[sutskever14] Ilya Sutskever, Oriol Vinyals, and QuocVV Le. Sequence to sequence learning with neural networks. In Advances in Neural Information Processing Systems, pages 31043112, 2014.",
+      "orig": "[sutskever14] Ilya Sutskever, Oriol Vinyals, and Quoc VV Le. Sequence to sequence learning with neural networks. In Advances in Neural Information Processing Systems, pages 3104–3112, 2014.",
+      "text": "[sutskever14] Ilya Sutskever, Oriol Vinyals, and Quoc VV Le. Sequence to sequence learning with neural networks. In Advances in Neural Information Processing Systems, pages 3104–3112, 2014.",
       "enumerated": false,
       "marker": ""
     },
@@ -9160,8 +9160,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[wu2016google] Yonghui Wu, Mike Schuster, Zhifeng Chen, QuocV Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, etal. Google's neural machine translation system: Bridging the gap between human and machine translation. arXiv preprint arXiv:1609.08144, 2016.",
-      "text": "[wu2016google] Yonghui Wu, Mike Schuster, Zhifeng Chen, QuocV Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, etal. Google's neural machine translation system: Bridging the gap between human and machine translation. arXiv preprint arXiv:1609.08144, 2016.",
+      "orig": "[wu2016google] Yonghui Wu, Mike Schuster, Zhifeng Chen, Quoc V Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, et al. Google's neural machine translation system: Bridging the gap between human and machine translation. arXiv preprint arXiv:1609.08144, 2016.",
+      "text": "[wu2016google] Yonghui Wu, Mike Schuster, Zhifeng Chen, Quoc V Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, et al. Google's neural machine translation system: Bridging the gap between human and machine translation. arXiv preprint arXiv:1609.08144, 2016.",
       "enumerated": false,
       "marker": ""
     },
@@ -9188,8 +9188,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "[zhu-EtAl:2013:ACL] Muhua Zhu, Yue Zhang, Wenliang Chen, Min Zhang, and Jingbo Zhu. Fast and accurate shift-reduce constituent parsing. In Proceedings of the 51st Annual Meeting of the ACL (Volume 1: Long Papers), pages 434443. ACL, August 2013.",
-      "text": "[zhu-EtAl:2013:ACL] Muhua Zhu, Yue Zhang, Wenliang Chen, Min Zhang, and Jingbo Zhu. Fast and accurate shift-reduce constituent parsing. In Proceedings of the 51st Annual Meeting of the ACL (Volume 1: Long Papers), pages 434443. ACL, August 2013.",
+      "orig": "[zhu-EtAl:2013:ACL] Muhua Zhu, Yue Zhang, Wenliang Chen, Min Zhang, and Jingbo Zhu. Fast and accurate shift-reduce constituent parsing. In Proceedings of the 51st Annual Meeting of the ACL (Volume 1: Long Papers), pages 434–443. ACL, August 2013.",
+      "text": "[zhu-EtAl:2013:ACL] Muhua Zhu, Yue Zhang, Wenliang Chen, Min Zhang, and Jingbo Zhu. Fast and accurate shift-reduce constituent parsing. In Proceedings of the 51st Annual Meeting of the ACL (Volume 1: Long Papers), pages 434–443. ACL, August 2013.",
       "enumerated": false,
       "marker": ""
     },

@@ -1426,8 +1426,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S.Sharma et al.",
-      "text": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S.Sharma et al."
+      "orig": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S. Sharma et al.",
+      "text": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S. Sharma et al."
     },
     {
       "self_ref": "#/texts/6",
@@ -1462,8 +1462,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garchingb.München, postcode=D-85748, country=Germany",
-      "text": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garchingb.München, postcode=D-85748, country=Germany"
+      "orig": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garching b. München, postcode=D-85748, country=Germany",
+      "text": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garching b. München, postcode=D-85748, country=Germany"
     },
     {
       "self_ref": "#/texts/9",
@@ -2273,8 +2273,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces  consisting of inversions and derivatives  of the fermion matrices (",
-      "text": " involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces  consisting of inversions and derivatives  of the fermion matrices ("
+      "orig": " involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces – consisting of inversions and derivatives  of the fermion matrices (",
+      "text": " involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces – consisting of inversions and derivatives  of the fermion matrices ("
     },
     {
       "self_ref": "#/texts/74",
@@ -2297,8 +2297,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ")  using the random noise method [Mitra:2022vtf].",
-      "text": ")  using the random noise method [Mitra:2022vtf]."
+      "orig": ") – using the random noise method [Mitra:2022vtf].",
+      "text": ") – using the random noise method [Mitra:2022vtf]."
     },
     {
       "self_ref": "#/texts/76",
@@ -3071,8 +3071,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "MeV, whereas the doubly-charmed ",
-      "text": "MeV, whereas the doubly-charmed "
+      "orig": " MeV, whereas the doubly-charmed ",
+      "text": " MeV, whereas the doubly-charmed "
     },
     {
       "self_ref": "#/texts/139",
@@ -3753,8 +3753,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref.[Mukherjee:2015mxc],",
-      "text": ", we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref.[Mukherjee:2015mxc],"
+      "orig": ", we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref. [Mukherjee:2015mxc],",
+      "text": ", we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref. [Mukherjee:2015mxc],"
     },
     {
       "self_ref": "#/texts/194",
@@ -4654,8 +4654,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", charmed hadrons tabulated in [Chen:2022asf]  we label this as 1S1P-HRG. For ",
-      "text": ", charmed hadrons tabulated in [Chen:2022asf]  we label this as 1S1P-HRG. For "
+      "orig": ", charmed hadrons tabulated in [Chen:2022asf] – we label this as 1S1P-HRG. For ",
+      "text": ", charmed hadrons tabulated in [Chen:2022asf] – we label this as 1S1P-HRG. For "
     },
     {
       "self_ref": "#/texts/267",
@@ -4678,8 +4678,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "MeV, both ",
-      "text": "MeV, both "
+      "orig": " MeV, both ",
+      "text": " MeV, both "
     },
     {
       "self_ref": "#/texts/269",
@@ -5210,8 +5210,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": " values obtained after solving Eq.[eq:Qc] for ",
-      "text": " values obtained after solving Eq.[eq:Qc] for "
+      "orig": " values obtained after solving Eq. [eq:Qc] for ",
+      "text": " values obtained after solving Eq. [eq:Qc] for "
     },
     {
       "self_ref": "#/texts/313",
@@ -5432,8 +5432,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211, ”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No.DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter. The authors gratefully acknowledge the computing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center PC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education and Research and the state governments participating on the basis of the resolutions of the GWK for the national high-performance computing at universities (www.nhr-verein.de/unsere-partner). Numerical calculations have also been performed on the GPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support.",
-      "text": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211, ”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No.DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter. The authors gratefully acknowledge the computing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center PC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education and Research and the state governments participating on the basis of the resolutions of the GWK for the national high-performance computing at universities (www.nhr-verein.de/unsere-partner). Numerical calculations have also been performed on the GPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support."
+      "orig": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211, ”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No. DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter. The authors gratefully acknowledge the computing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center PC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education and Research and the state governments participating on the basis of the resolutions of the GWK for the national high-performance computing at universities (www.nhr-verein.de/unsere-partner). Numerical calculations have also been performed on the GPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support.",
+      "text": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211, ”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No. DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter. The authors gratefully acknowledge the computing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center PC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education and Research and the state governments participating on the basis of the resolutions of the GWK for the national high-performance computing at universities (www.nhr-verein.de/unsere-partner). Numerical calculations have also been performed on the GPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support."
     },
     {
       "self_ref": "#/texts/331",
@@ -5444,8 +5444,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "All computations in this work were performed using SIMULATeQCD code [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy].",
-      "text": "All computations in this work were performed using SIMULATeQCD code [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy]."
+      "orig": "All computations in this work were performed using SIMULATeQCD code  [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy].",
+      "text": "All computations in this work were performed using SIMULATeQCD code  [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy]."
     },
     {
       "self_ref": "#/texts/332",

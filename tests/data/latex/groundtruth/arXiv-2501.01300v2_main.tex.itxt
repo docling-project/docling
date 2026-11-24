@@ -1,5 +1,5 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: text: Thermodynamics of charmed hadron ... sover from lattice QCD S.Sharma et al.
+  item-1 at level 1: text: Thermodynamics of charmed hadron ... over from lattice QCD S. Sharma et al.
   item-2 at level 1: unspecified: group metadata
     item-3 at level 2: title: Thermodynamics of charmed hadron ... oss chiral crossover  from lattice QCD
   item-4 at level 1: text: 1]Sipaz Sharma[orcid=0000-0001-6916-2233] sipaz.sharma@tum.de
@@ -84,7 +84,7 @@ item-0 at level 0: unspecified: group _root_
       item-76 at level 3: formula: \chi^{BQSC}_{klmn}
       item-77 at level 3: text:  involves derivatives of the pre ... derivatives  of the fermion matrices (
       item-78 at level 3: formula: D
-      item-79 at level 3: text: )  using the random noise method [Mitra:2022vtf].
+      item-79 at level 3: text: ) – using the random noise method [Mitra:2022vtf].
   item-80 at level 1: text: 
     item-81 at level 2: inline: group group
       item-82 at level 3: text: Lattice cutoff effects cancel to ... ttices with a finite lattice spacing, 
@@ -160,7 +160,7 @@ item-0 at level 0: unspecified: group _root_
       item-146 at level 3: formula: {\Lambda}_c^{+}
       item-147 at level 3: text:  baryon has a PDG mass of about 
       item-148 at level 3: formula: 2286
-      item-149 at level 3: text: MeV, whereas the doubly-charmed 
+      item-149 at level 3: text:  MeV, whereas the doubly-charmed 
       item-150 at level 3: formula: {\Xi_{cc}^{++}}
       item-151 at level 3: text:  baryon's mass as tabulated in PDG records is about 
       item-152 at level 3: formula: 3621
@@ -227,7 +227,7 @@ item-0 at level 0: unspecified: group _root_
     item-209 at level 2: inline: group group
       item-210 at level 3: text: To investigate the nature of charm degrees of freedom above  
       item-211 at level 3: formula: T_{pc}
-      item-212 at level 3: text: , we extend the simple hadron ga ... sure based on Ref.[Mukherjee:2015mxc],
+      item-212 at level 3: text: , we extend the simple hadron ga ... ure based on Ref. [Mukherjee:2015mxc],
   item-213 at level 1: formula: \begin{align}
 	P_C(T,\vec{\mu})= ... ^C_{q}(T,\vec{\mu}) \, .
 	
@@ -316,9 +316,9 @@ item-0 at level 0: unspecified: group _root_
       item-291 at level 3: formula: 1S
       item-292 at level 3: text:  and 
       item-293 at level 3: formula: 1P
-      item-294 at level 3: text: , charmed hadrons tabulated in [ ... 2asf]  we label this as 1S1P-HRG. For 
+      item-294 at level 3: text: , charmed hadrons tabulated in [ ... asf] – we label this as 1S1P-HRG. For 
       item-295 at level 3: formula: T_{pc}<T\leq 166.1
-      item-296 at level 3: text: MeV, both 
+      item-296 at level 3: text:  MeV, both 
       item-297 at level 3: formula: P^C_B
       item-298 at level 3: text:  and 
       item-299 at level 3: formula: P^C_M
@@ -363,7 +363,7 @@ item-0 at level 0: unspecified: group _root_
       item-338 at level 3: formula: m^C_q
       item-339 at level 3: text:  is the standard deviation of 
       item-340 at level 3: formula: m^C_q
-      item-341 at level 3: text:  values obtained after solving Eq.[eq:Qc] for 
+      item-341 at level 3: text:  values obtained after solving Eq. [eq:Qc] for 
       item-342 at level 3: formula: 50
       item-343 at level 3: text:  fake Gaussian samples. Fig. [fig:Pq] [Right] shows that at 
       item-344 at level 3: formula: T=162.4
