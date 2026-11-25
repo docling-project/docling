@@ -38,6 +38,7 @@ try:  # pragma: no cover - import-time guard
         LatexGroupNode,
         LatexMacroNode,
         LatexMathNode,
+        LatexSpecialsNode,
         LatexWalker,
     )
     from pylatexenc.macrospec import MacroSpec
@@ -382,6 +383,9 @@ class LatexDocumentBackend(
 
                 elif isinstance(node, InlineFormula):
                     text_buffer.append(node)
+
+                elif isinstance(node, LatexSpecialsNode):
+                    self._append_specials(node, text_buffer)
 
                 elif isinstance(node, LatexMacroNode):
                     inline_args = self._inline_math_argument_nodes(node)

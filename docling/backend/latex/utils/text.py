@@ -244,6 +244,24 @@ class TextHelperMixin:
         if isinstance(item, ListItem):
             self._list_item_lines.pop(item.self_ref, None)
 
+    @staticmethod
+    def _append_specials(
+        node: LatexSpecialsNode, text_buffer: list[str | InlineFormula]
+    ) -> None:
+        """Append the text of a tie or ligature such as ``~``, ``--`` or ``````.
+
+        A tie is a space, as in the metadata handler; the others become the
+        characters they typeset: en and em dashes, curly quotes, inverted ! and ?.
+        ``&`` separates table cells, which the table parser handles, so it adds
+        nothing here.
+        """
+        if node.specials_chars == "&":
+            return
+        if node.specials_chars == "~":
+            text_buffer.append(" ")
+        else:
+            text_buffer.append(LatexNodes2Text().nodelist_to_text([node]))
+
     def _char_macro_to_text(self, node: LatexMacroNode) -> str | None:
         """Return the Unicode text of an accent or letter macro.
 
@@ -409,6 +427,8 @@ class TextHelperMixin:
                 )
             elif isinstance(node, LatexMathNode):
                 self._process_math_node(node, doc, parent, text_buffer, flush_fn)
+            elif isinstance(node, LatexSpecialsNode):
+                self._append_specials(node, text_buffer)
             elif isinstance(node, LatexEnvironmentNode) and node.envname == "math":
                 math_text = self._clean_math(node.latex_verbatim(), node.envname)
                 if math_text:

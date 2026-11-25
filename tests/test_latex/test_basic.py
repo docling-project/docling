@@ -113,6 +113,39 @@ def test_latex_escaped_chars():
     assert "$100" in full_text or "\\$100" in full_text
 
 
+def test_latex_ties_dashes_and_quotes():
+    # ~, --, ---, `` and '' are parsed as specials, not plain characters, and
+    # used to be dropped: "Fig.~1" became "Fig.1" and "1--5" became "15".
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    See Fig.~1 on pages 1--5 --- or ``quoted'' text, !`Hola! ?`Qu\\'e?
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    full_text = " ".join(t.text for t in doc.texts if t.label == DocItemLabel.TEXT)
+
+    assert "Fig. 1" in full_text
+    assert "pages 1\N{EN DASH}5" in full_text
+    assert "5 \N{EM DASH} or" in full_text
+    assert (
+        "\N{LEFT DOUBLE QUOTATION MARK}quoted\N{RIGHT DOUBLE QUOTATION MARK} text"
+        in full_text
+    )
+    assert (
+        "\N{INVERTED EXCLAMATION MARK}Hola! \N{INVERTED QUESTION MARK}Qu\N{LATIN SMALL LETTER E WITH ACUTE}?"
+        in full_text
+    )
+
+
 def test_latex_is_valid():
     """Test is_valid method"""
     # Valid document

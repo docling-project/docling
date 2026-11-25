@@ -3551,8 +3551,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section[sec:attention].",
-      "text": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section[sec:attention]."
+      "orig": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section [sec:attention].",
+      "text": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [extendedngpu], ByteNet [NalBytenet2017] and ConvS2S [JonasFaceNet2017], all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [hochreiter2001gradient]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section [sec:attention]."
     },
     {
       "self_ref": "#/texts/60",
@@ -3748,8 +3748,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure[fig:model-arch], respectively.",
-      "text": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure[fig:model-arch], respectively."
+      "orig": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure [fig:model-arch], respectively.",
+      "text": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure [fig:model-arch], respectively."
     },
     {
       "self_ref": "#/texts/76",
@@ -4051,8 +4051,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure[fig:multi-head-att]).   The input consists of queries and keys of dimension ",
-      "text": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure[fig:multi-head-att]).   The input consists of queries and keys of dimension "
+      "orig": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure [fig:multi-head-att]).   The input consists of queries and keys of dimension ",
+      "text": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure [fig:multi-head-att]).   The input consists of queries and keys of dimension "
     },
     {
       "self_ref": "#/texts/100",
@@ -4880,8 +4880,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att].",
-      "text": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att]."
+      "orig": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure [fig:multi-head-att].",
+      "text": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure [fig:multi-head-att]."
     },
     {
       "self_ref": "#/texts/167",
@@ -5211,8 +5211,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ") all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att].",
-      "text": ") all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att]."
+      "orig": ") all values in the input of the softmax which correspond to illegal connections.  See Figure [fig:multi-head-att].",
+      "text": ") all values in the input of the softmax which correspond to illegal connections.  See Figure [fig:multi-head-att]."
     },
     {
       "self_ref": "#/texts/193",
@@ -5710,8 +5710,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.",
-      "text": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."
+      "orig": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table [tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.",
+      "text": "We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table [tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."
     },
     {
       "self_ref": "#/texts/233",
@@ -6755,8 +6755,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We used the Adam optimizer[kingma2014adam] with ",
-      "text": "We used the Adam optimizer[kingma2014adam] with "
+      "orig": "We used the Adam optimizer [kingma2014adam] with ",
+      "text": "We used the Adam optimizer [kingma2014adam] with "
     },
     {
       "self_ref": "#/texts/314",
@@ -7526,8 +7526,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than ",
-      "text": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than "
+      "orig": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table [tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than ",
+      "text": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table [tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than "
     },
     {
       "self_ref": "#/texts/372",
@@ -7574,8 +7574,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took ",
-      "text": ".  The configuration of this model is listed in the bottom line of Table[tab:variations].  Training took "
+      "orig": ".  The configuration of this model is listed in the bottom line of Table [tab:variations].  Training took ",
+      "text": ".  The configuration of this model is listed in the bottom line of Table [tab:variations].  Training took "
     },
     {
       "self_ref": "#/texts/376",
@@ -8267,8 +8267,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations].",
-      "text": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations]."
+      "orig": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table [tab:variations].",
+      "text": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table [tab:variations]."
     },
     {
       "self_ref": "#/texts/430",
@@ -8279,8 +8279,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.",
-      "text": "In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."
+      "orig": "In Table [tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.",
+      "text": "In Table [tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."
     },
     {
       "self_ref": "#/texts/431",
@@ -8307,8 +8307,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In Table[tab:variations] rows (B), we observe that reducing the attention key size ",
-      "text": "In Table[tab:variations] rows (B), we observe that reducing the attention key size "
+      "orig": "In Table [tab:variations] rows (B), we observe that reducing the attention key size ",
+      "text": "In Table [tab:variations] rows (B), we observe that reducing the attention key size "
     },
     {
       "self_ref": "#/texts/433",
@@ -8448,8 +8448,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We performed only a small number of experiments to select the dropout, both attention and residual (section[sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + ",
-      "text": "We performed only a small number of experiments to select the dropout, both attention and residual (section[sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + "
+      "orig": "We performed only a small number of experiments to select the dropout, both attention and residual (section [sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + ",
+      "text": "We performed only a small number of experiments to select the dropout, both attention and residual (section [sec:reg]), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + "
     },
     {
       "self_ref": "#/texts/444",
@@ -8532,8 +8532,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our results in Table[tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16].",
-      "text": "Our results in Table[tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16]."
+      "orig": "Our results in Table [tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16].",
+      "text": "Our results in Table [tab:parsing-results] show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [dyer-rnng:16]."
     },
     {
       "self_ref": "#/texts/451",
