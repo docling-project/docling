@@ -560,3 +560,39 @@ def test_download_lists_the_recorded_models_in_models_cdx_json(
         assert component["externalReferences"][0]["url"] == (
             "https://example.org/rec.onnx"
         )
+
+
+def test_download_without_manifest_does_not_ask_the_hub(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """--no-manifest downloads as before: no commit lookup, so it works offline."""
+    import huggingface_hub
+
+    class OfflineApi:
+        def model_info(self, *args: Any, **kwargs: Any) -> None:
+            raise AssertionError("model_info called with --no-manifest")
+
+    asked: list[dict] = []
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        asked.append(kwargs)
+        return str(kwargs["local_dir"])
+
+    monkeypatch.setattr(huggingface_hub, "HfApi", OfflineApi)
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "picture_classifier",
+            "-o",
+            str(tmp_path),
+            "-q",
+            "--no-manifest",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert asked, "the model was not downloaded"
+    assert not (tmp_path / "models.cdx.json").exists()

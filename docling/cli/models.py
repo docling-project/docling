@@ -4,6 +4,7 @@
 import logging
 import sys
 import warnings
+from contextlib import nullcontext
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal, Optional
@@ -47,7 +48,11 @@ from docling.models.stages.ocr.rapid_ocr_model import (
     _validate_rapidocr_model_size,
 )
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.models.utils.model_manifest import record_downloads, write_cyclonedx
+from docling.models.utils.model_manifest import (
+    DownloadRecord,
+    record_downloads,
+    write_cyclonedx,
+)
 from docling.utils.model_downloader import _DEFAULT_RAPIDOCR_MODELS, download_models
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -329,7 +334,10 @@ def download(
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-model-size"
             ) from error
-    with record_downloads() as record:
+    # Only a recorded download looks up commits on the Hub, so --no-manifest
+    # downloads exactly as before, offline included.
+    recording = record_downloads() if manifest else nullcontext()
+    with recording as record:
         output_dir = download_models(
             output_dir=output_dir,
             force=force,
@@ -373,7 +381,7 @@ def download(
                 if model in _WHISPER_S2T_MODELS
             ],
         )
-    if manifest:
+    if isinstance(record, DownloadRecord):
         if any(model in _WHISPER_S2T_MODELS for model in to_download):
             err_console.print(
                 "WhisperS2T models are fetched by whisper-s2t itself and are "
