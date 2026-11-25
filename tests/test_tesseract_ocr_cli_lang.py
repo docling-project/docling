@@ -41,6 +41,7 @@ def _model_for_listing(listing: str) -> TesseractOcrCliModel:
     """Build a model whose language list comes from the given `--list-langs` output."""
     model = TesseractOcrCliModel.__new__(TesseractOcrCliModel)
     model._safe_tesseract_cmd = "tesseract"
+    model._safe_tessdata_path = None
     with patch(
         f"{_MODULE}.subprocess.run",
         return_value=_FakeCompletedProcess(listing.encode("utf-8")),
