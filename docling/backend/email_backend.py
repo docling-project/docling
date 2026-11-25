@@ -25,6 +25,7 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.calendar.parser import Component, parse_components, unfold_text
 from docling.backend.calendar.render import add_calendar_components
 from docling.backend.calendar_backend import holds_calendar, read_calendar_text
+from docling.backend.email_rtf import decompress_rtf, html_from_rtf
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import FormatToExtensions, InputFormat
@@ -74,6 +75,9 @@ _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 _RECIPIENT_TYPE_PROP_ID = 0x0C15
 _RECIPIENT_TYPE_CC = 2
 _RECIPIENT_TYPE_BCC = 3
+
+# MAPI PidTagRtfCompressed: Outlook can keep the HTML body only in this RTF body.
+_RTF_COMPRESSED_PROP_ID = 0x1009
 
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
@@ -442,6 +446,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         except (UnicodeDecodeError, LookupError):
             html_body = None
             _log.warning("Could not decode .msg HTML body")
+        html_body = html_body or EmailDocumentBackend._html_from_rtf_body(message)
         if plain_body:
             email_message.set_content(plain_body)
             if html_body:
@@ -467,6 +472,18 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             )
 
         return email_message.as_bytes()
+
+    @staticmethod
+    def _html_from_rtf_body(message: OxMsgMessage) -> str | None:
+        """Read the HTML body that Outlook encapsulated in the compressed RTF body."""
+        rtf = message.properties.binary_prop_value(_RTF_COMPRESSED_PROP_ID)
+        if not rtf:
+            return None
+        try:
+            return html_from_rtf(decompress_rtf(rtf))
+        except ValueError as exc:
+            _log.warning("Skipped an RTF body that cannot be read: %s", exc)
+            return None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -576,6 +593,48 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             self.mail.text_plain + self.mail.text_html + other_parts
         )
 
+    def _get_plain_paragraphs(self) -> list[_BodyParagraph]:
+        assert self.mail is not None
+
+        # mailparser keeps only the decoded text of a part, so the flowed
+        # parts are found again by their text.
+        flowed = {
+            _decode_text_part(part): str(part.get_param("delsp", "")).lower() == "yes"
+            for part in self.mail.message.walk()
+            if part.get_content_type() == "text/plain"
+            and str(part.get_param("format", "")).lower() == "flowed"
+        }
+        paragraphs: list[_BodyParagraph] = []
+        for part in self.mail.text_plain:
+            if part in flowed:
+                part = _unflow(part, flowed[part])
+            paragraphs.extend(
+                _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
+                for paragraph in self._split_paragraphs(part)
+            )
+        return paragraphs
+
+    def _get_html_paragraphs(self) -> list[_BodyParagraph]:
+        assert self.mail is not None
+
+        paragraphs: list[_BodyParagraph] = []
+        for part in self.mail.text_html:
+            html_doc = self._convert_html_part(part)
+            # Export each layer separately so furniture remains available
+            # without becoming part of the email's default body export.
+            for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):
+                # The outer email export escapes these text items.
+                markdown = html_doc.export_to_markdown(
+                    included_content_layers={content_layer},
+                    escape_html=False,
+                    escape_underscores=False,
+                )
+                paragraphs.extend(
+                    _BodyParagraph(text=paragraph, content_layer=content_layer)
+                    for paragraph in self._split_paragraphs(markdown)
+                )
+        return paragraphs
+
     def _get_body_paragraphs(
         self, shown_parts: list[list[Component]]
     ) -> list[_BodyParagraph]:
@@ -587,44 +646,11 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # generate automatically. Only return once a part has actually
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
-        if self.mail.text_plain:
-            # mailparser keeps only the decoded text of a part, so the flowed
-            # parts are found again by their text.
-            flowed = {
-                _decode_text_part(part): str(part.get_param("delsp", "")).lower()
-                == "yes"
-                for part in self.mail.message.walk()
-                if part.get_content_type() == "text/plain"
-                and str(part.get_param("format", "")).lower() == "flowed"
-            }
-            paragraphs: list[_BodyParagraph] = []
-            for part in self.mail.text_plain:
-                if part in flowed:
-                    part = _unflow(part, flowed[part])
-                paragraphs.extend(
-                    _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-                    for paragraph in self._split_paragraphs(part)
-                )
-            if paragraphs:
-                return paragraphs
-
-        if self.mail.text_html:
-            paragraphs = []
-            for part in self.mail.text_html:
-                html_doc = self._convert_html_part(part)
-                # Export each layer separately so furniture remains available
-                # without becoming part of the email's default body export.
-                for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):
-                    # The outer email export escapes these text items.
-                    markdown = html_doc.export_to_markdown(
-                        included_content_layers={content_layer},
-                        escape_html=False,
-                        escape_underscores=False,
-                    )
-                    paragraphs.extend(
-                        _BodyParagraph(text=paragraph, content_layer=content_layer)
-                        for paragraph in self._split_paragraphs(markdown)
-                    )
+        readers = (self._get_plain_paragraphs, self._get_html_paragraphs)
+        if self.options.prefer_html:
+            readers = readers[::-1]
+        for read in readers:
+            paragraphs = read()
             if paragraphs:
                 return paragraphs
 

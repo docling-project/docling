@@ -778,6 +778,14 @@ class EmailBackendOptions(BaseBackendOptions):
             "is left out."
         ),
     )
+    prefer_html: bool = Field(
+        False,
+        description=(
+            "Whether to convert the HTML body instead of the plain-text body "
+            "when the email has both. The HTML body keeps tables and other "
+            "structure that the plain-text body flattens. Opt-in (default False)."
+        ),
+    )
 
 
 class XBRLBackendOptions(BaseBackendOptions):
