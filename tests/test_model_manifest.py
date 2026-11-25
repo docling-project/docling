@@ -162,3 +162,65 @@ def test_a_file_of_the_commit_missing_on_disk_stops_the_record(tmp_path: Path) -
     snapshot = _snapshot(tmp_path / "org--model")
     with record_downloads(), pytest.raises(FileNotFoundError, match=r"absent\.bin"):
         record_hf_snapshot("org/model", COMMIT, snapshot, [*FILES, "absent.bin"])
+
+
+OTHER_COMMIT = "fedcba9876543210fedcba9876543210fedcba98"
+
+
+def test_a_later_download_into_the_directory_adds_its_models(tmp_path: Path) -> None:
+    a = _snapshot(tmp_path / "a")
+    b = _snapshot(tmp_path / "b")
+    ocr_file = tmp_path / "rec.onnx"
+    ocr_file.write_bytes(b"onnx")
+
+    with record_downloads() as first:
+        record_hf_snapshot("org/a", COMMIT, a, FILES)
+        record_url_file("https://example.org/rec.onnx", ocr_file)
+    write_cyclonedx(first, tmp_path, "1")
+    with record_downloads() as second:
+        record_hf_snapshot("org/b", COMMIT, b, FILES)
+    path = write_cyclonedx(second, tmp_path, "1")
+
+    names = [c["name"] for c in json.loads(path.read_text())["components"]]
+    assert names == ["org/a", "org/b", "rec.onnx"]
+
+    # The same models in one run give the same file.
+    with record_downloads() as both:
+        record_hf_snapshot("org/b", COMMIT, b, FILES)
+        record_hf_snapshot("org/a", COMMIT, a, FILES)
+        record_url_file("https://example.org/rec.onnx", ocr_file)
+    once = tmp_path / "once"
+    once.mkdir()
+    assert write_cyclonedx(both, once, "1").read_bytes() == path.read_bytes()
+
+
+def test_a_model_downloaded_again_replaces_its_entry(tmp_path: Path) -> None:
+    a = _snapshot(tmp_path / "a")
+    ocr_file = tmp_path / "rec.onnx"
+    ocr_file.write_bytes(b"onnx")
+
+    with record_downloads() as first:
+        record_hf_snapshot("org/a", COMMIT, a, FILES)
+        record_url_file("https://example.org/rec.onnx", ocr_file)
+    write_cyclonedx(first, tmp_path, "1")
+    ocr_file.write_bytes(b"onnx v2")
+    with record_downloads() as second:
+        record_hf_snapshot("org/a", OTHER_COMMIT, a, FILES)
+        record_url_file("https://example.org/rec.onnx", ocr_file)
+    path = write_cyclonedx(second, tmp_path, "1")
+
+    hf, url = json.loads(path.read_text())["components"]
+    assert hf["version"] == OTHER_COMMIT
+    assert url["hashes"][0]["content"] == _sha256(b"onnx v2")
+
+
+def test_an_existing_file_that_is_not_a_model_list_stops_the_write(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "models.cdx.json").write_text('{"bomFormat": "SPDX"}')
+    with record_downloads() as record:
+        record_hf_snapshot("org/a", COMMIT, _snapshot(tmp_path / "a"), FILES)
+
+    with pytest.raises(ValueError, match=r"models\.cdx\.json"):
+        write_cyclonedx(record, tmp_path, "1")
+

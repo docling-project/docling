@@ -83,8 +83,9 @@ downloaded, as a `pkg:huggingface` package URL, and each other model file with
 the URL it came from. Every file carries its SHA-256. SBOM tools that read SBOM
 files inside a container image, such as syft, which `docker build --sbom=true`
 uses, then list the models of an image built with the command. WhisperS2T
-models are not listed, because whisper-s2t downloads them itself. Use
-`--no-manifest` to skip the file.
+models are not listed, because whisper-s2t downloads them itself. A later
+download into the same directory adds its models to the file, and a model
+downloaded again replaces its entry. Use `--no-manifest` to skip the file.
 
 **Step 2: Use the prefetched models**
 

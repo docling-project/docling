@@ -186,13 +186,36 @@ def _url_component(download: UrlDownload) -> _CdxComponent:
     )
 
 
+def _component_key(component: _CdxComponent) -> tuple[int, str, str]:
+    """Hugging Face models first, by repository and commit, then URL downloads."""
+    if component.purl is not None:
+        return (0, component.name, component.version or "")
+    return (1, component.bom_ref or component.name, "")
+
+
+def _read_existing(path: Path) -> list[_CdxComponent]:
+    """The components of an earlier ``models.cdx.json`` at ``path``, if any."""
+    if not path.exists():
+        return []
+    try:
+        return _CdxBom.model_validate_json(path.read_text(encoding="utf-8")).components
+    except ValueError as error:
+        raise ValueError(
+            f"{path} exists but is not a list of models written by docling; "
+            f"move or delete it: {error}"
+        ) from error
+
+
 def write_cyclonedx(
     record: DownloadRecord, output_dir: Path, tool_version: str
 ) -> Path:
     """Write ``record`` to ``output_dir/models.cdx.json`` and return the path.
 
-    Duplicates are merged and components sorted, and there is no serial number
-    or timestamp, so the same models always give the same file.
+    Models listed by an earlier download into the same directory stay listed,
+    and a model downloaded again replaces its entry: a Hugging Face model by
+    repository, a file by its URL. Duplicates are merged and components sorted,
+    and there is no serial number or timestamp, so the same models always give
+    the same file.
     """
     hf_models: dict[tuple[str, str], HfModelDownload] = {}
     for model in record.hf_models:
@@ -203,14 +226,22 @@ def write_cyclonedx(
         hf_models[key] = model
     urls = {download.url: download for download in record.urls}
 
+    components = [_hf_component(model) for model in hf_models.values()]
+    components += [_url_component(download) for download in urls.values()]
+    path = output_dir / MANIFEST_FILENAME
+    listed = {repo_id for repo_id, _ in hf_models} | set(urls)
+    components += [
+        component
+        for component in _read_existing(path)
+        if (component.name if component.purl else component.bom_ref) not in listed
+    ]
+
     bom = _CdxBom(
         metadata=_CdxMetadata(
             tools=_CdxTools(components=[_CdxTool(name="docling", version=tool_version)])
         ),
-        components=[_hf_component(hf_models[key]) for key in sorted(hf_models)]
-        + [_url_component(urls[url]) for url in sorted(urls)],
+        components=sorted(components, key=_component_key),
     )
-    path = output_dir / MANIFEST_FILENAME
     path.write_text(
         json.dumps(bom.model_dump(by_alias=True, exclude_none=True), indent=2) + "\n",
         encoding="utf-8",
