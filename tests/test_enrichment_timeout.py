@@ -146,3 +146,35 @@ def test_enrichment_stops_between_batches_at_the_document_deadline(
     assert pipeline.model.calls == 1
     assert later_model.calls == 0
     assert completed_counts == [0, 1]
+
+
+def test_disabled_enrichment_models_do_not_report_a_document_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class DisabledEnrichmentModel(_RecordingEnrichmentModel):
+        # Mirrors `DocumentPictureClassifier` and the picture description
+        # models, which sit in `enrichment_pipe` even when disabled.
+        def __init__(self) -> None:
+            super().__init__()
+            self.enabled = False
+
+    now = 0.0
+
+    class ExhaustedBudgetPipeline(_TimeoutPipeline):
+        def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+            # The parse used the whole budget before enrichment starts.
+            nonlocal now
+            now = 10.0
+            return super()._build_document(conv_res)
+
+    monkeypatch.setattr(base_pipeline, "time", SimpleNamespace(monotonic=lambda: now))
+    pipeline = ExhaustedBudgetPipeline(timed_out=False)
+    pipeline.enrichment_pipe = [DisabledEnrichmentModel()]
+    pipeline.pipeline_options.document_timeout = 1.0
+
+    result = pipeline.execute(_input_document(), raises_on_error=True)
+
+    # A complete document is not a timeout: the only models in the pipe are
+    # disabled, so the spent deadline has no enabled work to blame.
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []

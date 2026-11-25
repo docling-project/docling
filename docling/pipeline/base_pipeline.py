@@ -218,6 +218,10 @@ class BasePipeline(ABC):
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
             try:
                 for model in self.enrichment_pipe:
+                    if not model.enabled:
+                        # A disabled model never runs, so it must not spend the
+                        # deadline or report a timeout for work nobody needed.
+                        continue
                     check_deadline()
                     step = model.progress_step
                     label = ENRICHMENT_STEP_LABELS.get(step, type(model).__name__)
