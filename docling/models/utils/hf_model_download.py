@@ -116,8 +116,17 @@ def download_hf_model(
     files: Optional[list[str]] = None
     if current_record() is not None:
         from huggingface_hub import HfApi
+        from huggingface_hub.errors import OfflineModeIsEnabled
 
-        info = HfApi().model_info(repo_id, revision=revision)
+        try:
+            info = HfApi().model_info(repo_id, revision=revision)
+        except OfflineModeIsEnabled as error:
+            raise OfflineModeIsEnabled(
+                f"Listing {repo_id} in models.cdx.json needs the Hugging Face Hub "
+                f"to resolve revision {revision or 'main'} to a commit and list "
+                "its files. Download without the list (docling-tools models "
+                "download --no-manifest) when the Hub is not reachable."
+            ) from error
         if not info.sha or info.siblings is None:
             raise ValueError(
                 f"The Hugging Face Hub returned no commit or file list for "

@@ -224,3 +224,21 @@ def test_an_existing_file_that_is_not_a_model_list_stops_the_write(
     with pytest.raises(ValueError, match=r"models\.cdx\.json"):
         write_cyclonedx(record, tmp_path, "1")
 
+
+def test_an_offline_recorded_download_points_to_no_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import huggingface_hub
+    from huggingface_hub.errors import OfflineModeIsEnabled
+
+    class OfflineApi:
+        def model_info(self, *args, **kwargs):
+            raise OfflineModeIsEnabled("offline")
+
+    monkeypatch.setattr(huggingface_hub, "HfApi", OfflineApi)
+
+    with (
+        record_downloads(),
+        pytest.raises(OfflineModeIsEnabled, match=r"--no-manifest"),
+    ):
+        hf_model_download.download_hf_model("org/model", local_dir=tmp_path)
