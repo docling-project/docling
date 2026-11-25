@@ -704,6 +704,16 @@ class TesseractCliOcrOptions(OcrOptions):
             )
         ),
     ] = None
+    embed_render_dpi: Annotated[
+        bool,
+        Field(
+            description=(
+                "Embed the render resolution (72 * scale DPI) in the images sent to "
+                "Tesseract CLI. Set to False to let Tesseract determine the resolution "
+                "as in Docling 2.143.0."
+            ),
+        ),
+    ] = True
     model_config = ConfigDict(
         extra="forbid",
     )
