@@ -9,7 +9,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import ContentLayer, DocItemLabel, TextItem
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItemLabel,
+    DoclingDocument,
+    TextItem,
+)
 
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions
@@ -130,6 +135,50 @@ This is a second paragraph.
         "This is a second paragraph.",
     ]
     assert [item.label for item in text_items[1:]] == [DocItemLabel.TEXT] * 5
+
+
+@pytest.mark.parametrize(
+    ("params", "body", "expected"),
+    [
+        (
+            "",
+            b"This line was \nsoft wrapped.\n\n> Quoted text that \n> was wrapped too.\n"
+            b">  Stuffed \nLast line\n-- \nSignature\n",
+            [
+                "This line was soft wrapped.",
+                "> Quoted text that was wrapped too.\n>  Stuffed \nLast line\n-- \nSignature",
+            ],
+        ),
+        (
+            "; delsp=yes",
+            "日本語の長い文章を \n折り返しました。\n".encode(),
+            ["日本語の長い文章を折り返しました。"],
+        ),
+        (
+            # latin-1 bytes in a part that declares utf-8
+            "",
+            b"Caf\xe9 au lait was \nsoft wrapped here.\n",
+            ["Caf\ufffd au lait was soft wrapped here."],
+        ),
+    ],
+)
+def test_email_backend_joins_soft_line_breaks_of_flowed_text(
+    params: str, body: bytes, expected: list[str]
+):
+    raw_email = (
+        b"From: alice@example.com\nSubject: Flowed\nMIME-Version: 1.0\n"
+        b'Content-Type: text/plain; charset="utf-8"; format=flowed'
+        + params.encode()
+        + b"\n\n"
+        + body
+    )
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(DocumentStream(name="flowed.eml", stream=BytesIO(raw_email)))
+        .document
+    )
+
+    assert [item.text for item in doc.texts[2:]] == expected
 
 
 def test_email_backend_keeps_cc_recipients():
@@ -617,8 +666,66 @@ def test_email_keeps_furniture_from_each_html_part_once():
     assert doc.export_to_markdown() == "# Multipart HTML\n\nFirst body.\n\nSecond body."
 
 
+_INVITATION_ICS = (
+    "BEGIN:VCALENDAR\r\n"
+    "VERSION:2.0\r\n"
+    "PRODID:-//Docling//Invitation test//EN\r\n"
+    "METHOD:REQUEST\r\n"
+    "BEGIN:VEVENT\r\n"
+    "UID:planning-2026@example.com\r\n"
+    "SEQUENCE:0\r\n"
+    "DTSTAMP:20261113T080000Z\r\n"
+    "DTSTART;TZID=Europe/Berlin:20261120T100000\r\n"
+    "DTEND;TZID=Europe/Berlin:20261120T110000\r\n"
+    "SUMMARY:Quarterly planning\r\n"
+    "LOCATION:Room 4\r\n"
+    "ORGANIZER;CN=Alice Example:mailto:alice@example.com\r\n"
+    "ATTENDEE;CN=Bob Example;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:bob@example.com\r\n"
+    "DESCRIPTION:Agenda: budget and hiring.\r\n"
+    "END:VEVENT\r\n"
+    "END:VCALENDAR\r\n"
+)
+
+_INVITATION_MARKDOWN = (
+    "### Calendar\n\n"
+    "Message type: Invitation\n\n"
+    "#### Quarterly planning\n\n"
+    "Start: 2026-11-20 10:00 Europe/Berlin\n\n"
+    "End: 2026-11-20 11:00 Europe/Berlin\n\n"
+    "Location: Room 4\n\n"
+    "Organizer: Alice Example &lt;alice@example.com&gt;\n\n"
+    "Agenda: budget and hiring.\n\n"
+    "##### Attendees\n\n"
+    "- Bob Example &lt;bob@example.com&gt; (required, awaiting response)"
+)
+
+
+def _convert_email(
+    message: EmailMessage, options: EmailBackendOptions | None = None
+) -> DoclingDocument:
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EMAIL],
+        format_options={
+            InputFormat.EMAIL: EmailFormatOption(
+                backend_options=options or EmailBackendOptions()
+            )
+        },
+    )
+    stream = DocumentStream(name="invitation.eml", stream=BytesIO(message.as_bytes()))
+    return converter.convert(stream, raises_on_error=True).document
+
+
+def _invitation_email(subject: str, body: str) -> EmailMessage:
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = "Alice Example <alice@example.com>"
+    message["To"] = "bob@example.com"
+    message.set_content(body)
+    return message
+
+
 def test_email_backend_preserves_calendar_body_as_text():
-    """Keep another text MIME subtype as text, without parsing calendar fields."""
+    """With calendar parsing off, keep another text MIME subtype as text."""
     calendar_body = (
         "BEGIN:VCALENDAR\n"
         "VERSION:2.0\n"
@@ -635,13 +742,7 @@ def test_email_backend_preserves_calendar_body_as_text():
     message["Subject"] = "Calendar body"
     message.set_content(calendar_body, subtype="calendar")
 
-    doc = (
-        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
-        .convert(
-            DocumentStream(name="calendar.eml", stream=BytesIO(message.as_bytes()))
-        )
-        .document
-    )
+    doc = _convert_email(message, EmailBackendOptions(parse_calendar_invitations=False))
 
     assert [(item.text, item.content_layer) for item in doc.texts] == [
         ("Calendar body", ContentLayer.BODY),
@@ -651,6 +752,197 @@ def test_email_backend_preserves_calendar_body_as_text():
         "<terms> & conditions for a_b.", "&lt;terms&gt; &amp; conditions for a\\_b."
     ).replace("\n", "  \n")
     assert doc.export_to_markdown() == f"# Calendar body\n\n{escaped_body}"
+
+
+def test_email_adds_the_events_of_an_inline_invitation():
+    """Outlook sends an invitation as a text/calendar part beside the body.
+
+    mailparser does not handle that part, so its time, location, organizer
+    and attendees were dropped.
+    """
+    message = _invitation_email("Quarterly planning", "When: 20 November, 10:00.")
+    message.add_alternative(
+        _INVITATION_ICS, subtype="calendar", params={"method": "REQUEST"}
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown.endswith("When: 20 November, 10:00.\n\n" + _INVITATION_MARKDOWN)
+
+
+def test_email_adds_an_invitation_sent_inline_and_attached_once():
+    """Gmail sends the same invitation inline and as an invite.ics attachment."""
+    message = _invitation_email(
+        "Invitation: Quarterly planning", "You are invited to Quarterly planning."
+    )
+    message.add_alternative(
+        "<p>You are invited to Quarterly planning.</p>", subtype="html"
+    )
+    message.add_alternative(
+        _INVITATION_ICS, subtype="calendar", params={"method": "REQUEST"}
+    )
+    message.add_attachment(
+        _INVITATION_ICS.encode(),
+        maintype="application",
+        subtype="ics",
+        filename="invite.ics",
+    )
+
+    markdown = _convert_email(
+        message, EmailBackendOptions(list_attachments=True)
+    ).export_to_markdown()
+
+    assert markdown.endswith(
+        "You are invited to Quarterly planning.\n\n"
+        + _INVITATION_MARKDOWN
+        + "\n\n### Attachments\n\n- invite.ics (application/ics)"
+    )
+
+
+def test_email_leaves_out_an_event_description_that_repeats_the_body():
+    """Outlook copies the whole plain-text body into the event DESCRIPTION.
+
+    The body must not appear a second time under the event. The comparison
+    ignores the different line breaks of the two copies.
+    """
+    message = _invitation_email(
+        "Quarter planning",
+        "Hi team,\n\nLet us plan the quarter.\n\n"
+        "Microsoft Teams meeting\nJoin: https://teams.example.com/l/1\n",
+    )
+    message.add_alternative(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "METHOD:REQUEST\r\n"
+        "BEGIN:VEVENT\r\n"
+        "UID:quarter@example.com\r\n"
+        "DTSTART:20261120T090000Z\r\n"
+        "SUMMARY:Quarter planning\r\n"
+        "DESCRIPTION:Hi team,\\n\\nLet us plan the quarter.\\n\\nMicrosoft Teams\r\n"
+        "  meeting\\nJoin: https://teams.example.com/l/1\\n\\n\r\n"
+        "END:VEVENT\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+        params={"method": "REQUEST"},
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown.count("Let us plan the quarter.") == 1
+    assert markdown.endswith(
+        "Join: https://teams.example.com/l/1\n\n"
+        "### Calendar\n\n"
+        "Message type: Invitation\n\n"
+        "#### Quarter planning\n\n"
+        "Start: 2026-11-20 09:00 UTC"
+    )
+
+
+def test_email_reads_a_calendar_attachment_from_its_bytes():
+    """An .ics attachment is found by its name and unfolded before decoding.
+
+    RFC 5545 lets a folded line split a UTF-8 character. The calendar name
+    must not become a second title.
+    """
+    calendar = (
+        b"BEGIN:VCALENDAR\r\n"
+        b"VERSION:2.0\r\n"
+        b"X-WR-CALNAME:Team\r\n"
+        b"BEGIN:VEVENT\r\n"
+        b"UID:offsite@example.com\r\n"
+        b"DTSTART;VALUE=DATE:20270115\r\n"
+        b"SUMMARY:Planung f\xc3\r\n \xbcr 2027\r\n"
+        b"END:VEVENT\r\n"
+        b"END:VCALENDAR\r\n"
+    )
+    message = _invitation_email("Team calendar", "The calendar is attached.")
+    message.add_attachment(
+        calendar,
+        maintype="application",
+        subtype="octet-stream",
+        filename="team.ics",
+    )
+
+    doc = _convert_email(message)
+
+    assert [item.text for item in doc.texts if item.label == DocItemLabel.TITLE] == [
+        "Team calendar"
+    ]
+    assert doc.export_to_markdown().endswith(
+        "The calendar is attached.\n\n"
+        "### Calendar\n\n"
+        "Calendar name: Team\n\n"
+        "#### Planung für 2027\n\n"
+        "Date: 2027-01-15 (all day)"
+    )
+
+
+def test_email_calendar_body_is_not_kept_as_raw_text():
+    """mailparser also puts a calendar part into its fallback body text."""
+    message = EmailMessage()
+    message["Subject"] = "Quarterly planning"
+    message.set_content(
+        _INVITATION_ICS, subtype="calendar", params={"method": "REQUEST"}
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown == "# Quarterly planning\n\n" + _INVITATION_MARKDOWN
+
+
+def test_email_adds_the_name_of_a_calendar_without_entries():
+    """The .ics backend shows the name and description of such a calendar."""
+    message = EmailMessage()
+    message["Subject"] = "Team calendar"
+    message.set_content(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "X-WR-CALNAME:Team\r\n"
+        "X-WR-CALDESC:Shared team dates.\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown == (
+        "# Team calendar\n\n### Calendar\n\nCalendar name: Team\n\nShared team dates."
+    )
+
+
+def test_email_keeps_a_calendar_part_with_nothing_to_show_as_text():
+    """A part leaves the body text only when it is added as a calendar."""
+    message = EmailMessage()
+    message["Subject"] = "Time zone"
+    message.set_content(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "BEGIN:VTIMEZONE\r\n"
+        "TZID:Europe/Berlin\r\n"
+        "END:VTIMEZONE\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert "TZID:Europe/Berlin" in markdown
+    assert "### Calendar" not in markdown
+
+
+def test_email_skips_a_calendar_part_that_cannot_be_decoded():
+    message = _invitation_email("Quarterly planning", "See the invitation.")
+    message.add_attachment(
+        _INVITATION_ICS.encode(),
+        maintype="text",
+        subtype="calendar",
+        params={"charset": "x-unknown"},
+        filename="invite.ics",
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown.endswith("See the invitation.")
 
 
 @pytest.mark.parametrize(
@@ -891,6 +1183,113 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
     ).document
 
     assert "Real content that should appear." in doc.export_to_markdown()
+
+
+def test_msg_recovers_body_via_ole_on_decode_error():
+    """When message.body fails, the body is recovered from the OLE stream.
+
+    python-oxmsg <=0.0.2 decodes 8-bit body bytes with the internet code page
+    instead of the message code page.  The backend recovers the body by reading
+    the raw bytes from the OLE compound file and decoding with the message code
+    page.  See https://github.com/scanny/python-oxmsg/issues/5.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    body_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "utf-8", b"\xe9", 0, 1, "invalid continuation byte"
+        )
+    )
+    with patch.object(OxMsgMessage, "body", body_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(rfc822),
+        format=InputFormat.EMAIL,
+        filename="non_unicode.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(rfc822))
+
+    assert backend.is_valid()
+    doc = backend.convert()
+    markdown = doc.export_to_markdown()
+
+    # Subject and sender survive.
+    assert "Simple Email" in markdown
+    assert "From:" in markdown
+    # Body is recovered via OLE stream (msg_simple.msg stores body as
+    # PtypString, not PtypString8, so the OLE fallback stream may not exist;
+    # in that case the body is dropped but the backend still loads).
+
+
+def test_msg_loads_when_html_body_raises_unicode_decode_error():
+    """The html_body guard works the same way as the body guard."""
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    html_mock = PropertyMock(
+        side_effect=UnicodeDecodeError(
+            "utf-8", b"\xe9", 0, 1, "invalid continuation byte"
+        )
+    )
+    with patch.object(OxMsgMessage, "html_body", html_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="non_unicode.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    # Plain body still present when only html_body fails.
+    assert "Hello Bob" in backend.convert().export_to_markdown()
+
+
+def test_msg_loads_when_subject_raises_lookup_error():
+    """A .msg with an unknown codec (e.g. windows-950) still loads.
+
+    python-oxmsg maps code page 950 to 'windows-950', which Python does
+    not recognise.  This raises LookupError, not UnicodeDecodeError.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_simple.msg").read_bytes()
+
+    subject_mock = PropertyMock(
+        side_effect=LookupError("unknown encoding: windows-950")
+    )
+    with patch.object(OxMsgMessage, "subject", subject_mock):
+        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    backend = EmailDocumentBackend(
+        in_doc=InputDocument(
+            path_or_stream=BytesIO(rfc822),
+            format=InputFormat.EMAIL,
+            filename="non_unicode.eml",
+            backend=EmailDocumentBackend,
+        ),
+        path_or_stream=BytesIO(rfc822),
+    )
+    assert backend.is_valid()
+    markdown = backend.convert().export_to_markdown()
+
+    # Subject is lost, but body and sender survive.
+    assert "Simple Email" not in markdown
+    assert "Hello Bob" in markdown
 
 
 def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():

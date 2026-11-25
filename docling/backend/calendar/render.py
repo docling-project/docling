@@ -76,6 +76,7 @@ def add_calendar_components(
     components: list[Component],
     parent: NodeItem | None = None,
     base_level: int = 1,
+    name_as_title: bool = True,
 ) -> None:
     """Add calendars, and entries found outside a calendar, in file order.
 
@@ -87,8 +88,11 @@ def add_calendar_components(
         components: The top-level components from ``parse_components``.
         parent: The node to add the items under; the body if ``None``.
         base_level: The heading level of each entry.
+        name_as_title: Whether a calendar name becomes the document title.
+            If not, it becomes a "Calendar name:" line, for a document that
+            already has a title.
     """
-    writer = _Writer(doc, parent, base_level)
+    writer = _Writer(doc, parent, base_level, name_as_title)
     for component in components:
         if component.name == "VCALENDAR":
             writer.add_calendar(component)
@@ -97,10 +101,17 @@ def add_calendar_components(
 
 
 class _Writer:
-    def __init__(self, doc: DoclingDocument, parent: NodeItem | None, level: int):
+    def __init__(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        level: int,
+        name_as_title: bool,
+    ):
         self.doc = doc
         self.parent = parent
         self.level = level
+        self.name_as_title = name_as_title
 
     def _add_text(self, text: str) -> None:
         self.doc.add_text(label=DocItemLabel.TEXT, text=text, parent=self.parent)
@@ -115,8 +126,10 @@ class _Writer:
 
     def add_calendar(self, calendar: Component) -> None:
         name = _one_line(calendar.text("X-WR-CALNAME") or calendar.text("NAME"))
-        if name:
+        if name and self.name_as_title:
             self.doc.add_title(text=name, parent=self.parent)
+        elif name:
+            self._add_text(f"Calendar name: {name}")
         description = calendar.text("X-WR-CALDESC") or calendar.text("DESCRIPTION")
         for paragraph in _paragraphs(description):
             self._add_text(paragraph)
@@ -217,9 +230,14 @@ def _time_fields(entry: Component) -> list[str]:
     start_label = "Date" if entry.name == "VJOURNAL" else "Start"
 
     if start_prop is None:
-        pass
+        if end_prop is not None:
+            fields.append(f"End: {format_property_time(end_prop)}")
     elif start is None:
+        # The start is not a value this reads, but the end may still be one.
+        # Keep it, as for an entry without a start at all.
         fields.append(f"{start_label}: {start_prop.value}")
+        if end_prop is not None:
+            fields.append(f"End: {format_property_time(end_prop)}")
     elif start.all_day and entry.name == "VEVENT":
         # DTEND of an all-day entry is exclusive: a one-day event ends the next day.
         end = property_time(end_prop) if end_prop is not None else None
@@ -236,6 +254,10 @@ def _time_fields(entry: Component) -> list[str]:
             fields.append(f"End: {last_day.isoformat()} (all day)")
         else:
             fields.append(f"Date: {format_time(start)} (all day)")
+            # The end of an all-day entry is a date, but a producer can write
+            # one this does not read. Keep it, rather than drop it.
+            if end_prop is not None and end is None:
+                fields.append(f"End: {format_property_time(end_prop)}")
     else:
         fields.append(f"{start_label}: {format_time(start)}")
         if end_prop is not None:

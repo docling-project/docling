@@ -109,12 +109,14 @@ class NativePdfPipeline(ConvertPipeline):
 
         timings = _NativeBuildTimings()
         self._warn_on_rerender(backend)
+        unreturned_page_nos = set(expected_page_nos)
 
         start_time = time.monotonic()
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             for page_backend in self._timed_page_backends(
                 timings, iter_pdf_page_backends(backend, expected_page_nos)
             ):
+                unreturned_page_nos.remove(page_backend.page_no)
                 page = self._parse_page(timings, conv_res, page_backend)
                 if page is not None:
                     conv_res.pages.append(page)
@@ -142,8 +144,36 @@ class NativePdfPipeline(ConvertPipeline):
                             category=FailureCategory.TIMEOUT,
                         )
                     )
+                    conv_res.errors.extend(
+                        ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.__class__.__name__,
+                            error_message=f"Page {page_no} was not converted before the document timeout.",
+                            category=FailureCategory.TIMEOUT,
+                            page_no=page_no,
+                        )
+                        for page_no in sorted(unreturned_page_nos)
+                    )
                     conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                     break
+            else:
+                if unreturned_page_nos:
+                    _log.warning(
+                        "The PDF backend did not return %d of %d requested pages for %s.",
+                        len(unreturned_page_nos),
+                        len(expected_page_nos),
+                        conv_res.input.file,
+                    )
+                    conv_res.errors.extend(
+                        ErrorItem(
+                            component_type=DoclingComponentType.DOCUMENT_BACKEND,
+                            module_name=type(backend).__name__,
+                            error_message=f"The PDF backend did not return page {page_no}.",
+                            category=FailureCategory.BACKEND_FAILURE,
+                            page_no=page_no,
+                        )
+                        for page_no in sorted(unreturned_page_nos)
+                    )
 
             # Backends without random page access (the threaded docling-parse
             # backend) deliver their pages in completion order, so the parsed

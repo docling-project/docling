@@ -53,6 +53,7 @@ from odfdo import (
     Bookmark,
     Cell,
     Document as OdfDocument,
+    DrawGroup,
     DrawPage,
     Element,
     Frame,
@@ -300,6 +301,80 @@ def test_odt_hidden_section_goes_to_invisible_layer(tmp_path: Path):
     assert document.export_to_markdown() == "Question\n\nShown section"
     assert hidden_texts == ["Answer key", "Nested note"]
     assert document.tables[0].content_layer == ContentLayer.INVISIBLE
+
+
+def test_odt_hidden_text_is_left_out(tmp_path: Path):
+    """Text with the Hidden font effect (``text:display="none"``) is left out.
+
+    A hidden paragraph or heading goes to ``ContentLayer.INVISIBLE``. A hidden
+    span, and hidden text in a list item or a table cell, is dropped. The
+    setting is inherited from a parent style.
+    """
+    source = OdfDocument("text")
+    source.body.clear()
+    hidden_char = Style("text", name="Hidden")
+    hidden_char.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_char)
+    hidden_run = Style("text", name="T1")
+    hidden_run.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_run, automatic=True)
+    inherited_run = Style("text", name="T2", parent_style="Hidden")
+    inherited_run.set_properties(area="text", **{"fo:font-weight": "bold"})
+    source.insert_style(inherited_run, automatic=True)
+    hidden_para = Style("paragraph", name="P1", parent_style="Standard")
+    hidden_para.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_para, automatic=True)
+
+    paragraph = Paragraph("Shown start.")
+    paragraph.append(Span(" Hidden run.", style="T1"))
+    paragraph.append(Span(" Hidden by parent style.", style="T2"))
+    paragraph.append(" Shown end.")
+    source.body.append(paragraph)
+    source.body.append(Paragraph("Hidden paragraph.", style="P1"))
+    heading = Header(1, "Hidden heading")
+    heading.set_attribute("text:style-name", "P1")
+    source.body.append(heading)
+    item_paragraph = Paragraph("Item")
+    item_paragraph.append(Span(" hidden", style="T1"))
+    item = ListItem()
+    item.append(item_paragraph)
+    odf_list = OdfList()
+    odf_list.append(item)
+    source.body.append(odf_list)
+    run_cell = Cell()
+    cell_paragraph = Paragraph("Shown cell")
+    cell_paragraph.append(Span(" hidden", style="T1"))
+    run_cell.append(cell_paragraph)
+    paragraph_cell = Cell()
+    paragraph_cell.append(Paragraph("Shown paragraph"))
+    paragraph_cell.append(Paragraph("Hidden cell paragraph", style="P1"))
+    row = Row()
+    row.append(run_cell)
+    row.append(paragraph_cell)
+    table = Table("Table1")
+    table.append(row)
+    source.body.append(table)
+
+    document = _convert_odt_source(source, tmp_path / "hidden_text.odt")
+
+    hidden_texts = [
+        item.text
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.INVISIBLE}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert hidden_texts == ["Hidden paragraph.", "Hidden heading"]
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Shown cell",
+        "Shown paragraph",
+    ]
+    assert document.export_to_markdown(compact_tables=True) == (
+        "Shown start. Shown end.\n\n"
+        "- Item\n\n"
+        "| Shown cell | Shown paragraph |\n"
+        "| - | - |"
+    )
 
 
 def test_ods_conversion(ods_path: Path):
@@ -933,6 +1008,45 @@ def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
     assert footnote_texts == [
         "This is the footnote body text that should not vanish."
     ], "the footnote body must be recovered, not silently dropped"
+
+
+def test_odt_footnote_in_table_cell_is_not_spliced(tmp_path: Path):
+    """A footnote cited in a table cell stays out of the cell text, as it does in
+    a paragraph. Its body is a footnote item."""
+    path = tmp_path / "table_footnote.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(
+        Element.from_tag(
+            '<table:table table:name="T"><table:table-row>'
+            "<table:table-cell><text:p>Year</text:p></table:table-cell>"
+            "<table:table-cell><text:p>Revenue</text:p></table:table-cell>"
+            "</table:table-row><table:table-row>"
+            "<table:table-cell><text:p>2024</text:p></table:table-cell>"
+            "<table:table-cell><text:p>42 EUR"
+            '<text:note text:id="n1" text:note-class="footnote">'
+            "<text:note-citation>1</text:note-citation>"
+            "<text:note-body><text:p>Audited figures.</text:p></text:note-body>"
+            "</text:note></text:p></table:table-cell>"
+            "</table:table-row></table:table>"
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Year",
+        "Revenue",
+        "2024",
+        "42 EUR",
+    ]
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Audited figures."]
 
 
 def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
@@ -1642,6 +1756,52 @@ def test_odp_nested_textbox_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odp_grouped_shapes_keep_their_text(tmp_path: Path):
+    path = tmp_path / "grouped_shapes.odp"
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+
+    def shape(text: str) -> Element:
+        return Element.from_tag(
+            '<draw:custom-shape svg:width="6cm" svg:height="2cm">'
+            f"<text:p>{text}</text:p>"
+            '<draw:enhanced-geometry draw:type="rectangle"/></draw:custom-shape>'
+        )
+
+    page = DrawPage("page1", name="Slide One")
+    page.append(
+        Frame.text_frame("Before", size=("10cm", "2cm"), position=("1cm", "1cm"))
+    )
+    group = DrawGroup()
+    group.append(shape("Grouped shape"))
+    group.append(
+        Frame.text_frame("Grouped frame", size=("6cm", "2cm"), position=("1cm", "4cm"))
+    )
+    inner = DrawGroup()
+    inner.append(shape("Nested group"))
+    group.append(inner)
+    page.append(group)
+    page.append(shape("After"))
+    body.append(page)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    texts = [
+        item.text
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "text"
+    ]
+
+    assert texts == [
+        "Before",
+        "Grouped shape",
+        "Grouped frame",
+        "Nested group",
+        "After",
+    ]
+
+
 def test_odp_presentation_with_mixed_slide_content():
     path = Path("tests/data/odf/sources/odf_presentation_02.odp")
 
@@ -2108,6 +2268,57 @@ def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
         ["a", "1"],
         ["b", "2"],
     ]
+
+
+@pytest.mark.parametrize("axis", ["rows", "columns"])
+def test_ods_repeated_content_is_limited(
+    tmp_path: Path, axis: str, caplog: pytest.LogCaptureFixture
+):
+    """Test a sheet that repeats a cell with content ten million times.
+
+    The trailing padding is removed, but a repetition with content is not. The
+    backend expanded each copy several times, so a file of less than 1 KB used
+    minutes of CPU time and gigabytes of memory. The copies over
+    ``max_repeated_cells`` are not converted, and the cells written after the
+    repetition are kept.
+    """
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    path = tmp_path / f"repeated_{axis}.ods"
+    doc = OdfDocument("spreadsheet")
+    doc.body.clear()
+    sheet = Table("Sheet1")
+    if axis == "rows":
+        repeated = Row(repeated=10_000_000)
+        repeated.append_cell(Cell("A"))
+        sheet.append_row(repeated)
+        last = Row()
+        last.append_cell(Cell("end"))
+        sheet.append_row(last)
+    else:
+        row = Row()
+        row.append_cell(Cell("A", repeated=10_000_000))
+        row.append_cell(Cell("end"))
+        sheet.append_row(row)
+    doc.body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(max_repeated_cells=100)
+            )
+        },
+    )
+    with caplog.at_level(logging.WARNING):
+        tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    cells = [cell.text for row in tables[0].data.grid for cell in row]
+    assert cells == ["A"] * 101 + ["end"]
+    assert "max_repeated_cells" in caplog.text
 
 
 @pytest.mark.parametrize("hidden", [False, True], ids=["visible", "hidden"])

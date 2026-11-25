@@ -57,12 +57,13 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, ImageOps, UnidentifiedImageError
-from pydantic import AnyUrl, BaseModel, ValidationError
+from pydantic import AnyUrl, BaseModel
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.hyperlink import parse_hyperlink
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
@@ -80,12 +81,13 @@ from docling.utils.code_language import (
     detect_code_language,
     normalize_code_language,
 )
-from docling.utils.image_utils import check_image_pixels
+from docling.utils.image_utils import check_image_pixels, open_image
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.dammit import EncodingDetector
     from bs4.element import PreformattedString
 
     _BS4_AVAILABLE = True
@@ -125,6 +127,71 @@ def _warn_headers_without_origin() -> None:
 # Sentinel character for explicit line breaks from <br> tags
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
+
+# The quotation marks that the default style sheet of a browser gives <q>
+# (`quotes: auto`), from the CLDR data of the language: the outer pair, then
+# the pair for a quotation nested in it. The key is the primary language subtag.
+_QuotationMarks = tuple[tuple[str, str], tuple[str, str]]
+_Q_QUOTATION_MARKS_EN: Final[_QuotationMarks] = (
+    ("\u201c", "\u201d"),
+    ("\u2018", "\u2019"),
+)
+_Q_QUOTATION_MARKS_BY_LANG: Final[dict[str, _QuotationMarks]] = {
+    "cs": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "de": (("\u201e", "\u201c"), ("\u201a", "\u2018")),
+    "el": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "en": _Q_QUOTATION_MARKS_EN,
+    "es": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "fr": (("\u00ab", "\u00bb"), ("\u00ab", "\u00bb")),
+    "it": (("\u00ab", "\u00bb"), ("\u201c", "\u201d")),
+    "ja": (("\u300c", "\u300d"), ("\u300e", "\u300f")),
+    "nl": (("\u2018", "\u2019"), ("\u201c", "\u201d")),
+    "pl": (("\u201e", "\u201d"), ("\u00ab", "\u00bb")),
+    "pt": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+    "ru": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "sv": (("\u201d", "\u201d"), ("\u2019", "\u2019")),
+    "uk": (("\u00ab", "\u00bb"), ("\u201e", "\u201c")),
+    "zh": (("\u201c", "\u201d"), ("\u2018", "\u2019")),
+}
+
+
+def _q_quotation_marks(q: Tag) -> _QuotationMarks:
+    """Return the quotation marks for the language of a <q> element.
+
+    The language comes from the nearest `lang` (or `xml:lang`, for XHTML)
+    attribute on the element or an ancestor. An unknown or missing language
+    gets English marks.
+    """
+    for element in (q, *q.parents):
+        lang = element.get("lang", element.get("xml:lang"))
+        if lang is not None:
+            primary = str(lang).strip().lower().split("-")[0]
+            return _Q_QUOTATION_MARKS_BY_LANG.get(primary, _Q_QUOTATION_MARKS_EN)
+    return _Q_QUOTATION_MARKS_EN
+
+
+def _parse_html(markup: bytes) -> BeautifulSoup:
+    """Parse HTML, reading bytes that declare no encoding as UTF-8 when they are UTF-8.
+
+    When the bytes declare no encoding (no ``<meta charset>``), BeautifulSoup asks
+    a statistical detector first and tries UTF-8 last. On short text the detector
+    can pick another encoding, so valid UTF-8 comes out as garbled text. UTF-8 is
+    the likely encoding of such a page. Bytes that are not valid UTF-8 still go to
+    the detector. So do bytes with a NUL byte, such as UTF-16 text, which can be
+    valid UTF-8 only by accident.
+    """
+    encoding: Optional[str] = None
+    if (
+        b"\x00" not in markup
+        and EncodingDetector.find_declared_encoding(markup, is_html=True) is None
+    ):
+        try:
+            markup.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+        else:
+            encoding = "utf-8"
+    return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
 
 
 def _resolve_line_breaks(text: str) -> str:
@@ -210,9 +277,6 @@ _PARA_BREAKERS = {
     "td",
 }
 
-# Same names as a list, the form bs4 documents for matching several tag names.
-_PARA_BREAKER_NAMES: Final = sorted(_PARA_BREAKERS)
-
 # Elements whose end tag may be omitted, mapped to (ancestors that a new
 # element implicitly closes, ancestors that stop the search).
 _IMPLIED_END_TAGS: Final = {
@@ -287,6 +351,24 @@ def _parse_ol_start(value: str) -> Optional[int]:
         return None
     start = int(digits or "0")
     return start if start <= _OL_START_MAX else None
+
+
+def _has_descendant_named(tag: Tag, names: set[str]) -> bool:
+    """Return whether an element inside `tag` has one of the given names.
+
+    This gives the same answer as `tag.find(list(names)) is not None`, but
+    `find()` builds a `SoupStrainer` on every call. On the small subtree of a
+    single element that costs more than the search itself, and the backend
+    runs such checks once per element.
+
+    Args:
+        tag: The element whose descendants are searched.
+        names: The tag names to look for.
+
+    Returns:
+        True if a descendant element has one of the names.
+    """
+    return any(isinstance(node, Tag) and node.name in names for node in tag.descendants)
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -615,6 +697,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._tag_name_by_docling_id_cache: dict[str, str] = {}
         self._generated_html_id_counter: int = 0
         self._render_visibility_cache: dict[int, bool] = {}
+        self._captioned_figure_ids: set[int] = set()
 
         try:
             raw = (
@@ -633,7 +716,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._mhtml_resources = resources
                 self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
-            self.soup = BeautifulSoup(raw, "html.parser")
+            self.soup = _parse_html(raw)
         except DocumentLoadError:
             raise
         except Exception as e:
@@ -1039,14 +1122,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString(_BR_SENTINEL))
 
+        # A browser renders the quotation marks of <q> from CSS (open-quote and
+        # close-quote), so the markup does not hold them. Add them as text.
+        for q in content("q"):
+            marks = _q_quotation_marks(q)
+            depth = min(len(q.find_parents("q")), len(marks) - 1)
+            open_mark, close_mark = marks[depth]
+            q.insert(0, NavigableString(open_mark))
+            q.append(NavigableString(close_mark))
+
         # Furniture before the first heading rule, except for headers in tables and lists
+        self._render_visibility_cache.clear()
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Skip headers that become cell or list item text: they never switch the
-        # layer back to body
+        # Skip headers that become cell or list item text, or that the walk skips
+        # as hidden: they never switch the layer back to body. The walk does not
+        # check `content` itself or its ancestors, so stop there.
         clean_headers = [
-            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+            h
+            for h in all_headers
+            if not self._is_header_in_cell_or_item(h)
+            and not any(
+                self._is_suppressed_tag(tag)
+                for tag in takewhile(lambda t: t is not content, (h, *h.parents))
+            )
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -1059,7 +1159,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         # reset context
         self.ctx = _Context()
-        self._render_visibility_cache.clear()
+        self._captioned_figure_ids.clear()
         self._walk(content, doc)
         return doc
 
@@ -1885,7 +1985,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for tag in soup.find_all(list(_IMPLIED_END_TAGS)):
             closes, stops = _IMPLIED_END_TAGS[tag.name]
             while True:
-                open_tag = tag.find_parent(list(closes | stops))
+                # Same as `tag.find_parent(...)`, without building a
+                # `SoupStrainer` for each element.
+                open_tag = next(
+                    (
+                        parent
+                        for parent in tag.parents
+                        if parent.name in closes or parent.name in stops
+                    ),
+                    None,
+                )
                 if open_tag is None or open_tag.name in stops:
                     break
                 parent = tag.parent
@@ -1927,7 +2036,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         paragraphs = [
             p
             for p in soup.find_all("p")
-            if isinstance(p, Tag) and p.find(_PARA_BREAKER_NAMES) is not None
+            if isinstance(p, Tag) and _has_descendant_named(p, _PARA_BREAKERS)
         ]
 
         for p in paragraphs:
@@ -1975,7 +2084,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for n in reversed(new_nodes):
                 parent.insert(idx, n)
 
-    def _resolve_relative_path(self, loc: str) -> str:
+    def _resolve_relative_path(self, loc: str, *, decode_url_path: bool = False) -> str:
         if self._mhtml_resources is not None:
             archive_location = loc.strip()
             if archive_location.lower().startswith("cid:"):
@@ -1989,7 +2098,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return archive_location
             if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
                 return archive_location
-        return self._image_loader.resolve_relative_path(loc, self.base_path)
+        return self._image_loader.resolve_relative_path(
+            loc,
+            self.base_path,
+            decode_url_path=decode_url_path and self._mhtml_resources is None,
+        )
 
     @staticmethod
     def group_cell_elements(
@@ -2202,6 +2315,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
                             grid[row_idx + r][col_idx + c] = text
 
+                is_col_header, is_row_header = self._get_cell_header_flags(
+                    html_cell, col_header, row_header
+                )
                 if rich_table_cell:
                     rich_cell = RichTableCell(
                         text=text,
@@ -2212,9 +2328,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
@@ -2229,9 +2344,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header and not row_header,
-                        row_header=row_header
-                        or ((not col_header) and html_cell.name == "th"),
+                        column_header=is_col_header,
+                        row_header=is_row_header,
                         row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
@@ -2366,14 +2480,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         # the <br> tag itself has no rendered bbox.
                         _flush_buffer()
                     continue
-                has_block_descendants = bool(
-                    node.find(_BLOCK_TAGS)
-                    or node.find("input")
-                    or node.find(
-                        lambda item: (
-                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
-                        )
+                # One pass over the subtree instead of three `find()` calls,
+                # which each build a `SoupStrainer` first.
+                has_block_descendants = any(
+                    isinstance(item, Tag)
+                    and (
+                        item.name in _BLOCK_TAGS
+                        or item.name == "input"
+                        or self._is_custom_checkbox_tag(item)
                     )
+                    for item in node.descendants
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
                 if self._is_form_container(node):
@@ -2637,14 +2753,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @contextmanager
     def _use_hyperlink(self, tag: Tag):
-        old_hyperlink: Union[AnyUrl, Path, None] = None
-        new_hyperlink: Union[AnyUrl, Path, None] = None
         this_href = tag.get("href")
         if this_href is None:
             yield None
         else:
+            old_hyperlink: Union[AnyUrl, Path, None] = self.hyperlink
             if isinstance(this_href, str) and this_href:
-                old_hyperlink = self.hyperlink
                 try:
                     this_href = self._resolve_relative_path(this_href)
                 except ValueError:
@@ -2652,17 +2766,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     # directory (e.g. "/about" or "../index.html") is kept
                     # as written instead of failing the conversion.
                     pass
-                # ugly fix for relative links since pydantic does not support them.
-                try:
-                    new_hyperlink = AnyUrl(this_href)
-                except ValidationError:
-                    new_hyperlink = Path(this_href)
-                self.hyperlink = new_hyperlink
+                self.hyperlink = parse_hyperlink(this_href)
             try:
                 yield None
             finally:
-                if new_hyperlink:
-                    self.hyperlink = old_hyperlink
+                self.hyperlink = old_hyperlink
 
     @contextmanager
     def _use_format(self, tags: list[str]):
@@ -2765,16 +2873,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             tag: The details tag.
             doc: Currently used document.
+
+        Yields:
+            The group created for the details tag.
         """
-        self.parents[self.level + 1] = doc.add_group(
+        group = doc.add_group(
             name=tag.name,
             label=GroupLabel.SECTION,
             parent=self.parents[self.level],
             content_layer=self.content_layer,
         )
+        self.parents[self.level + 1] = group
         self.level += 1
         try:
-            yield None
+            yield group
         finally:
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -3443,6 +3555,32 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return match.group("marker").strip() if match else ""
 
     @staticmethod
+    def _get_cell_header_flags(
+        html_cell: Tag, col_header: bool, row_header: bool
+    ) -> tuple[bool, bool]:
+        """Return the `column_header` and `row_header` flags of a table cell.
+
+        The `scope` attribute of a `<th>` names the cells that it is a header
+        for (HTML Standard, the th element): `col` and `colgroup` make it a
+        column header, `row` and `rowgroup` a row header. Without a valid
+        `scope`, the flags come from the cells of the row: `col_header` is set
+        when the row has no `<td>`, `row_header` when the row only has `<th>`
+        cells that span more than one row.
+        """
+        if html_cell.name == "th":
+            scope = html_cell.get("scope")
+            if isinstance(scope, str):
+                scope = scope.lower()
+                if scope in ("col", "colgroup"):
+                    return True, False
+                if scope in ("row", "rowgroup"):
+                    return False, True
+        return (
+            col_header and not row_header,
+            row_header or ((not col_header) and html_cell.name == "th"),
+        )
+
+    @staticmethod
     def _unwrap_table_sections(tag: Tag) -> None:
         """Lift the rows of a table's row groups into the table itself.
 
@@ -3496,7 +3634,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             # 3. If no image was produced, manually handle the <figcaption>
             # and link it to the first item (e.g., a table).
-            if not any_image_produced:
+            if not any_image_produced and id(tag) not in self._captioned_figure_ids:
                 caption_tag = tag.find("figcaption", recursive=False)
                 if isinstance(caption_tag, Tag):
                     # Emit the caption as a standalone item under the current parent
@@ -3657,9 +3795,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 for i, annotated_text in enumerate(annotated_texts):
                     # In preformatted text, each <br> is a newline. No strip: the block
                     # edges are trimmed above and every interior space is significant.
-                    text_orig = re.sub(
-                        rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
-                    )
+                    text_orig = annotated_text.text.replace(_BR_SENTINEL, "\n")
                     if not text_orig:
                         continue
                     if _BR_SENTINEL in annotated_text.text and not text_orig.strip():
@@ -3701,8 +3837,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._walk(tag, doc)
 
         elif tag_name == "details":
-            with self._use_details(tag, doc):
+            with self._use_details(tag, doc) as details_group:
                 self._walk(tag, doc)
+            # Return the group so a table cell holding the details can claim it
+            # instead of leaving it after the table.
+            added_refs.append(details_group.get_ref())
         return added_refs
 
     @staticmethod
@@ -5380,13 +5519,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
             caption_prov_tag = img_tag
 
-        if isinstance(figure, Tag):
+        # The first image that produces a picture claims the <figcaption>, so a
+        # figure with several images keeps exactly one caption. Images that are
+        # not rendered (for example a hidden first image) claim nothing.
+        if isinstance(figure, Tag) and id(figure) not in self._captioned_figure_ids:
             caption_tag = figure.find("figcaption", recursive=False)
             if isinstance(caption_tag, Tag):
                 caption = self._extract_text_and_hyperlink_recursively(
                     caption_tag, find_parent_annotation=True
                 )
                 caption_prov_tag = caption_tag
+                self._captioned_figure_ids.add(id(figure))
         if not caption and img_tag.get("alt"):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
@@ -5395,7 +5538,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         img_ref: Optional[ImageRef] = None
         if cast(HTMLBackendOptions, self.options).fetch_images and src_loc:
             try:
-                src_loc = self._resolve_relative_path(src_loc)
+                src_loc = self._resolve_relative_path(src_loc, decode_url_path=True)
             except ValueError as e:
                 # The source is not loaded, but the picture is kept, as for an
                 # image file that cannot be read.
@@ -5510,7 +5653,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     return None
                 try:
-                    image = Image.open(BytesIO(image_data))
+                    image = open_image(image_data)
                     check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
                     # A camera stores an orientation tag rather than rotated

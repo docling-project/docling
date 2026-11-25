@@ -5,6 +5,7 @@
 
 from pathlib import Path
 from types import SimpleNamespace
+from unicodedata import normalize
 
 import pytest
 from docling_core.types.doc import (
@@ -157,6 +158,34 @@ def test_wrong_page_bookmark_does_not_match():
 
     # No numbering, no style, no matched bookmark -> level unchanged.
     assert [h.level for h in doc.texts] == [1]
+
+
+@pytest.mark.parametrize("form", ["NFC", "NFD"])
+def test_bookmark_levels_ignore_unicode_normalization(form):
+    # A bookmark that omits a configured numbering keyword must nest the same
+    # way whether the PDF encodes the accented keyword composed (NFC) or
+    # decomposed (NFD); the original heading text is preserved either way.
+    options = HeadingHierarchyOptions(
+        enabled=True,
+        use_bookmarks=True,
+        use_style=False,
+        use_numbering=False,
+        numbering_keywords={"chapter": ["étage"]},
+    )
+    doc = DoclingDocument(name="t")
+    doc.add_page(page_no=1, size=Size(width=600, height=800))
+    heading = normalize(form, "Étage II Tax")
+    doc.add_heading(text="Preamble", prov=_prov(1, "Preamble", 40))
+    doc.add_heading(text=heading, prov=_prov(1, heading, 120))
+
+    outline = [
+        _PdfOutlineItem(title="Preamble", level=0, page_no=1),
+        _PdfOutlineItem(title="Tax", level=1, page_no=1),
+    ]
+    HeadingHierarchyModel(options=options).assign_heading_levels(doc, outline=outline)
+
+    assert [item.level for item in doc.texts] == [1, 2]
+    assert doc.texts[1].text == heading
 
 
 def test_use_bookmarks_false_ignores_outline():

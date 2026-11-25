@@ -239,6 +239,28 @@ def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
     assert call_kwargs["condition_on_previous_text"] is False
 
 
+def test_native_whisper_strips_segment_text(tmp_path):
+    """Native Whisper segments start with a space, which is not part of the text."""
+    from docling.pipeline.asr_pipeline import _NativeWhisperModel
+
+    opts = InlineAsrNativeWhisperOptions(repo_id="tiny", word_timestamps=False)
+    with patch.dict("sys.modules", {"whisper": Mock()}):
+        model = _NativeWhisperModel(
+            enabled=True,
+            artifacts_path=None,
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            asr_options=opts,
+        )
+    model.model = Mock()
+    model.model.transcribe.return_value = {
+        "segments": [{"start": 0.0, "end": 1.5, "text": " Hello there. "}]
+    }
+
+    (item,) = model.transcribe(tmp_path / "sample.wav")
+
+    assert item.text == "Hello there."
+
+
 def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
     """Cover _NativeWhisperModel init path with artifacts_path passed."""
     from docling.pipeline.asr_pipeline import _NativeWhisperModel

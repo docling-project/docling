@@ -113,6 +113,7 @@ from docling.service_client.watchers import (
     _poll_sleep_duration,
     is_terminal_task_status,
 )
+from docling.utils.image_utils import open_image
 
 if TYPE_CHECKING:
     from docling.service_client._async_client import AsyncDoclingServiceClient
@@ -1970,7 +1971,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                 raise ArtifactDownloadError(
                     f"Resource bundle references an image outside the bundle: {uri}"
                 )
-            with PILImage.open(resolved) as pil_image:
+            with open_image(resolved) as pil_image:
                 pil_image.load()
                 return ImageRef.from_pil(pil_image.copy(), dpi=image_ref.dpi)
 

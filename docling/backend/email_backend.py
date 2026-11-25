@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from email.header import decode_header, make_header
-from email.message import EmailMessage
+from email.message import EmailMessage, Message
 from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
+from typing import cast
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -21,9 +22,12 @@ from docling_core.types.doc import (
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.calendar.parser import Component, parse_components, unfold_text
+from docling.backend.calendar.render import add_calendar_components
+from docling.backend.calendar_backend import holds_calendar, read_calendar_text
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions, HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToExtensions, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
@@ -81,11 +85,171 @@ _MSG_INSTALL_HINT = (
     "Install it with `pip install 'docling-slim[format-email]'`."
 )
 
+# Gmail sends the invite.ics copy of an invitation as application/ics.
+_CALENDAR_CONTENT_TYPES = frozenset({"text/calendar", "application/ics"})
+_CALENDAR_ENTRIES = frozenset({"VEVENT", "VTODO", "VJOURNAL", "VFREEBUSY"})
+# The calendar properties that are shown when a calendar has no entry.
+_CALENDAR_LABELS = ("X-WR-CALNAME", "NAME", "X-WR-CALDESC", "DESCRIPTION")
+# The delimiter mailparser puts between the parts of its whole-message body.
+_MAILPARSER_BODY_DELIMITER = "\n--- mail_boundary ---\n"
+
 
 @dataclass(frozen=True)
 class _BodyParagraph:
     text: str
     content_layer: ContentLayer
+
+
+def _decode_text_part(part: Message) -> str:
+    """Decode a text part the way mailparser decodes it into `text_plain`.
+
+    The declared charset is tried first, then UTF-8 with replacement characters, so
+    the result matches mailparser's text also when the charset is wrong.
+    """
+    # a non-multipart part, like every text/plain part, decodes to bytes
+    payload = cast(bytes, part.get_payload(decode=True))
+    try:
+        return payload.decode(part.get_content_charset("utf-8"))
+    except (LookupError, UnicodeError):
+        return payload.decode("utf-8", "replace")
+
+
+def _unflow(text: str, delsp: bool) -> str:
+    """Join the soft line breaks of a `format=flowed` text (RFC 3676, 4.2).
+
+    A line ending in a space continues on the next line with the same quote
+    depth. With `delsp=yes`, used for languages written without spaces, that
+    space is not part of the text. The signature separator `-- ` is never
+    flowed.
+    """
+    lines: list[tuple[str, int]] = []
+    flowing = False
+    for line in re.sub(r"\r\n|\r", "\n", text).split("\n"):
+        stripped = line.lstrip(">")
+        depth = len(line) - len(stripped)
+        if stripped.startswith(" "):
+            stripped = stripped[1:]
+        prefix = ">" * depth + " " if depth else ""
+        if flowing and lines and lines[-1][1] == depth:
+            lines[-1] = (lines[-1][0] + stripped, depth)
+        else:
+            lines.append((prefix + stripped, depth))
+        flowing = stripped.endswith(" ") and stripped != "-- "
+        if flowing and delsp:
+            lines[-1] = (lines[-1][0][:-1], depth)
+    return "\n".join(line for line, _ in lines)
+
+
+def _is_calendar_part(part: Message) -> bool:
+    if part.get_content_type() in _CALENDAR_CONTENT_TYPES:
+        return True
+    filename = part.get_filename()
+    return (
+        filename is not None
+        and Path(filename).suffix.lower().removeprefix(".")
+        in FormatToExtensions[InputFormat.CALENDAR]
+    )
+
+
+def _is_new_entry(entry: Component, seen: set[tuple[str, str, str]]) -> bool:
+    uid = entry.text("UID").strip()
+    if not uid:
+        return True
+    key = (uid, entry.text("RECURRENCE-ID").strip(), entry.text("SEQUENCE").strip())
+    if key in seen:
+        return False
+    seen.add(key)
+    return True
+
+
+def _new_components(
+    components: list[Component], seen: set[tuple[str, str, str]]
+) -> list[Component]:
+    """Return the components of one calendar part that add something to show.
+
+    A calendar is kept when it has an entry that was not seen before. A
+    calendar without entries is kept when it has a name or a description, as
+    the .ics backend shows them.
+    """
+    kept: list[Component] = []
+    for component in components:
+        if component.name == "VCALENDAR":
+            entries = [c for c in component.components if c.name in _CALENDAR_ENTRIES]
+            if not entries:
+                if any(component.text(name).strip() for name in _CALENDAR_LABELS):
+                    kept.append(component)
+                continue
+            children = [
+                child
+                for child in component.components
+                if child.name not in _CALENDAR_ENTRIES or _is_new_entry(child, seen)
+            ]
+            if any(child.name in _CALENDAR_ENTRIES for child in children):
+                kept.append(replace(component, components=children))
+        elif component.name in _CALENDAR_ENTRIES and _is_new_entry(component, seen):
+            kept.append(component)
+    return kept
+
+
+def _merge_calendar_parts(
+    calendar_parts: list[list[Component]],
+) -> tuple[list[list[Component]], list[Component]]:
+    """Join the calendar parts and keep the first copy of each entry.
+
+    Gmail sends an invitation twice, as an inline part and as an invite.ics
+    attachment. Two entries are the same when their UID, RECURRENCE-ID and
+    SEQUENCE are the same.
+
+    Returns:
+        The parts that add something to show, and the components to show.
+    """
+    seen: set[tuple[str, str, str]] = set()
+    shown_parts: list[list[Component]] = []
+    merged: list[Component] = []
+    for components in calendar_parts:
+        kept = _new_components(components, seen)
+        if kept:
+            shown_parts.append(components)
+            merged.extend(kept)
+    return shown_parts, merged
+
+
+def _without_repeated_descriptions(
+    components: list[Component], body_text: str
+) -> list[Component]:
+    """Drop each entry description that the email body already holds.
+
+    Outlook copies the whole plain-text body of an invitation into the
+    DESCRIPTION of the event. The comparison ignores whitespace.
+
+    Args:
+        components: The calendar components to show.
+        body_text: The body text with each run of whitespace as one space.
+
+    Returns:
+        The components without the repeated descriptions.
+    """
+    result: list[Component] = []
+    for component in components:
+        if component.name == "VCALENDAR":
+            component = replace(
+                component,
+                components=_without_repeated_descriptions(
+                    component.components, body_text
+                ),
+            )
+        elif component.name in _CALENDAR_ENTRIES:
+            component = replace(
+                component,
+                properties=[
+                    prop
+                    for prop in component.properties
+                    if prop.name != "DESCRIPTION"
+                    or " ".join(prop.value.split()) not in body_text
+                ],
+            )
+        result.append(component)
+    return result
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
@@ -164,6 +328,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
+    def _recover_msg_body(data: bytes, message: OxMsgMessage) -> str | None:
+        """Read the plain-text body from the OLE stream with the message codepage.
+
+        When ``message.body`` fails (wrong codec or unknown codec), this reads
+        the raw ``PtypString8`` bytes from the OLE compound file and decodes
+        them with the message code page.  Returns ``None`` if the stream does
+        not exist or cannot be decoded.
+        """
+        try:
+            import olefile
+            from oxmsg.domain.constants import PID_BODY, PTYP_STRING8
+            from oxmsg.domain.encodings import encoding_from_codepage
+
+            codepage = message.properties.int_prop_value(0x3FFD)  # PID_MESSAGE_CODEPAGE
+            if codepage is None:
+                return None
+            encoding = encoding_from_codepage(codepage)
+            stream_name = f"__substg1.0_{PID_BODY:04X}{PTYP_STRING8:04X}"
+            with olefile.OleFileIO(data) as ole:
+                if not ole.exists(stream_name):
+                    return None
+                raw = ole.openstream(stream_name).read()
+            return raw.decode(encoding, errors="replace")
+        except Exception:
+            return None
+
+    @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
@@ -171,6 +362,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         ``email.message.EmailMessage`` from it so the ``.msg`` path shares the
         exact body, HTML, address, and attachment handling used for ``.eml``
         input.
+
+        Every string property access is guarded against
+        ``UnicodeDecodeError`` (wrong codec) and ``LookupError`` (unknown
+        codec, e.g. ``windows-950``).  python-oxmsg <=0.0.2 can pick the
+        wrong codec for 8-bit body properties
+        (`python-oxmsg#5 <https://github.com/scanny/python-oxmsg/issues/5>`_),
+        and some code-page-to-codec mappings produce names Python does not
+        recognise.  When the body cannot be decoded through python-oxmsg, the
+        raw bytes are read from the OLE stream and decoded with the message
+        code page.
         """
         if not _OXMSG_AVAILABLE:
             raise ImportError(_MSG_INSTALL_HINT) from _OXMSG_IMPORT_ERROR
@@ -178,20 +379,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         message = OxMsgMessage.load(data)
         email_message = EmailMessage()
 
-        if message.subject:
-            email_message["Subject"] = EmailDocumentBackend._header_safe(
-                message.subject
-            )
-        if message.sender:
-            email_message["From"] = EmailDocumentBackend._header_safe(message.sender)
+        try:
+            subject = message.subject or ""
+        except (UnicodeDecodeError, LookupError):
+            subject = ""
+            _log.warning("Could not decode .msg subject")
+        if subject:
+            email_message["Subject"] = EmailDocumentBackend._header_safe(subject)
+
+        try:
+            sender = message.sender or ""
+        except (UnicodeDecodeError, LookupError):
+            sender = ""
+            _log.warning("Could not decode .msg sender")
+        if sender:
+            email_message["From"] = EmailDocumentBackend._header_safe(sender)
 
         # Preserve the To/Cc/Bcc split from the recipient rows so downstream
         # rendering (which shows "To" and "Cc") matches the .eml behavior.
         grouped: dict[str, list[str]] = {}
         for recipient in message.recipients:
-            formatted = formataddr(
-                (recipient.name or "", recipient.email_address or "")
-            )
+            try:
+                formatted = formataddr(
+                    (recipient.name or "", recipient.email_address or "")
+                )
+            except (UnicodeDecodeError, LookupError):
+                _log.warning("Could not decode .msg recipient; skipping")
+                continue
             if not formatted:
                 continue
             rtype = recipient.properties.int_prop_value(_RECIPIENT_TYPE_PROP_ID)
@@ -211,8 +425,23 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(message.sent_date, datetime):
             email_message["Date"] = format_datetime(message.sent_date)
 
-        plain_body = message.body
-        html_body = message.html_body
+        try:
+            plain_body = message.body
+        except (UnicodeDecodeError, LookupError):
+            # Recover via OLE stream with the message code page.
+            plain_body = EmailDocumentBackend._recover_msg_body(data, message)
+            if plain_body:
+                _log.warning(
+                    "Recovered .msg body via message code page "
+                    "(python-oxmsg used the wrong codec)"
+                )
+            else:
+                _log.warning("Could not decode .msg plain-text body")
+        try:
+            html_body = message.html_body
+        except (UnicodeDecodeError, LookupError):
+            html_body = None
+            _log.warning("Could not decode .msg HTML body")
         if plain_body:
             email_message.set_content(plain_body)
             if html_body:
@@ -225,13 +454,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
-            # Only filename and MIME type are needed; pass an empty payload to avoid
-            # copying attachment content into the RFC 822 byte stream.
+            try:
+                filename = attachment.file_name
+            except (UnicodeDecodeError, LookupError):
+                filename = None
+                _log.warning("Could not decode .msg attachment filename")
             email_message.add_attachment(
                 b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
-                filename=attachment.file_name,
+                filename=filename,
             )
 
         return email_message.as_bytes()
@@ -303,7 +535,50 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         )
         return backend.convert()
 
-    def _get_body_paragraphs(self) -> list[_BodyParagraph]:
+    def _get_calendar_parts(self) -> list[list[Component]]:
+        """Parse each calendar part of the message, inline or attached.
+
+        The part is read from its raw bytes, because a folded line can split a
+        UTF-8 character.
+        """
+        assert self.mail is not None
+
+        calendar_parts: list[list[Component]] = []
+        for part in self.mail.message.walk():
+            if part.is_multipart() or not _is_calendar_part(part):
+                continue
+            try:
+                text = read_calendar_text(
+                    part.get_payload(decode=True), part.get_content_charset()
+                )
+            except DocumentLoadError as exc:
+                _log.warning("Skipped a calendar part that cannot be decoded: %s", exc)
+                continue
+            components = parse_components(text)
+            if holds_calendar(components):
+                calendar_parts.append(components)
+        return calendar_parts
+
+    def _get_fallback_body(self, shown_parts: list[list[Component]]) -> str:
+        assert self.mail is not None
+
+        if not shown_parts:
+            return self.mail.body
+        # mailparser also puts a calendar part in its body. Drop a part only
+        # when it parses to a calendar part that is added below, so that text
+        # is never lost.
+        other_parts = [
+            text
+            for text in self.mail.text_not_managed
+            if parse_components(unfold_text(text)) not in shown_parts
+        ]
+        return _MAILPARSER_BODY_DELIMITER.join(
+            self.mail.text_plain + self.mail.text_html + other_parts
+        )
+
+    def _get_body_paragraphs(
+        self, shown_parts: list[list[Component]]
+    ) -> list[_BodyParagraph]:
         assert self.mail is not None
 
         # A part being present does not mean it holds a paragraph. A
@@ -313,8 +588,19 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
+            # mailparser keeps only the decoded text of a part, so the flowed
+            # parts are found again by their text.
+            flowed = {
+                _decode_text_part(part): str(part.get_param("delsp", "")).lower()
+                == "yes"
+                for part in self.mail.message.walk()
+                if part.get_content_type() == "text/plain"
+                and str(part.get_param("format", "")).lower() == "flowed"
+            }
             paragraphs: list[_BodyParagraph] = []
             for part in self.mail.text_plain:
+                if part in flowed:
+                    part = _unflow(part, flowed[part])
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
                     for paragraph in self._split_paragraphs(part)
@@ -344,7 +630,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         return [
             _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-            for paragraph in self._split_paragraphs(self.mail.body)
+            for paragraph in self._split_paragraphs(
+                self._get_fallback_body(shown_parts)
+            )
         ]
 
     def _get_date_text(self) -> str:
@@ -399,7 +687,13 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         to_text = self._format_addresses(self.mail.to, fallback="")
         cc_text = self._format_addresses(self.mail.cc, fallback="")
         date_text = self._get_date_text()
-        body_paragraphs = self._get_body_paragraphs()
+        calendar_parts = (
+            self._get_calendar_parts()
+            if self.options.parse_calendar_invitations
+            else []
+        )
+        shown_parts, calendars = _merge_calendar_parts(calendar_parts)
+        body_paragraphs = self._get_body_paragraphs(shown_parts)
 
         if subject:
             doc.add_title(text=subject)
@@ -416,6 +710,22 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.TEXT,
                 text=body_paragraph.text,
                 content_layer=body_paragraph.content_layer,
+            )
+
+        if calendars:
+            body_text = " ".join(
+                " ".join(
+                    paragraph.text
+                    for paragraph in body_paragraphs
+                    if paragraph.content_layer == ContentLayer.BODY
+                ).split()
+            )
+            doc.add_heading(text="Calendar", level=2)
+            add_calendar_components(
+                doc,
+                _without_repeated_descriptions(calendars, body_text),
+                base_level=3,
+                name_as_title=False,
             )
 
         if self.options.list_attachments:

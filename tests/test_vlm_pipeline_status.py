@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from docling_core.types.doc.base import Size
+from PIL import Image
 
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -247,3 +248,42 @@ def test_failed_page_is_not_parsed_as_empty_output(
     assert [error.error_message for error in conv_res.errors] == [
         "No <doclang> XML fragment found in VLM response."
     ]
+
+
+def test_doctags_response_without_element_tags_is_reported(
+    pipeline: VlmPipeline, monkeypatch
+) -> None:
+    """A server that drops special tokens returns the page text and the <loc_N>
+    coordinates but none of the DocTags element tags. That page parses as empty,
+    so it must be reported instead of passing as a successful empty page."""
+    monkeypatch.setattr(pipeline, "_response_format", lambda: ResponseFormat.DOCTAGS)
+    monkeypatch.setattr(pipeline, "_finalize_page_output", lambda document, page: None)
+
+    stripped = _make_page(1, VlmStopReason.END_OF_SEQUENCE)
+    stripped.predictions.vlm_response = VlmPrediction(
+        text="<loc_159><loc_59><loc_366><loc_65>Optimized Table Tokenization\n"
+        "<loc_388><loc_59><loc_393><loc_64>9\n",
+        stop_reason=VlmStopReason.END_OF_SEQUENCE,
+    )
+    stripped.size = Size(width=1, height=1)
+    stripped._backend.get_page_image.return_value = Image.new("RGB", (1, 1))
+    conv_res = _make_conv_res([stripped])
+    document = pipeline._finalize_page_document(conv_res, stripped)
+    assert len(document.texts) == 0
+    assert [(error.page_no, error.category) for error in conv_res.errors] == [
+        (1, FailureCategory.INFERENCE_FAILURE)
+    ]
+    assert pipeline._determine_status(conv_res) == ConversionStatus.PARTIAL_SUCCESS
+
+    tagged = _make_page(2, VlmStopReason.END_OF_SEQUENCE)
+    tagged.predictions.vlm_response = VlmPrediction(
+        text="<doctag><section_header_level_1><loc_159><loc_59><loc_366><loc_65>"
+        "Optimized Table Tokenization</section_header_level_1></doctag>",
+        stop_reason=VlmStopReason.END_OF_SEQUENCE,
+    )
+    tagged.size = Size(width=1, height=1)
+    tagged._backend.get_page_image.return_value = Image.new("RGB", (1, 1))
+    conv_res = _make_conv_res([tagged])
+    document = pipeline._finalize_page_document(conv_res, tagged)
+    assert len(document.texts) == 1
+    assert conv_res.errors == []

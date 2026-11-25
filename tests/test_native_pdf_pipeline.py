@@ -3,16 +3,21 @@
 
 import logging
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from threading import Barrier
 
+import pytest
 from docling_core.types.doc import CoordOrigin, DocItemLabel
 from docling_core.types.doc.page import TextCellUnit
 
-from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    ThreadedDoclingParseDocumentBackend,
+    ThreadedDoclingParsePageBackend,
+)
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, FailureCategory, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import NativePdfPipelineOptions
 from docling.datamodel.settings import PageRange, settings
@@ -25,7 +30,11 @@ MULTIPAGE_PDF = Path("tests/data/pdf/sources/normal_4pages.pdf")
 
 
 def _convert(
-    source: Path, page_range: PageRange | None = None, **options
+    source: Path,
+    page_range: PageRange | None = None,
+    *,
+    raises_on_error: bool = True,
+    **options,
 ) -> ConversionResult:
     converter = DocumentConverter(
         format_options={
@@ -35,7 +44,7 @@ def _convert(
         }
     )
     kwargs = {} if page_range is None else {"page_range": page_range}
-    return converter.convert(source, **kwargs)
+    return converter.convert(source, raises_on_error=raises_on_error, **kwargs)
 
 
 def test_native_pipeline_emits_one_text_item_per_line_cell():
@@ -213,3 +222,59 @@ def test_native_pipeline_honors_the_page_range():
 
     assert list(doc.pages) == [2]
     assert all(text.prov[0].page_no == 2 for text in doc.texts)
+
+
+@pytest.mark.parametrize(
+    ("returned_pages", "status", "missing_pages"),
+    [
+        ((), ConversionStatus.FAILURE, [2, 3]),
+        ((3,), ConversionStatus.PARTIAL_SUCCESS, [2]),
+        ((2, 3), ConversionStatus.SUCCESS, []),
+    ],
+    ids=["no-pages", "missing-page", "complete-range"],
+)
+def test_native_pipeline_reports_missing_pages(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    returned_pages: tuple[int, ...],
+    status: ConversionStatus,
+    missing_pages: list[int],
+) -> None:
+    original_iter_pages = ThreadedDoclingParseDocumentBackend.iter_pages
+
+    def iter_pages(
+        backend: ThreadedDoclingParseDocumentBackend,
+    ) -> Iterator[ThreadedDoclingParsePageBackend]:
+        for page in original_iter_pages(backend):
+            if page.page_no in returned_pages:
+                yield page
+            else:
+                page.unload()
+
+    monkeypatch.setattr(ThreadedDoclingParseDocumentBackend, "iter_pages", iter_pages)
+
+    result = _convert(MULTIPAGE_PDF, page_range=(2, 3), raises_on_error=False)
+
+    assert result.status == status
+    assert [error.page_no for error in result.errors] == missing_pages
+    assert all(
+        error.category == FailureCategory.BACKEND_FAILURE for error in result.errors
+    )
+    assert list(result.document.pages) == list(returned_pages)
+    assert {item.prov[0].page_no for item in result.document.texts} == set(
+        returned_pages
+    )
+    assert ("did not return" in caplog.text) == bool(missing_pages)
+
+
+def test_native_pipeline_reports_pages_skipped_by_the_timeout() -> None:
+    """Each page that the document timeout left unread gets its own error."""
+    result = _convert(MULTIPAGE_PDF, document_timeout=1e-9)
+
+    converted_pages = set(result.document.pages)
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    assert len(converted_pages) == 1
+    assert all(error.category == FailureCategory.TIMEOUT for error in result.errors)
+    assert sorted(
+        error.page_no for error in result.errors if error.page_no is not None
+    ) == sorted({1, 2, 3, 4} - converted_pages)

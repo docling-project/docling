@@ -71,6 +71,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
+| `document_timeout` | Set the processing time limit in seconds. Teardown can wait for PDF pages already claimed by the threaded parser. |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 
@@ -87,6 +88,20 @@ the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
 on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
+
+### Keeping the original characters (docling-parse)
+
+By default, docling-parse normalizes some Unicode characters in the text it
+extracts, for example dash and minus variants become `-`. To keep the
+characters as the PDF encodes them, set the backend option:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+
+PdfFormatOption(backend_options=PdfBackendOptions(do_char_normalization=False))
+```
+
+The option applies only to the docling-parse backend.
 
 ### Choosing an OCR engine
 
@@ -154,6 +169,11 @@ opts = PdfPipelineOptions(
 )
 ```
 
+The keyword markers (`PART`, `CHAPTER`, `ARTICLE`, ...) are English. For other languages, add
+words with `numbering_keywords`, for example
+`HeadingHierarchyOptions(enabled=True, numbering_keywords={"chapter": ["rozdział"], "article": ["art."]})`,
+and number words with `numbering_number_words`.
+
 The service equivalent is `do_pdf_heading_hierarchy` plus `pdf_heading_hierarchy_options`.
 
 ### Selecting the accelerator
@@ -199,6 +219,10 @@ result = converter.convert("report.pdf")
 ```
 
 CLI equivalent: `docling report.pdf --pipeline native --from pdf`.
+
+If the backend ends early or `document_timeout` stops the conversion, check
+`result.status` and `result.errors` for the missing requested pages. Pass
+`raises_on_error=False` to inspect the result when no pages could be converted.
 
 ## VLM pipeline (local inference)
 
@@ -539,6 +563,16 @@ to `200` (set `None` for no limit). When `document_timeout` is set, all FFmpeg
 calls share that budget; running out yields `PARTIAL_SUCCESS` with a `TIMEOUT`
 error (`result.has_timeout_errors()`).
 
+Video and audio on PPTX and ODP slides become tracks (`doc.tracks`) with their
+poster frame as cover; the track's `video` or `audio` references the media file.
+On `PowerpointFormatOption` or `OdpFormatOption`, `ConvertPipelineOptions(keep_media=True)`
+holds the file in the track (a DocLang archive then stores it), and
+`do_media_conversion=True` transcribes it: the transcript (and the frames of a
+video) goes in the track. `media_asr_options` picks the Whisper model. The CLI
+flags are `--keep-media` and `--convert-media` (which uses the `--asr-*` options). Linked
+media files load only with the backend options `enable_remote_fetch` /
+`enable_local_fetch`.
+
 ## Exporting images and tables
 
 To keep and export page/figure images, tell the pipeline to generate them, then
@@ -624,15 +658,15 @@ converter = DocumentConverter(
     format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
 )
 ```
-## DOCX, XLSX and EPUB size limits
+## DOCX, XLSX, PPTX and EPUB size limits
 
 These formats are ZIP archives. Docling checks the decompressed sizes before it
 parses them and fails the file with `ArchiveLimitError` (a `DocumentLoadError`)
-when one is too large. Defaults: DOCX/XLSX 128 MiB per member, 512 MiB in total,
-10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise them
-for large trusted files with `max_file_bytes`, `max_total_bytes` and
-`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions` or
-`EpubBackendOptions`:
+when one is too large. Defaults: DOCX/XLSX/PPTX 128 MiB per member, 512 MiB in
+total, 10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise
+them for large trusted files with `max_file_bytes`, `max_total_bytes` and
+`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions`,
+`MsPowerpointBackendOptions` or `EpubBackendOptions`:
 
 ```python
 from docling.datamodel.backend_options import MsWordBackendOptions
@@ -647,6 +681,15 @@ converter = DocumentConverter(
     }
 )
 ```
+
+## ODS repeated cells limit
+
+ODS sheets can repeat a row or a cell with one attribute. The ODS backend keeps
+at most `OdsBackendOptions.max_repeated_cells` (default 100,000) cells added by
+repetition per workbook; trailing empty rows and cells do not count. Over the
+limit, each repetition keeps only the copies that fit and Docling logs a
+warning. Raise it for large trusted files with
+`OdsFormatOption(backend_options=OdsBackendOptions(max_repeated_cells=...))`.
 
 ## Offline / air-gapped models
 

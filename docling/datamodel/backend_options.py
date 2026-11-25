@@ -330,6 +330,16 @@ class PdfBackendOptions(BaseBackendOptions):
             "diacritics that should remain in the same text cell."
         ),
     )
+    do_char_normalization: bool = Field(
+        True,
+        description=(
+            "Passed to docling-parse `DecodeConfig.do_char_normalization`. "
+            "When enabled, docling-parse normalizes some Unicode characters "
+            "in the extracted text, for example dash and minus variants "
+            "become '-'. Disable this to keep the characters as the PDF "
+            "encodes them."
+        ),
+    )
     include_bitmap_images: bool = Field(
         False,
         description=(
@@ -343,8 +353,9 @@ class PdfBackendOptions(BaseBackendOptions):
         DEFAULT_MAX_IMAGE_PIXELS,
         description=(
             "The maximum number of pixels (width x height) of one page of an "
-            "image input, such as one frame of a multi-page TIFF. Used by the "
-            "image backend; an image with a larger page is rejected."
+            "image input, such as one frame of a multi-page TIFF, or of one "
+            "METS-GBS page. Used by the image and METS-GBS backends; a larger "
+            "page is rejected."
         ),
     )
 
@@ -562,6 +573,29 @@ class MsPowerpointBackendOptions(BaseBackendOptions):
         ),
     )
 
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the PPTX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "PPTX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the PPTX archive"),
+    ] = 10_000
+
 
 class MsWordBackendOptions(BaseBackendOptions):
     """Options specific to the MS Word backend."""
@@ -651,6 +685,19 @@ class OdsBackendOptions(BaseBackendOptions):
             )
         ),
     ] = None
+    max_repeated_cells: Annotated[
+        NonNegativeInt,
+        Field(
+            description=(
+                "Maximum number of cells that repeated rows and cells "
+                "(table:number-rows-repeated and table:number-columns-repeated) "
+                "can add to the workbook, in addition to the cells written in "
+                "the file. A repetition that goes over the limit keeps only the "
+                "copies that fit, and one copy when the limit is spent. Trailing "
+                "empty rows and cells do not count."
+            )
+        ),
+    ] = 100_000
 
 
 class LatexBackendOptions(BaseBackendOptions):
@@ -717,6 +764,18 @@ class EmailBackendOptions(BaseBackendOptions):
             "the converted document. Only the attachment names (and content "
             "types when available) are listed; the attachments' binary content "
             "is never embedded. Opt-in (default False)."
+        ),
+    )
+    parse_calendar_invitations: bool = Field(
+        True,
+        description=(
+            "Whether to convert the calendar parts of the email, such as meeting "
+            "invitations, cancellations and attached .ics files, into their "
+            "events with time, location, organizer and attendees. They are "
+            "added under a 'Calendar' heading after the body. An event that "
+            "the email carries twice, as an inline part and as an attachment, "
+            "is added once. An event description that the body already holds "
+            "is left out."
         ),
     )
 

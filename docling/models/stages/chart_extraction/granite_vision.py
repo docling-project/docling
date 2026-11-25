@@ -85,8 +85,6 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
 
     progress_step = EnrichmentStep.CHART_EXTRACTION
 
-    images_scale: float = 2.0
-
     def __init__(
         self,
         *,
@@ -99,6 +97,7 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
         self.enabled = enabled
         self.options = options
         self.engine: Optional[BaseVlmEngine] = None
+        self.images_scale = options.scale
 
         if self.enabled:
             self.engine = create_vlm_engine(

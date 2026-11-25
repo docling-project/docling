@@ -1013,6 +1013,7 @@ class StandardPdfPipeline(ConvertPipeline):
                         timeout_exceeded = True
                         ctx.timed_out_run_ids.add(run_id)
                         ctx.first_stage.input_queue.close()
+                        backend.cancel()
                         # Break immediately - don't wait for in-flight work
                         break
 
