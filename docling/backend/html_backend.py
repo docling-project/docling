@@ -2240,9 +2240,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             # For each row, find all the column cells (both <td> and <th>)
             # We don't want this recursive to support nested tables
             cells = row(["td", "th"], recursive=False)
-            # Check if cell is in a column header or row header
+            # Check if cell is in a column header or row header. A row without
+            # cells is a data row when the rowspans of earlier rows cover it,
+            # as in get_html_table_row_col. Otherwise it adds no row.
             col_header = True
             row_header = True
+            if not cells:
+                next_row = row_idx + 1
+                if next_row < num_rows and any(
+                    value is not None for value in grid[next_row]
+                ):
+                    row_header = False
+                else:
+                    continue
             for html_cell in cells:
                 if isinstance(html_cell, Tag):
                     _, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
@@ -3599,12 +3609,23 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
         row_cell_spans: list[list[tuple[int, int]]] = []
+        covered_until = 0
+        header_run = 0
         for row in tag("tr", recursive=False):
-            cell_spans: list[tuple[int, int]] = []
-            is_row_header = True
             if not isinstance(row, Tag):
                 continue
-            for cell in row(["td", "th"], recursive=False):
+            cell_spans: list[tuple[int, int]] = []
+            cells = row(["td", "th"], recursive=False)
+            if not cells:
+                # A row without cells is a row of the table only when the
+                # rowspans of earlier rows cover it.
+                if covered_until > num_rows:
+                    row_cell_spans.append(cell_spans)
+                    num_rows += 1
+                    header_run = 0
+                continue
+            is_row_header = True
+            for cell in cells:
                 if not isinstance(row, Tag):
                     continue
                 cell_tag = cast(Tag, cell)
@@ -3613,8 +3634,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
             row_cell_spans.append(cell_spans)
+            max_span = max((rs for _, rs in cell_spans), default=1)
             if not is_row_header:
+                covered_until = max(covered_until, num_rows + max_span)
                 num_rows += 1
+                header_run = 0
+            else:
+                # parse_table_data puts the cells of a header row in the row
+                # after the rows of the header rows before it, and removes one
+                # row from their rowspan.
+                header_run += 1
+                covered_until = max(
+                    covered_until, num_rows - 1 + header_run + max_span - 1
+                )
         return num_rows, table_width(row_cell_spans)
 
     def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901

@@ -462,6 +462,63 @@ def test_table_rowspan_shifts_later_cells_into_the_table():
     assert "10" in doc.export_to_markdown()
 
 
+def test_table_row_without_cells_keeps_the_later_rows():
+    # When every cell of a row has rowspan="2", the next <tr> has no cells.
+    # It is still a row of the table, so the cells of the row after it go in
+    # the third row. The empty row used to be read as a header row and was
+    # not counted: the rowspans covered the "c d" row instead, and c and d
+    # were dropped from the grid and from the exported markdown.
+    src = (
+        b'<table><tr><td rowspan="2">a</td><td rowspan="2">b</td></tr>'
+        b"<tr></tr>"
+        b"<tr><td>c</td><td>d</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (3, 2)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["a", "b"],
+        ["a", "b"],
+        ["c", "d"],
+    ]
+    assert "| c " in doc.export_to_markdown()
+
+
+def test_table_row_without_cells_not_covered_adds_no_row():
+    # A row without cells that no rowspan covers holds no content, so it
+    # adds no blank row to the table, at the start, middle or end.
+    src = (
+        b"<table><tr></tr>"
+        b"<tr><td>a</td><td>b</td></tr>"
+        b"<tr></tr>"
+        b"<tr><td>c</td><td>d</td></tr>"
+        b"<tr></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["a", "b"],
+        ["c", "d"],
+    ]
+
+
 def test_table_row_header_rowspan_keeps_the_row_cells():
     # The row-header form of the same shift: the spanning "<th>2025</th>" row
     # holds column 0, so the cells of the data rows start in column 1 and the
