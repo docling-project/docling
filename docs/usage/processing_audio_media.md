@@ -309,7 +309,7 @@ Docling loads a linked media file only when the backend options allow it: `enabl
 
 Each media file is loaded and converted once, also when several slides show it. The containers of older decks are tracks too: `.wmv`, `.asf`, `.mpg`, `.m4v` and `.flv` video, and `.wma` and `.aiff` audio. Their audio is transcribed, but the video pipeline does not read these video containers, so such a video is kept without a transcript or frames. Media in a container that a track does not support (for example `.3gp`) stays a picture of its poster frame or icon, and is neither kept nor converted. A video without an audio track gives only its sampled frames.
 
-If a media file cannot be converted, the track stays, the result status is `PARTIAL_SUCCESS`, and the reason is in `ConversionResult.errors`.
+The presentation keeps the track if media conversion fails or is incomplete. A partial conversion also keeps any transcript or frames it produced. In both cases, the result status is `PARTIAL_SUCCESS`, and `ConversionResult.errors` identifies the media file and includes any errors from the media pipeline. Use `result.has_timeout_errors()` to detect timeouts.
 
 ## Choosing an ASR model and backend
 

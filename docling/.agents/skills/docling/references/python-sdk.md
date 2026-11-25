@@ -572,6 +572,9 @@ video) goes in the track. `media_asr_options` picks the Whisper model. The CLI
 flags are `--keep-media` and `--convert-media` (which uses the `--asr-*` options). Linked
 media files load only with the backend options `enable_remote_fetch` /
 `enable_local_fetch`.
+An incomplete media conversion keeps the available transcript and frames and
+sets the presentation result to `PARTIAL_SUCCESS`. The error names the media
+file. Use `result.has_timeout_errors()` to detect timeouts.
 
 ## Exporting images and tables
 

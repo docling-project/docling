@@ -26,6 +26,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     InputFormat,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
@@ -46,18 +47,22 @@ class _StubMediaPipeline:
     def __init__(self, status: ConversionStatus = ConversionStatus.SUCCESS) -> None:
         self.status = status
         self.calls: list[tuple[str, str, bytes]] = []
+        self.transcript: str | None = _TRANSCRIPT
+        self.errors: list[ErrorItem] = []
 
     def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
         stream = in_doc._backend.path_or_stream
         self.calls.append((in_doc.format.value, in_doc.file.name, stream.getvalue()))
         result = ConversionResult(input=in_doc, status=self.status)
         result.document = DoclingDocument(name=in_doc.file.stem)
-        result.document.add_text(
-            label=DocItemLabel.TEXT,
-            text=_TRANSCRIPT,
-            source=TrackSource(start_time=0.0, end_time=1.0),
-            parent=result.document.add_track(),
-        )
+        if self.transcript is not None:
+            result.document.add_text(
+                label=DocItemLabel.TEXT,
+                text=self.transcript,
+                source=TrackSource(start_time=0.0, end_time=1.0),
+                parent=result.document.add_track(),
+            )
+        result.errors.extend(self.errors)
         if self.status == ConversionStatus.FAILURE:
             result.errors.append(
                 ErrorItem(
@@ -247,9 +252,23 @@ def test_media_that_cannot_be_converted_is_reported(
     assert result.document.tracks[0].children == []
 
 
-def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
+@pytest.mark.parametrize("times_out", [False, True], ids=["complete", "timeout"])
+def test_media_shown_on_several_slides_is_converted_once(
+    tmp_path: Path, stub: _StubMediaPipeline, times_out: bool
+) -> None:
     """The slides that show the same media part each get its transcript, converted once."""
     from pptx.util import Inches
+
+    if times_out:
+        stub.status = ConversionStatus.PARTIAL_SUCCESS
+        stub.errors.append(
+            ErrorItem(
+                component_type=DoclingComponentType.PIPELINE,
+                module_name="VideoPipeline",
+                error_message="Frame extraction ran out of time",
+                category=FailureCategory.TIMEOUT,
+            )
+        )
 
     prs, _, _ = _deck(tmp_path)
     second = prs.slides.add_slide(prs.slide_layouts[6])
@@ -267,7 +286,15 @@ def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
 
     result = _convert(deck)
 
-    assert result.status == ConversionStatus.SUCCESS
+    assert result.status == stub.status
+    if times_out:
+        assert result.has_timeout_errors()
+        (error,) = result.errors
+        assert error.module_name == "VideoPipeline"
+        assert "ppt/media/media1.mp4" in error.error_message
+        assert "Frame extraction ran out of time" in error.error_message
+    else:
+        assert result.errors == []
     assert stub.calls == [("video", "media1.mp4", _MEDIA_BYTES)]
     doc = result.document
     assert len(doc.tracks) == 2
@@ -275,6 +302,27 @@ def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
         [transcript] = _cues(doc, track)
         assert transcript.text == _TRANSCRIPT
         assert transcript.prov[0].page_no == track.prov[0].page_no
+
+
+def test_media_that_produces_no_content_is_reported(
+    tmp_path: Path, stub: _StubMediaPipeline
+) -> None:
+    stub.status = ConversionStatus.PARTIAL_SUCCESS
+    stub.transcript = None
+    prs, _, _ = _deck(tmp_path)
+    deck = tmp_path / "empty-media.pptx"
+    prs.save(deck)
+
+    result = _convert(deck)
+
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    (error,) = result.errors
+    assert error.error_message == (
+        "Media file ppt/media/media1.mp4 was only partially converted"
+    )
+    (track,) = result.document.tracks
+    assert track.children == []
+    assert "Slide with media" in result.document.export_to_markdown()
 
 
 def test_video_container_the_video_pipeline_cannot_read_is_not_converted(
