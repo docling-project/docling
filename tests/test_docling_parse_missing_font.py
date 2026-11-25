@@ -16,7 +16,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.settings import DocumentLimits
 
-_FIXTURE = Path("tests/data/pdf/invisible_text_layer.pdf")
+_FIXTURE = Path("tests/data/pdf/fixtures/invisible_text_layer.pdf")
 _LOGGER = "docling.backend.docling_parse_backend"
 _MARKER = "DOCLING_PARSE_FALLBACK_FONT"
 
