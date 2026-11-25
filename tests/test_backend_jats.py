@@ -936,6 +936,18 @@ def test_jats_external_link_boundaries_are_preserved():
     ]
 
 
+def test_jats_malformed_external_link_keeps_text_without_hyperlink():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://api.example.com:{port}/v1">API</ext-link> after.'
+        "</p></sec>"
+    )
+
+    assert "Before API after." in [item.text for item in doc.texts]
+    assert all(item.hyperlink is None for item in doc.texts)
+
+
 def test_jats_adjacent_external_links_with_different_targets_do_not_merge():
     doc = convert_jats_body(
         '<sec><title>T</title><p xmlns:xlink="http://www.w3.org/1999/xlink">'

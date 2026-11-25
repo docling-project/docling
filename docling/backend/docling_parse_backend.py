@@ -165,9 +165,13 @@ def _warn_once_if_text_unpainted(
 def _make_docling_parse_decode_config(
     *,
     enforce_same_font: bool = True,
+    do_char_normalization: bool = True,
     release_native_memory_every_n_pages: int | None = None,
 ) -> DecodeConfig:
-    config = DecodeConfig(enforce_same_font=enforce_same_font)
+    config = DecodeConfig(
+        enforce_same_font=enforce_same_font,
+        do_char_normalization=do_char_normalization,
+    )
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
@@ -473,6 +477,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             render_config.scale = threaded_options.render_scale
         decode_config = _make_docling_parse_decode_config(
             enforce_same_font=self.options.enforce_same_font,
+            do_char_normalization=self.options.do_char_normalization,
             release_native_memory_every_n_pages=(
                 threaded_options.release_native_memory_every_n_pages
             ),

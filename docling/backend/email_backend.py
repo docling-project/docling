@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage, Message
-from email.utils import format_datetime, formataddr
+from email.utils import collapse_rfc2231_value, format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
 
@@ -97,6 +97,124 @@ _MAILPARSER_BODY_DELIMITER = "\n--- mail_boundary ---\n"
 class _BodyParagraph:
     text: str
     content_layer: ContentLayer
+
+
+def _get_param(part: Message, name: str) -> str:
+    """Return a lowercase content-type parameter, also when RFC 2231 encoded.
+
+    Args:
+        part: The message part.
+        name: The parameter name.
+
+    Returns:
+        The lowercase parameter value, or an empty string if it is not set.
+    """
+    return collapse_rfc2231_value(part.get_param(name, "")).lower()
+
+
+def _is_plain_text_body(part: Message, inside_attachment: bool) -> bool:
+    """Tell whether mailparser adds a ``text/plain`` part to ``text_plain``.
+
+    Args:
+        part: The ``text/plain`` part.
+        inside_attachment: Whether an enclosing part is an attachment.
+
+    Returns:
+        True if the part is a body part, False if it is an attachment.
+    """
+    disposition = part.get_content_disposition()
+    if part.get_filename():
+        return disposition == "inline" and not inside_attachment
+    return disposition != "attachment"
+
+
+def _get_plain_text_flows(message: Message) -> list[bool | None]:
+    """Describe the flow of each plain-text body part, in the order of ``text_plain``.
+
+    A part is a body part when it has content and mailparser adds it to
+    ``text_plain``: it is not an attachment and it is not a named part inside an
+    attachment container.
+
+    Args:
+        message: The parsed message.
+
+    Returns:
+        One value per part: ``None`` for fixed text, otherwise whether the part
+        has ``delsp=yes``.
+    """
+    flows: list[bool | None] = []
+    attachment_descendants: set[Message] = set()
+    for part in message.walk():
+        inside_attachment = part in attachment_descendants
+        children = part.get_payload()
+        if isinstance(children, list):
+            disposition = part.get_content_disposition()
+            if (
+                inside_attachment
+                or disposition not in (None, "inline")
+                or (disposition != "inline" and part.get_filename())
+            ):
+                attachment_descendants.update(
+                    child for child in children if isinstance(child, Message)
+                )
+            continue
+        if (
+            part.get_content_type() != "text/plain"
+            or not _is_plain_text_body(part, inside_attachment)
+            or not part.get_payload(decode=True)
+        ):
+            continue
+        if _get_param(part, "format") == "flowed":
+            flows.append(_get_param(part, "delsp") == "yes")
+        else:
+            flows.append(None)
+    return flows
+
+
+def _unflow(text: str, delsp: bool) -> str:
+    """Join the soft line breaks of a ``format=flowed`` text (RFC 3676, 4.2).
+
+    A line ending in a space continues on the next line with the same quote
+    depth. An empty line and the signature separator ``-- `` end a paragraph.
+    The quote marks of a quoted line are normalized to ``>`` followed by one
+    space.
+
+    Args:
+        text: The decoded text of the part.
+        delsp: Whether the part has ``delsp=yes``, so that the space before a
+            soft line break is not part of the text.
+
+    Returns:
+        The text with the soft line breaks joined.
+    """
+    lines: list[str] = []
+    pending: list[str] = []
+    pending_depth = 0
+    for line in re.sub(r"\r\n|\r", "\n", text).split("\n"):
+        stripped = line.lstrip(">")
+        depth = len(line) - len(stripped)
+        if stripped.startswith(" "):
+            stripped = stripped[1:]
+        joins = (
+            bool(pending)
+            and depth == pending_depth
+            and stripped != ""
+            and stripped != "-- "
+        )
+        if pending and not joins:
+            lines.append("".join(pending))
+            pending = []
+        piece = stripped if joins else ">" * depth + (" " if depth else "") + stripped
+        flowing = stripped.endswith(" ") and stripped != "-- "
+        if flowing:
+            pending.append(piece[:-1] if delsp else piece)
+            pending_depth = depth
+        else:
+            lines.append("".join([*pending, piece]))
+            pending = []
+    if pending:
+        lines.append("".join(pending))
+    return "\n".join(lines)
 
 
 def _is_calendar_part(part: Message) -> bool:
@@ -547,11 +665,17 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
+            # mailparser keeps only the decoded text of each part, so the flow of a
+            # part is found by its position. Without a match, the text is kept as is.
+            flows = _get_plain_text_flows(self.mail.message)
+            if len(flows) != len(self.mail.text_plain):
+                flows = [None] * len(self.mail.text_plain)
             paragraphs: list[_BodyParagraph] = []
-            for part in self.mail.text_plain:
+            for raw_text, delsp in zip(self.mail.text_plain, flows):
+                text = raw_text if delsp is None else _unflow(raw_text, delsp)
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-                    for paragraph in self._split_paragraphs(part)
+                    for paragraph in self._split_paragraphs(text)
                 )
             if paragraphs:
                 return paragraphs

@@ -57,12 +57,13 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, ImageOps, UnidentifiedImageError
-from pydantic import AnyUrl, BaseModel, ValidationError
+from pydantic import AnyUrl, BaseModel
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.hyperlink import parse_hyperlink
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
@@ -276,9 +277,6 @@ _PARA_BREAKERS = {
     "td",
 }
 
-# Same names as a list, the form bs4 documents for matching several tag names.
-_PARA_BREAKER_NAMES: Final = sorted(_PARA_BREAKERS)
-
 # Elements whose end tag may be omitted, mapped to (ancestors that a new
 # element implicitly closes, ancestors that stop the search).
 _IMPLIED_END_TAGS: Final = {
@@ -353,6 +351,24 @@ def _parse_ol_start(value: str) -> Optional[int]:
         return None
     start = int(digits or "0")
     return start if start <= _OL_START_MAX else None
+
+
+def _has_descendant_named(tag: Tag, names: set[str]) -> bool:
+    """Return whether an element inside `tag` has one of the given names.
+
+    This gives the same answer as `tag.find(list(names)) is not None`, but
+    `find()` builds a `SoupStrainer` on every call. On the small subtree of a
+    single element that costs more than the search itself, and the backend
+    runs such checks once per element.
+
+    Args:
+        tag: The element whose descendants are searched.
+        names: The tag names to look for.
+
+    Returns:
+        True if a descendant element has one of the names.
+    """
+    return any(isinstance(node, Tag) and node.name in names for node in tag.descendants)
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -1969,7 +1985,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for tag in soup.find_all(list(_IMPLIED_END_TAGS)):
             closes, stops = _IMPLIED_END_TAGS[tag.name]
             while True:
-                open_tag = tag.find_parent(list(closes | stops))
+                # Same as `tag.find_parent(...)`, without building a
+                # `SoupStrainer` for each element.
+                open_tag = next(
+                    (
+                        parent
+                        for parent in tag.parents
+                        if parent.name in closes or parent.name in stops
+                    ),
+                    None,
+                )
                 if open_tag is None or open_tag.name in stops:
                     break
                 parent = tag.parent
@@ -2011,7 +2036,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         paragraphs = [
             p
             for p in soup.find_all("p")
-            if isinstance(p, Tag) and p.find(_PARA_BREAKER_NAMES) is not None
+            if isinstance(p, Tag) and _has_descendant_named(p, _PARA_BREAKERS)
         ]
 
         for p in paragraphs:
@@ -2455,14 +2480,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         # the <br> tag itself has no rendered bbox.
                         _flush_buffer()
                     continue
-                has_block_descendants = bool(
-                    node.find(_BLOCK_TAGS)
-                    or node.find("input")
-                    or node.find(
-                        lambda item: (
-                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
-                        )
+                # One pass over the subtree instead of three `find()` calls,
+                # which each build a `SoupStrainer` first.
+                has_block_descendants = any(
+                    isinstance(item, Tag)
+                    and (
+                        item.name in _BLOCK_TAGS
+                        or item.name == "input"
+                        or self._is_custom_checkbox_tag(item)
                     )
+                    for item in node.descendants
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
                 if self._is_form_container(node):
@@ -2726,14 +2753,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @contextmanager
     def _use_hyperlink(self, tag: Tag):
-        old_hyperlink: Union[AnyUrl, Path, None] = None
-        new_hyperlink: Union[AnyUrl, Path, None] = None
         this_href = tag.get("href")
         if this_href is None:
             yield None
         else:
+            old_hyperlink: Union[AnyUrl, Path, None] = self.hyperlink
             if isinstance(this_href, str) and this_href:
-                old_hyperlink = self.hyperlink
                 try:
                     this_href = self._resolve_relative_path(this_href)
                 except ValueError:
@@ -2741,17 +2766,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     # directory (e.g. "/about" or "../index.html") is kept
                     # as written instead of failing the conversion.
                     pass
-                # ugly fix for relative links since pydantic does not support them.
-                try:
-                    new_hyperlink = AnyUrl(this_href)
-                except ValidationError:
-                    new_hyperlink = Path(this_href)
-                self.hyperlink = new_hyperlink
+                self.hyperlink = parse_hyperlink(this_href)
             try:
                 yield None
             finally:
-                if new_hyperlink:
-                    self.hyperlink = old_hyperlink
+                self.hyperlink = old_hyperlink
 
     @contextmanager
     def _use_format(self, tags: list[str]):
@@ -2854,16 +2873,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             tag: The details tag.
             doc: Currently used document.
+
+        Yields:
+            The group created for the details tag.
         """
-        self.parents[self.level + 1] = doc.add_group(
+        group = doc.add_group(
             name=tag.name,
             label=GroupLabel.SECTION,
             parent=self.parents[self.level],
             content_layer=self.content_layer,
         )
+        self.parents[self.level + 1] = group
         self.level += 1
         try:
-            yield None
+            yield group
         finally:
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -3814,8 +3837,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._walk(tag, doc)
 
         elif tag_name == "details":
-            with self._use_details(tag, doc):
+            with self._use_details(tag, doc) as details_group:
                 self._walk(tag, doc)
+            # Return the group so a table cell holding the details can claim it
+            # instead of leaving it after the table.
+            added_refs.append(details_group.get_ref())
         return added_refs
 
     @staticmethod

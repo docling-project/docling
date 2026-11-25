@@ -377,6 +377,40 @@ docling --pipeline native --from pdf FILE
 docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
+If the backend ends before returning all requested pages, the native pipeline
+logs a warning and records an error for each missing page. If any pages were
+converted, the result is `PARTIAL_SUCCESS`. If none were converted, the result
+is `FAILURE`. If `document_timeout` stops the conversion, each page that was not
+converted gets a `TIMEOUT` error. Use `--fail-on partial` to make the CLI exit
+with code 1 for a partial conversion.
+
+
+### Keep the original characters in PDF text
+
+By default, the docling-parse backend normalizes some Unicode characters in the
+extracted text. For example, dash and minus variants become `-`, so
+`pages 3–5` becomes `pages 3-5`. The `do_char_normalization` backend option
+controls this step (it is passed to docling-parse
+`DecodeConfig.do_char_normalization`). Set it to `False` to keep the characters
+as the PDF encodes them:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            backend_options=PdfBackendOptions(do_char_normalization=False)
+        )
+    }
+)
+```
+
+The option applies only to the docling-parse backend. Some characters can still
+be normalized when the option is off; see the docling-parse documentation for
+the exact set.
 
 ### Recover PDF heading levels
 
@@ -792,12 +826,15 @@ both, and applies them to every reference:
   the proxy.
 - Other URL schemes are refused.
 
-A refused reference stops the conversion with an error that lists it.
+A refused reference stops the conversion of an XBRL instance with an error that
+lists it.
 
 The same options apply to inline XBRL (iXBRL) reports. Docling recognizes them
 by the inline XBRL namespace that the root `html` element declares, and converts
-them with the XBRL backend instead of the HTML backend. Without the `xbrl`
-extra, converting such a report raises an error that asks you to install it.
+them with the XBRL backend. The document contains the full HTML text of the
+report and, as key-value items, its numeric facts. When the facts cannot be
+read (no `xbrl` extra, no fetch option set, or a taxonomy that does not load),
+Docling logs a warning and converts the report as HTML only.
 
 Reports from SEC EDGAR reference their company-specific extension taxonomy with
 a relative path. When you convert from a URL with `enable_remote_fetch=True`,

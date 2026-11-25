@@ -89,6 +89,20 @@ on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
 
+### Keeping the original characters (docling-parse)
+
+By default, docling-parse normalizes some Unicode characters in the text it
+extracts, for example dash and minus variants become `-`. To keep the
+characters as the PDF encodes them, set the backend option:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+
+PdfFormatOption(backend_options=PdfBackendOptions(do_char_normalization=False))
+```
+
+The option applies only to the docling-parse backend.
+
 ### Choosing an OCR engine
 
 ```python
@@ -205,6 +219,10 @@ result = converter.convert("report.pdf")
 ```
 
 CLI equivalent: `docling report.pdf --pipeline native --from pdf`.
+
+If the backend ends early or `document_timeout` stops the conversion, check
+`result.status` and `result.errors` for the missing requested pages. Pass
+`raises_on_error=False` to inspect the result when no pages could be converted.
 
 ## VLM pipeline (local inference)
 

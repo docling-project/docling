@@ -303,6 +303,80 @@ def test_odt_hidden_section_goes_to_invisible_layer(tmp_path: Path):
     assert document.tables[0].content_layer == ContentLayer.INVISIBLE
 
 
+def test_odt_hidden_text_is_left_out(tmp_path: Path):
+    """Text with the Hidden font effect (``text:display="none"``) is left out.
+
+    A hidden paragraph or heading goes to ``ContentLayer.INVISIBLE``. A hidden
+    span, and hidden text in a list item or a table cell, is dropped. The
+    setting is inherited from a parent style.
+    """
+    source = OdfDocument("text")
+    source.body.clear()
+    hidden_char = Style("text", name="Hidden")
+    hidden_char.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_char)
+    hidden_run = Style("text", name="T1")
+    hidden_run.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_run, automatic=True)
+    inherited_run = Style("text", name="T2", parent_style="Hidden")
+    inherited_run.set_properties(area="text", **{"fo:font-weight": "bold"})
+    source.insert_style(inherited_run, automatic=True)
+    hidden_para = Style("paragraph", name="P1", parent_style="Standard")
+    hidden_para.set_properties(area="text", **{"text:display": "none"})
+    source.insert_style(hidden_para, automatic=True)
+
+    paragraph = Paragraph("Shown start.")
+    paragraph.append(Span(" Hidden run.", style="T1"))
+    paragraph.append(Span(" Hidden by parent style.", style="T2"))
+    paragraph.append(" Shown end.")
+    source.body.append(paragraph)
+    source.body.append(Paragraph("Hidden paragraph.", style="P1"))
+    heading = Header(1, "Hidden heading")
+    heading.set_attribute("text:style-name", "P1")
+    source.body.append(heading)
+    item_paragraph = Paragraph("Item")
+    item_paragraph.append(Span(" hidden", style="T1"))
+    item = ListItem()
+    item.append(item_paragraph)
+    odf_list = OdfList()
+    odf_list.append(item)
+    source.body.append(odf_list)
+    run_cell = Cell()
+    cell_paragraph = Paragraph("Shown cell")
+    cell_paragraph.append(Span(" hidden", style="T1"))
+    run_cell.append(cell_paragraph)
+    paragraph_cell = Cell()
+    paragraph_cell.append(Paragraph("Shown paragraph"))
+    paragraph_cell.append(Paragraph("Hidden cell paragraph", style="P1"))
+    row = Row()
+    row.append(run_cell)
+    row.append(paragraph_cell)
+    table = Table("Table1")
+    table.append(row)
+    source.body.append(table)
+
+    document = _convert_odt_source(source, tmp_path / "hidden_text.odt")
+
+    hidden_texts = [
+        item.text
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.INVISIBLE}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert hidden_texts == ["Hidden paragraph.", "Hidden heading"]
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Shown cell",
+        "Shown paragraph",
+    ]
+    assert document.export_to_markdown(compact_tables=True) == (
+        "Shown start. Shown end.\n\n"
+        "- Item\n\n"
+        "| Shown cell | Shown paragraph |\n"
+        "| - | - |"
+    )
+
+
 def test_ods_conversion(ods_path: Path):
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(ods_path)
     doc = res.document
@@ -934,6 +1008,45 @@ def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
     assert footnote_texts == [
         "This is the footnote body text that should not vanish."
     ], "the footnote body must be recovered, not silently dropped"
+
+
+def test_odt_footnote_in_table_cell_is_not_spliced(tmp_path: Path):
+    """A footnote cited in a table cell stays out of the cell text, as it does in
+    a paragraph. Its body is a footnote item."""
+    path = tmp_path / "table_footnote.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(
+        Element.from_tag(
+            '<table:table table:name="T"><table:table-row>'
+            "<table:table-cell><text:p>Year</text:p></table:table-cell>"
+            "<table:table-cell><text:p>Revenue</text:p></table:table-cell>"
+            "</table:table-row><table:table-row>"
+            "<table:table-cell><text:p>2024</text:p></table:table-cell>"
+            "<table:table-cell><text:p>42 EUR"
+            '<text:note text:id="n1" text:note-class="footnote">'
+            "<text:note-citation>1</text:note-citation>"
+            "<text:note-body><text:p>Audited figures.</text:p></text:note-body>"
+            "</text:note></text:p></table:table-cell>"
+            "</table:table-row></table:table>"
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Year",
+        "Revenue",
+        "2024",
+        "42 EUR",
+    ]
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Audited figures."]
 
 
 def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):

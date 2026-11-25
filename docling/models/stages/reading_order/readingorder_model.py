@@ -1070,9 +1070,13 @@ class ReadingOrderModel:
         continuation_text = merged_elem.text.lstrip()
         token_before_hyphen = self._TOKEN_BEFORE_HYPHEN_RE.search(new_item.text)
         # A hyphen no hyphenation rule could have placed -- after a
-        # single-character token, or before a digit -- belongs to the word.
+        # single-character token, before a digit, or after an uppercase
+        # abbreviation with a lowercase continuation -- belongs to the word.
+        token = token_before_hyphen.group(1) if token_before_hyphen else ""
         hyphen_belongs_to_word = token_before_hyphen is not None and (
-            len(token_before_hyphen.group(1)) == 1 or continuation_text[:1].isdigit()
+            len(token) == 1
+            or continuation_text[:1].isdigit()
+            or (token[-1].isupper() and continuation_text[:1].islower())
         )
         if new_item.text.endswith("\u00ad") or (
             new_item.text.endswith("-")
