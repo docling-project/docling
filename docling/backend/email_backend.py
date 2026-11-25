@@ -112,11 +112,11 @@ def _get_param(part: Message, name: str) -> str:
     return collapse_rfc2231_value(part.get_param(name, "")).lower()
 
 
-def _is_plain_text_body(part: Message, inside_attachment: bool) -> bool:
-    """Tell whether mailparser adds a ``text/plain`` part to ``text_plain``.
+def _is_text_body(part: Message, inside_attachment: bool) -> bool:
+    """Tell whether mailparser adds a text part to ``text_plain`` or ``text_html``.
 
     Args:
-        part: The ``text/plain`` part.
+        part: The ``text/plain`` or ``text/html`` part.
         inside_attachment: Whether an enclosing part is an attachment.
 
     Returns:
@@ -128,47 +128,65 @@ def _is_plain_text_body(part: Message, inside_attachment: bool) -> bool:
     return disposition != "attachment"
 
 
-def _get_plain_text_flows(message: Message) -> list[bool | None]:
-    """Describe the flow of each plain-text body part, in the order of ``text_plain``.
+@dataclass(frozen=True)
+class _TextBodyPart:
+    """A text part that mailparser adds to ``text_plain`` or ``text_html``."""
+
+    delsp: bool | None
+    """``None`` for fixed text, otherwise whether the part has ``delsp=yes``."""
+    embedded: bool
+    """Whether the part is inside an attachment or an attached message."""
+
+
+def _get_text_body_parts(message: Message, subtype: str) -> list[_TextBodyPart]:
+    """Describe each text body part, in the order of ``text_plain`` or ``text_html``.
 
     A part is a body part when it has content and mailparser adds it to
-    ``text_plain``: it is not an attachment and it is not a named part inside an
-    attachment container.
+    ``text_plain`` or ``text_html``: it is not an attachment and it is not a
+    named part inside an attachment container. mailparser also adds the unnamed
+    parts of an attachment container or an attached ``message/rfc822``, which
+    are marked as embedded.
 
     Args:
         message: The parsed message.
+        subtype: The text subtype, ``"plain"`` or ``"html"``.
 
     Returns:
-        One value per part: ``None`` for fixed text, otherwise whether the part
-        has ``delsp=yes``.
+        One value per part.
     """
-    flows: list[bool | None] = []
+    parts: list[_TextBodyPart] = []
     attachment_descendants: set[Message] = set()
+    embedded_descendants: set[Message] = set()
     for part in message.walk():
         inside_attachment = part in attachment_descendants
+        embedded = part in embedded_descendants
         children = part.get_payload()
         if isinstance(children, list):
+            child_parts = [child for child in children if isinstance(child, Message)]
             disposition = part.get_content_disposition()
             if (
                 inside_attachment
                 or disposition not in (None, "inline")
                 or (disposition != "inline" and part.get_filename())
             ):
-                attachment_descendants.update(
-                    child for child in children if isinstance(child, Message)
-                )
+                attachment_descendants.update(child_parts)
+                embedded_descendants.update(child_parts)
+            elif embedded or part.get_content_maintype() == "message":
+                embedded_descendants.update(child_parts)
             continue
         if (
-            part.get_content_type() != "text/plain"
-            or not _is_plain_text_body(part, inside_attachment)
+            part.get_content_type() != f"text/{subtype}"
+            or not _is_text_body(part, inside_attachment)
             or not part.get_payload(decode=True)
         ):
             continue
-        if _get_param(part, "format") == "flowed":
-            flows.append(_get_param(part, "delsp") == "yes")
-        else:
-            flows.append(None)
-    return flows
+        delsp = (
+            _get_param(part, "delsp") == "yes"
+            if _get_param(part, "format") == "flowed"
+            else None
+        )
+        parts.append(_TextBodyPart(delsp=delsp, embedded=embedded))
+    return parts
 
 
 def _unflow(text: str, delsp: bool) -> str:
@@ -653,6 +671,30 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             self.mail.text_plain + self.mail.text_html + other_parts
         )
 
+    def _own_text_parts(
+        self, texts: list[str], subtype: str
+    ) -> list[tuple[str, _TextBodyPart]]:
+        """Pair each decoded body text with its part, without embedded parts.
+
+        The text of an attachment or an attached message is not part of the
+        body of this message.
+
+        Args:
+            texts: The decoded texts of ``text_plain`` or ``text_html``.
+            subtype: The text subtype, ``"plain"`` or ``"html"``.
+
+        Returns:
+            The texts of the parts that are not embedded, with their parts.
+        """
+        assert self.mail is not None
+
+        # mailparser keeps only the decoded text of each part, so a part is found
+        # by its position. Without a match, the texts are kept as fixed text.
+        parts = _get_text_body_parts(self.mail.message, subtype)
+        if len(parts) != len(texts):
+            parts = [_TextBodyPart(delsp=None, embedded=False)] * len(texts)
+        return [(text, part) for text, part in zip(texts, parts) if not part.embedded]
+
     def _get_body_paragraphs(
         self, shown_parts: list[list[Component]]
     ) -> list[_BodyParagraph]:
@@ -665,14 +707,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
-            # mailparser keeps only the decoded text of each part, so the flow of a
-            # part is found by its position. Without a match, the text is kept as is.
-            flows = _get_plain_text_flows(self.mail.message)
-            if len(flows) != len(self.mail.text_plain):
-                flows = [None] * len(self.mail.text_plain)
             paragraphs: list[_BodyParagraph] = []
-            for raw_text, delsp in zip(self.mail.text_plain, flows):
-                text = raw_text if delsp is None else _unflow(raw_text, delsp)
+            for raw_text, part in self._own_text_parts(self.mail.text_plain, "plain"):
+                text = raw_text if part.delsp is None else _unflow(raw_text, part.delsp)
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
                     for paragraph in self._split_paragraphs(text)
@@ -682,8 +719,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         if self.mail.text_html:
             paragraphs = []
-            for part in self.mail.text_html:
-                html_doc = self._convert_html_part(part)
+            for html, _ in self._own_text_parts(self.mail.text_html, "html"):
+                html_doc = self._convert_html_part(html)
                 # Export each layer separately so furniture remains available
                 # without becoming part of the email's default body export.
                 for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):

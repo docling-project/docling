@@ -284,6 +284,57 @@ def test_email_backend_ignores_flowed_parts_inside_attachment_containers() -> No
     ]
 
 
+@pytest.mark.parametrize(
+    "attached_headers",
+    [
+        pytest.param(
+            b'Content-Disposition: attachment; filename="forwarded.eml"\n',
+            id="attachment",
+        ),
+        pytest.param(b"", id="no-disposition"),
+    ],
+)
+@pytest.mark.parametrize(
+    "body_part",
+    [
+        pytest.param(
+            b'Content-Type: text/html; charset="utf-8"\n\n'
+            b"<html><body><p>See the forwarded message.</p></body></html>\n",
+            id="html-body",
+        ),
+        pytest.param(
+            b'Content-Type: text/plain; charset="utf-8"\n\n'
+            b"See the forwarded message.\n",
+            id="plain-body",
+        ),
+    ],
+)
+def test_email_backend_keeps_body_apart_from_attached_message(
+    attached_headers: bytes, body_part: bytes
+) -> None:
+    """The text of an attached message is not read as the body."""
+    raw_email = (
+        b"From: alice@example.com\nSubject: Forward\nMIME-Version: 1.0\n"
+        b'Content-Type: multipart/mixed; boundary="B"\n\n'
+        b"--B\n"
+        + body_part
+        + b"--B\nContent-Type: message/rfc822\n"
+        + attached_headers
+        + b"\nFrom: bob@example.com\nSubject: Original\n"
+        b'Content-Type: text/plain; charset="utf-8"\n\n'
+        b"Original text.\n"
+        b"--B--\n"
+    )
+
+    doc = _convert_raw_email(raw_email)
+
+    assert [item.text for item in doc.texts] == [
+        "Forward",
+        "From: alice@example.com",
+        "See the forwarded message.",
+    ]
+
+
 def test_email_backend_keeps_cc_recipients():
     """Cc recipients are part of who the message was addressed to."""
     raw_email = b"""From: Alice Example <alice@example.com>
