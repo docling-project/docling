@@ -33,7 +33,7 @@ from docling.utils.pdf_outline import (
     extract_outline_from_pdfium,
 )
 
-SAMPLE_PDF = Path("./tests/data/pdf/bookmark_sample.pdf")
+SAMPLE_PDF = Path("./tests/data/pdf/fixtures/bookmark_sample.pdf")
 
 
 def _bbox(top: float) -> BoundingBox:

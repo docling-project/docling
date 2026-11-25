@@ -32,7 +32,9 @@ _TEX_SAMPLE = (
 )
 _JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
 _USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
-_PDF_SAMPLE = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
+_PDF_SAMPLE = (
+    Path(__file__).parent / "data" / "pdf" / "fixtures" / "bookmark_sample.pdf"
+)
 
 
 def _run_with_blocked_module(
@@ -231,7 +233,7 @@ def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
 
 
 def test_docling_parse_backend_operates_without_pypdfium2() -> None:
-    sample = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
+    sample = _PDF_SAMPLE
     body = (
         "from pathlib import Path\n"
         "from docling.backend.docling_parse_backend import "
