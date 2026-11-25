@@ -52,7 +52,11 @@ from docling.models.utils.generation_utils import (
 )
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import (
+    decide_device,
+    resolve_torch_dtype,
+    transformers_dtype_kwargs,
+)
 from docling.utils.granite_vision_utils import (
     GRANITE_VISION_4_REPO_ID,
     granite_vision_4_needs_remote_code,
@@ -299,18 +303,23 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if tokenizer is not None and hasattr(tokenizer, "padding_side"):
             tokenizer.padding_side = "left"
 
+        assert self.device is not None, "Device not initialized"
+
         # Resolve torch_dtype: options override > model_config field > extra_config > None
+        # A dtype from the model config is a preference: fall back if the device
+        # cannot run it natively. An explicit options dtype is used as is.
         torch_dtype = self.options.torch_dtype
         if torch_dtype is None and self.model_config is not None:
-            torch_dtype = (
+            torch_dtype = resolve_torch_dtype(
                 self.model_config.torch_dtype
-                or self.model_config.extra_config.get("torch_dtype")
+                or self.model_config.extra_config.get("torch_dtype"),
+                self.device,
             )
 
         # Load model
         attn_implementation: Optional[str] = (
             "flash_attention_2"
-            if self.device.startswith("cuda")  # type: ignore[union-attr]
+            if self.device.startswith("cuda")
             and self.accelerator_options.cuda_use_flash_attention2
             else "sdpa"
         )
@@ -325,16 +334,12 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
             attn_implementation = "eager"
 
-        dtype_arg_name = (
-            "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"
-        )
-
         _log.info(f"Loading model {repo_id} into memory (device: {self.device})...")
         load_start_time = time.monotonic()
         self.vlm_model = model_cls.from_pretrained(
             artifacts_path,
             device_map=self.device,
-            **{dtype_arg_name: torch_dtype},
+            **transformers_dtype_kwargs(torch_dtype),
             _attn_implementation=attn_implementation,
             trust_remote_code=trust_remote_code,
             revision=revision,
