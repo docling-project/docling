@@ -102,6 +102,31 @@ can contain up to 4,194,304 characters. Compressed files and archives can
 contain up to 512 MiB of uncompressed data. Tar archives can have up to
 10,000 members. The `format-html` extra provides the renderer for Docling Slim.
 
+By default, MediaWiki conversion omits `<ref>` citations and drops empty
+sections. Regular superscripts remain. Select another citation mode through the
+SDK:
+
+```python
+from docling.datamodel.backend_options import MediaWikiBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, MediaWikiFormatOption
+
+converter = DocumentConverter(format_options={
+    InputFormat.MEDIAWIKI: MediaWikiFormatOption(
+        backend_options=MediaWikiBackendOptions(reference_mode="list")
+    )
+})
+result = converter.convert("article.wiki")
+```
+
+`reference_mode="inline"` places citation text in superscript at each use.
+`reference_mode="list"` uses numbered superscripts and places the referenced
+entries at `<references />` or `{{reflist}}`, or appends a References section
+when there is no matching list. Named references are reused, including forward
+definitions. Unresolved names are omitted. Groups have separate numbering.
+`reference_mode="omit"` is the default. This is an approximation of MediaWiki
+citation rendering and does not execute templates or Lua.
+
 ## Supported output formats
 
 | Format | Description |

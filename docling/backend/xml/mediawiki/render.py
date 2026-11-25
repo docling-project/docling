@@ -3,9 +3,11 @@
 
 """Render parsed wikitext to the HTML structures consumed by Docling."""
 
+import re
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from html import escape, unescape
+from typing import Literal
 from urllib.parse import quote, urljoin, urlsplit
 
 from docling.backend.xml.mediawiki import _tokens as tokens
@@ -200,11 +202,16 @@ def _is_infobox(name: str) -> bool:
 
 def _is_block(node: Syntax) -> bool:
     if isinstance(node.start, tokens.TemplateOpen):
-        return _is_infobox(_template_name(node))
+        return _is_infobox(_template_name(node)) or _template_name(node) in {
+            "reflist",
+            "references",
+        }
     if isinstance(node.start, tokens.HeadingStart):
         return True
     if isinstance(node.start, tokens.TagOpenOpen):
-        return not _list_marker(node) and _tag(node).name in _BLOCK_TAGS
+        return not _list_marker(node) and _tag(node).name in (
+            _BLOCK_TAGS | {"references"}
+        )
     return False
 
 
@@ -240,8 +247,75 @@ def _link(href: str, label: str, *, allow_relative: bool) -> str:
 
 
 class _Renderer:
-    def __init__(self, wiki_base: str | None) -> None:
+    def __init__(
+        self, wiki_base: str | None, reference_mode: Literal["omit", "inline", "list"]
+    ) -> None:
         self.wiki_base = wiki_base
+        self.reference_mode = reference_mode
+        self._reference_nodes: dict[int, tuple[str, str]] = {}
+        self._reference_bodies: dict[tuple[str, str], Sequence[Node]] = {}
+        self._reference_order: dict[str, list[tuple[str, str]]] = {}
+        self._reference_seen: set[tuple[str, str]] = set()
+        self._reference_numbers: dict[tuple[str, str], int] = {}
+        self._emitted_groups: set[str] = set()
+
+    def collect_references(
+        self, nodes: Sequence[Node], definitions: bool = False
+    ) -> None:
+        for node in nodes:
+            if not isinstance(node, Syntax):
+                continue
+            if isinstance(node.start, tokens.TagOpenOpen):
+                tag = _tag(node)
+                if tag.name == "ref":
+                    group = tag.attrs.get("group", "")
+                    name = tag.attrs.get("name") or f"anonymous:{id(node)}"
+                    key = (group, name)
+                    if tag.body and key not in self._reference_bodies:
+                        self._reference_bodies[key] = tag.body
+                    if not definitions:
+                        self._reference_nodes[id(node)] = key
+                        order = self._reference_order.setdefault(group, [])
+                        if key not in self._reference_seen:
+                            order.append(key)
+                            self._reference_seen.add(key)
+                    continue
+                if tag.name == "references":
+                    self.collect_references(tag.body, definitions=True)
+                    continue
+            self.collect_references(node.children, definitions)
+
+    def _reference_list(self, group: str = "") -> str:
+        if self.reference_mode != "list" or group in self._emitted_groups:
+            return ""
+        keys = [
+            key
+            for key in self._reference_order.get(group, [])
+            if key in self._reference_bodies
+        ]
+        if not keys:
+            return ""
+        self._emitted_groups.add(group)
+        items = [
+            f"<li>{self.inlines(self._reference_bodies[key])}</li>" for key in keys
+        ]
+        return "<ol>" + "".join(items) + "</ol>"
+
+    def _reference(self, node: Syntax, tag: _Tag) -> str:
+        if self.reference_mode == "omit":
+            return ""
+        key = self._reference_nodes.get(id(node))
+        if key is None:
+            return ""
+        body = self._reference_bodies.get(key)
+        if body is None:
+            return ""
+        if self.reference_mode == "inline":
+            content = self.inlines(body)
+            return f"<sup>{content}</sup>" if content else ""
+        number = self._reference_numbers[key]
+        prefix = f"{escape(key[0])} " if key[0] else ""
+        return f"<sup>[{prefix}{number}]</sup>"
 
     def blocks(self, nodes: Sequence[Node]) -> str:
         output: list[str] = []
@@ -305,7 +379,34 @@ class _Renderer:
         flush_lists()
         flush_preformatted()
         flush_paragraph()
-        return "".join(output)
+        if self.reference_mode == "list":
+            for group in self._reference_order:
+                references = self._reference_list(group)
+                if references:
+                    output.extend(["<h2>References</h2>", references])
+        # Retain a heading only if its section or one of its subsections has
+        # visible content. Delay emission so chains of empty headings vanish.
+        result: list[str] = []
+        pending: list[tuple[int, str]] = []
+        pending_markup: list[str] = []
+        for part in output:
+            heading = re.fullmatch(r"<h([1-6])>.*</h\1>", part, flags=re.DOTALL)
+            if heading:
+                pending_markup.clear()
+                level = int(heading.group(1))
+                while pending and pending[-1][0] >= level:
+                    pending.pop()
+                pending.append((level, part))
+            else:
+                if pending and not re.sub(r"<[^>]*>", "", part).strip():
+                    pending_markup.append(part)
+                    continue
+                result.extend(text for _, text in pending)
+                pending.clear()
+                result.extend(pending_markup)
+                pending_markup.clear()
+                result.append(part)
+        return "".join(result)
 
     def _definition(self, nodes: list[Node]) -> list[str]:
         parts: list[list[Node]] = [[]]
@@ -342,7 +443,10 @@ class _Renderer:
         output.append(f"<{frame.item}>{content.strip()}")
 
     def inlines(self, nodes: Sequence[Node]) -> str:
-        return "".join(self.inline(node) for node in nodes)
+        result = "".join(self.inline(node) for node in nodes)
+        for tag in ("i", "b"):
+            result = result.replace(f"</{tag}><{tag}>", "")
+        return result
 
     def inline(self, node: Node) -> str:
         if isinstance(node, tokens.Text):
@@ -370,12 +474,25 @@ class _Renderer:
             _, *default = _split(node.children, tokens.ArgumentSeparator)
             return self.inlines(default[0]) if default else ""
         if isinstance(node.start, tokens.TagOpenOpen):
-            return self._render_tag(_tag(node))
+            tag = _tag(node)
+            if tag.name == "ref":
+                return self._reference(node, tag)
+            if tag.name == "references":
+                return self._reference_list(tag.attrs.get("group", ""))
+            return self._render_tag(tag)
         # Comments and unexpanded templates have no visible content.
         return ""
 
     def _template(self, node: Syntax) -> str:
         name = _template_name(node)
+        if name in {"reflist", "references"}:
+            parts = _split(node.children, tokens.TemplateParamSeparator)
+            group = ""
+            for part in parts[1:]:
+                fields = _split(part, tokens.TemplateParamEquals)
+                if len(fields) > 1 and _plain(fields[0]).strip().lower() == "group":
+                    group = _plain(fields[1]).strip()
+            return self._reference_list(group)
         supported = {
             "lang",
             "transl",
@@ -550,6 +667,19 @@ class _Renderer:
         return "<table>" + "".join(output) + "</table>"
 
 
-def render_wikitext(source: str, wiki_base: str | None = None) -> str:
+def render_wikitext(
+    source: str,
+    wiki_base: str | None = None,
+    reference_mode: Literal["omit", "inline", "list"] = "omit",
+) -> str:
     """Render wiki structure and text without fetching resources."""
-    return _Renderer(wiki_base).blocks(parse_wikitext(source))
+    nodes = parse_wikitext(source)
+    renderer = _Renderer(wiki_base, reference_mode)
+    if reference_mode != "omit":
+        renderer.collect_references(nodes)
+        for keys in renderer._reference_order.values():
+            valid = [key for key in keys if key in renderer._reference_bodies]
+            renderer._reference_numbers.update(
+                (key, number) for number, key in enumerate(valid, 1)
+            )
+    return renderer.blocks(nodes)

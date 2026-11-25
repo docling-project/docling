@@ -24,6 +24,12 @@ data = doc.export_to_dict()  # structured / lossless
 Use `converter.convert("export.xml.gz")` for a MediaWiki export. Use
 `converter.convert_string(text, format=InputFormat.MEDIAWIKI)` for wikitext in
 memory. Import `InputFormat` from `docling.datamodel.base_models`.
+MediaWiki reference citations are omitted by default. Configure
+`MediaWikiFormatOption(backend_options=MediaWikiBackendOptions(reference_mode="inline"))`
+to keep their text in superscript, or use `reference_mode="list"` for numbered
+superscripts and reference lists. Import `MediaWikiBackendOptions` from
+`docling.datamodel.backend_options` and `MediaWikiFormatOption` from
+`docling.document_converter`.
 
 ## Configuring the pipeline with PipelineOptions
 

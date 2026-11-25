@@ -19,7 +19,11 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.xml.mediawiki._tokenizer_state import ParserError
 from docling.backend.xml.mediawiki.export import read_wiki_pages
 from docling.backend.xml.mediawiki.render import render_wikitext
-from docling.datamodel.backend_options import BackendOptions, HTMLBackendOptions
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    HTMLBackendOptions,
+    MediaWikiBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument, get_input_rejection_cause
 from docling.exceptions import DocumentLoadError
@@ -43,6 +47,11 @@ class MediaWikiDocumentBackend(DeclarativeDocumentBackend):
         options: BackendOptions | None = None,
     ) -> None:
         super().__init__(in_doc, path_or_stream, options)
+        self.mediawiki_options = (
+            options
+            if isinstance(options, MediaWikiBackendOptions)
+            else MediaWikiBackendOptions()
+        )
 
     @override
     def is_valid(self) -> bool:
@@ -110,8 +119,8 @@ class MediaWikiDocumentBackend(DeclarativeDocumentBackend):
         title = PurePosixPath(source.name).stem if source.archive_member else ""
         yield self._convert_article(decode_text(BytesIO(data)), title)
 
-    @staticmethod
     def _convert_article(
+        self,
         wikitext: str,
         title: str,
         wiki_base: str | None = None,
@@ -119,7 +128,9 @@ class MediaWikiDocumentBackend(DeclarativeDocumentBackend):
         if len(wikitext) > _MAX_WIKITEXT_CHARS:
             raise DocumentLoadError(f"Wikitext page {title!r} exceeds the size limit.")
         wikitext = wikitext.replace("\r\n", "\n").replace("\r", "\n")
-        html = render_wikitext(wikitext, wiki_base)
+        html = render_wikitext(
+            wikitext, wiki_base, self.mediawiki_options.reference_mode
+        )
         if title:
             html = f"<h1>{escape(title)}</h1>{html}"
         input_doc = InputDocument(

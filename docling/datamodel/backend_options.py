@@ -58,6 +58,15 @@ class TextBackendOptions(BaseBackendOptions):
     )
 
 
+class MediaWikiBackendOptions(BaseBackendOptions):
+    """Options for MediaWiki wikitext conversion."""
+
+    kind: Literal["mediawiki"] = Field("mediawiki", exclude=True, repr=False)
+    reference_mode: Literal["omit", "inline", "list"] = Field(
+        "omit", description="Omit references, render inline, or render a numbered list."
+    )
+
+
 class CsvBackendOptions(TextBackendOptions):
     """Options specific to the CSV backend."""
 
@@ -1024,6 +1033,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         JatsBackendOptions,
         MarkdownBackendOptions,
+        MediaWikiBackendOptions,
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,

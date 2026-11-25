@@ -219,5 +219,89 @@ Lead {{lang|fr|bonjour}} and {{convert|12|km|mi}}.
     assert "First work" in markdown and "Second work" in markdown
     assert "portrait.jpg" not in markdown
     assert "bonjour" in markdown and "12 km" in markdown
-    assert "Source title" in markdown
+    assert "Source title" not in markdown
     assert result.document.tables
+
+
+def test_reference_modes_and_empty_sections() -> None:
+    from docling.datamodel.backend_options import MediaWikiBackendOptions
+    from docling.document_converter import MediaWikiFormatOption
+
+    source = """Lead<ref name="source"/> and more<ref name="source">A ''book''</ref>.
+Math <sup>2</sup>.
+
+== Empty ==
+== Parent ==
+=== Child ===
+Text.
+== References ==
+{{reflist}}
+"""
+    for mode in ("omit", "inline", "list"):
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.MEDIAWIKI: MediaWikiFormatOption(
+                    backend_options=MediaWikiBackendOptions(reference_mode=mode)
+                )
+            }
+        )
+        doc = converter.convert_string(source, format=InputFormat.MEDIAWIKI).document
+        text = doc.export_to_markdown()
+        assert "Empty" not in text
+        assert "Parent" in text and "Child" in text
+        if mode == "omit":
+            assert "A *book*" not in text and "References" not in text
+        elif mode == "inline":
+            assert text.count("A *book*") == 2
+            assert "References" not in text
+        else:
+            assert text.count("[1]") == 2
+            assert text.count("A *book*") == 1
+            assert "References" in text
+
+
+def test_wiki_quote_state_does_not_consume_following_sections() -> None:
+    source = "''[[The Daily Telegraph]]'''s text.\n\n== New section ==\n\nNormal text and ''real italics''."
+    result = DocumentConverter().convert_string(source, format=InputFormat.MEDIAWIKI)
+    markdown = result.document.export_to_markdown()
+    assert "[*The Daily Telegraph*](The_Daily_Telegraph)'s text." in markdown
+    assert "## New section" in markdown
+    assert "Normal text and *real italics*." in markdown
+
+
+def test_reference_groups_and_forward_definitions() -> None:
+    from docling.backend.xml.mediawiki.render import render_wikitext
+
+    source = """One<ref name="later"/> two<ref group="note">A note</ref>
+three<ref name="later"/> unresolved<ref name="missing"/>.
+== Notes ==
+{{reflist|group=note}}
+== References ==
+<references><ref name="later">A source</ref></references>"""
+    html = render_wikitext(source, reference_mode="list")
+    assert html.count("<sup>[1]</sup>") == 2
+    assert "<sup>[note 1]</sup>" in html
+    assert "missing" not in html
+    assert html.count("<li>A source</li>") == 1
+    assert html.count("<li>A note</li>") == 1
+    assert html.index("<h2>Notes</h2>") < html.index("<li>A note</li>")
+    assert html.index("<h2>References</h2>") < html.index("<li>A source</li>")
+
+
+def test_headings_before_lists_and_empty_descendants() -> None:
+    from docling.backend.xml.mediawiki.render import render_wikitext
+
+    html = render_wikitext(
+        "== Parent ==\n=== Empty ===\n=== Populated ===\n* Item\n== Final =="
+    )
+    assert "Empty" not in html and "Final" not in html
+    assert html.index("<h2>Parent</h2>") < html.index("<h3>Populated</h3>")
+    assert html.index("<h3>Populated</h3>") < html.index("<ul>")
+
+
+def test_adjacent_emphasis_is_merged() -> None:
+    from docling.backend.xml.mediawiki.render import render_wikitext
+
+    html = render_wikitext("<i>one</i><i>two</i> and <b>three</b><b>four</b>")
+    assert "<i>onetwo</i>" in html
+    assert "<b>threefour</b>" in html

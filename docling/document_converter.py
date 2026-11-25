@@ -81,6 +81,7 @@ from docling.datamodel.backend_options import (
     JatsBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
+    MediaWikiBackendOptions,
     MetsGbsBackendOptions,
     MsWordBackendOptions,
     PdfBackendOptions,
@@ -277,6 +278,7 @@ class XMLDocLangFormatOption(FormatOption):
 class MediaWikiFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MediaWikiDocumentBackend
+    backend_options: MediaWikiBackendOptions | None = None
 
 
 class DclxFormatOption(FormatOption):

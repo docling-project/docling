@@ -1002,6 +1002,11 @@ class Tokenizer:
             self._emit_text("'")
             ticks = 3
 
+        # A failed bold parse inside italics leaves three apostrophes. Treat
+        # two as the italic close and the last as literal text outside it.
+        if italics and ticks == 3 and self._context & contexts.STYLE_SECOND_PASS:
+            self._head -= 1
+            return self._pop()
         if (italics and ticks in (2, 5)) or (bold and ticks in (3, 5)):
             if ticks == 5:
                 self._head -= 3 if italics else 2
@@ -1373,7 +1378,9 @@ class Tokenizer:
                     self._emit_text("=")
             elif this == "=" and self._context & contexts.HEADING:
                 return self._handle_heading_end()
-            elif this == "\n" and self._context & contexts.HEADING:
+            elif this == "\n" and self._context & (contexts.HEADING | contexts.STYLE):
+                # Wiki quote formatting is line-scoped. An unmatched opener must
+                # not consume headings or paragraphs on subsequent lines.
                 self._fail_route()
             elif this == "&":
                 self._parse_entity()
