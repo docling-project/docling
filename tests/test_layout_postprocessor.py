@@ -42,6 +42,7 @@ class _PageStub:
     def __init__(self, cells: list[TextCell]) -> None:
         self.cells = cells
         self.size = Size(width=400, height=400)
+        self.parsed_page = None
 
 
 def _reference_assignments(
@@ -258,6 +259,45 @@ def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
 
 def _bbox(left: float, top: float, right: float, bottom: float) -> BoundingBox:
     return BoundingBox(l=left, t=top, r=right, b=bottom)
+
+
+@pytest.mark.parametrize(
+    ("text", "top", "left", "existing_caption"),
+    [
+        pytest.param("Figure 15-35 shows the results.", 200, 40, False, id="reference"),
+        pytest.param("Figure 15-35: The results.", 211, 40, False, id="distant"),
+        pytest.param("Figure 15-35: The results.", 200, 290, False, id="beside"),
+        pytest.param(
+            "Figure 15-35: The results.", 200, 40, True, id="already-captioned"
+        ),
+    ],
+)
+def test_figure_caption_recovery_preserves_other_text(
+    text: str, top: float, left: float, existing_caption: bool
+) -> None:
+    picture = _cluster(0, _bbox(40, 30, 280, 190), DocItemLabel.PICTURE)
+    body = _cluster(1, _bbox(left, top, left + 100, top + 22))
+    cells = [
+        _text_cell(1, _bbox(left, top, left + 100, top + 10), text),
+        _text_cell(2, _bbox(left, top + 12, left + 100, top + 22), "More results."),
+    ]
+    clusters = [picture, body]
+    expected_labels = {0: DocItemLabel.PICTURE, 1: DocItemLabel.TEXT}
+    if existing_caption:
+        caption_box = _bbox(40, 15, 280, 25)
+        clusters.append(_cluster(2, caption_box, DocItemLabel.CAPTION))
+        cells.insert(0, _text_cell(0, caption_box, "The original caption."))
+        expected_labels[2] = DocItemLabel.CAPTION
+
+    processor = LayoutPostprocessor(
+        page=_PageStub(cells),
+        clusters=clusters,
+        options=LayoutPostprocessorOptions(),
+    )
+    result = processor.postprocess()
+
+    assert {cluster.id: cluster.label for cluster in result} == expected_labels
+    assert [cell.text for cell in body.cells] == [text, "More results."]
 
 
 def test_cross_type_overlaps_removes_kvregion_coinciding_with_table() -> None:

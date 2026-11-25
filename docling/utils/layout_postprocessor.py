@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import re
 import sys
 from collections import defaultdict
 
@@ -15,8 +16,15 @@ from docling.datamodel.spatial import (
     has_positive_area,
     ordered_bounding_box,
 )
+from docling.utils.text_normalization import cell_text_lines
 
 _log = logging.getLogger(__name__)
+
+# A chapter-numbered figure marker can follow a short production code.
+_FIGURE_CAPTION_START = re.compile(
+    r"(?:[A-Z]{1,6}-?[0-9][A-Z0-9-]{0,9}\s+)?"
+    r"(?i:figure)\s+[0-9]+[-\u2013][0-9]+(?::|\s+(?=[A-Z]))"
+)
 
 
 class UnionFind:
@@ -208,6 +216,8 @@ class LayoutPostprocessor:
                 for child in cluster.children:
                     child.cells = self._sort_cells(child.cells)
 
+            self._recover_figure_captions(final_clusters)
+
             # parsed_page is absent when native cell extraction was skipped
             # (PagePreprocessingOptions.skip_cell_extraction); there are no
             # textline cells to write back in that case.
@@ -216,6 +226,58 @@ class LayoutPostprocessor:
                 self.page.parsed_page.has_lines = len(self.cells) > 0
 
         return final_clusters
+
+    @staticmethod
+    def _shares_caption_span(box: BoundingBox, picture: BoundingBox) -> bool:
+        width = min(box.width, picture.width)
+        return width > 0 and box.x_overlap_with(picture) >= 0.8 * width
+
+    def _recover_figure_captions(self, clusters: list[Cluster]) -> None:
+        """Recover explicit figure captions that the detector labeled as text."""
+        pictures = [
+            cluster for cluster in clusters if cluster.label == DocItemLabel.PICTURE
+        ]
+        if not pictures:
+            return
+
+        for cluster in clusters:
+            if cluster.label != DocItemLabel.TEXT or len(cluster.cells) < 2:
+                continue
+            start = " ".join(cell_text_lines(cluster.cells[:2]))
+            if _FIGURE_CAPTION_START.match(start) is None:
+                continue
+
+            # A caption must start immediately below the picture. Use the
+            # line height so that the gap limit scales with the page text.
+            max_gap = 2 * cluster.cells[0].rect.to_bounding_box().height
+            matches = [
+                picture
+                for picture in pictures
+                if 0 <= cluster.bbox.t - picture.bbox.b <= max_gap
+                and self._shares_caption_span(cluster.bbox, picture.bbox)
+            ]
+            if len(matches) != 1:
+                continue
+
+            (picture,) = matches
+            if any(
+                other.id not in (cluster.id, picture.id)
+                and self._shares_caption_span(other.bbox, picture.bbox)
+                and (
+                    picture.bbox.b <= other.bbox.t <= cluster.bbox.t
+                    or (
+                        other.label == DocItemLabel.CAPTION
+                        and (
+                            0 <= other.bbox.t - picture.bbox.b <= max_gap
+                            or 0 <= picture.bbox.t - other.bbox.b <= max_gap
+                        )
+                    )
+                )
+                for other in clusters
+            ):
+                continue
+
+            cluster.label = DocItemLabel.CAPTION
 
     def _process_regular_clusters(self) -> list[Cluster]:
         """Process regular clusters with iterative refinement."""
