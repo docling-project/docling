@@ -169,6 +169,22 @@ def _q_quotation_marks(q: Tag) -> _QuotationMarks:
     return _Q_QUOTATION_MARKS_EN
 
 
+def _looks_like_utf16_or_utf32(markup: bytes) -> bool:
+    """Tell if bytes without a byte-order mark look like UTF-16 or UTF-32 text.
+
+    In UTF-16, an ASCII character is one NUL byte and one other byte, so HTML
+    markup is about half NUL bytes. In UTF-32, it is about three quarters. In a
+    UTF-8 page, a NUL byte is a stray byte, so the fraction is near zero. The limit
+    of one quarter is between the two cases.
+
+    UTF-16 text in which each character has two bytes below 0x80 has few NUL bytes
+    and is valid UTF-8, so it does not look like UTF-16 here.
+    """
+    if not markup:
+        return False
+    return markup.count(b"\x00") / len(markup) >= 0.25
+
+
 def _parse_html(markup: bytes) -> BeautifulSoup:
     """Parse HTML, reading bytes that declare no encoding as UTF-8 when they are UTF-8.
 
@@ -176,11 +192,8 @@ def _parse_html(markup: bytes) -> BeautifulSoup:
     a statistical detector first and tries UTF-8 last. On short text the detector
     can pick another encoding, so valid UTF-8 comes out as garbled text. UTF-8 is
     the likely encoding of such a page. Bytes that are not valid UTF-8 still go to
-    the detector. So do bytes in which NUL bytes are a quarter or more of all the
-    bytes. UTF-16 and UTF-32 text with mostly ASCII characters has that many NUL
-    bytes, and it can be valid UTF-8 only by accident. A stray NUL byte in a UTF-8
-    page does not change how the page is read. UTF-16 without a byte-order mark,
-    in which each character has two bytes below 0x80, is still read as UTF-8.
+    the detector. So do bytes that look like UTF-16 or UTF-32 (see
+    `_looks_like_utf16_or_utf32`), which can be valid UTF-8 only by accident.
 
     The decoded text keeps no U+0000 characters. A browser drops U+0000 in body
     text. This function removes it from all of the text, because U+0000 in the
@@ -188,7 +201,7 @@ def _parse_html(markup: bytes) -> BeautifulSoup:
     """
     encoding: Optional[str] = None
     if (
-        markup.count(b"\x00") * 4 < len(markup)
+        not _looks_like_utf16_or_utf32(markup)
         and EncodingDetector.find_declared_encoding(markup, is_html=True) is None
     ):
         try:
