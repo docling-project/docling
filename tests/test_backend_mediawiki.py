@@ -128,6 +128,31 @@ def test_mediawiki_preserves_structure(
         assert "Superseded content" not in markdown
 
 
+@pytest.mark.parametrize("as_stream", [False, True], ids=["path", "stream"])
+@pytest.mark.parametrize(
+    "name", ["article.wiki", "article.WIKITEXT", "article.wiki.gz"]
+)
+def test_wikitext_with_tar_signature(
+    tmp_path: Path, as_stream: bool, name: str
+) -> None:
+    prefix = b"Article text.<!--".ljust(257, b" ")
+    contents = prefix + b"ustar-->"
+    if name.endswith(".gz"):
+        contents = gzip.compress(contents)
+
+    source: Path | DocumentStream
+    if as_stream:
+        source = DocumentStream(name=name, stream=BytesIO(contents))
+    else:
+        source = tmp_path / name
+        source.write_bytes(contents)
+
+    result = DocumentConverter().convert(source)
+    assert result.status is ConversionStatus.SUCCESS
+    assert result.input.format is InputFormat.MEDIAWIKI
+    assert "Article text." in result.document.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     ("name", "mode"),
     [("mixed.tar", "w"), ("mixed.tar.gz", "w:gz"), ("mixed.tgz", "w:gz")],

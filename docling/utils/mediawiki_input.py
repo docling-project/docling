@@ -165,24 +165,27 @@ def open_mediawiki_sources(
             raw.seek(0)
             raw_head = raw.read(512)
             compressed = raw_head.startswith(_GZIP_MAGIC)
-            archive = raw_head[257:262] == b"ustar" or name.lower().endswith(
-                _TAR_SUFFIXES
+            payload_name = name
+            if compressed and name.lower().endswith(".gz"):
+                payload_name = name[:-3]
+            wikitext = is_wikitext_name(payload_name)
+            archive = name.lower().endswith(_TAR_SUFFIXES) or (
+                not wikitext and raw_head[257:262] == b"ustar"
             )
             raw.seek(0)
             with gzip.GzipFile(fileobj=raw) if compressed else nullcontext(raw) as data:
                 limit = _MAX_ARCHIVE_BYTES if compressed or archive else None
                 with BufferedReader(_SourceReader(data, limit)) as reader:
                     head = reader.peek(_HEAD_BYTES)
-                    if archive or (compressed and head[257:262] == b"ustar"):
+                    if archive or (
+                        compressed and not wikitext and head[257:262] == b"ustar"
+                    ):
                         members = _tar_sources(reader)
                         try:
                             yield members
                         finally:
                             members.close()
                         return
-                    payload_name = name
-                    if compressed and name.lower().endswith(".gz"):
-                        payload_name = name[:-3]
                     kind = _source_kind(payload_name, head)
                     if kind is None:
                         yield iter(())

@@ -955,6 +955,10 @@ class _DocumentConversionInput(BaseModel):
         return resolve_remote_filename(http_url=http_url, response_headers={})
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
+        # Wikitext can contain byte sequences that match binary file signatures.
+        if is_wikitext_name(obj.name):
+            return InputFormat.MEDIAWIKI
+
         content = b""  # empty binary blob
         formats: list[InputFormat] = []
         obj_ext: Optional[str] = None
@@ -1037,7 +1041,7 @@ class _DocumentConversionInput(BaseModel):
             "application/octet-stream",
             "application/xml",
         }:
-            if is_mediawiki_xml(content) or is_wikitext_name(obj.name):
+            if is_mediawiki_xml(content):
                 return InputFormat.MEDIAWIKI
         if mime is not None and mime.lower() in {
             "application/gzip",
