@@ -638,8 +638,22 @@ class ReadingOrderPredictor:
                             r"(\s*[a-zA-Z\u00C0-\u024F])(.+)",
                             sorted_elements[ind_p1].text,
                         )
+                        # A page break after a number or a closing bracket, as
+                        # in "(see Requirement 32" | "of SSR-4 [1]).", only
+                        # continues the sentence when the next page opens in
+                        # lowercase.
+                        split_after_number = (
+                            sorted_elements[check_ind].page_no
+                            != sorted_elements[ind_p1].page_no
+                            and re.fullmatch(
+                                r".+[0-9)\]]\s*", sorted_elements[check_ind].text
+                            )
+                            and re.fullmatch(
+                                r"\s*[a-z].+", sorted_elements[ind_p1].text
+                            )
+                        )
 
-                        if m1 and m2:
+                        if (m1 and m2) or split_after_number:
                             merge_list.append(sorted_elements[ind_p1].cid)
                             curr_ind = ind_p1
                             check_ind = ind_p1
