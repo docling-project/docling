@@ -93,7 +93,11 @@ Docling imports the latest revision of each exported page and processes
 archive members in archive order.
 
 The parser runs locally and preserves headings, emphasis, links, lists, and
-tables. It leaves template calls and Lua modules unexpanded. A wikitext page
+tables. It extracts named fields from common infobox and taxobox templates and
+provides approximate output for selected common templates, including dates,
+lists, units, language text, and citations. It does not execute template code
+or Lua modules; other templates are omitted, and extracted fields may differ
+from a rendered wiki page. A wikitext page
 can contain up to 4,194,304 characters. Compressed files and archives can
 contain up to 512 MiB of uncompressed data. Tar archives can have up to
 10,000 members. The `format-html` extra provides the renderer for Docling Slim.

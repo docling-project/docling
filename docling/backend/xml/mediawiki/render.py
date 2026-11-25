@@ -175,7 +175,32 @@ def _list_line(line: list[Node]) -> tuple[str, list[Node]]:
     return "".join(markers), line[depth:]
 
 
+def _template_name(node: Syntax) -> str:
+    name: list[Node] = []
+    for child in node.children:
+        if isinstance(child, tokens.TemplateParamSeparator):
+            break
+        name.append(child)
+    return " ".join(_plain(name).replace("_", " ").lower().split())
+
+
+def _is_infobox(name: str) -> bool:
+    return (
+        name.startswith("infobox ")
+        or name == "infobox"
+        or name
+        in {
+            "taxobox",
+            "automatic taxobox",
+            "speciesbox",
+            "subspeciesbox",
+        }
+    )
+
+
 def _is_block(node: Syntax) -> bool:
+    if isinstance(node.start, tokens.TemplateOpen):
+        return _is_infobox(_template_name(node))
     if isinstance(node.start, tokens.HeadingStart):
         return True
     if isinstance(node.start, tokens.TagOpenOpen):
@@ -339,12 +364,112 @@ class _Renderer:
             href = _plain(target).strip()
             visible = self.inlines(label[0]).strip() if label else escape(href)
             return _link(href, visible, allow_relative=href.startswith("//"))
+        if isinstance(node.start, tokens.TemplateOpen):
+            return self._template(node)
         if isinstance(node.start, tokens.ArgumentOpen):
             _, *default = _split(node.children, tokens.ArgumentSeparator)
             return self.inlines(default[0]) if default else ""
         if isinstance(node.start, tokens.TagOpenOpen):
             return self._render_tag(_tag(node))
         # Comments and unexpanded templates have no visible content.
+        return ""
+
+    def _template(self, node: Syntax) -> str:
+        name = _template_name(node)
+        supported = {
+            "lang",
+            "transl",
+            "transliteration",
+            "in lang",
+            "small",
+            "nowrap",
+            "nobr",
+            "center",
+            "ubl",
+            "unbulleted list",
+            "plainlist",
+            "hlist",
+            "convert",
+            "cvt",
+            "birth date",
+            "birth date and age",
+            "death date",
+            "death date and age",
+            "start date",
+            "end date",
+            "sortname",
+            "citation",
+        }
+        if not (
+            _is_infobox(name)
+            or name.startswith(("lang-", "cite "))
+            or name in supported
+        ):
+            return ""
+        parts = _split(node.children, tokens.TemplateParamSeparator)
+        positional: list[str] = []
+        named: list[tuple[str, str]] = []
+        for part in parts[1:]:
+            keys = _split(part, tokens.TemplateParamEquals)
+            if len(keys) > 1:
+                key = _plain(keys[0]).strip()
+                value = self.inlines(part[len(keys[0]) + 1 :]).strip()
+                if key.isdecimal():
+                    positional.append(value)
+                else:
+                    named.append((key, value))
+            else:
+                positional.append(self.inlines(part).strip())
+        if _is_infobox(name):
+            rows = []
+            for key, value in named:
+                normalized = key.lower().strip().replace(" ", "_")
+                if not value or normalized.endswith(("_style", "_class")):
+                    continue
+                if normalized in {"image", "image_size", "image_upright", "width"}:
+                    continue
+                label = escape(key.strip().replace("_", " "), quote=False)
+                rows.append(f"<tr><th>{label}</th><td>{value}</td></tr>")
+            return "<table>" + "".join(rows) + "</table>" if rows else ""
+        if name in {"lang", "transl", "transliteration", "in lang"}:
+            return positional[1] if len(positional) > 1 else ""
+        if name.startswith("lang-") or name in {"small", "nowrap", "nobr", "center"}:
+            return positional[0] if positional else ""
+        if name in {"ubl", "unbulleted list", "plainlist", "hlist"}:
+            return "; ".join(value for value in positional if value)
+        if name in {"convert", "cvt"}:
+            return " ".join(value for value in positional[:2] if value)
+        if name in {
+            "birth date",
+            "birth date and age",
+            "death date",
+            "death date and age",
+            "start date",
+            "end date",
+        }:
+            return (
+                "-".join(positional[:3])
+                if len(positional) >= 3
+                else " ".join(positional)
+            )
+        if name in {"sortname"}:
+            return " ".join(positional[:2])
+        if name.startswith("cite ") or name == "citation":
+            fields = {key.lower().strip(): value for key, value in named}
+            return ". ".join(
+                fields[key]
+                for key in (
+                    "author",
+                    "last",
+                    "first",
+                    "title",
+                    "work",
+                    "publisher",
+                    "date",
+                    "year",
+                )
+                if fields.get(key)
+            )
         return ""
 
     def _wiki_link(self, nodes: list[Node]) -> str:

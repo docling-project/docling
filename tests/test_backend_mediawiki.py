@@ -198,3 +198,26 @@ def test_mediawiki_bounds_decompression(monkeypatch: pytest.MonkeyPatch) -> None
     assert result.input.format is InputFormat.MEDIAWIKI
     assert result.status is ConversionStatus.FAILURE
     assert any("12000-byte limit" in error.error_message for error in result.errors)
+
+
+def test_infobox_and_common_templates_preserve_content() -> None:
+    source = """{{Infobox person
+| name = Alice Example
+| birth_date = {{birth date|1900|2|3}}
+| occupation = [[Writer]]
+| known_for = {{ubl|First work|Second work}}
+| image = portrait.jpg
+}}
+Lead {{lang|fr|bonjour}} and {{convert|12|km|mi}}.
+<ref>{{cite web|title=Source title|date=2024}}</ref>
+"""
+    result = DocumentConverter().convert_string(source, format=InputFormat.MEDIAWIKI)
+    markdown = result.document.export_to_markdown()
+    assert "Alice Example" in markdown
+    assert "1900-2-3" in markdown
+    assert "Writer" in markdown
+    assert "First work" in markdown and "Second work" in markdown
+    assert "portrait.jpg" not in markdown
+    assert "bonjour" in markdown and "12 km" in markdown
+    assert "Source title" in markdown
+    assert result.document.tables
