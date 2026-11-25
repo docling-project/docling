@@ -7,6 +7,7 @@ import pytest
 from docling_core.types.doc import (
     BoundingBox,
     CodeItem,
+    CoordOrigin,
     DocItemLabel,
     GroupLabel,
     RichTableCell,
@@ -49,7 +50,9 @@ def _cluster(cid: int, label: DocItemLabel, bbox: tuple[float, ...]) -> Cluster:
     )
 
 
-def _conversion_result(elements: list[PageElement]) -> ConversionResult:
+def _conversion_result(
+    elements: list[PageElement], *, size: Size | None = None
+) -> ConversionResult:
     input_doc = InputDocument.model_construct(
         file=PurePath("input.pdf"),
         document_hash="0" * 64,
@@ -58,7 +61,7 @@ def _conversion_result(elements: list[PageElement]) -> ConversionResult:
     )
     return ConversionResult(
         input=input_doc,
-        pages=[Page(page_no=1, size=Size(width=500, height=500))],
+        pages=[Page(page_no=1, size=size or Size(width=500, height=500))],
         assembled=AssembledUnit(elements=elements, body=elements),
     )
 
@@ -228,6 +231,85 @@ def test_container_does_not_interrupt_caption_assignment(
         "Table caption"
     ]
     assert len([text for text in doc.texts if text.label == DocItemLabel.CAPTION]) == 1
+
+
+@pytest.mark.parametrize(
+    ("text_box", "left_captions"),
+    [
+        pytest.param(None, ["Figure 6-5. Left"], id="caption-row"),
+        pytest.param((235, 148, 294, 145), ["Figure 6-5. Left"], id="off-column-text"),
+        pytest.param((67, 148, 234, 145), [], id="text-in-gap"),
+    ],
+)
+def test_side_by_side_pictures_keep_their_own_captions(
+    text_box: tuple[float, float, float, float] | None, left_captions: list[str]
+) -> None:
+    page_size = Size(width=612, height=792)
+
+    def cluster(
+        cid: int, label: DocItemLabel, bbox: tuple[float, float, float, float]
+    ) -> Cluster:
+        left, top, right, bottom = bbox
+        box = BoundingBox(
+            l=left, t=top, r=right, b=bottom, coord_origin=CoordOrigin.BOTTOMLEFT
+        )
+        return Cluster(
+            id=cid, label=label, bbox=box.to_top_left_origin(page_size.height)
+        )
+
+    picture_label, caption_label = DocItemLabel.PICTURE, DocItemLabel.CAPTION
+    conv_elements: list[PageElement] = [
+        FigureElement(
+            label=picture_label,
+            id=0,
+            page_no=1,
+            cluster=cluster(0, picture_label, (67, 312, 282, 149)),
+        ),
+        FigureElement(
+            label=picture_label,
+            id=1,
+            page_no=1,
+            cluster=cluster(1, picture_label, (297, 348, 511, 149)),
+        ),
+        TextElement(
+            label=caption_label,
+            id=2,
+            page_no=1,
+            text="Figure 6-5. Left",
+            cluster=cluster(2, caption_label, (67, 144, 235, 132)),
+        ),
+        TextElement(
+            label=caption_label,
+            id=3,
+            page_no=1,
+            text="Figure 6-6. Right",
+            cluster=cluster(3, caption_label, (297, 144, 490, 132)),
+        ),
+    ]
+    if text_box is not None:
+        conv_elements.append(
+            TextElement(
+                label=DocItemLabel.TEXT,
+                id=4,
+                page_no=1,
+                text="Other text",
+                cluster=cluster(4, DocItemLabel.TEXT, text_box),
+            )
+        )
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(
+        _conversion_result(conv_elements, size=page_size)
+    )
+
+    pictures = sorted(doc.pictures, key=lambda picture: picture.prov[0].bbox.l)
+    assert [[ref.resolve(doc).text for ref in pic.captions] for pic in pictures] == [
+        left_captions,
+        ["Figure 6-6. Right"],
+    ]
+    markdown = doc.export_to_markdown()
+    assert markdown.count("Figure 6-5. Left") == 1
+    assert markdown.count("Figure 6-6. Right") == 1
+    doc.validate_document()
 
 
 def test_container_children_follow_predicted_reading_order() -> None:

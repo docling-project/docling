@@ -458,6 +458,7 @@ class ReadingOrderPredictor:
     _NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM: ClassVar[float] = 0.0025
     _LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM: ClassVar[float] = 0.01
     _INTERRUPTION_QUERY_PADDING: ClassVar[float] = 1.0
+    _PICTURE_CAPTION_GAP_THRESHOLD_NORM: ClassVar[float] = 0.02
 
     def __init__(self):
         self.dilated_page_element = True
@@ -1249,23 +1250,59 @@ class ReadingOrderPredictor:
             if not found_non_visited:
                 stack.pop()
 
-    @staticmethod
+    @classmethod
+    def _pictures_directly_above_caption(
+        cls,
+        caption: BoundingBox,
+        page_size: Size,
+        pictures: list[PageElement],
+        boxes: dict[int, BoundingBox],
+    ) -> Iterable[tuple[int, float]]:
+        max_gap = cls._PICTURE_CAPTION_GAP_THRESHOLD_NORM * page_size.height
+        for picture in pictures:
+            box = boxes[picture.cid]
+            gap = box.b - caption.t
+            if not (0 <= gap <= max_gap and box.overlaps_horizontally(caption)):
+                continue
+            left = max(box.l, caption.l)
+            right = min(box.r, caption.r)
+            if not any(
+                other.l < right
+                and other.r > left
+                and other.b < box.b
+                and other.t > caption.t
+                for other in boxes.values()
+            ):
+                yield picture.cid, gap
+
+    @classmethod
     def _rank_caption_candidates(
+        cls,
         page_elements: List[PageElement],
     ) -> Dict[int, List[int]]:
         """
         Map each caption cid to the cids of the graphics it could belong to,
         nearest first.
 
-        A caption only reaches the graphics in an unbroken run on either side
-        of it, ranked by the gap each leaves on the page rather than by
-        position in the run: the nearer graphic is not always the one above.
-        Equal gaps go to the preceding graphic.
+        Consider the graphics in an unbroken run on either side of a caption
+        and nearby pictures directly above it. Rank by the gap on the page,
+        with equal gaps going to the preceding graphic.
         """
         # Reversed once for the whole page, so that each caption can scan back
         # from its own index without a slice of its own.
         backwards = page_elements[::-1]
         size = len(page_elements)
+        pictures = [
+            elem for elem in page_elements if elem.label == DocItemLabel.PICTURE
+        ]
+        boxes = {
+            elem.cid: (
+                elem
+                if elem.coord_origin == CoordOrigin.BOTTOMLEFT
+                else elem.to_bottom_left_origin(elem.page_size.height)
+            )
+            for elem in page_elements
+        }
 
         preferred: Dict[int, List[int]] = {}
         for ind, caption in enumerate(page_elements):
@@ -1280,6 +1317,11 @@ class ReadingOrderPredictor:
                 for side, run in ((0, preceding), (1, following))
                 for graphic in run
             }
+            # Reading order can put a whole row of pictures before their captions.
+            for cid, gap in cls._pictures_directly_above_caption(
+                boxes[caption.cid], caption.page_size, pictures, boxes
+            ):
+                ranked.setdefault(cid, (gap, 0))
             preferred[caption.cid] = sorted(ranked, key=lambda cid: ranked[cid])
         return preferred
 
@@ -1327,8 +1369,7 @@ class ReadingOrderPredictor:
         self, page_elements: List[PageElement]
     ) -> Dict[int, List[int]]:
 
-        # page_elements arrives in reading order, which already places each caption
-        # next to its graphic; cids are parse order and would scatter them.
+        # Use reading order for adjacent candidates and tie-breaking.
         preferred = self._rank_caption_candidates(page_elements)
 
         # Match by augmenting paths, not best-first: a caption with a second
