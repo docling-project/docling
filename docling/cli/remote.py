@@ -404,6 +404,7 @@ def convert_remote(
             summary = export_documents(
                 conv_results,
                 output_dir=output,
+                input_paths=(p for p in sources if isinstance(p, Path)),
                 **_export_flags_from_formats(to_formats),
                 show_layout=False,
                 print_timings=False,

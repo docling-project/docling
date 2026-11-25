@@ -138,6 +138,28 @@ def test_remote_converts_local_file(tmp_path, _patch_client):
     assert "from_formats" not in client.captured_options.model_fields_set
 
 
+def test_remote_export_preserves_local_input(tmp_path, _patch_client):
+    source = tmp_path / "report.md"
+    original = b"# Source with comments\n\n<!-- private note -->\n"
+    source.write_bytes(original)
+
+    result = runner.invoke(
+        app,
+        [
+            "convert-remote",
+            str(source),
+            "--service-url",
+            "https://docling.example.com",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert source.read_bytes() == original
+    assert result.exit_code != 0
+    assert "would overwrite an input" in " ".join(result.output.split())
+
+
 @pytest.mark.parametrize(
     ("status", "fail_on_args", "exit_code", "written"),
     [
