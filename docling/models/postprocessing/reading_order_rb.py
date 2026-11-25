@@ -458,6 +458,8 @@ class ReadingOrderPredictor:
     _NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM: ClassVar[float] = 0.0025
     _LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM: ClassVar[float] = 0.01
     _INTERRUPTION_QUERY_PADDING: ClassVar[float] = 1.0
+    _MAX_SIDE_CAPTION_GAP_NORM: ClassVar[float] = 0.075
+    _MIN_SIDE_CAPTION_VERTICAL_OVERLAP: ClassVar[float] = 0.5
 
     def __init__(self):
         self.dilated_page_element = True
@@ -1249,23 +1251,27 @@ class ReadingOrderPredictor:
             if not found_non_visited:
                 stack.pop()
 
-    @staticmethod
+    @classmethod
     def _rank_caption_candidates(
-        page_elements: List[PageElement],
+        cls, page_elements: List[PageElement]
     ) -> Dict[int, List[int]]:
         """
         Map each caption cid to the cids of the graphics it could belong to,
         nearest first.
 
-        A caption only reaches the graphics in an unbroken run on either side
-        of it, ranked by the gap each leaves on the page rather than by
-        position in the run: the nearer graphic is not always the one above.
-        Equal gaps go to the preceding graphic.
+        Consider the uninterrupted runs of graphics before and after a caption
+        as well as pictures beside it. Rank by the gap on the page and prefer
+        preceding candidates on ties.
         """
         # Reversed once for the whole page, so that each caption can scan back
         # from its own index without a slice of its own.
         backwards = page_elements[::-1]
         size = len(page_elements)
+        pictures = [
+            (index, element)
+            for index, element in enumerate(page_elements)
+            if element.label == DocItemLabel.PICTURE
+        ]
 
         preferred: Dict[int, List[int]] = {}
         for ind, caption in enumerate(page_elements):
@@ -1274,12 +1280,36 @@ class ReadingOrderPredictor:
             preceding = _graphic_run(islice(backwards, size - ind, None))
             following = _graphic_run(islice(page_elements, ind + 1, None))
             # The candidates, in run order, tagged 0 preceding / 1 following so
-            # that equal gaps go to the graphic above.
+            # that equal gaps go to the preceding graphic.
             ranked = {
                 graphic.cid: (_shortest_box_gap(caption, graphic), side)
                 for side, run in ((0, preceding), (1, following))
                 for graphic in run
             }
+            # Column reading order can put body text between a picture and
+            # its caption. Recover candidates across a narrow, clear gutter.
+            max_gap = cls._MAX_SIDE_CAPTION_GAP_NORM * caption.page_size.width
+            for picture_index, picture in pictures:
+                if picture.cid in ranked:
+                    continue
+                gap = max(caption.l - picture.r, picture.l - caption.r)
+                if gap < 0 or gap > max_gap:
+                    continue
+                overlap = min(caption.t, picture.t) - max(caption.b, picture.b)
+                min_overlap = cls._MIN_SIDE_CAPTION_VERTICAL_OVERLAP * min(
+                    caption.height, picture.height
+                )
+                if overlap <= 0 or overlap < min_overlap:
+                    continue
+                left_index, right_index = (
+                    (ind, picture_index)
+                    if caption.l < picture.l
+                    else (picture_index, ind)
+                )
+                if not cls._has_page_element_between(
+                    page_elements, left_index=left_index, right_index=right_index
+                ):
+                    ranked[picture.cid] = (gap, int(picture_index > ind))
             preferred[caption.cid] = sorted(ranked, key=lambda cid: ranked[cid])
         return preferred
 
@@ -1327,8 +1357,8 @@ class ReadingOrderPredictor:
         self, page_elements: List[PageElement]
     ) -> Dict[int, List[int]]:
 
-        # page_elements arrives in reading order, which already places each caption
-        # next to its graphic; cids are parse order and would scatter them.
+        # Page elements arrive in reading order. Use their positions for
+        # adjacency because cids reflect parse order.
         preferred = self._rank_caption_candidates(page_elements)
 
         # Match by augmenting paths, not best-first: a caption with a second

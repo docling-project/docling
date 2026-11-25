@@ -306,6 +306,14 @@ uv run docling convert --from pdf --to dclx \
 ```
 
 
+### Link picture captions in side columns
+
+The standard PDF pipeline can link a detected caption to a picture beside it
+when their boxes overlap by at least half the height of the shorter box and a
+narrow, clear gap separates them.
+The caption is available through `PictureItem.captions` even when body text
+comes between the picture and caption in reading order.
+
 ### Control PDF parser threads
 
 The PDF parser and the model pipeline use separate thread settings.
