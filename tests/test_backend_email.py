@@ -137,34 +137,76 @@ This is a second paragraph.
     assert [item.label for item in text_items[1:]] == [DocItemLabel.TEXT] * 5
 
 
+def _convert_raw_email(raw_email: bytes) -> DoclingDocument:
+    return (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(DocumentStream(name="test.eml", stream=BytesIO(raw_email)))
+        .document
+    )
+
+
 @pytest.mark.parametrize(
     ("params", "body", "expected"),
     [
-        (
+        pytest.param(
             "",
-            b"This line was \nsoft wrapped.\n\n> Quoted text that \n> was wrapped too.\n"
-            b">  Stuffed \nLast line\n-- \nSignature\n",
-            [
-                "This line was soft wrapped.",
-                "> Quoted text that was wrapped too.\n>  Stuffed \nLast line\n-- \nSignature",
-            ],
+            b"This line was \nsoft wrapped.\n",
+            ["This line was soft wrapped."],
+            id="wrapped-paragraph",
         ),
-        (
+        pytest.param(
+            "",
+            b"> Quoted text that \n> was wrapped too.\n",
+            ["> Quoted text that was wrapped too."],
+            id="wrapped-quote",
+        ),
+        pytest.param(
+            "",
+            b"> Quoted \n>> deeper\n",
+            ["> Quoted \n>> deeper"],
+            id="quote-depth-change-ends-paragraph",
+        ),
+        pytest.param(
+            "",
+            b" >not a quote \nnext\n",
+            [">not a quote next"],
+            id="space-stuffing-removed",
+        ),
+        pytest.param(
             "; delsp=yes",
             "日本語の長い文章を \n折り返しました。\n".encode(),
             ["日本語の長い文章を折り返しました。"],
+            id="delsp",
         ),
-        (
-            # latin-1 bytes in a part that declares utf-8
+        pytest.param(
+            "; delsp*=us-ascii''YES",
+            b"Wrapped \nline.\n",
+            ["Wrappedline."],
+            id="delsp-rfc2231",
+        ),
+        pytest.param(
+            "",
+            b"Hi Bob, \n\nThis is a long line that \nwas wrapped.\n",
+            ["Hi Bob,", "This is a long line that was wrapped."],
+            id="blank-line-ends-paragraph",
+        ),
+        pytest.param(
+            "",
+            b"Thanks \n-- \nAlice\n",
+            ["Thanks \n-- \nAlice"],
+            id="signature-separator-after-flowed-line",
+        ),
+        pytest.param(
             "",
             b"Caf\xe9 au lait was \nsoft wrapped here.\n",
             ["Caf\ufffd au lait was soft wrapped here."],
+            id="undecodable-bytes-are-replaced",
         ),
     ],
 )
 def test_email_backend_joins_soft_line_breaks_of_flowed_text(
     params: str, body: bytes, expected: list[str]
-):
+) -> None:
     raw_email = (
         b"From: alice@example.com\nSubject: Flowed\nMIME-Version: 1.0\n"
         b'Content-Type: text/plain; charset="utf-8"; format=flowed'
@@ -172,13 +214,74 @@ def test_email_backend_joins_soft_line_breaks_of_flowed_text(
         + b"\n\n"
         + body
     )
-    doc = (
-        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
-        .convert(DocumentStream(name="flowed.eml", stream=BytesIO(raw_email)))
-        .document
+
+    doc = _convert_raw_email(raw_email)
+
+    assert [item.text for item in doc.texts] == [
+        "Flowed",
+        "From: alice@example.com",
+        *expected,
+    ]
+
+
+def test_email_backend_exports_flowed_text_without_hard_breaks() -> None:
+    raw_email = (
+        b"From: alice@example.com\nSubject: Flowed\nMIME-Version: 1.0\n"
+        b'Content-Type: text/plain; charset="utf-8"; format=flowed\n\n'
+        b"This is a long line that \nwas soft wrapped by the \nclient.\n"
     )
 
-    assert [item.text for item in doc.texts[2:]] == expected
+    markdown = _convert_raw_email(raw_email).export_to_markdown()
+
+    assert markdown.endswith("This is a long line that was soft wrapped by the client.")
+
+
+def test_email_backend_unflows_only_the_flowed_part() -> None:
+    raw_email = (
+        b"From: alice@example.com\nSubject: Mixed\nMIME-Version: 1.0\n"
+        b'Content-Type: multipart/mixed; boundary="B"\n\n'
+        b'--B\nContent-Type: text/plain; charset="utf-8"; format=flowed\n\n'
+        b"Same text \nhere.\n"
+        b'--B\nContent-Type: text/plain; charset="utf-8"\n'
+        b'Content-Disposition: attachment; filename="notes.txt"\n\n'
+        b"Attached text \nstays.\n"
+        b'--B\nContent-Type: text/plain; charset="utf-8"\n\n'
+        b"Same text \nhere.\n"
+        b"--B--\n"
+    )
+    doc = _convert_raw_email(raw_email)
+
+    assert [item.text for item in doc.texts] == [
+        "Mixed",
+        "From: alice@example.com",
+        "Same text here.",
+        "Same text \nhere.",
+    ]
+
+
+def test_email_backend_ignores_flowed_parts_inside_attachment_containers() -> None:
+    raw_email = (
+        b"From: alice@example.com\nSubject: Nested\nMIME-Version: 1.0\n"
+        b'Content-Type: multipart/mixed; boundary="B"\n\n'
+        b'--B\nContent-Type: multipart/mixed; boundary="C"\n'
+        b'Content-Disposition: attachment; filename="bundle.bin"\n\n'
+        b'--C\nContent-Type: text/plain; charset="utf-8"; format=flowed\n'
+        b'Content-Disposition: inline; filename="inner.txt"\n\n'
+        b"Inner text \nstays.\n"
+        b"--C--\n"
+        b'--B\nContent-Type: text/plain; charset="utf-8"\n'
+        b'Content-Disposition: x-custom; filename=""\n\n'
+        b"Fixed text \nkeeps its break.\n"
+        b"--B--\n"
+    )
+
+    doc = _convert_raw_email(raw_email)
+
+    assert [item.text for item in doc.texts] == [
+        "Nested",
+        "From: alice@example.com",
+        "Fixed text \nkeeps its break.",
+    ]
 
 
 def test_email_backend_keeps_cc_recipients():

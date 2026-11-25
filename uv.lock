@@ -2584,7 +2584,7 @@ requires-dist = [
     { name = "langcodes", specifier = ">=3.5.0,<4.0.0" },
     { name = "librosa", marker = "extra == 'format-video'", specifier = ">=0.10.0,<2.0.0" },
     { name = "lxml", marker = "extra == 'format-xml-jats'", specifier = ">=4.0.0,<7.0.0" },
-    { name = "mail-parser", marker = "extra == 'format-email'", specifier = ">=4.1.4,<5.0.0" },
+    { name = "mail-parser", marker = "extra == 'format-email'", specifier = ">=4.8.0,<5.0.0" },
     { name = "marko", marker = "extra == 'format-markdown'", specifier = ">=2.1.2,<3.0.0" },
     { name = "mlx-audio", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'feat-asr-mlx-audio'", specifier = ">=0.6.4,<0.7.0" },
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'models-vlm-inline'", specifier = ">=0.7.0,<1.0.0" },
