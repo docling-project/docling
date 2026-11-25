@@ -519,6 +519,59 @@ def test_table_row_without_cells_not_covered_adds_no_row():
     ]
 
 
+def test_table_row_without_cells_partial_rowspan():
+    # Only "a" spans into the row without cells. The row is still counted,
+    # so "c d" goes in the third row instead of filling the free cell of the
+    # second row.
+    src = (
+        b'<table><tr><td rowspan="2">a</td><td>b</td></tr>'
+        b"<tr></tr>"
+        b"<tr><td>c</td><td>d</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (3, 2)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["a", "b"],
+        ["a", ""],
+        ["c", "d"],
+    ]
+
+
+def test_table_row_without_cells_after_th_rowspan_header():
+    # An all-<th> header row with rowspan="2" covers the row without cells.
+    # parse_table_data and get_html_table_row_col must agree on the grid
+    # height, or the cells of the data row fall outside the grid and are lost.
+    src = (
+        b'<table><tr><th rowspan="2">A</th><th rowspan="2">B</th></tr>'
+        b"<tr></tr>"
+        b"<tr><td>c</td><td>d</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["c", "d"],
+    ]
+
+
 def test_table_row_header_rowspan_keeps_the_row_cells():
     # The row-header form of the same shift: the spanning "<th>2025</th>" row
     # holds column 0, so the cells of the data rows start in column 1 and the
