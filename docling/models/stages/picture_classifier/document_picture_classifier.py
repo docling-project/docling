@@ -16,7 +16,7 @@ from docling_core.types.doc import (
     PictureMeta,
 )
 from docling_core.types.doc.document import PictureClassificationPrediction
-from PIL import Image
+from PIL import Image, ImageOps
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -161,7 +161,7 @@ class DocumentPictureClassifier(
 
         images: List[Union[Image.Image, np.ndarray]] = []
         elements: List[PictureItem] = []
-        for i, el in enumerate(element_batch):
+        for el in element_batch:
             assert isinstance(el.item, PictureItem)
             elements.append(el.item)
 
@@ -174,6 +174,20 @@ class DocumentPictureClassifier(
                 raise TypeError(
                     "Supported input formats are PIL.Image.Image or numpy.ndarray."
                 )
+
+            # Limit distortion from the processor's square resize. Padding only
+            # to 2:1 keeps more of the input occupied by content than square padding.
+            width, height = raw_image.size
+            if width > 0 and height > 0:
+                pad_x = max(0, (height + 1) // 2 - width)
+                pad_y = max(0, (width + 1) // 2 - height)
+                if pad_x or pad_y:
+                    left, top = pad_x // 2, pad_y // 2
+                    raw_image = ImageOps.expand(
+                        raw_image,
+                        border=(left, top, pad_x - left, pad_y - top),
+                        fill="white",
+                    )
             images.append(raw_image)
 
         engine_input_batch = [
