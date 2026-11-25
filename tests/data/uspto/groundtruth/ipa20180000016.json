@@ -25,7 +25,34 @@
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/183"
+        },
+        {
+          "$ref": "#/texts/184"
+        },
+        {
+          "$ref": "#/texts/185"
+        },
+        {
+          "$ref": "#/texts/186"
+        },
+        {
+          "$ref": "#/texts/187"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
@@ -2836,6 +2863,101 @@
       "prov": [],
       "orig": "11. A plant cultivation method comprising irradiating plants with light emitted from the light emitting device according to claim 2.",
       "text": "11. A plant cultivation method comprising irradiating plants with light emitted from the light emitting device according to claim 2."
+    },
+    {
+      "self_ref": "#/texts/183",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "(\u03bcmol \u00b7 m",
+      "text": "(\u03bcmol \u00b7 m",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/184",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\u22122 ",
+      "text": "\u22122 ",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "super"
+      }
+    },
+    {
+      "self_ref": "#/texts/185",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\u00b7 s",
+      "text": "\u00b7 s",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/186",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\u22121",
+      "text": "\u22121",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "super"
+      }
+    },
+    {
+      "self_ref": "#/texts/187",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ")",
+      "text": ")",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     }
   ],
   "pictures": [],
@@ -2845,7 +2967,11 @@
       "parent": {
         "$ref": "#/texts/161"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        }
+      ],
       "content_layer": "body",
       "label": "table",
       "prov": [],
@@ -3450,7 +3576,10 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/0"
+            }
           },
           {
             "row_span": 1,
