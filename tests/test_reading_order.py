@@ -554,6 +554,53 @@ def test_caption_between_two_pictures_binds_to_the_nearer_one():
     assert result == {2: [1]}
 
 
+def test_side_column_caption_does_not_steal_the_picture_below():
+    # docling#5569: a textbook page with two figures. Picture A sits at the
+    # top of the main column; its caption "Figure 15-7" is printed to its
+    # right, in the margin column. Picture B sits lower in the margin column;
+    # its caption "Figure 15-8" is printed directly below it. Body text in
+    # the main column reads before the margin column, so in reading order
+    # the "Figure 15-7" caption lands right before picture B with no graphic
+    # ahead of it, while "Figure 15-8" follows picture B. The side-column
+    # caption is ~200 pt away from picture B and must not steal it from the
+    # caption sitting directly below it, which has no other candidate.
+    # Coordinates are the PDF points (bottom-left origin) from the issue.
+    page_size = Size(width=612.0, height=792.0)
+
+    def elem(cid, label, l, r, b, t, text=""):  # noqa: E741
+        return PageElement(
+            cid=cid,
+            text=text,
+            page_no=1,
+            page_size=page_size,
+            label=label,
+            l=l,
+            r=r,
+            b=b,
+            t=t,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        elem(0, DocItemLabel.PICTURE, 73, 354, 564, 709, "Picture A"),
+        elem(1, DocItemLabel.CAPTION, 381, 512, 680, 709, "Figure 15-7 ..."),
+        elem(2, DocItemLabel.TEXT, 73, 354, 380, 550, "Body text under A."),
+        elem(3, DocItemLabel.TEXT, 73, 354, 200, 360, "More body text."),
+        elem(4, DocItemLabel.PICTURE, 382, 512, 220, 359, "Picture B"),
+        elem(5, DocItemLabel.CAPTION, 381, 512, 190, 215, "Figure 15-8 ..."),
+        elem(6, DocItemLabel.TEXT, 382, 512, 100, 180, "Margin note."),
+    ]
+
+    predictor = ReadingOrderPredictor()
+    ordered = predictor.predict_reading_order(page_elements=elements)
+
+    assert [e.cid for e in ordered] == [0, 2, 3, 1, 4, 5, 6]
+
+    result = predictor.predict_to_captions(ordered)
+
+    assert result == {4: [5]}
+
+
 def _predicted_cids(elements: List[PageElement]) -> List[int]:
     return [
         e.cid

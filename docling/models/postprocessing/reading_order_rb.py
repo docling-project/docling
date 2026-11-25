@@ -1333,8 +1333,27 @@ class ReadingOrderPredictor:
 
         # Match by augmenting paths, not best-first: a caption with a second
         # choice must give way to one that has none, or both end up orphaned.
+        # Claim in nearest-first order: a caption whose only candidate sits
+        # far away must not take it before a caption sitting right next to
+        # it gets its turn. A side-column caption printed beside a picture
+        # above would otherwise steal the picture below from the caption
+        # directly underneath it, which has no other candidate.
+        # Ties keep reading order: sorted is stable and `preferred` is in
+        # reading order.
+        by_cid = {element.cid: element for element in page_elements}
+
+        def _best_gap(caption_cid: int) -> float:
+            candidates = preferred[caption_cid]
+            if not candidates:
+                return math.inf
+            caption = by_cid[caption_cid]
+            return min(
+                _shortest_box_gap(caption, by_cid[graphic_cid])
+                for graphic_cid in candidates
+            )
+
         matched: Dict[int, int] = {}
-        for cid in preferred:
+        for cid in sorted(preferred, key=_best_gap):
             matched = self._match_caption(cid, preferred, matched, set()) or matched
 
         return {graphic: [caption] for graphic, caption in matched.items()}
