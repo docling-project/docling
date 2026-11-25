@@ -147,7 +147,7 @@ format-latex = [
 
 format-email = [
   'docling-slim[format-html]',
-  'mail-parser>=4.1.4,<5.0.0',
+  'mail-parser>=4.8.0,<5.0.0',
   'python-oxmsg>=0.0.2,<0.1.0',
 ]
 
