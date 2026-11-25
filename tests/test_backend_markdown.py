@@ -145,6 +145,31 @@ def test_long_underscore_runs_in_fenced_code_are_kept():
     ]
 
 
+def test_long_underscore_runs_in_list_item_fences_are_kept():
+    """A fence in a list item can be indented past 3 spaces.
+
+    The fence ends at the end of its list item, so prose after it is shortened.
+    """
+    underscores = "_" * 20
+    markdown = (
+        f"- item\n\n    ```\n    SEP = '{underscores}'\n    ```\n\n"
+        f"1. item\n   ~~~\n   # {underscores}\n"
+        f"Name: {underscores}\n"
+    )
+    with pytest.warns(UserWarning, match="Detected potentially incorrect Markdown"):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    texts = [(item.label, item.text) for item in conv_result.document.texts]
+    assert texts == [
+        (DocItemLabel.LIST_ITEM, "item"),
+        (DocItemLabel.CODE, f"SEP = '{underscores}'"),
+        (DocItemLabel.LIST_ITEM, "item"),
+        (DocItemLabel.CODE, f"# {underscores}"),
+        (DocItemLabel.TEXT, "Name: " + "_" * 10),
+    ]
+
+
 def test_convert_list_item_codespan_only():
     """
     Regression test:
