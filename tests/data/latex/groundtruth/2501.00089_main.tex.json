@@ -1839,8 +1839,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate Top-k layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a ",
-      "text": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate Top-k layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a "
+      "orig": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate “Top-k” layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a ",
+      "text": "Our SFNet architecture, which resembles a resnet18 modified with a penultimate “Top-k” layer to ensure interpretable, sparse image features. A 3x3 conv, 128, /2 block denotes a "
     },
     {
       "self_ref": "#/texts/40",

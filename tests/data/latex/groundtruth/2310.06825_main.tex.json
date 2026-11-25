@@ -3501,8 +3501,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.",
-      "text": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail."
+      "orig": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace2 13B – Chat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.",
+      "text": "Human evaluation of Mistral~7B~--~Instruct\\xspacevs Llama\\xspace2 13B – Chat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail."
     },
     {
       "self_ref": "#/texts/194",
@@ -7182,7 +7182,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "c]@l@Llama 2 13B Chat with Llama 2 system prompt",
+            "text": "c]@l@Llama 2 13B – Chat with Llama 2 system prompt",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -7270,7 +7270,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "c]@l@Llama 2 13B Chat with Llama 2 system prompt",
+              "text": "c]@l@Llama 2 13B – Chat with Llama 2 system prompt",
               "column_header": false,
               "row_header": false,
               "row_section": false,

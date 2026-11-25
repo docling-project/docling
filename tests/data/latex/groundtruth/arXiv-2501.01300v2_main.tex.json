@@ -1426,8 +1426,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S.Sharma et al.",
-      "text": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S.Sharma et al."
+      "orig": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S. Sharma et al.",
+      "text": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S. Sharma et al."
     },
     {
       "self_ref": "#/texts/6",
@@ -1462,8 +1462,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garchingb.München, postcode=D-85748, country=Germany",
-      "text": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garchingb.München, postcode=D-85748, country=Germany"
+      "orig": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garching b. München, postcode=D-85748, country=Germany",
+      "text": "1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garching b. München, postcode=D-85748, country=Germany"
     },
     {
       "self_ref": "#/texts/9",

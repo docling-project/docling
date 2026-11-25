@@ -555,7 +555,7 @@ lrate = d_{\tex ... {warmup\_steps}^{-1.5})
   item-538 at level 1: text: Acknowledgements We are grateful ... comments, corrections and inspiration.
   item-539 at level 1: section_header: References
   item-540 at level 1: list: group bibliography
-    item-541 at level 2: list_item: [layernorm2016] JimmyLei Ba, Jam ... arXiv preprint arXiv:1607.06450, 2016.
+    item-541 at level 2: list_item: [layernorm2016] Jimmy Lei Ba, Ja ... arXiv preprint arXiv:1607.06450, 2016.
     item-542 at level 2: list_item: [bahdanau2014neural] Dzmitry Bah ...  translate. CoRR, abs/1409.0473, 2014.
     item-543 at level 2: list_item: [DBLP:journals/corr/BritzGLL17]  ... itectures. CoRR, abs/1703.03906, 2017.
     item-544 at level 2: list_item: [cheng2016long] Jianpeng Cheng,  ... arXiv preprint arXiv:1601.06733, 2016.
@@ -565,10 +565,10 @@ lrate = d_{\tex ... {warmup\_steps}^{-1.5})
     item-548 at level 2: list_item: [dyer-rnng:16] Chris Dyer, Adhig ... ork grammars. In Proc. of NAACL, 2016.
     item-549 at level 2: list_item: [JonasFaceNet2017] Jonas Gehring ... Xiv preprint arXiv:1705.03122v2, 2017.
     item-550 at level 2: list_item: [graves2013generating] Alex Grav ...  arXiv preprint arXiv:1308.0850, 2013.
-    item-551 at level 2: list_item: [he2016deep] Kaiming He, Xiangyu ... ttern Recognition, pages 770778, 2016.
+    item-551 at level 2: list_item: [he2016deep] Kaiming He, Xiangyu ... tern Recognition, pages 770–778, 2016.
     item-552 at level 2: list_item: [hochreiter2001gradient] Sepp Ho ... learning long-term dependencies, 2001.
-    item-553 at level 2: list_item: [hochreiter1997] Sepp Hochreiter ... ural computation, 9(8):17351780, 1997.
-    item-554 at level 2: list_item: [huang-harper:2009:EMNLP] Zhongq ... ssing, pages 832841. ACL, August 2009.
+    item-553 at level 2: list_item: [hochreiter1997] Sepp Hochreiter ... ral computation, 9(8):1735–1780, 1997.
+    item-554 at level 2: list_item: [huang-harper:2009:EMNLP] Zhongq ... sing, pages 832–841. ACL, August 2009.
     item-555 at level 2: list_item: [jozefowicz2016exploring] Rafal  ... arXiv preprint arXiv:1602.02410, 2016.
     item-556 at level 2: list_item: [extendedngpu] Łukasz Kaiser and ... tion Processing Systems, (NIPS), 2016.
     item-557 at level 2: list_item: [neural_gpu] Łukasz Kaiser and I ... Learning Representations (ICLR), 2016.
@@ -579,22 +579,22 @@ lrate = d_{\tex ... {warmup\_steps}^{-1.5})
     item-562 at level 2: list_item: [lin2017structured] Zhouhan Lin, ... arXiv preprint arXiv:1703.03130, 2017.
     item-563 at level 2: list_item: [multiseq2seq] Minh-Thang Luong, ... arXiv preprint arXiv:1511.06114, 2015.
     item-564 at level 2: list_item: [luong2015effective] Minh-Thang  ... arXiv preprint arXiv:1508.04025, 2015.
-    item-565 at level 2: list_item: [marcus1993building] MitchellP M ... ional linguistics, 19(2):313330, 1993.
-    item-566 at level 2: list_item: [mcclosky-etAl:2006:NAACL] David ... ference, pages 152159. ACL, June 2006.
+    item-565 at level 2: list_item: [marcus1993building] Mitchell P  ... onal linguistics, 19(2):313–330, 1993.
+    item-566 at level 2: list_item: [mcclosky-etAl:2006:NAACL] David ... erence, pages 152–159. ACL, June 2006.
     item-567 at level 2: list_item: [decomposableAttnModel] Ankur Pa ...  in Natural Language Processing, 2016.
     item-568 at level 2: list_item: [paulus2017deep] Romain Paulus,  ... arXiv preprint arXiv:1705.04304, 2017.
-    item-569 at level 2: list_item: [petrov-EtAl:2006:ACL] Slav Petr ... the ACL, pages 433440. ACL, July 2006.
+    item-569 at level 2: list_item: [petrov-EtAl:2006:ACL] Slav Petr ... he ACL, pages 433–440. ACL, July 2006.
     item-570 at level 2: list_item: [press2016using] Ofir Press and  ... arXiv preprint arXiv:1608.05859, 2016.
     item-571 at level 2: list_item: [sennrich2015neural] Rico Sennri ... arXiv preprint arXiv:1508.07909, 2015.
     item-572 at level 2: list_item: [shazeer2017outrageously] Noam S ... arXiv preprint arXiv:1701.06538, 2017.
-    item-573 at level 2: list_item: [srivastava2014dropout] Nitish S ... arning Research, 15(1):19291958, 2014.
-    item-574 at level 2: list_item: [sukhbaatar2015] Sainbayar Sukhb ... 402448. Curran Associates, Inc., 2015.
-    item-575 at level 2: list_item: [sutskever14] Ilya Sutskever, Or ... cessing Systems, pages 31043112, 2014.
+    item-573 at level 2: list_item: [srivastava2014dropout] Nitish S ... rning Research, 15(1):1929–1958, 2014.
+    item-574 at level 2: list_item: [sukhbaatar2015] Sainbayar Sukhb ... 0–2448. Curran Associates, Inc., 2015.
+    item-575 at level 2: list_item: [sutskever14] Ilya Sutskever, Or ... essing Systems, pages 3104–3112, 2014.
     item-576 at level 2: list_item: [DBLP:journals/corr/SzegedyVISW1 ... er vision. CoRR, abs/1512.00567, 2015.
     item-577 at level 2: list_item: [KVparse15] Vinyals & Kaiser, Ko ...  Information Processing Systems, 2015.
     item-578 at level 2: list_item: [wu2016google] Yonghui Wu, Mike  ... arXiv preprint arXiv:1609.08144, 2016.
     item-579 at level 2: list_item: [DBLP:journals/corr/ZhouCWLX16]  ... anslation. CoRR, abs/1606.04199, 2016.
-    item-580 at level 2: list_item: [zhu-EtAl:2013:ACL] Muhua Zhu, Y ... pers), pages 434443. ACL, August 2013.
+    item-580 at level 2: list_item: [zhu-EtAl:2013:ACL] Muhua Zhu, Y ... ers), pages 434–443. ACL, August 2013.
   item-581 at level 1: section_header: Attention Visualizations
   item-582 at level 1: section: group figure
     item-583 at level 2: picture

@@ -216,6 +216,6 @@ item-0 at level 0: unspecified: group _root_
   item-207 at level 1: text: =-1 We are grateful to CoreWeave ... aking our model compatible everywhere.
   item-208 at level 1: section: group figure
     item-209 at level 2: picture
-      item-209 at level 3: caption: Human evaluation of Mistral~7B~--~Instruct\xspacevs Llama\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.
+      item-209 at level 3: caption: Human evaluation of Mistral~7B~--~Instruct\xspacevs Llama\xspace2 13B – Chat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\xspace2 13B – Chat recommends a general physics book, while Mistral~7B~--~Instruct\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.
     item-210 at level 2: caption: Human evaluation of Mistral~7B~- ... cribes in the contents in more detail.
   item-211 at level 1: text: ref

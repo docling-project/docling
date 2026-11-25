@@ -1,10 +1,10 @@
-Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S.Sharma et al.
+Thermodynamics of charmed hadrons across chiral crossover from lattice QCD S. Sharma et al.
 
 # Thermodynamics of charmed hadrons across chiral crossover  from lattice QCD
 
 1]Sipaz Sharma[orcid=0000-0001-6916-2233] sipaz.sharma@tum.de
 
-1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garchingb.München, postcode=D-85748, country=Germany
+1]organization=Physik Department, Technische Universität München, addressline=James-Franck-Straße 1, city=Garching b. München, postcode=D-85748, country=Germany
 
 2]Frithjof Karsch
 

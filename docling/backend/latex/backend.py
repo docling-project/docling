@@ -385,7 +385,8 @@ class LatexDocumentBackend(
                     text_buffer.append(node)
 
                 elif isinstance(node, LatexSpecialsNode):
-                    self._append_specials(node, text_buffer)
+                    if text := self._specials_to_text(node):
+                        text_buffer.append(text)
 
                 elif isinstance(node, LatexMacroNode):
                     inline_args = self._inline_math_argument_nodes(node)

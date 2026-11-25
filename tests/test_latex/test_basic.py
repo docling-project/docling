@@ -120,6 +120,10 @@ def test_latex_ties_dashes_and_quotes():
     \\documentclass{article}
     \\begin{document}
     See Fig.~1 on pages 1--5 --- or ``quoted'' text, !`Hola! ?`Qu\\'e?
+    Also \\textbf{pp.~2--3} and \\emph{Tab.~4}.
+    \\begin{tabular}{ll}
+    Fig.~1 & 1--5 \\\\
+    \\end{tabular}
     \\end{document}
     """
     in_doc = InputDocument(
@@ -144,6 +148,11 @@ def test_latex_ties_dashes_and_quotes():
         "\N{INVERTED EXCLAMATION MARK}Hola! \N{INVERTED QUESTION MARK}Qu\N{LATIN SMALL LETTER E WITH ACUTE}?"
         in full_text
     )
+    # Macro arguments and table cells take another path to text.
+    assert "pp. 2\N{EN DASH}3" in full_text
+    assert "Tab. 4" in full_text
+    cells = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cells == ["Fig. 1", "1\N{EN DASH}5"]
 
 
 def test_latex_is_valid():
