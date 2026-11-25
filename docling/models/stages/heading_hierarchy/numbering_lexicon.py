@@ -150,8 +150,13 @@ class KeywordLexicon:
         return None
 
     def strip_marker(self, text: str) -> str:
-        """``text`` without its leading numbering marker, for fuzzy title matching."""
-        return self._leading_marker.sub("", text or "", count=1)
+        """``text`` without its leading numbering marker, for fuzzy title matching.
+
+        The pattern is compiled from NFC spellings, so normalize first: a heading
+        in NFD (decomposed accents) must strip the same marker as its NFC twin.
+        The result feeds matching only; the heading text itself is never rewritten.
+        """
+        return self._leading_marker.sub("", _nfc(text or ""), count=1)
 
     def _is_enumerator(self, token: str, with_words: bool = False) -> bool:
         """True for a number, a single letter or a valid Roman numeral.

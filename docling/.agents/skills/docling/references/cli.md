@@ -84,6 +84,10 @@ docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extractio
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
 
+If the native PDF backend ends early, Docling warns about missing requested
+pages. It writes partial results when pages were converted. Use `--fail-on partial`
+to return exit code 1 when results are partial.
+
 `nemotron_parse_v3_5` selects the native MLX port on Apple Silicon when
 `mlx-vlm` 0.7.11 or later is installed. That release includes the port. With
 an older `mlx-vlm`, auto-inline falls back to Transformers. MLX uses a

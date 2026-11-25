@@ -145,9 +145,11 @@ class _PageBackend:
         return ""
 
 
-def _stage_page(table: Cluster, scale: float) -> Page:
+def _stage_page(
+    table: Cluster, scale: float, cells: list[TextCell] | None = None
+) -> Page:
     """A page the table stages can run on without a PDF behind it."""
-    page = _page([*TABLE_CELLS, CAPTION_CELL], [table])
+    page = _page([*TABLE_CELLS, CAPTION_CELL] if cells is None else cells, [table])
     page._backend = _PageBackend(page.parsed_page)  # type: ignore[assignment]
     page._image_cache[scale] = Image.new(
         "RGB", (int(PAGE_WIDTH * scale), int(PAGE_HEIGHT * scale)), "white"
@@ -493,3 +495,32 @@ def test_v1_predict_tables_keeps_a_complete_structure(conv_res, caplog):
     assert [cell.text for cell in tbl.table_cells] == TABLE_TEXT
     assert table.children == []
     assert not caplog.records
+
+
+@pytest.mark.parametrize(
+    ("do_cell_matching", "otsl_seq", "shape", "children_text"),
+    [
+        pytest.param(True, [], (0, 0), [["Total"]], id="cell-matching"),
+        pytest.param(False, COMPLETE_SEQ, (2, 2), [], id="no-cell-matching"),
+    ],
+)
+def test_v1_predict_tables_decodes_a_table_without_words_only_without_cell_matching(
+    conv_res, do_cell_matching, otsl_seq, shape, children_text
+):
+    """With cell matching, the cells come only from the words in the table.
+    A table without words is thus empty, and its structure is not decoded."""
+    model = _v1_model(COMPLETE_SEQ, (2, 2), [])
+    model.do_cell_matching = do_cell_matching
+    # Two thirds of the line lie inside the table box, and no cluster holds it.
+    edge_line = _text_cell(6, BoundingBox(l=150, t=280, r=350, b=310), "Total")
+    table = _table_cluster()
+    page = _stage_page(table, model.scale, cells=[edge_line])
+
+    (prediction,) = model.predict_tables(conv_res, [page])
+
+    tbl = prediction.table_map[table.id]
+    assert tbl.otsl_seq == otsl_seq
+    assert (tbl.num_rows, tbl.num_cols, tbl.table_cells) == (*shape, [])
+    assert [
+        [cell.text for cell in child.cells] for child in table.children
+    ] == children_text

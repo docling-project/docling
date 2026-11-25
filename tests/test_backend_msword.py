@@ -3248,6 +3248,76 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("filename", "image_path"),
+    [
+        ("word_sample.docx", ".//a:blip"),
+        ("docx_vml_images.docx", ".//w:pict"),
+        ("drawingml.docx", ".//c:chart"),
+    ],
+)
+@pytest.mark.parametrize("content", ["symbol", "equation"])
+def test_image_paragraph_keeps_symbols_and_equations(
+    tmp_path, filename, image_path, content
+):
+    """An image does not hide a paragraph whose text uses no ``w:t`` nodes."""
+    document = Document(Path("tests/data/docx/sources") / filename)
+    paragraph = next(p for p in document.paragraphs if p._p.xpath(image_path))
+    # Keep the existing writer's image markup, relationship and package parts.
+    for child in list(document.element.body):
+        if child is not paragraph._p and child.tag != qn("w:sectPr"):
+            document.element.body.remove(child)
+    for node in paragraph._p.xpath(".//w:sym | .//m:oMath"):
+        node.getparent().remove(node)
+    if content == "symbol":
+        _append_sym(paragraph, "Symbol", "F061")
+        expected = (DocItemLabel.TEXT, "\N{GREEK SMALL LETTER ALPHA}")
+    else:
+        paragraph._p.append(
+            parse_xml(
+                '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+                "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+            )
+        )
+        expected = (DocItemLabel.FORMULA, "x=1")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert doc.pictures
+    assert [(item.label, item.text) for item in doc.texts].count(expected) == 1
+    text = next(item for item in doc.texts if (item.label, item.text) == expected)
+    assert text.parent.resolve(doc) is doc.body
+    items = [item for item, _ in doc.iterate_items()]
+    assert items.index(doc.pictures[-1]) < items.index(text)
+    assert expected[1] in doc.export_to_markdown()
+
+
+def test_image_paragraph_does_not_repeat_textbox_equation(tmp_path):
+    """A text box's equation belongs to its own paragraph, not its anchor."""
+    document = Document("tests/data/docx/sources/word_sample.docx")
+    paragraph = next(p for p in document.paragraphs if p._p.xpath(".//a:blip"))
+    for child in list(document.element.body):
+        if child is not paragraph._p and child.tag != qn("w:sectPr"):
+            document.element.body.remove(child)
+    paragraph._p.append(
+        parse_xml(
+            '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            'xmlns:v="urn:schemas-microsoft-com:vml" '
+            'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+            '<w:pict><v:shape id="TextBox1" style="width:144pt;height:72pt">'
+            "<v:textbox><w:txbxContent><w:p>"
+            "<m:oMath><m:r><m:t>x=1</m:t></m:r></m:oMath>"
+            "</w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r>"
+        )
+    )
+
+    doc = _convert_built(document, tmp_path)
+
+    formulas = [item for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert [item.text for item in formulas] == ["x=1"]
+    assert formulas[0].parent.resolve(doc) is not doc.body
+
+
+@pytest.mark.parametrize(
     ("tag", "expected"),
     [
         ("d", r"\left(x\right)"),
@@ -3264,6 +3334,46 @@ def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expec
         "</m:oMathPara>"
     )
     docx_path = tmp_path / f"equation_without_{tag}_properties.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("properties", "elements", "expected"),
+    [
+        ("", ["a", "b"], r"\left(a|b\right)"),
+        (
+            '<m:dPr><m:sepChr m:val=","/></m:dPr>',
+            ["x", "y", "z"],
+            r"\left(x,y,z\right)",
+        ),
+        (
+            '<m:dPr><m:begChr m:val="{"/><m:endChr m:val="}"/></m:dPr>',
+            ["a", "b"],
+            r"\left\{a|b\right\}",
+        ),
+        ('<m:dPr><m:sepChr m:val=""/></m:dPr>', ["a", "b"], r"\left(ab\right)"),
+    ],
+    ids=["default-separator", "comma-separator", "braces", "empty-separator"],
+)
+def test_equation_delimiter_keeps_every_element(
+    tmp_path, properties, elements, expected
+):
+    """A delimiter keeps each of its elements, with the separator between them."""
+    content = "".join(f"<m:e><m:r><m:t>{text}</m:t></m:r></m:e>" for text in elements)
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:d>{properties}{content}</m:d></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / "equation_delimiter.docx"
     document = Document()
     document.add_paragraph()._p.append(parse_xml(omath_para))
     document.save(docx_path)

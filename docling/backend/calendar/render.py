@@ -233,7 +233,11 @@ def _time_fields(entry: Component) -> list[str]:
         if end_prop is not None:
             fields.append(f"End: {format_property_time(end_prop)}")
     elif start is None:
+        # The start is not a value this reads, but the end may still be one.
+        # Keep it, as for an entry without a start at all.
         fields.append(f"{start_label}: {start_prop.value}")
+        if end_prop is not None:
+            fields.append(f"End: {format_property_time(end_prop)}")
     elif start.all_day and entry.name == "VEVENT":
         # DTEND of an all-day entry is exclusive: a one-day event ends the next day.
         end = property_time(end_prop) if end_prop is not None else None
@@ -250,6 +254,10 @@ def _time_fields(entry: Component) -> list[str]:
             fields.append(f"End: {last_day.isoformat()} (all day)")
         else:
             fields.append(f"Date: {format_time(start)} (all day)")
+            # The end of an all-day entry is a date, but a producer can write
+            # one this does not read. Keep it, rather than drop it.
+            if end_prop is not None and end is None:
+                fields.append(f"End: {format_property_time(end_prop)}")
     else:
         fields.append(f"{start_label}: {format_time(start)}")
         if end_prop is not None:
