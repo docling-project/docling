@@ -208,6 +208,24 @@ from the model repository's own `config.json`. Only `docling-layout-heron` also 
 `LayoutObjectDetectionOptions`. `LayoutOptions` still works — it is translated onto the
 object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back to Heron.
 
+Set `keep_nested_pictures=True` to keep distinct picture detections inside larger
+pictures as separate `PictureItem` objects. This lets picture classification process
+an inner signature, stamp, or logo separately. It can also produce extra pictures
+for panels in a composite figure.
+
+```python
+from docling.datamodel.pipeline_options import LayoutObjectDetectionOptions, PdfPipelineOptions
+
+options = PdfPipelineOptions(
+    layout_options=LayoutObjectDetectionOptions(keep_nested_pictures=True),
+    do_picture_classification=True,
+)
+```
+
+The option is off by default. When enabled, layout post-processing still merges
+picture detections with intersection-over-union greater than 0.8. Text that falls
+inside multiple retained pictures goes to the smallest eligible picture.
+
 ### TableFormer Models (Table Structure)
 
 | Model | Inference Engine | Supported Devices |

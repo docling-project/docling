@@ -66,6 +66,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
+| `layout_options.keep_nested_pictures` | Keep distinct inner picture detections as separate `PictureItem` objects. Off by default. Can also retain panels of composite figures. |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
 | `script_position_options` | Mark superscript and subscript runs; off by default |
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |

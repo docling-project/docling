@@ -105,6 +105,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 skip_cell_assignment=lo.skip_cell_assignment,
                 keep_empty_clusters=lo.keep_empty_clusters,
                 create_orphan_clusters=lo.create_orphan_clusters,
+                keep_nested_pictures=lo.keep_nested_pictures,
                 run_postprocessor=self.layout_model.requires_layout_postprocessing,
             )
         )
