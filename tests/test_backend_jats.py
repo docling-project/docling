@@ -936,6 +936,18 @@ def test_jats_external_link_boundaries_are_preserved():
     ]
 
 
+def test_jats_malformed_external_link_keeps_text_without_hyperlink():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://api.example.com:{port}/v1">API</ext-link> after.'
+        "</p></sec>"
+    )
+
+    assert "Before API after." in [item.text for item in doc.texts]
+    assert all(item.hyperlink is None for item in doc.texts)
+
+
 def test_jats_adjacent_external_links_with_different_targets_do_not_merge():
     doc = convert_jats_body(
         '<sec><title>T</title><p xmlns:xlink="http://www.w3.org/1999/xlink">'
@@ -1855,6 +1867,38 @@ def test_jats_copyright_and_each_license_paragraph_are_kept_in_order():
         if item.formatting is not None and item.formatting.script == Script.SUPER
     ]
     assert superscripts == ["3"]
+
+
+def test_jats_xref_without_rid_does_not_empty_the_document():
+    """@rid is optional, so reading it as a required key lost the whole article.
+
+    The KeyError escaped into the blanket handler in convert(), which returned
+    an empty DoclingDocument and still reported success.
+    """
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff"/></contrib>""",
+        """<aff id="aff1"><label>1</label><addr-line>Example University</addr-line></aff>""",
+    )
+
+    md = doc.export_to_markdown()
+    assert "Author Variant Test" in md
+    assert "Jane Doe" in md
+
+
+def test_jats_xref_rid_naming_several_affiliations_keeps_them_all():
+    """@rid is of type IDREFS, so one xref can name more than one affiliation."""
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name>"""
+        """<xref ref-type="aff" rid="aff1 aff2">1,2</xref></contrib>""",
+        """<aff id="aff1"><label>1</label><addr-line>Example University</addr-line></aff>"""
+        """<aff id="aff2"><label>2</label><addr-line>Second Institute</addr-line></aff>""",
+    )
+
+    md = doc.export_to_markdown()
+    assert "Example University" in md
+    assert "Second Institute" in md
 
 
 @pytest.mark.parametrize("use_stream", [False, True])

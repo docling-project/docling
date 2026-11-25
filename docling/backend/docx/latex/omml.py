@@ -239,7 +239,7 @@ class Pr(Tag2Method):
         Args:
             elm: XML element containing properties.
         """
-        self.__val_tags = ("chr", "pos", "begChr", "endChr", "type")
+        self.__val_tags = ("chr", "pos", "begChr", "endChr", "sepChr", "type")
         self.__innerdict = {}
         self.text = self.process_children(elm)
 
@@ -295,6 +295,7 @@ class Pr(Tag2Method):
         "pos": do_common,
         "begChr": do_common,
         "endChr": do_common,
+        "sepChr": do_common,
         "type": do_common,
     }
 
@@ -412,23 +413,30 @@ class oMath2Latex(Tag2Method):
     def do_d(self, elm: _Element) -> str:
         """Process delimiter element.
 
+        A delimiter holds one or more elements (``m:e``). The separator
+        character (``m:sepChr``, ``|`` by default) goes between them, as in
+        ``(a|b)`` or ``{x|x>0}``.
+
         Args:
             elm: XML element containing delimiter.
 
         Returns:
             LaTeX string with delimiters applied.
         """
-        c_dict = self.process_children_dict(elm)
-        pr = self._get_properties(c_dict, "dPr")
+        children = list(self.process_children_list(elm))
+        pr = self._get_properties({stag: t for stag, t, _ in children}, "dPr")
         null = D_DEFAULT["null"]
 
         s_val = get_val(pr.begChr, default=D_DEFAULT["left"], store=T)
         e_val = get_val(pr.endChr, default=D_DEFAULT["right"], store=T)
+        sep_val = get_val(pr.sepChr, default=D_DEFAULT["sep"], store=T)
         delim = pr.text + (
             D
             % {
                 "left": null if not s_val else escape_latex(s_val),
-                "text": c_dict["e"],
+                "text": escape_latex(sep_val).join(
+                    t for stag, t, _ in children if stag == "e"
+                ),
                 "right": null if not e_val else escape_latex(e_val),
             }
         )

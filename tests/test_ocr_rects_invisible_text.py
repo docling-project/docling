@@ -26,7 +26,7 @@ from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.models.base_ocr_model import BaseOcrModel
 
-FIXTURE = Path("./tests/data/pdf/invisible_text_layer.pdf")
+FIXTURE = Path("./tests/data/pdf/fixtures/invisible_text_layer.pdf")
 
 # The two text lines of the fixture, in top-left page coordinates.
 VISIBLE_LINE = BoundingBox(l=60, t=70, r=400, b=110, coord_origin=CoordOrigin.TOPLEFT)

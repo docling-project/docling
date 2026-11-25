@@ -1656,6 +1656,22 @@ def test_backslash_escape_in_link_text_keeps_the_hyperlink():
     assert str(doc.texts[0].hyperlink) == "http://x.y/"
 
 
+@pytest.mark.parametrize(
+    "markdown",
+    [
+        pytest.param("[API](https://api.example.com:{port}/v1)", id="bad_port"),
+        pytest.param("[API](http://1.2.3.256/x)", id="bad_ip"),
+        pytest.param("[API]()", id="empty"),
+    ],
+)
+def test_malformed_link_destination_keeps_text_without_hyperlink(markdown: str):
+    """A URL that is not valid is dropped, not read as a path that loses its //."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert [(item.text, item.hyperlink) for item in doc.texts] == [("API", None)]
+    assert doc.export_to_markdown() == "API"
+
+
 def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
     """The runs inside a rich cell are `z` and `* w`, not `z`, `*` and `w`."""
     doc = _convert_markdown("| h |\n|---|\n| **z**\\* w |", MarkdownBackendOptions())

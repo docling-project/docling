@@ -29,6 +29,7 @@ from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
+from openpyxl.styles.numbers import BUILTIN_FORMATS
 from openpyxl.worksheet.merge import MergedCellRange
 from PIL import Image
 
@@ -1606,6 +1607,50 @@ def test_format_excel_value_matches_excel_display() -> None:
         (0, '"$"0;("$"0);"-"', "-"),
         (0, '"$"0;("$"0);', ""),
         (12.5, '0.00"$"', "12.50$"),
+        # Currencies other than $: quoted symbols and [$<symbol>-<locale>] tags.
+        (1234.5, '"€"#,##0.00', "€1,234.50"),
+        (1234.5, '"£"#,##0.00', "£1,234.50"),
+        (-1234.5, '"£"#,##0.00', "-£1,234.50"),
+        (1234.5, '#,##0.00 "€"', "1,234.50 €"),
+        (1234.5, "[$€-407] #,##0.00", "€ 1,234.50"),
+        (1234.5, "#,##0.00 [$€-407]", "1,234.50 €"),
+        (1234.5, "[$₹-4009] #,##0.00", "₹ 1,234.50"),
+        (1234.5, "[$¥-411]#,##0", "¥1,235"),
+        # Accounting formats: the * fill becomes one space, _x padding is
+        # dropped, and the zero section is its literal text.
+        (
+            1234.5,
+            '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)',
+            "$ 1,234.50",
+        ),
+        (
+            -1234.5,
+            '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)',
+            "$ (1,234.50)",
+        ),
+        (0, '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)', "$ -"),
+        (1234.5, '_("$"* #,##0_);_("$"* \\(#,##0\\);_("$"* "-"_);_(@_)', "$ 1,235"),
+        (
+            1234.5,
+            '_-[$€-407]* #,##0.00_-;-[$€-407]* #,##0.00_-;_-[$€-407]* "-"??_-;_-@_-',
+            "€ 1,234.50",
+        ),
+        (
+            -1234.5,
+            '_-[$€-407]* #,##0.00_-;-[$€-407]* #,##0.00_-;_-[$€-407]* "-"??_-;_-@_-',
+            "-€ 1,234.50",
+        ),
+        # openpyxl reports built-in 44 without its section separators.
+        (
+            1234.5,
+            '_("$"* #,##0.00_)_("$"* \\(#,##0.00\\)_("$"* "-"??_)_(@_)',
+            "$ 1,234.50",
+        ),
+        (
+            -1234.5,
+            '_("$"* #,##0.00_)_("$"* \\(#,##0.00\\)_("$"* "-"??_)_(@_)',
+            "$ (1,234.50)",
+        ),
         # Built-in number formats 1-4 and 37-40 have no currency or percent sign.
         (2.5, "0", "3"),
         (12.5, "0.00", "12.50"),
@@ -1613,12 +1658,18 @@ def test_format_excel_value_matches_excel_display() -> None:
         (1234.5, "#,##0.00", "1,234.50"),
         (-1234.5, "#,##0_);[Red](#,##0)", "(1,235)"),
         (-1234.5, "#,##0.00_);(#,##0.00)", "(1,234.50)"),
+        # Accounting without a currency sign (built-in 43) is a plain number.
+        (1234.5, '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)', "1,234.50"),
+        (-1234.5, '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)', "(1,234.50)"),
+        (0, '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)', "-"),
         # Unsupported formats retain the value instead of dropping format semantics.
         (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
         (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
         (0.125, "[>=1]0%;0.0%", "0.125"),
         (12.5, '"$"0.##', "12.5"),
         (12.5, '"$0"0.00', "12.5"),
+        (12.5, '"$"0.0?', "12.5"),
+        (12.5, '"$"€0.00', "12.5"),
     ],
 )
 def test_excel_number_format_tokens_and_sections(
@@ -1643,6 +1694,9 @@ def test_xlsx_number_formats_survive_document_conversion(
         ("Negative", -5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
         ("Percent", 0.125, "0%", "13%"),
         ("Currency", 12.5, "[$$-409]#,##0", "$13"),
+        ("Euro", 1234.5, "[$€-407] #,##0.00", "€ 1,234.50"),
+        ("Rupee", 1234.5, "[$₹-4009] #,##0.00", "₹ 1,234.50"),
+        ("Accounting", -1234.5, BUILTIN_FORMATS[44], "$ (1,234.50)"),
         ("Thousands", 1234567.891, "#,##0", "1,234,568"),
         ("Fixed decimals", 12.5, "0.00", "12.50"),
         ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),

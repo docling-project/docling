@@ -142,6 +142,8 @@ class TestSanitizeTextHyphenation:
         [
             (["algo-", "rithms"], "algorithms"),
             (["the veri-", "fication step"], "the verification step"),
+            # Uppercase hyphenation continues in uppercase, so the hyphen is a break.
+            (["INFOR-", "MATION"], "INFORMATION"),
         ],
     )
     def test_attached_hyphen_joins_split_word(self, model, lines, expected):
@@ -164,6 +166,9 @@ class TestSanitizeTextHyphenation:
             # A locant opens the continuation.
             (["6-methyl-", "5-hepten-2-one"], "6-methyl-5-hepten-2-one"),
             (["COVID-", "19 cases"], "COVID-19 cases"),
+            # Uppercase abbreviation + lowercase continuation is a real hyphen.
+            (["the DNA-", "binding domain"], "the DNA-binding domain"),
+            (["EØS-", "rettslige"], "EØS-rettslige"),
         ],
     )
     def test_attached_hyphen_belonging_to_word_is_kept(self, model, lines, expected):

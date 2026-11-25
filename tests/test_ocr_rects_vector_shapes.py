@@ -25,7 +25,7 @@ from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.models.base_ocr_model import BaseOcrModel
 
 # One Helvetica line with a stroked rule 6pt below its baseline, nothing else on the page.
-FIXTURE = Path("./tests/data/pdf/text_with_vector_rule.pdf")
+FIXTURE = Path("./tests/data/pdf/fixtures/text_with_vector_rule.pdf")
 
 # Text line plus the rule under it, in top-left page coordinates (page height 792).
 RULED_TEXT = BoundingBox(l=60, t=70, r=380, b=105, coord_origin=CoordOrigin.TOPLEFT)
@@ -36,7 +36,7 @@ EMPTY_REGION = BoundingBox(l=60, t=400, r=380, b=450, coord_origin=CoordOrigin.T
 # filled rectangles at (150,245) -- drawing coordinates in the PDF bottom-left origin --
 # the same glyphs alone at y=145, and a filled highlight behind native text at y=45.
 # No bitmaps, no stroked lines.
-GLYPH_FIXTURE = Path("./tests/data/pdf/text_with_vector_glyphs.pdf")
+GLYPH_FIXTURE = Path("./tests/data/pdf/fixtures/text_with_vector_glyphs.pdf")
 
 # One cluster holding both the native text and the vector-outlined glyphs (page height 300).
 MIXED_TEXT_AND_GLYPHS = BoundingBox(
@@ -53,7 +53,7 @@ TEXT_BACKED_SHAPE = BoundingBox(
 
 # Two constructions a backend's stroked-segment report alone would misread, each
 # sharing its cluster with native text (page height 300).
-EDGE_FIXTURE = Path("./tests/data/pdf/vector_glyph_edge_cases.pdf")
+EDGE_FIXTURE = Path("./tests/data/pdf/fixtures/vector_glyph_edge_cases.pdf")
 
 # Letterforms drawn as stroked axis-aligned segments, reported exactly as a rule is.
 STROKED_GLYPHS = BoundingBox(l=30, t=70, r=220, b=105, coord_origin=CoordOrigin.TOPLEFT)
@@ -67,7 +67,7 @@ FILLED_RULE = BoundingBox(l=30, t=235, r=280, b=270, coord_origin=CoordOrigin.TO
 # Two constructions where a connected shape reaches well beyond the cluster it
 # touches, so what the text layer accounts for must be judged inside the cluster
 # (page height 300).
-MERGED_FILL_FIXTURE = Path("./tests/data/pdf/vector_glyphs_merged_fill.pdf")
+MERGED_FILL_FIXTURE = Path("./tests/data/pdf/fixtures/vector_glyphs_merged_fill.pdf")
 
 # Native text beside filled letterforms that connected-shape merging fuses with a
 # large panel below them. The panel carries native text far outside the cluster.
@@ -81,7 +81,7 @@ PANEL_EDGE_IN_CLUSTER = BoundingBox(
 
 # Three filled panels that differ only in how much of them the text layer covers
 # (page height 300).
-FIGURE_FIXTURE = Path("./tests/data/pdf/vector_glyphs_in_figure.pdf")
+FIGURE_FIXTURE = Path("./tests/data/pdf/fixtures/vector_glyphs_in_figure.pdf")
 
 # A figure panel with one small native caption in a corner and letterforms drawn
 # as filled paths in the middle: text covers about 1% of it.

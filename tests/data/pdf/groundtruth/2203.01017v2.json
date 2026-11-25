@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "name": "2203.01017v2",
   "origin": {
     "mimetype": "application/pdf",
@@ -6813,12 +6813,12 @@
           },
           "charspan": [
             0,
-            150
+            151
           ]
         }
       ],
-      "orig": "where Ta and Tb represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and |T| represents the number of nodes in T .",
-      "text": "where Ta and Tb represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and |T| represents the number of nodes in T ."
+      "orig": "where Ta and Tb represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and |T | represents the number of nodes in T .",
+      "text": "where Ta and Tb represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and |T | represents the number of nodes in T ."
     },
     {
       "self_ref": "#/texts/216",
@@ -10224,12 +10224,12 @@
           },
           "charspan": [
             0,
-            270
+            272
           ]
         }
       ],
-      "orig": "[8] KhurramAzeemHashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
-      "text": "KhurramAzeemHashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
+      "orig": "[8] Khurram Azeem Hashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
+      "text": "Khurram Azeem Hashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
       "enumerated": true,
       "marker": "[8]"
     },
@@ -10427,12 +10427,12 @@
           },
           "charspan": [
             0,
-            125
+            126
           ]
         }
       ],
-      "orig": "[15] Harold WKuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
-      "text": "Harold WKuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
+      "orig": "[15] Harold W Kuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
+      "text": "Harold W Kuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
       "enumerated": true,
       "marker": "[15]"
     },
@@ -12124,12 +12124,12 @@
           },
           "charspan": [
             0,
-            15
+            16
           ]
         }
       ],
-      "orig": "100% 91K 10K10K",
-      "text": "100% 91K 10K10K"
+      "orig": "100% 91K 10K 10K",
+      "text": "100% 91K 10K 10K"
     },
     {
       "self_ref": "#/texts/408",
@@ -14747,10 +14747,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 74.08,
-            "t": 714.17,
-            "r": 519.44,
-            "b": 607.43,
+            "l": 74.07,
+            "t": 714.21,
+            "r": 519.43,
+            "b": 607.41,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -14898,10 +14898,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 53.61,
-            "t": 534.01,
-            "r": 285.09,
-            "b": 286.35,
+            "l": 53.59,
+            "t": 533.99,
+            "r": 285.11,
+            "b": 286.36,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15187,10 +15187,10 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 50.37,
-            "t": 692.67,
-            "r": 554.02,
-            "b": 499.05,
+            "l": 50.39,
+            "t": 692.69,
+            "r": 554.0,
+            "b": 499.08,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15260,9 +15260,9 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 51.92,
-            "t": 412.15,
-            "r": 541.99,
+            "l": 51.94,
+            "t": 412.14,
+            "r": 542.01,
             "b": 348.53,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -15465,10 +15465,10 @@
         {
           "page_no": 12,
           "bbox": {
-            "l": 52.73,
-            "t": 717.62,
-            "r": 544.59,
-            "b": 644.84,
+            "l": 52.68,
+            "t": 717.66,
+            "r": 544.6,
+            "b": 644.83,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -17017,7 +17017,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17037,7 +17037,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17117,7 +17117,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17137,7 +17137,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17217,7 +17217,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17237,7 +17237,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "7",
+            "text": "\u2717",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17317,7 +17317,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17337,7 +17337,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17417,7 +17417,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17437,7 +17437,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17517,7 +17517,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17537,7 +17537,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "3",
+            "text": "\u2713",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17718,7 +17718,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -17738,7 +17738,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -17820,7 +17820,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -17840,7 +17840,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -17922,7 +17922,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -17942,7 +17942,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "7",
+              "text": "\u2717",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18024,7 +18024,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18044,7 +18044,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18126,7 +18126,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18146,7 +18146,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18228,7 +18228,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18248,7 +18248,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "3",
+              "text": "\u2713",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18317,8 +18317,8 @@
           "bbox": {
             "l": 52.87,
             "t": 383.18,
-            "r": 282.92,
-            "b": 210.19,
+            "r": 282.93,
+            "b": 210.16,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -20583,10 +20583,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 308.13,
-            "t": 544.37,
+            "l": 308.12,
+            "t": 544.38,
             "r": 533.71,
-            "b": 488.52,
+            "b": 488.5,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -21280,7 +21280,7 @@
             "l": 332.54,
             "t": 251.71,
             "r": 521.22,
-            "b": 148.14,
+            "b": 148.11,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

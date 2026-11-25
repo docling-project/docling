@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import bisect
 import collections
+import functools
 import logging
 import posixpath
 import re
 import shutil
+import unicodedata
 import warnings
 from collections.abc import Iterator
 from copy import deepcopy
@@ -60,6 +62,7 @@ from docling.backend.docx.drawingml.utils import (
     convert_to_modern_format,
     crop_whitespace,
     get_docx_to_pdf_converter,
+    render_pdf_page_as_pil,
 )
 from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
@@ -86,16 +89,6 @@ from docling.utils.image_utils import (
 )
 
 _log = logging.getLogger(__name__)
-
-# pypdfium2 ships with the PDF extras, not with format-xlsx, and is only reached
-# through the LibreOffice converter below. `get_docx_to_pdf_converter` returns
-# None when it is missing, so the rendering paths already degrade to "no image";
-# this guard only keeps the module itself importable.
-# See https://github.com/docling-project/docling/issues/3613.
-try:  # pragma: no cover - import-time guard
-    import pypdfium2
-except ImportError:  # pragma: no cover - import-time guard
-    pass
 
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
@@ -159,6 +152,63 @@ _EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
+# A ``[$<symbol>-<locale id>]`` currency tag, e.g. ``[$€-407]`` or ``[$₹-4009]``.
+_LOCALE_CURRENCY_TAG_RE: Final[re.Pattern[str]] = re.compile(
+    r"\[\$(?P<symbol>[^\]\-]+)(?:-[0-9a-fA-F]+)?\]"
+)
+# Quoted and escaped literals pass through; ``_x`` (width of x) is dropped; a
+# ``*x`` fill becomes one space; a ``?`` digit placeholder is kept for the
+# section parser to reject unless the section is literal-only.
+_SECTION_LAYOUT_TOKEN_RE: Final[re.Pattern[str]] = re.compile(r'"[^"]*"|\\.|_.|\*.')
+_LITERAL_ONLY_SECTION_RE: Final[re.Pattern[str]] = re.compile(r'(?:"[^"]*"|\\.|[ ?])*')
+
+
+# openpyxl's table of built-in formats lost the section separators of id 44
+# (Excel's "Accounting" format), so every cell using it reports this string.
+_OPENPYXL_FORMAT_FIXES: Final[dict[str, str]] = {
+    '_("$"* #,##0.00_)_("$"* \\(#,##0.00\\)_("$"* "-"??_)_(@_)': (
+        '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)'
+    ),
+}
+
+
+@functools.cache
+def _currency_symbols() -> str:
+    """Every Unicode currency sign ($, €, £, ¥, ₹, ...), built on first use.
+
+    Scanning all code points takes a noticeable fraction of a second, so it is
+    not done at import time, where every ``DocumentConverter`` user would pay
+    for it.
+    """
+    return "".join(
+        char for char in map(chr, range(0x110000)) if unicodedata.category(char) == "Sc"
+    )
+
+
+def _strip_section_layout(section: str) -> str:
+    """Drop Excel layout codes that only pad the cell, keeping literals."""
+
+    def replace(match: re.Match[str]) -> str:
+        token = match.group(0)
+        if token.startswith("_"):
+            return ""
+        if token.startswith("*"):
+            return " "
+        return token
+
+    return _SECTION_LAYOUT_TOKEN_RE.sub(replace, section).strip()
+
+
+def _literal_section_text(section: str) -> str:
+    """Text of a section made only of quoted/escaped literals, e.g. ``"$" "-"``."""
+    text = re.sub(
+        r'"([^"]*)"|\\(.)',
+        lambda m: m.group(1) if m.group(1) is not None else m.group(2),
+        section.replace("?", ""),
+    )
+    return " ".join(text.split())
+
+
 def _cell_text_and_orig(cell: Cell | MergedCell) -> tuple[str, str]:
     """Return the normalized text of a cell and its text as Excel displays it.
 
@@ -213,6 +263,7 @@ def _format_excel_number(value: int | float, fmt: str) -> tuple[str, str]:
 
 def _apply_excel_number_format(value: int | float, fmt: str) -> str:
     """Apply a supported number format, or return ``str(value)``."""
+    fmt = _OPENPYXL_FORMAT_FIXES.get(fmt, fmt)
     # Conditions, unsupported locale markers, optional decimals and scaling
     # must not be silently removed and mistaken for a supported number format.
     without_colors = re.sub(
@@ -221,7 +272,9 @@ def _apply_excel_number_format(value: int | float, fmt: str) -> str:
         fmt,
         flags=re.IGNORECASE,
     )
-    currency_format = re.sub(r"\[\$\$-[0-9a-fA-F]+\]", '"$"', without_colors)
+    currency_format = _LOCALE_CURRENCY_TAG_RE.sub(
+        lambda tag: '"' + tag.group("symbol") + '"', without_colors
+    )
     if "[" in currency_format or r"\;" in currency_format:
         return str(value)
     sections = re.split(r';(?=(?:[^"]*"[^"]*")*[^"]*$)', currency_format)
@@ -234,22 +287,26 @@ def _apply_excel_number_format(value: int | float, fmt: str) -> str:
         if value == 0 and len(sections) > 2
         else 0
     )
-    section = sections[section_index]
+    section = _strip_section_layout(sections[section_index])
     if not section:
         return ""
-    if re.fullmatch(r'"[^"]*"', section):
-        return section[1:-1]
+    if _LITERAL_ONLY_SECTION_RE.fullmatch(section):
+        return _literal_section_text(section)
     if any(
         re.search(r"[0#.,%]", literal) for literal in re.findall(r'"([^"]*)"', section)
     ):
         return str(value)
-    normalized = re.sub(r"_.", "", section).replace('"', "")
-    normalized = re.sub(r"\\([()$ -])", r"\1", normalized)
+    currency_symbols = _currency_symbols()
+    currency_class = re.escape(currency_symbols)
+    normalized = section.replace('"', "")
+    normalized = re.sub(rf"\\([()${currency_class} -])", r"\1", normalized)
     match = re.fullmatch(
-        r"(?P<prefix>[$( -]*)(?P<number>#,##0|0)(?:\.(?P<decimals>0{1,15}))?(?P<suffix>[$% )-]*)",
+        rf"(?P<prefix>[{currency_class}( -]*)(?P<number>#,##0|0)"
+        rf"(?:\.(?P<decimals>0{{1,15}}))?(?P<suffix>[{currency_class}% )-]*)",
         normalized,
     )
-    if match is None or normalized.count("%") > 1 or normalized.count("$") > 1:
+    currency_signs = sum(normalized.count(sign) for sign in currency_symbols)
+    if match is None or normalized.count("%") > 1 or currency_signs > 1:
         return str(value)
     amount = Decimal(str(abs(value)))
     if not amount.is_finite():
@@ -2160,8 +2217,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         converts the input file to PDF at the given output path.
 
         Returns:
-            A converter callable, or None when LibreOffice or pypdfium2 is not
-            available; `get_docx_to_pdf_converter` checks for both.
+            A converter callable, or None when LibreOffice or docling-parse is
+            not available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
@@ -2180,7 +2237,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         LibreOffice can convert standalone ``.emf``/``.wmf`` files to PDF
         directly — no DOCX or XLSX wrapper is needed.  The raw bytes are
         written to a temp file, converted to PDF, and the first page is
-        rendered with pypdfium2.
+        rendered with docling-parse.
 
         Args:
             image_bytes: Raw EMF or WMF image data.
@@ -2203,11 +2260,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("EMF/WMF conversion via LibreOffice failed: %s", exc)
@@ -2834,7 +2887,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         workbook (its data copied onto hidden sheets so the series still
         resolve), convert that to PDF with LibreOffice — the same external tool
         already used for EMF/WMF images — and rasterize the first page with
-        pypdfium2, trimming the surrounding whitespace.
+        docling-parse, trimming the surrounding whitespace.
 
         Args:
             chart: An openpyxl chart object.
@@ -2860,11 +2913,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not output_path.exists():
                 _log.debug("LibreOffice produced no PDF output for a chart")
                 return None
-            pdf = pypdfium2.PdfDocument(str(output_path))
-            page = pdf[0]
-            pil_image = crop_whitespace(page.render(scale=2).to_pil())
-            page.close()
-            pdf.close()
+            pil_image = crop_whitespace(render_pdf_page_as_pil(output_path, scale=2))
             return pil_image
         except Exception as exc:
             _log.debug("Chart rendering via LibreOffice failed: %s", exc)

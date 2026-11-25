@@ -61,6 +61,9 @@ def _element(cluster_id: int, text: str) -> TextElement:
         ("6-methyl-", "5-hepten-2-one", "6-methyl-5-hepten-2-one"),
         ("6-methyl-", " 5-hepten-2-one", "6-methyl-5-hepten-2-one"),
         ("cost is -", "5.00 USD", "cost is - 5.00 USD"),
+        ("the DNA-", "binding domain", "the DNA-binding domain"),
+        ("EØS-", "rettslige", "EØS-rettslige"),
+        ("INFOR-", "MATION", "INFOR- MATION"),
     ],
 )
 def test_merge_elements_dehyphenates_lowercase_continuations(

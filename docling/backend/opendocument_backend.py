@@ -44,6 +44,7 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
+    PictureItem,
     PictureMeta,
     ProvenanceItem,
     RichTableCell,
@@ -64,6 +65,7 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.media import load_linked_media, media_kind, media_ref
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -492,6 +494,21 @@ def _clean_odf_text_lines(text: str) -> list[str]:
     return [line for line in (line.strip() for line in text.splitlines()) if line]
 
 
+def _odf_text_without_notes(element: Any) -> str:
+    """Return the recursive text of an element without its footnotes and endnotes.
+
+    odfdo reads a ``text:note`` as its citation and body. The body is added as
+    its own footnote item (see ``_OdfBaseBackend._add_footnotes``), and the text
+    runs of a paragraph skip the note, so it is left out here too.
+    """
+    if element.get_element("descendant::text:note") is None:
+        return element.text_recursive
+    clone = element.clone
+    for note in clone.get_elements("descendant::text:note"):
+        Element.delete(note)
+    return clone.text_recursive
+
+
 def _formatting_or_none(formatting: Formatting) -> Formatting | None:
     return None if formatting == Formatting() else formatting
 
@@ -577,6 +594,40 @@ def _formatting_from_odf_text_style(
             formatting.script = Script.BASELINE
 
     return _formatting_or_none(formatting)
+
+
+# The style family of the text:style-name of the elements that can hide text.
+_ODF_TEXT_STYLE_FAMILIES = {
+    "text:p": "paragraph",
+    "text:h": "paragraph",
+    "text:span": "text",
+    "text:a": "text",
+}
+
+
+def _odf_hides_text(odf_obj: OdfDocument, element: Any) -> bool:
+    """Return True if the style of ``element`` hides its text.
+
+    Writer saves the Hidden font effect as ``text:display="none"`` in the text
+    properties of a paragraph or character style. The first style in the
+    parent chain that sets it decides.
+    """
+    family = _ODF_TEXT_STYLE_FAMILIES.get(element.tag)
+    style_name = element.attributes.get("text:style-name")
+    seen: set[str] = set()
+    while family is not None and style_name and style_name not in seen:
+        seen.add(style_name)
+        style = odf_obj.get_style(family, style_name)
+        if style is None:
+            break
+        properties = style.get_element("style:text-properties")
+        display = (
+            None if properties is None else properties.get_attribute("text:display")
+        )
+        if display is not None:
+            return display == "none"
+        style_name = style.attributes.get("style:parent-style-name")
+    return False
 
 
 def _odf_text_runs(
@@ -753,6 +804,8 @@ def _add_odf_heading(
     comments: _OdfComments | None = None,
 ) -> None:
     level = max(1, element.get_attribute_integer("text:outline-level") or 1)
+    if odf_obj is not None and _odf_hides_text(odf_obj, element):
+        content_layer = ContentLayer.INVISIBLE
     runs = _odf_text_runs(element, odf_obj)
     item = _add_odf_rich_block(
         doc,
@@ -799,6 +852,10 @@ def _add_odf_paragraph(
     image_loader: ImageResourceLoader | None = None,
     comments: _OdfComments | None = None,
 ) -> None:
+    if odf_obj is not None and _odf_hides_text(odf_obj, element):
+        # Writer does not show it: keep it, like a hidden section, but out of
+        # the default exports.
+        content_layer = ContentLayer.INVISIBLE
     chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
     images = element.get_images()
     image_count = _add_odf_images(
@@ -865,10 +922,10 @@ def _odf_element_text_lines(element: Any) -> list[str]:
             lines.extend(_odf_element_text_lines(child))
         if lines:
             return lines
-        return _clean_odf_text_lines(element.text_recursive)
+        return _clean_odf_text_lines(_odf_text_without_notes(element))
 
     if isinstance(element, (Header, Paragraph)):
-        return _clean_odf_text_lines(element.text_recursive)
+        return _clean_odf_text_lines(_odf_text_without_notes(element))
 
     child_lines: list[str] = []
     for child in getattr(element, "children", []):
@@ -876,7 +933,7 @@ def _odf_element_text_lines(element: Any) -> list[str]:
     if child_lines:
         return child_lines
 
-    return _clean_odf_text_lines(element.text_recursive)
+    return _clean_odf_text_lines(_odf_text_without_notes(element))
 
 
 def _odf_list_item_content(
@@ -1046,10 +1103,10 @@ def _odf_cell_has_rich_content(cell: Any) -> bool:
             if _odf_list_has_renderable_content(child):
                 return True
         elif isinstance(child, Header):
-            if _clean_odf_text_lines(child.text_recursive):
+            if _clean_odf_text_lines(_odf_text_without_notes(child)):
                 return True
         elif isinstance(child, Paragraph):
-            if _clean_odf_text_lines(child.text_recursive):
+            if _clean_odf_text_lines(_odf_text_without_notes(child)):
                 non_empty_paragraphs += 1
             if child.get_images():
                 return True
@@ -1219,6 +1276,49 @@ def _add_odf_images(
         doc.add_picture(parent=parent, image=image_ref, content_layer=content_layer)
         image_count += 1
     return image_count
+
+
+def _add_odf_media_track(
+    doc: DoclingDocument,
+    frame: Frame,
+    parent: NodeItem,
+    odf_obj: OdfDocument,
+    pictures: list[PictureItem],
+) -> None:
+    """Turn the video or audio that a frame plays into a track.
+
+    The media is a ``draw:plugin`` in the frame, next to a ``draw:image``
+    preview that is already a picture. The track takes the place of the first
+    such picture, with its image as the cover. A frame without one gets a track
+    without a cover, so the media keeps its place.
+    """
+    plugin = frame.get_element("draw:plugin")
+    if plugin is None:
+        return
+    location = (plugin.get_attribute_string("xlink:href") or "").removeprefix("./")
+    if not location:
+        return
+    # LibreOffice may declare its generic "application/vnd.sun.star.media" type.
+    # The manifest entry of an embedded file, or else the extension, then tells
+    # video from audio.
+    kind = media_kind(plugin.get_attribute_string("draw:mime-type")) or media_kind(
+        odf_obj.manifest.get_media_type(location), location
+    )
+    if kind is None or (ref := media_ref(kind, location)) is None:
+        return
+    media = {kind: ref}
+    if not pictures:
+        doc.add_track(parent=parent, **media)
+        return
+    picture = pictures[0]
+    doc.insert_track(
+        sibling=picture,
+        image=picture.image,
+        prov=picture.prov[0] if picture.prov else None,
+        content_layer=picture.content_layer,
+        **media,
+    )
+    doc.delete_items(node_items=[picture])
 
 
 def _add_odf_child(
@@ -1871,6 +1971,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
             )
 
         comments = self._detach_annotations()
+        self._detach_hidden_text()
         self._walk(self.odf_obj.body.children, parent=None, doc=doc, comments=comments)
         self._add_footnotes(doc, comments)
         comments.attach_rest(doc)
@@ -1981,6 +2082,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
                 ):
                     continue
                 comments = self._detach_annotations(part)
+                self._detach_hidden_text(part)
                 if not part.text_content.strip() and not part.get_elements(
                     "descendant::table:table | descendant::draw:image | descendant::draw:object"
                 ):
@@ -2092,6 +2194,34 @@ class OdtDocumentBackend(_OdfBaseBackend):
             threads.append((anchors[start], thread))
         return _OdfComments(threads)
 
+    def _detach_hidden_text(self, root: Element | None = None) -> None:
+        """Remove the hidden text that has no content layer of its own.
+
+        The text paths for list items, table cells and notes read text that
+        Writer hides (``text:display="none"``) as shown text. A hidden span is
+        removed. So is a hidden paragraph or heading in a list item, a table
+        cell or a note; any other one is kept and goes to the invisible layer.
+        """
+        body = self.odf_obj.body if root is None else root
+        for paragraph in body.get_elements("descendant::text:p | descendant::text:h"):
+            if _odf_hides_text(self.odf_obj, paragraph) and (
+                paragraph.get_element(
+                    "ancestor::text:list-item | ancestor::table:table-cell"
+                    " | ancestor::text:note"
+                )
+                is not None
+            ):
+                Element.delete(paragraph)
+        for span in body.get_elements("descendant::text:span | descendant::text:a"):
+            if not _odf_hides_text(self.odf_obj, span):
+                continue
+            paragraph = span.get_element(
+                "(ancestor::text:p | ancestor::text:h)[last()]"
+            )
+            # A hidden paragraph keeps all of its text in the invisible layer.
+            if paragraph is None or not _odf_hides_text(self.odf_obj, paragraph):
+                Element.delete(span)
+
     def _walk(
         self,
         elements: list[Any],
@@ -2164,6 +2294,17 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             if self._is_slide_hidden(page):
                 self._hide_slide(doc, slide_group)
         return doc
+
+    @override
+    def load_media(self, location: str) -> bytes | None:
+        if location in self.odf_obj.get_parts():
+            part = self.odf_obj.get_part(location)
+            if isinstance(part, bytes):
+                return part
+        base_path = (
+            str(self.path_or_stream) if isinstance(self.path_or_stream, Path) else None
+        )
+        return load_linked_media(location, self.options, base_path)
 
     @staticmethod
     def _hide_slide(doc: DoclingDocument, slide_group: NodeItem) -> None:
@@ -2318,6 +2459,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 image_loader=self._image_loader,
             )
 
+        first_picture = len(doc.pictures)
         _add_odf_images(
             doc,
             frame.get_images(),
@@ -2326,6 +2468,9 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             self.odf_obj,
             image_loader=self._image_loader,
             skip_object_replacements=chart_count > 0,
+        )
+        _add_odf_media_track(
+            doc, frame, parent, self.odf_obj, doc.pictures[first_picture:]
         )
 
         for textbox in frame.get_elements("descendant::draw:text-box"):

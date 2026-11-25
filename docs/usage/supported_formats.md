@@ -37,8 +37,22 @@ unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
 
+In Markdown prose, inline HTML `<br>` tags become hard line breaks in paragraphs,
+headings, and list items. Code spans, code blocks, and escaped tags stay literal.
+The document representation keeps heading line breaks; Markdown export normalizes
+them to spaces in plain headings. Headings with formatted inline content follow
+the existing Markdown hard-break serialization. Inline HTML inside Markdown table
+cells follows separate handling.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
+
+Video and audio on PPTX and ODP slides become tracks, with their poster frame or
+icon as the cover. The `video` or `audio` of the track gives the path of the media
+file inside the package, or the link of a linked file. Set `keep_media=True` in the
+pipeline options to hold the media file in the track, and `do_media_conversion=True`
+to also transcribe it (`--keep-media` and `--convert-media` on the CLI)
+(see [Video and audio in slides](processing_audio_media.md#video-and-audio-in-slides)).
 
 Email conversion prefers non-empty plain-text bodies. When it uses an HTML body,
 text in `<footer>` elements is retained in the furniture content layer. Default
@@ -66,7 +80,7 @@ Schema-specific support:
 | DocLang archive | Zipped DocLang bundle including page images; supported extension: `.dclx` |
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
-| XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard; also inline XBRL (iXBRL) reports in `.htm`, `.html` and `.xhtml` files; needs the `xbrl` extra |
+| XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard; also inline XBRL (iXBRL) reports in `.htm`, `.html` and `.xhtml` files; needs the `xbrl` extra (iXBRL reports convert as HTML without it) |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
 

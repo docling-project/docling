@@ -162,6 +162,9 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         for page_index in range(self.page_count()):
             yield self.load_page(page_index)
 
+    def cancel(self) -> None:
+        """Request cancellation of pending page work without waiting for it."""
+
     def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Return the PDF bookmark / table-of-contents outline.
 

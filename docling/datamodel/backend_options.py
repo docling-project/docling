@@ -330,6 +330,16 @@ class PdfBackendOptions(BaseBackendOptions):
             "diacritics that should remain in the same text cell."
         ),
     )
+    do_char_normalization: bool = Field(
+        True,
+        description=(
+            "Passed to docling-parse `DecodeConfig.do_char_normalization`. "
+            "When enabled, docling-parse normalizes some Unicode characters "
+            "in the extracted text, for example dash and minus variants "
+            "become '-'. Disable this to keep the characters as the PDF "
+            "encodes them."
+        ),
+    )
     include_bitmap_images: bool = Field(
         False,
         description=(

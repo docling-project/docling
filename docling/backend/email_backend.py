@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage, Message
-from email.utils import format_datetime, formataddr
+from email.utils import collapse_rfc2231_value, format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
 
@@ -97,6 +97,124 @@ _MAILPARSER_BODY_DELIMITER = "\n--- mail_boundary ---\n"
 class _BodyParagraph:
     text: str
     content_layer: ContentLayer
+
+
+def _get_param(part: Message, name: str) -> str:
+    """Return a lowercase content-type parameter, also when RFC 2231 encoded.
+
+    Args:
+        part: The message part.
+        name: The parameter name.
+
+    Returns:
+        The lowercase parameter value, or an empty string if it is not set.
+    """
+    return collapse_rfc2231_value(part.get_param(name, "")).lower()
+
+
+def _is_plain_text_body(part: Message, inside_attachment: bool) -> bool:
+    """Tell whether mailparser adds a ``text/plain`` part to ``text_plain``.
+
+    Args:
+        part: The ``text/plain`` part.
+        inside_attachment: Whether an enclosing part is an attachment.
+
+    Returns:
+        True if the part is a body part, False if it is an attachment.
+    """
+    disposition = part.get_content_disposition()
+    if part.get_filename():
+        return disposition == "inline" and not inside_attachment
+    return disposition != "attachment"
+
+
+def _get_plain_text_flows(message: Message) -> list[bool | None]:
+    """Describe the flow of each plain-text body part, in the order of ``text_plain``.
+
+    A part is a body part when it has content and mailparser adds it to
+    ``text_plain``: it is not an attachment and it is not a named part inside an
+    attachment container.
+
+    Args:
+        message: The parsed message.
+
+    Returns:
+        One value per part: ``None`` for fixed text, otherwise whether the part
+        has ``delsp=yes``.
+    """
+    flows: list[bool | None] = []
+    attachment_descendants: set[Message] = set()
+    for part in message.walk():
+        inside_attachment = part in attachment_descendants
+        children = part.get_payload()
+        if isinstance(children, list):
+            disposition = part.get_content_disposition()
+            if (
+                inside_attachment
+                or disposition not in (None, "inline")
+                or (disposition != "inline" and part.get_filename())
+            ):
+                attachment_descendants.update(
+                    child for child in children if isinstance(child, Message)
+                )
+            continue
+        if (
+            part.get_content_type() != "text/plain"
+            or not _is_plain_text_body(part, inside_attachment)
+            or not part.get_payload(decode=True)
+        ):
+            continue
+        if _get_param(part, "format") == "flowed":
+            flows.append(_get_param(part, "delsp") == "yes")
+        else:
+            flows.append(None)
+    return flows
+
+
+def _unflow(text: str, delsp: bool) -> str:
+    """Join the soft line breaks of a ``format=flowed`` text (RFC 3676, 4.2).
+
+    A line ending in a space continues on the next line with the same quote
+    depth. An empty line and the signature separator ``-- `` end a paragraph.
+    The quote marks of a quoted line are normalized to ``>`` followed by one
+    space.
+
+    Args:
+        text: The decoded text of the part.
+        delsp: Whether the part has ``delsp=yes``, so that the space before a
+            soft line break is not part of the text.
+
+    Returns:
+        The text with the soft line breaks joined.
+    """
+    lines: list[str] = []
+    pending: list[str] = []
+    pending_depth = 0
+    for line in re.sub(r"\r\n|\r", "\n", text).split("\n"):
+        stripped = line.lstrip(">")
+        depth = len(line) - len(stripped)
+        if stripped.startswith(" "):
+            stripped = stripped[1:]
+        joins = (
+            bool(pending)
+            and depth == pending_depth
+            and stripped != ""
+            and stripped != "-- "
+        )
+        if pending and not joins:
+            lines.append("".join(pending))
+            pending = []
+        piece = stripped if joins else ">" * depth + (" " if depth else "") + stripped
+        flowing = stripped.endswith(" ") and stripped != "-- "
+        if flowing:
+            pending.append(piece[:-1] if delsp else piece)
+            pending_depth = depth
+        else:
+            lines.append("".join([*pending, piece]))
+            pending = []
+    if pending:
+        lines.append("".join(pending))
+    return "\n".join(lines)
 
 
 def _is_calendar_part(part: Message) -> bool:
@@ -287,6 +405,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
+    def _recover_msg_body(data: bytes, message: OxMsgMessage) -> str | None:
+        """Read the plain-text body from the OLE stream with the message codepage.
+
+        When ``message.body`` fails (wrong codec or unknown codec), this reads
+        the raw ``PtypString8`` bytes from the OLE compound file and decodes
+        them with the message code page.  Returns ``None`` if the stream does
+        not exist or cannot be decoded.
+        """
+        try:
+            import olefile
+            from oxmsg.domain.constants import PID_BODY, PTYP_STRING8
+            from oxmsg.domain.encodings import encoding_from_codepage
+
+            codepage = message.properties.int_prop_value(0x3FFD)  # PID_MESSAGE_CODEPAGE
+            if codepage is None:
+                return None
+            encoding = encoding_from_codepage(codepage)
+            stream_name = f"__substg1.0_{PID_BODY:04X}{PTYP_STRING8:04X}"
+            with olefile.OleFileIO(data) as ole:
+                if not ole.exists(stream_name):
+                    return None
+                raw = ole.openstream(stream_name).read()
+            return raw.decode(encoding, errors="replace")
+        except Exception:
+            return None
+
+    @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
@@ -294,6 +439,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         ``email.message.EmailMessage`` from it so the ``.msg`` path shares the
         exact body, HTML, address, and attachment handling used for ``.eml``
         input.
+
+        Every string property access is guarded against
+        ``UnicodeDecodeError`` (wrong codec) and ``LookupError`` (unknown
+        codec, e.g. ``windows-950``).  python-oxmsg <=0.0.2 can pick the
+        wrong codec for 8-bit body properties
+        (`python-oxmsg#5 <https://github.com/scanny/python-oxmsg/issues/5>`_),
+        and some code-page-to-codec mappings produce names Python does not
+        recognise.  When the body cannot be decoded through python-oxmsg, the
+        raw bytes are read from the OLE stream and decoded with the message
+        code page.
         """
         if not _OXMSG_AVAILABLE:
             raise ImportError(_MSG_INSTALL_HINT) from _OXMSG_IMPORT_ERROR
@@ -301,20 +456,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         message = OxMsgMessage.load(data)
         email_message = EmailMessage()
 
-        if message.subject:
-            email_message["Subject"] = EmailDocumentBackend._header_safe(
-                message.subject
-            )
-        if message.sender:
-            email_message["From"] = EmailDocumentBackend._header_safe(message.sender)
+        try:
+            subject = message.subject or ""
+        except (UnicodeDecodeError, LookupError):
+            subject = ""
+            _log.warning("Could not decode .msg subject")
+        if subject:
+            email_message["Subject"] = EmailDocumentBackend._header_safe(subject)
+
+        try:
+            sender = message.sender or ""
+        except (UnicodeDecodeError, LookupError):
+            sender = ""
+            _log.warning("Could not decode .msg sender")
+        if sender:
+            email_message["From"] = EmailDocumentBackend._header_safe(sender)
 
         # Preserve the To/Cc/Bcc split from the recipient rows so downstream
         # rendering (which shows "To" and "Cc") matches the .eml behavior.
         grouped: dict[str, list[str]] = {}
         for recipient in message.recipients:
-            formatted = formataddr(
-                (recipient.name or "", recipient.email_address or "")
-            )
+            try:
+                formatted = formataddr(
+                    (recipient.name or "", recipient.email_address or "")
+                )
+            except (UnicodeDecodeError, LookupError):
+                _log.warning("Could not decode .msg recipient; skipping")
+                continue
             if not formatted:
                 continue
             rtype = recipient.properties.int_prop_value(_RECIPIENT_TYPE_PROP_ID)
@@ -334,8 +502,23 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(message.sent_date, datetime):
             email_message["Date"] = format_datetime(message.sent_date)
 
-        plain_body = message.body
-        html_body = message.html_body
+        try:
+            plain_body = message.body
+        except (UnicodeDecodeError, LookupError):
+            # Recover via OLE stream with the message code page.
+            plain_body = EmailDocumentBackend._recover_msg_body(data, message)
+            if plain_body:
+                _log.warning(
+                    "Recovered .msg body via message code page "
+                    "(python-oxmsg used the wrong codec)"
+                )
+            else:
+                _log.warning("Could not decode .msg plain-text body")
+        try:
+            html_body = message.html_body
+        except (UnicodeDecodeError, LookupError):
+            html_body = None
+            _log.warning("Could not decode .msg HTML body")
         if plain_body:
             email_message.set_content(plain_body)
             if html_body:
@@ -348,13 +531,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
-            # Only filename and MIME type are needed; pass an empty payload to avoid
-            # copying attachment content into the RFC 822 byte stream.
+            try:
+                filename = attachment.file_name
+            except (UnicodeDecodeError, LookupError):
+                filename = None
+                _log.warning("Could not decode .msg attachment filename")
             email_message.add_attachment(
                 b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
-                filename=attachment.file_name,
+                filename=filename,
             )
 
         return email_message.as_bytes()
@@ -479,11 +665,17 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
+            # mailparser keeps only the decoded text of each part, so the flow of a
+            # part is found by its position. Without a match, the text is kept as is.
+            flows = _get_plain_text_flows(self.mail.message)
+            if len(flows) != len(self.mail.text_plain):
+                flows = [None] * len(self.mail.text_plain)
             paragraphs: list[_BodyParagraph] = []
-            for part in self.mail.text_plain:
+            for raw_text, delsp in zip(self.mail.text_plain, flows):
+                text = raw_text if delsp is None else _unflow(raw_text, delsp)
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-                    for paragraph in self._split_paragraphs(part)
+                    for paragraph in self._split_paragraphs(text)
                 )
             if paragraphs:
                 return paragraphs

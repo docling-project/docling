@@ -4,6 +4,7 @@
 """Tests for section-header level inference in the PDF/image pipeline."""
 
 from types import SimpleNamespace
+from unicodedata import normalize
 
 import pytest
 from docling_core.types.doc import (
@@ -383,6 +384,26 @@ def test_added_keywords_follow_the_rules_of_the_built_in_ones():
     assert _strip_marker("Rozdział 1 Przepisy ogólne", lexicon) == "Przepisy ogólne"
     assert _match_score("Rozdział 1 Cel", "Cel") < 0.8
     assert _match_score("Rozdział 1 Cel", "Cel", lexicon) == pytest.approx(1.0)
+
+
+def test_decomposed_keyword_marker_strips_like_composed():
+    """A keyword written with a combining accent (NFD) strips like its NFC twin.
+
+    The lexicon pattern is compiled from NFC spellings, so the bookmark path
+    must normalize before matching the prefix; otherwise the same heading
+    matches a child bookmark in one normalization form and not the other.
+    """
+    lexicon = _lexicon(
+        HeadingHierarchyOptions(numbering_keywords={"chapter": ["étage"]})
+    )
+    for form in ("NFC", "NFD"):
+        heading = normalize(form, "Étage II Tax")
+        assert lexicon.strip_marker(heading) == "Tax"
+        assert _match_score(heading, "Tax", lexicon) == pytest.approx(1.0)
+    # A marker-free heading compares equal across normalization forms too.
+    assert _match_score(
+        normalize("NFC", "Café"), normalize("NFD", "Café")
+    ) == pytest.approx(1.0)
 
 
 def test_new_keyword_families_take_their_place_from_numbering_schemes():

@@ -335,10 +335,12 @@ def describe_rrule(raw: str) -> str | None:
             return None
         text += f" in {months}"
     if "BYDAY" in parts:
-        # In a monthly or yearly rule, a day without a position is every such
-        # day of the month or year, not one of them.
+        # A day without a position is every such day in a monthly or yearly
+        # rule, unless BYMONTHDAY limits it.
         days = _describe_byday(
-            parts["BYDAY"], every=parts["FREQ"].upper() in ("MONTHLY", "YEARLY")
+            parts["BYDAY"],
+            every=parts["FREQ"].upper() in ("MONTHLY", "YEARLY")
+            and "BYMONTHDAY" not in parts,
         )
         if days is None:
             return None
