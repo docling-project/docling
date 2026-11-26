@@ -86,7 +86,7 @@ def test_msg_strips_trailing_nul_from_properties_and_body():
         patch.object(OxMsgMessage, "recipients", recipients_mock),
         patch.object(OxMsgMessage, "attachments", attachments_mock),
     ):
-        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+        rfc822, _ = EmailDocumentBackend._msg_to_rfc822_bytes(data)
 
     backend = EmailDocumentBackend(
         in_doc=InputDocument(
