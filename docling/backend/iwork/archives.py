@@ -51,10 +51,12 @@ from docling.backend.iwork.content import (
 )
 from docling.backend.iwork.iwa import (
     IWAObject,
-    iter_objects,
+    decompress,
+    iter_stream_objects,
     read_fields,
     read_reference,
 )
+from docling.backend.utils.archive_limits import ArchiveLimitError
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
@@ -864,14 +866,21 @@ def read_objects(
     archive: zipfile.ZipFile,
     infos: list[zipfile.ZipInfo],
     max_file_bytes: int,
+    max_total_bytes: int,
     kind: str,
 ) -> dict[int, IWAObject]:
     """Read every archived object of an iWork 2013+ container, by identifier.
+
+    The declared member sizes are those of the Snappy-compressed streams, so
+    the decompressed streams are also counted, together, against
+    ``max_total_bytes``.
 
     Args:
         archive: The open container, or the inner ``Index.zip`` of one.
         infos: Its members.
         max_file_bytes: The largest member this is willing to decompress.
+        max_total_bytes: The most bytes all ``.iwa`` streams together may
+            decompress to.
         kind: What the app calls its documents, for error messages.
 
     Returns:
@@ -879,8 +888,11 @@ def read_objects(
 
     Raises:
         DocumentLoadError: If a member is larger than ``max_file_bytes``.
+        ArchiveLimitError: If the decompressed streams together are larger
+            than ``max_total_bytes``.
     """
     objects: dict[int, IWAObject] = {}
+    remaining = max_total_bytes
     for info in infos:
         if not info.filename.endswith(".iwa"):
             continue
@@ -890,7 +902,16 @@ def read_objects(
                 f"bytes, exceeding the max_file_bytes limit of "
                 f"{max_file_bytes}."
             )
-        for obj in iter_objects(archive.read(info)):
+        try:
+            stream = decompress(archive.read(info), remaining)
+        except ArchiveLimitError as exc:
+            raise ArchiveLimitError(
+                f"{kind} archive member {info.filename} decompresses past the "
+                f"max_total_bytes limit of {max_total_bytes} for all IWA "
+                "streams together."
+            ) from exc
+        remaining -= len(stream)
+        for obj in iter_stream_objects(stream):
             objects[obj.identifier] = obj
     return objects
 

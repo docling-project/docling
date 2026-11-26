@@ -682,6 +682,25 @@ converter = DocumentConverter(
 )
 ```
 
+## Generic ZIP input limits
+
+Docling expands a ZIP archive that is not a known ZIP-based format into one
+document per member (use `convert_all()`). Defaults: 256 MiB per member, 1 GiB
+in total, 10,000 members. Set them with the `max_zip_member_size`,
+`max_zip_expanded_size` and `max_zip_member_count` keyword arguments of
+`convert()`, `convert_all()`, `DocumentExtractor.extract()` or `extract_all()`.
+A member over a size limit fails with a policy rejection and the other members
+still convert. An archive with too many members fails as a whole. A lower
+`max_file_size` replaces the two size limits.
+
+```python
+results = converter.convert_all(
+    ["documents.zip"],
+    max_zip_member_size=512 * 1024 * 1024,
+    max_zip_member_count=50_000,
+)
+```
+
 ## ODS repeated cells limit
 
 ODS sheets can repeat a row or a cell with one attribute. The ODS backend keeps

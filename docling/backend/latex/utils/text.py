@@ -94,7 +94,7 @@ class TextHelperMixin:
         def _href_link_text(self, node: Any) -> str: ...
         def _expand_macros(self, latex_str: str) -> str: ...
         def _expand_custom_macro_invocation(
-            self, node: Any, following_nodes: Any
+            self, node: Any, siblings: list, next_index: int
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
 
@@ -444,7 +444,8 @@ class TextHelperMixin:
                         text_label,
                         text_buffer,
                         flush_fn,
-                        nodes[index + 1 :],
+                        nodes,
+                        index + 1,
                     )
             index += 1 + consumed
 
@@ -483,8 +484,14 @@ class TextHelperMixin:
                 return self._nodes_to_text(arg.nodelist).strip()
         return ""
 
-    def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
-        """Return ``(text, consumed_following)`` for a single macro node."""
+    def _macro_node_to_text(
+        self, node: LatexMacroNode, siblings: list, next_index: int
+    ) -> tuple:
+        """Return ``(text, consumed_following)`` for a single macro node.
+
+        ``siblings[next_index:]`` are the nodes after ``node``. A custom macro reads
+        its arguments from them without a copy of the list.
+        """
         consumed = 0
         char_text = self._char_macro_to_text(node)
         if char_text is not None:
@@ -513,7 +520,7 @@ class TextHelperMixin:
             return (node.macroname, consumed)
         if node.macroname in self._custom_macros:
             expansion, consumed = self._expand_custom_macro_invocation(
-                node, following_nodes
+                node, siblings, next_index
             )
             if self._custom_macro_num_args.get(node.macroname, 0) > 0:
                 return (self._parse_latex_fragment_to_text(expansion), consumed)
@@ -553,7 +560,7 @@ class TextHelperMixin:
                 text_parts.append(self._nodes_to_text(node.nodelist))
             elif isinstance(node, LatexMacroNode):
                 text, consumed_following = self._macro_node_to_text(
-                    node, nodes[idx + 1 :]
+                    node, nodes, idx + 1
                 )
                 if text:
                     text_parts.append(text)

@@ -1969,6 +1969,17 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
 # CHANDRA / DOTS VLM_CONVERT PRESETS
 # -----------------------------------------------------------------------------
 
+# The model has no chat template, and its grounding markers are special tokens:
+# without skip_special_tokens=False the layout annotations are stripped from the
+# completion and the page comes back as flat text.
+_UNLIMITED_OCR_API = ApiModelConfig(
+    params={
+        "model": "unlimited-ocr",
+        "max_tokens": 8192,
+        "skip_special_tokens": False,
+    }
+)
+
 VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
     preset_id="unlimited_ocr",
     name="Unlimited-OCR",
@@ -1980,20 +1991,14 @@ VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
         response_format=ResponseFormat.UNLIMITED_OCR_MARKDOWN,
         max_new_tokens=8192,
         api_overrides={
-            # The model has no chat template, and its grounding markers are special
-            # tokens: without skip_special_tokens=False the layout annotations are
-            # stripped from the completion and the page comes back as flat text.
-            VlmEngineType.API_OPENAI: ApiModelConfig(
-                params={
-                    "model": "unlimited-ocr",
-                    "max_tokens": 8192,
-                    "skip_special_tokens": False,
-                }
-            ),
+            VlmEngineType.API: _UNLIMITED_OCR_API,
+            VlmEngineType.API_OPENAI: _UNLIMITED_OCR_API,
         },
     ),
     scale=2.0,
-    default_engine_type=VlmEngineType.API_OPENAI,
+    # A self-hosted OpenAI-compatible server: the generic API engine defaults to
+    # a local address, as for the other self-hosted presets.
+    default_engine_type=VlmEngineType.API,
 )
 
 _UNLIMITED_OCR2_API = ApiModelConfig(
@@ -2024,7 +2029,9 @@ VLM_CONVERT_UNLIMITED_OCR2 = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_engine_type=VlmEngineType.API_OPENAI,
+    # A self-hosted OpenAI-compatible server: the generic API engine defaults to
+    # a local address, as for the other self-hosted presets.
+    default_engine_type=VlmEngineType.API,
 )
 
 # The MLX chat template adds the image token, so the prompt keeps only the instruction.

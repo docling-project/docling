@@ -147,3 +147,84 @@ def test_member_with_an_empty_name_does_not_abort_the_batch() -> None:
 
     assert results[-1].input.file.as_posix() == "mixed.zip/good.md"
     assert results[-1].status == ConversionStatus.SUCCESS
+
+
+def test_zip_member_limits_apply_without_max_file_size() -> None:
+    source = make_zip(
+        ("oversized.md", b"x" * 41),
+        ("first.md", b"a" * 40),
+        ("over_budget.md", b"b" * 30),
+        ("last.md", b"c" * 20),
+    )
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.MD])
+
+    results = list(
+        converter.convert_all(
+            [source],
+            max_zip_member_size=40,
+            max_zip_expanded_size=60,
+            raises_on_error=False,
+        )
+    )
+
+    assert [result.input.file.name for result in results] == [
+        "oversized.md",
+        "first.md",
+        "over_budget.md",
+        "last.md",
+    ]
+    assert [result.status for result in results] == [
+        ConversionStatus.FAILURE,
+        ConversionStatus.SUCCESS,
+        ConversionStatus.FAILURE,
+        ConversionStatus.SUCCESS,
+    ]
+    assert "max_zip_member_size limit of 40" in results[0].errors[0].error_message
+    assert "max_zip_expanded_size limit of 60" in results[2].errors[0].error_message
+
+
+def test_lower_max_file_size_overrides_the_zip_member_limits() -> None:
+    source = make_zip(("big.md", b"x" * 30), ("small.md", b"a" * 10))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.MD])
+
+    results = list(
+        converter.convert_all(
+            [source],
+            max_file_size=20,
+            max_zip_member_size=40,
+            max_zip_expanded_size=60,
+            raises_on_error=False,
+        )
+    )
+
+    assert [result.status for result in results] == [
+        ConversionStatus.FAILURE,
+        ConversionStatus.SUCCESS,
+    ]
+    assert "max_file_size limit of 20" in results[0].errors[0].error_message
+
+
+def test_zip_with_too_many_members_is_rejected_as_a_whole() -> None:
+    source = make_zip(("one.md", b"# One"), ("two.md", b"# Two"), ("three.md", b"# 3"))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.MD])
+
+    results = list(
+        converter.convert_all([source], max_zip_member_count=2, raises_on_error=False)
+    )
+
+    assert len(results) == 1
+    assert results[0].status == ConversionStatus.FAILURE
+    assert results[0].input.file.name == "mixed.zip"
+    assert "max_zip_member_count limit of 2" in results[0].errors[0].error_message
+
+    results = list(
+        converter.convert_all(
+            [make_zip(("one.md", b"# One"), ("two.md", b"# Two"))],
+            max_zip_member_count=2,
+        )
+    )
+
+    assert [result.status for result in results] == [ConversionStatus.SUCCESS] * 2
