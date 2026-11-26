@@ -462,114 +462,52 @@ def test_table_rowspan_shifts_later_cells_into_the_table():
     assert "10" in doc.export_to_markdown()
 
 
-def test_table_row_without_cells_keeps_the_later_rows():
-    # When every cell of a row has rowspan="2", the next <tr> has no cells.
-    # It is still a row of the table, so the cells of the row after it go in
-    # the third row. The empty row used to be read as a header row and was
-    # not counted: the rowspans covered the "c d" row instead, and c and d
-    # were dropped from the grid and from the exported markdown.
-    src = (
-        b'<table><tr><td rowspan="2">a</td><td rowspan="2">b</td></tr>'
-        b"<tr></tr>"
-        b"<tr><td>c</td><td>d</td></tr></table>"
-    )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="t.html",
-    )
-    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+@pytest.mark.parametrize(
+    ("html", "expected_grid"),
+    [
+        pytest.param(
+            b'<table><tr><td rowspan="2">a</td><td rowspan="2">b</td></tr>'
+            b"<tr></tr>"
+            b"<tr><td>c</td><td>d</td></tr></table>",
+            [["a", "b"], ["a", "b"], ["c", "d"]],
+            id="full-rowspan-covers-the-row",
+        ),
+        pytest.param(
+            b"<table><tr></tr>"
+            b"<tr><td>a</td><td>b</td></tr>"
+            b"<tr></tr>"
+            b"<tr><td>c</td><td>d</td></tr>"
+            b"<tr></tr></table>",
+            [["a", "b"], ["c", "d"]],
+            id="uncovered-rows-add-nothing",
+        ),
+        pytest.param(
+            b'<table><tr><td rowspan="2">a</td><td>b</td></tr>'
+            b"<tr></tr>"
+            b"<tr><td>c</td><td>d</td></tr></table>",
+            [["a", "b"], ["a", ""], ["c", "d"]],
+            id="partial-rowspan-covers-the-row",
+        ),
+        pytest.param(
+            b'<table><tr><th rowspan="2">A</th><th rowspan="2">B</th></tr>'
+            b"<tr></tr>"
+            b"<tr><td>c</td><td>d</td></tr></table>",
+            [["A", "B"], ["c", "d"]],
+            id="th-header-rowspan-covers-the-row",
+        ),
+    ],
+)
+def test_table_row_without_cells(html: bytes, expected_grid: list[list[str]]):
+    # A row without cells that a rowspan covers is a row of the table, so the
+    # rows after it keep their place. A row without cells that no rowspan
+    # covers holds no content and adds no row. An all-<th> header row is read
+    # as the column header, and the grid still has room for every data row.
+    doc = _convert_html(html)
 
     assert len(doc.tables) == 1
     data = doc.tables[0].data
-    assert (data.num_rows, data.num_cols) == (3, 2)
-    assert [[cell.text for cell in row] for row in data.grid] == [
-        ["a", "b"],
-        ["a", "b"],
-        ["c", "d"],
-    ]
-    assert "| c " in doc.export_to_markdown()
-
-
-def test_table_row_without_cells_not_covered_adds_no_row():
-    # A row without cells that no rowspan covers holds no content, so it
-    # adds no blank row to the table, at the start, middle or end.
-    src = (
-        b"<table><tr></tr>"
-        b"<tr><td>a</td><td>b</td></tr>"
-        b"<tr></tr>"
-        b"<tr><td>c</td><td>d</td></tr>"
-        b"<tr></tr></table>"
-    )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="t.html",
-    )
-    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
-
-    assert len(doc.tables) == 1
-    data = doc.tables[0].data
-    assert (data.num_rows, data.num_cols) == (2, 2)
-    assert [[cell.text for cell in row] for row in data.grid] == [
-        ["a", "b"],
-        ["c", "d"],
-    ]
-
-
-def test_table_row_without_cells_partial_rowspan():
-    # Only "a" spans into the row without cells. The row is still counted,
-    # so "c d" goes in the third row instead of filling the free cell of the
-    # second row.
-    src = (
-        b'<table><tr><td rowspan="2">a</td><td>b</td></tr>'
-        b"<tr></tr>"
-        b"<tr><td>c</td><td>d</td></tr></table>"
-    )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="t.html",
-    )
-    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
-
-    assert len(doc.tables) == 1
-    data = doc.tables[0].data
-    assert (data.num_rows, data.num_cols) == (3, 2)
-    assert [[cell.text for cell in row] for row in data.grid] == [
-        ["a", "b"],
-        ["a", ""],
-        ["c", "d"],
-    ]
-
-
-def test_table_row_without_cells_after_th_rowspan_header():
-    # An all-<th> header row with rowspan="2" covers the row without cells.
-    # parse_table_data and get_html_table_row_col must agree on the grid
-    # height, or the cells of the data row fall outside the grid and are lost.
-    src = (
-        b'<table><tr><th rowspan="2">A</th><th rowspan="2">B</th></tr>'
-        b"<tr></tr>"
-        b"<tr><td>c</td><td>d</td></tr></table>"
-    )
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="t.html",
-    )
-    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
-
-    assert len(doc.tables) == 1
-    data = doc.tables[0].data
-    assert (data.num_rows, data.num_cols) == (2, 2)
-    assert [[cell.text for cell in row] for row in data.grid] == [
-        ["A", "B"],
-        ["c", "d"],
-    ]
+    assert (data.num_rows, data.num_cols) == (len(expected_grid), 2)
+    assert [[cell.text for cell in row] for row in data.grid] == expected_grid
 
 
 def test_table_row_header_rowspan_keeps_the_row_cells():
