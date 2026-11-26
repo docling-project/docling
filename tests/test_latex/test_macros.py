@@ -1029,3 +1029,28 @@ def test_latex_timeout_stops_the_parse_thread(monkeypatch):
     for thread in new_threads:
         thread.join(timeout=3)
     assert not any(thread.is_alive() for thread in new_threads)
+
+
+def test_line_break_keeps_the_words_apart():
+    """A ``\\\\`` with no space around it must not join the words on each side."""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\section{Attention Is\\\\All You Need}
+    First\\\\Second
+    \\begin{figure}\\caption{Left panel\\\\right panel}\\end{figure}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts]
+    assert "Attention Is All You Need" in texts
+    assert "First Second" in texts
+    assert "Left panel right panel" in texts
