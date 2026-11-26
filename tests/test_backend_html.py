@@ -1280,7 +1280,7 @@ def test_list_non_li_children_stay_in_table_cell():
 
 
 def test_list_item_without_text():
-    """Regression for #4462: a <li> without text keeps its table or image.
+    """Regression for #4462: a <li> without text keeps its table, image or list.
 
     Previously no list item was created for it, so its content was dropped and the
     following items were numbered as if it did not exist.
@@ -1289,7 +1289,9 @@ def test_list_item_without_text():
         b"<html><body><ol>"
         b"<li><table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>"
         b"<li><div><img src='chart.png'></div></li>"
-        b"<li>Third.</li>"
+        b"<li><ol type='a'><li>Nested.</li></ol></li>"
+        b"<li><dl><dt>Term</dt><dd>Definition.</dd></dl></li>"
+        b"<li>Fifth.</li>"
         b"</ol></body></html>"
     )
     in_doc = InputDocument(
@@ -1302,10 +1304,82 @@ def test_list_item_without_text():
     doc: DoclingDocument = backend.convert()
     list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
 
-    assert [item.text for item in list_items] == ["", "", "Third."]
+    assert [item.text for item in list_items] == [
+        "",
+        "",
+        "",
+        "Nested.",
+        "",
+        "Term",
+        "Definition.",
+        "Fifth.",
+    ]
     assert doc.tables[0].parent.cref == list_items[0].self_ref
     assert doc.pictures[0].parent.cref == list_items[1].self_ref
-    assert "3. Third." in doc.export_to_markdown()
+    assert list_items[3].parent.resolve(doc).parent.cref == list_items[2].self_ref
+    assert list_items[5].parent.resolve(doc).parent.cref == list_items[4].self_ref
+    assert "5. Fifth." in doc.export_to_markdown()
+
+
+def test_list_item_without_text_or_marker():
+    """A <li> without text that hides its marker in a <ul> only indents its list."""
+    html = (
+        b"<html><body><ul><li>Switzerland<ul>"
+        b"<li style='list-style-type: none;'><ul><li>Bern</li></ul></li>"
+        b"</ul></li></ul>"
+        b"<ol><li style='list-style-type: none;'><ul><li>Nested.</li></ul></li>"
+        b"<li>Second.</li></ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    # In the <ul>, no empty item; in the <ol>, the empty item keeps the numbering.
+    assert [item.text for item in list_items] == [
+        "Switzerland",
+        "Bern",
+        "",
+        "Nested.",
+        "Second.",
+    ]
+    assert "2. Second." in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize(
+    ("style", "expected"),
+    [
+        ("list-style:none", ["Nested."]),
+        ("list-style:none inside", ["Nested."]),
+        ("list-style-type: none !important; list-style: disc", ["Nested."]),
+        # `none` sets the image, the type keeps or sets a marker
+        ("list-style: none disc", ["", "Nested."]),
+        ("list-style: none url(dot.png)", ["", "Nested."]),
+        ("list-style-type: none; list-style: square", ["", "Nested."]),
+    ],
+)
+def test_list_item_without_text_marker_style(style, expected):
+    """The `list-style` shorthand hides the marker of a <li> as the longhand does."""
+    html = (
+        f"<html><body><ul><li style='{style}'><ul><li>Nested.</li></ul></li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    assert [item.text for item in list_items] == expected
 
 
 @pytest.mark.parametrize(
