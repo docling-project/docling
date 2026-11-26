@@ -95,6 +95,7 @@ _CELL_MARKUP = re.compile(
 )
 _CHART_OPEN = re.compile(r'<chart\s+type="([^"]*)"\s*>')
 _CHART_TABLE_KEY = re.compile(r"table\[(\w+)\]")
+_MARKDOWN_DELIMITER_CELL = re.compile(r":?-+:?")
 
 
 @dataclass(frozen=True)
@@ -412,11 +413,16 @@ def _add_latex_table(
 
 
 def _markdown_table_data(rows: list[str]) -> TableData:
-    grid = [
-        [cell.strip() for cell in row.strip().strip("|").split("|")]
-        for row in rows
-        if not set(row) <= set("|-: ")
-    ]
+    grid: list[list[str]] = []
+    for row_index, row in enumerate(rows):
+        row_cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        if (
+            row_index == 1
+            and len(row_cells) == len(grid[0])
+            and all(_MARKDOWN_DELIMITER_CELL.fullmatch(cell) for cell in row_cells)
+        ):
+            continue
+        grid.append(row_cells)
     cells = [
         TableCell(
             text=text,
