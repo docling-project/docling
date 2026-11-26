@@ -1395,6 +1395,38 @@ def test_msg_loads_when_subject_raises_lookup_error():
     assert "Hello Bob" in markdown
 
 
+def test_msg_recovers_body_in_code_page_950():
+    """The 8-bit body of a Traditional Chinese .msg is recovered.
+
+    The fixture is msg_8bit_nul_terminated.msg with the body in code page 950
+    and, as in the Traditional Chinese sample of the Apache POI test corpus,
+    only the internet code page set.
+    python-oxmsg names it "windows-950", which Python does not know.
+    """
+    in_path = Path("tests/data/email/sources/msg_8bit_cp950.msg")
+    doc = DocumentConverter(allowed_formats=[InputFormat.EMAIL]).convert(in_path)
+    markdown = doc.document.export_to_markdown()
+
+    assert "# Email with Attachment\n" in markdown
+    assert "這封郵件含有一個附件。" in markdown
+
+
+@pytest.mark.parametrize(("codepage", "body"), [(950, "測試郵件內容"), (874, "ทดสอบ")])
+def test_msg_recovers_body_for_code_page_unknown_to_python(codepage, body):
+    """Code pages that python-oxmsg names "windows-950" and "windows-874"."""
+    from unittest.mock import MagicMock, patch
+
+    mock_msg = MagicMock()
+    mock_msg.properties.int_prop_value.side_effect = {0x3FFD: codepage}.get
+    mock_ole = MagicMock()
+    mock_ole.exists.return_value = True
+    mock_ole.openstream.return_value.read.return_value = body.encode(f"cp{codepage}")
+    mock_ole_cm = MagicMock()
+    mock_ole_cm.__enter__.return_value = mock_ole
+    with patch("olefile.OleFileIO", return_value=mock_ole_cm):
+        assert EmailDocumentBackend._recover_msg_body(b"dummy", mock_msg) == body
+
+
 def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     from oxmsg import Message as OxMsgMessage
 

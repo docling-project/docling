@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import codecs
 import logging
 import re
 from dataclasses import dataclass, replace
@@ -500,8 +501,17 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
             codepage = message.properties.int_prop_value(0x3FFD)  # PID_MESSAGE_CODEPAGE
             if codepage is None:
+                # python-oxmsg decodes the body with the internet code page.
+                codepage = message.properties.int_prop_value(0x3FDE)
+            if codepage is None:
                 return None
             encoding = encoding_from_codepage(codepage)
+            try:
+                codecs.lookup(encoding)
+            except LookupError:
+                # python-oxmsg names some code pages differently from Python,
+                # e.g. 950 is "windows-950", which Python knows as "cp950".
+                encoding = f"cp{codepage}"
             stream_name = f"__substg1.0_{PID_BODY:04X}{PTYP_STRING8:04X}"
             with olefile.OleFileIO(data) as ole:
                 if not ole.exists(stream_name):
