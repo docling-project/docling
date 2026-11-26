@@ -97,6 +97,40 @@ def check_archive_limits(
         )
 
 
+def check_referenced_total(
+    limits: ArchiveLimits,
+    references: Iterable[ZipInfo],
+    members: Iterable[ZipInfo] = (),
+) -> None:
+    """Check ``max_total_bytes`` when a document reads members once per reference.
+
+    A document can refer to the same member many times, for example several
+    spine entries of an EPUB that name one content document. The backend reads
+    or converts the member once for each reference, so each reference counts
+    its full size. A member in ``members`` that is also referenced counts only
+    through its references.
+
+    Args:
+        limits: The limits to apply.
+        references: One entry for each time the document reads a member.
+        members: Other members that the backend reads once.
+
+    Raises:
+        ArchiveLimitError: If the total is larger than ``max_total_bytes``.
+    """
+    referenced = list(references)
+    referenced_names = {info.filename for info in referenced}
+    total_bytes = sum(info.file_size for info in referenced) + sum(
+        info.file_size for info in members if info.filename not in referenced_names
+    )
+    if total_bytes > limits.max_total_bytes:
+        raise ArchiveLimitError(
+            f"Archive decompresses to {total_bytes} bytes when each of its "
+            f"{len(referenced)} member references counts, exceeding the "
+            f"max_total_bytes limit of {limits.max_total_bytes}."
+        )
+
+
 def read_member(archive: ZipFile, member: str | ZipInfo, max_bytes: int) -> bytes:
     """Read one archive member, decompressing at most ``max_bytes`` bytes.
 
