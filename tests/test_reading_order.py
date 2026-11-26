@@ -1250,6 +1250,36 @@ def test_merge_chain_stops_at_the_continuation(
     assert merges == {0: [1]}
 
 
+@pytest.mark.parametrize(
+    ("head_text", "next_text", "next_page", "merged"),
+    [
+        ("of SSCs important (see Requirement 32", "of SSR-4 [1]).", 1, True),
+        ("for such discharges (see para. 6.101", "of SSR-4 [1]).", 1, True),
+        ("provisions (see para. 5.7(b) of SSR-4 [1]", "and Requirement 18.", 1, True),
+        ("The facility was commissioned in 2017", "Operation began.", 1, False),
+        ("The results are shown in Table 3", "(a) A list item.", 1, False),
+        ("aaa-aa-000", "ny", 0, False),
+    ],
+    ids=["number", "decimal", "bracket", "capital", "no_letter", "next_column"],
+)
+def test_merge_paragraph_split_after_number_at_page_break(
+    head_text: str, next_text: str, next_page: int, merged: bool
+) -> None:
+    # A paragraph broken at a page end right after a number or a closing
+    # bracket continues on the next page when that part opens in lowercase.
+    # Next to each other on one page, such short pieces are form values.
+    head = _text(0, 60, 100, 40, 280).model_copy(update={"text": head_text})
+    continuation = _text(1, 60, 100, 320, 550).model_copy(
+        update={"page_no": next_page, "text": next_text}
+    )
+
+    merges = ReadingOrderPredictor().predict_merges(
+        sorted_elements=[head, continuation]
+    )
+
+    assert merges == ({0: [1]} if merged else {})
+
+
 def test_upward_walk_stops_on_up_map_cycle() -> None:
     from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,
