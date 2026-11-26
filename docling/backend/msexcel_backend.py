@@ -2813,10 +2813,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         combination chart keeps its line series next to its column series.
         The categories come from the first series that has them, and the title
         of its plot's category axis goes in the top-left cell.
+        XY series with different X values get a "<name> (X)" column immediately
+        before their Y column. Series with the same X values share one column.
 
-        The table has at most ``MAX_CHART_TABLE_CELLS`` cells, so each column
-        reads at most its share of them from the workbook.
-        ``build_chart_table`` lays the table out.
+        Each range read is bounded by the series count. ``build_chart_table``
+        applies the ``MAX_CHART_TABLE_CELLS`` cap after adding any X columns.
 
         Args:
             chart: An openpyxl chart object.
@@ -2836,16 +2837,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         categories: list[str] = []
         corner = ""
-        for plot, series in plot_series:
-            cat_ref = self._ref_formula(series.cat) or self._ref_formula(series.xVal)
-            if cat_ref:
-                categories = self._resolve_reference(cat_ref, column_cells)
-                corner = self._category_axis_title(plot)
-                break
-
         columns: list[tuple[str, list[str]]] = []
 
-        for _, series in plot_series:
+        for plot, series in plot_series:
             value_ref = self._ref_formula(series.val) or self._ref_formula(series.yVal)
             values = (
                 self._resolve_reference(value_ref, column_cells) if value_ref else []
@@ -2859,6 +2853,18 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 name = str(series.tx.v)
             else:
                 name = ""
+            cat_ref = self._ref_formula(series.cat)
+            x_ref = self._ref_formula(series.xVal)
+            if cat_ref is None and x_ref is not None:
+                x_values = self._resolve_reference(x_ref, column_cells)
+                if not categories:
+                    categories = x_values
+                    corner = self._category_axis_title(plot)
+                elif x_values and x_values != categories:
+                    columns.append((f"{name} (X)" if name else "X", x_values))
+            elif not categories and cat_ref:
+                categories = self._resolve_reference(cat_ref, column_cells)
+                corner = self._category_axis_title(plot)
             columns.append((name, values))
 
         return build_chart_table(categories, columns, corner)

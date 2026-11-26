@@ -11,7 +11,14 @@ from typing import Optional
 import pytest
 from docling_core.types.doc import PictureClassificationLabel, PictureItem
 from openpyxl import Workbook, load_workbook
-from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart import (
+    BarChart,
+    BubbleChart,
+    LineChart,
+    Reference,
+    ScatterChart,
+    Series,
+)
 from openpyxl.chart.data_source import StrData, StrRef, StrVal
 from openpyxl.chart.text import Text
 from openpyxl.chart.title import Title
@@ -269,3 +276,70 @@ def test_whole_column_range_ends_at_the_last_used_row(tmp_path: Path):
     grid = _grid(_only_chart(path))
 
     assert grid[1:] == [["Jan", "10"], ["Feb", "20"], ["Mar", "30"]]
+
+
+@pytest.mark.parametrize(
+    ("case", "expected"),
+    [
+        (
+            "different",
+            [
+                ["Time (s)", "A", "B (X)", "B"],
+                ["1", "10", "4", "40"],
+                ["", "0", "5", "50"],
+                ["3", "30", "", ""],
+            ],
+        ),
+        (
+            "shared",
+            [["", "A", "B"], ["1", "10", "40"], ["2", "0", "50"], ["3", "30", ""]],
+        ),
+        (
+            "bubble",
+            [
+                ["Time (s)", "A", "B (X)", "B"],
+                ["1", "10", "4", "40"],
+                ["", "0", "5", "50"],
+                ["3", "30", "", ""],
+            ],
+        ),
+    ],
+)
+def test_xy_chart_keeps_each_series_x_values(
+    tmp_path: Path, case: str, expected: list[list[str]]
+):
+    """Every XY series keeps its X range, also on a chart sheet."""
+    workbook = Workbook()
+    sheet = workbook.active
+    xs = [[1, None, 3], [4, 5]]
+    if case == "shared":
+        xs = [[1, 2, 3], [1, 2, 3]]
+    chart = BubbleChart() if case == "bubble" else ScatterChart()
+    for idx, (name, x_values, y_values) in enumerate(
+        zip(("A", "B"), xs, ([10, 0, 30], [40, 50]))
+    ):
+        col = 1 + 3 * idx
+        for row, value in enumerate(x_values, 1):
+            sheet.cell(row, col, value)
+        for row, value in enumerate(y_values, 1):
+            sheet.cell(row, col + 1, value)
+            sheet.cell(row, col + 2, 8 + row)
+        series = Series(
+            Reference(sheet, min_col=col + 1, min_row=1, max_row=len(y_values)),
+            Reference(sheet, min_col=col, min_row=1, max_row=len(x_values)),
+            (
+                Reference(sheet, min_col=col + 2, min_row=1, max_row=len(y_values))
+                if case == "bubble"
+                else None
+            ),
+            title=name,
+        )
+        chart.series.append(series)
+    if case != "shared":
+        chart.x_axis.title = "Time (s)"
+    target = workbook.create_chartsheet("Chart") if case == "bubble" else sheet
+    target.add_chart(chart)
+    path = tmp_path / "xy.xlsx"
+    workbook.save(path)
+
+    assert _grid(_only_chart(path)) == expected

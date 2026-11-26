@@ -432,6 +432,81 @@ def _declare_huge_point_count(chart: str) -> str:
     return re.sub(r'<c:ptCount val="\d+"/>', f'<c:ptCount val="{10**11}"/>', chart)
 
 
+@pytest.mark.parametrize(
+    ("case", "expected"),
+    [
+        (
+            "different",
+            [
+                ["", "A", "B (X)", "B"],
+                ["1", "10", "4", "40"],
+                ["", "0", "5", "50"],
+                ["3", "30", "", ""],
+            ],
+        ),
+        (
+            "shared",
+            [["", "A", "B"], ["1", "10", "40"], ["2", "0", "50"], ["3", "30", ""]],
+        ),
+        (
+            "bubble",
+            [
+                ["", "A", "B (X)", "B"],
+                ["1", "10", "4", "40"],
+                ["", "0", "5", "50"],
+                ["3", "30", "", ""],
+            ],
+        ),
+    ],
+)
+def test_xy_chart_keeps_each_series_x_values(case: str, expected: list[list[str]]):
+    """XY coordinates stay paired, including gaps and unequal lengths."""
+
+    def rewrite(chart_xml: str) -> str:
+        root = etree.fromstring(chart_xml.encode("utf-8"))
+        ns = {"c": root.nsmap["c"]}
+        c = f"{{{ns['c']}}}"
+        plot_area = root.find("c:chart/c:plotArea", ns)
+        plot_area.clear()
+        plot = etree.SubElement(
+            plot_area, f"{c}{'bubbleChart' if case == 'bubble' else 'scatterChart'}"
+        )
+        xs = [[1, None, 3], [4, 5]]
+        if case == "shared":
+            xs = [[1, 2, 3], [1, 2, 3]]
+        for idx, (name, x_values, y_values) in enumerate(
+            zip(("A", "B"), xs, ([10, 0, 30], [40, 50]))
+        ):
+            series = etree.SubElement(plot, f"{c}ser")
+            etree.SubElement(series, f"{c}idx", val=str(idx))
+            etree.SubElement(series, f"{c}order", val=str(idx))
+            etree.SubElement(etree.SubElement(series, f"{c}tx"), f"{c}v").text = name
+            sources = [("xVal", x_values), ("yVal", y_values)]
+            if case == "bubble":
+                sources.append(("bubbleSize", [8, 0, 9] if idx == 0 else [5, 7]))
+            for tag, values in sources:
+                source = etree.SubElement(series, f"{c}{tag}")
+                reference = etree.SubElement(source, f"{c}numRef")
+                etree.SubElement(reference, f"{c}f").text = "Sheet1!$A$1:$A$3"
+                cache = etree.SubElement(reference, f"{c}numCache")
+                etree.SubElement(cache, f"{c}formatCode").text = "General"
+                etree.SubElement(cache, f"{c}ptCount", val=str(len(values)))
+                for point_idx, value in enumerate(values):
+                    if value is not None:
+                        point = etree.SubElement(cache, f"{c}pt", idx=str(point_idx))
+                        etree.SubElement(point, f"{c}v").text = str(value)
+        for axis_id in ("10", "20"):
+            etree.SubElement(plot, f"{c}axId", val=axis_id)
+            axis = etree.SubElement(plot_area, f"{c}valAx")
+            etree.SubElement(axis, f"{c}axId", val=axis_id)
+        return etree.tostring(root, encoding="unicode")
+
+    stream = DocumentStream(name="xy.docx", stream=_docx_with_chart_xml(rewrite))
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+    chart = _single_chart_picture(doc)
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == expected
+
+
 @pytest.mark.parametrize("literal", [False, True], ids=["cached", "literal"])
 def test_chart_text_keeps_numeric_spelling(literal: bool):
     """Text categories, series names and linked titles keep their exact spelling."""
