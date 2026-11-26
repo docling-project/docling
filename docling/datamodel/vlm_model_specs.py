@@ -78,10 +78,10 @@ GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
 GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
 
 
-# Granite for Docling 500M (doclang). Transformers supports the architecture
+# Granite Docling v2 500M (doclang). Transformers supports the architecture
 # natively from 5.23.0, so no remote code is needed.
 GRANITE_FOR_DOCLING_500M_TRANSFORMERS = InlineVlmOptions(
-    repo_id="ibm-granite/granite-for-docling-500m",
+    repo_id="ibm-granite/granite-docling-v2-500m",
     prompt=DOCLANG_PAGE_PROMPT,
     response_format=ResponseFormat.DOCLANG,
     inference_framework=InferenceFramework.TRANSFORMERS,
@@ -140,12 +140,12 @@ GRANITE_FOR_DOCLING_500M_VLLM_API = ApiVlmOptions(
 )
 
 
-# Granite for Docling 2B (doclang). Same architecture as the 500M model, without
+# Granite Docling v2 2B (doclang). Same architecture as the 500M model, without
 # the fine connector path, and with a larger reply budget for long pages.
 GRANITE_FOR_DOCLING_2B_TRANSFORMERS = GRANITE_FOR_DOCLING_500M_TRANSFORMERS.model_copy(
     deep=True
 )
-GRANITE_FOR_DOCLING_2B_TRANSFORMERS.repo_id = "ibm-granite/granite-for-docling-2b"
+GRANITE_FOR_DOCLING_2B_TRANSFORMERS.repo_id = "ibm-granite/granite-docling-v2-2b"
 GRANITE_FOR_DOCLING_2B_TRANSFORMERS.max_new_tokens = 16384
 
 GRANITE_FOR_DOCLING_2B_MLX = GRANITE_FOR_DOCLING_500M_MLX.model_copy(deep=True)

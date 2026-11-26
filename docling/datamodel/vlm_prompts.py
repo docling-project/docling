@@ -10,12 +10,12 @@ from enum import Enum
 # in the layout-aware pipeline).
 DOCLING_BASE_PAGE_PROMPT = "Convert this page to docling."
 
-# Full-page conversion prompt for Granite for Docling models that emit doclang.
+# Full-page conversion prompt for Granite Docling v2 models that emit doclang.
 DOCLANG_PAGE_PROMPT = "<doclang>"
 
 
 class DocLangTask(str, Enum):
-    """A task that Granite for Docling can do on a page: ``<doclang> [<task>, ...]``.
+    """A task that Granite Docling v2 can do on a page: ``<doclang> [<task>, ...]``.
 
     The model is trained on the tasks in any order, so the order in a prompt has
     no effect.
@@ -40,7 +40,7 @@ class DocLangTask(str, Enum):
 
 
 def doclang_prompt(tasks: Iterable[DocLangTask] | None = None) -> str:
-    """Build a Granite for Docling prompt.
+    """Build a Granite Docling v2 prompt.
 
     Without tasks the prompt converts the full page (``<doclang>``). With tasks
     it asks only for them, for example ``<doclang> [<table>, <layout>]``.

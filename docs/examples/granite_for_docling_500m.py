@@ -1,5 +1,5 @@
 # %% [markdown]
-# Granite for Docling 500M: convert a PDF with the doclang-native VLM.
+# Granite Docling v2 500M: convert a PDF with the doclang-native VLM.
 #
 # What this example does
 # - Uses the `granite_for_docling_500m` preset (Transformers, MLX or in-process vLLM).

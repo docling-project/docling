@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Test Granite for Docling 500M VLM preset and legacy specs."""
+"""Test Granite Docling v2 500M VLM preset and legacy specs."""
 
 import pytest
 from pydantic import ValidationError
@@ -26,7 +26,7 @@ from docling.datamodel.vlm_prompts import (
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
 
-REPO_ID = "ibm-granite/granite-for-docling-500m"
+REPO_ID = "ibm-granite/granite-docling-v2-500m"
 PRESET_ID = "granite_for_docling_500m"
 
 
@@ -38,7 +38,7 @@ def test_granite_for_docling_500m_preset_exists():
 
     preset = VlmConvertOptions.get_preset(PRESET_ID)
     assert preset.preset_id == PRESET_ID
-    assert preset.name == "Granite-for-Docling-500M"
+    assert preset.name == "Granite-Docling-v2-500M"
     assert preset.scale == 2.0
     assert preset.default_engine_type == VlmEngineType.AUTO_INLINE
 
@@ -58,7 +58,7 @@ def test_granite_for_docling_mlx_loads_the_same_checkpoint():
     """MLX needs the mlx-vlm release with the model, and no separate weights."""
     for preset_id, repo_id in (
         (PRESET_ID, REPO_ID),
-        ("granite_for_docling_2b", "ibm-granite/granite-for-docling-2b"),
+        ("granite_for_docling_2b", "ibm-granite/granite-docling-v2-2b"),
     ):
         spec = VlmConvertOptions.get_preset(preset_id).model_spec
         assert VlmEngineType.MLX in spec.supported_engines
@@ -184,9 +184,9 @@ def test_granite_for_docling_500m_legacy_specs():
 
 def test_granite_for_docling_2b_preset():
     """The 2B preset shares the 500M setup, with its own repo and reply budget."""
-    repo_id = "ibm-granite/granite-for-docling-2b"
+    repo_id = "ibm-granite/granite-docling-v2-2b"
     preset = VlmConvertOptions.get_preset("granite_for_docling_2b")
-    assert preset.name == "Granite-for-Docling-2B"
+    assert preset.name == "Granite-Docling-v2-2B"
     assert preset.scale == 2.0
     assert preset.default_engine_type == VlmEngineType.AUTO_INLINE
 
@@ -222,7 +222,7 @@ def test_granite_for_docling_2b_preset():
 
 def test_granite_for_docling_2b_legacy_specs():
     """Legacy 2B specs follow the 2B preset and leave the 500M specs unchanged."""
-    repo_id = "ibm-granite/granite-for-docling-2b"
+    repo_id = "ibm-granite/granite-docling-v2-2b"
     transformers_spec = vlm_model_specs.GRANITE_FOR_DOCLING_2B_TRANSFORMERS
     assert transformers_spec.repo_id == repo_id
     assert transformers_spec.max_new_tokens == 16384

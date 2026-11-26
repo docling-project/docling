@@ -358,7 +358,7 @@ def download_models(
         (with_granite_for_docling_2b, "2B", GRANITE_FOR_DOCLING_2B_TRANSFORMERS),
     ):
         if enabled:
-            _log.info("Downloading Granite for Docling %s model...", label)
+            _log.info("Downloading Granite Docling v2 %s model...", label)
             download_hf_model(
                 repo_id=vlm_spec.repo_id,
                 local_dir=output_dir / vlm_spec.repo_cache_folder,

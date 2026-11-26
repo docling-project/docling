@@ -29,7 +29,7 @@ class CropTask(BaseModel):
     )
 
 
-# Granite for Docling is trained on `<doclang> [<task>]` prompts for single
+# Granite Docling v2 is trained on `<doclang> [<task>]` prompts for single
 # elements; without `<layout>` in the task list the reply carries no location
 # tokens, which is what we want because the layout model owns the boxes.
 DOCLANG_OCR_TASK = CropTask(

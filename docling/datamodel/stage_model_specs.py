@@ -970,7 +970,7 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 }
 
 
-# Shared Granite for Docling specs (doclang-native architecture).
+# Shared Granite Docling v2 specs (doclang-native architecture).
 # Transformers ships the architecture natively as ``granite_docling``
 # (GraniteDoclingForConditionalGeneration) from 5.23.0, so no remote code
 # runs on load.
@@ -1049,16 +1049,16 @@ def _granite_for_docling_model_spec_base(
 
 
 GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
-    name="Granite-for-Docling-500M",
-    repo_id="ibm-granite/granite-for-docling-500m",
+    name="Granite-Docling-v2-500M",
+    repo_id="ibm-granite/granite-docling-v2-500m",
     max_new_tokens=8192,
 )
 
 # The 2B model is trained to continue long pages (newspapers, exams), so it gets
 # a larger reply budget, as its model card suggests.
 GRANITE_FOR_DOCLING_2B_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
-    name="Granite-for-Docling-2B",
-    repo_id="ibm-granite/granite-for-docling-2b",
+    name="Granite-Docling-v2-2B",
+    repo_id="ibm-granite/granite-docling-v2-2b",
     max_new_tokens=16384,
 )
 
@@ -1234,9 +1234,9 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
 
 VLM_CONVERT_GRANITE_FOR_DOCLING_500M = StageModelPreset(
     preset_id="granite_for_docling_500m",
-    name="Granite-for-Docling-500M",
+    name="Granite-Docling-v2-500M",
     description=(
-        "IBM Granite for Docling 500M doclang model for document conversion "
+        "IBM Granite Docling v2 500M doclang model for document conversion "
         "(494M parameters)"
     ),
     model_spec=VlmModelSpec(
@@ -1250,9 +1250,9 @@ VLM_CONVERT_GRANITE_FOR_DOCLING_500M = StageModelPreset(
 
 VLM_CONVERT_GRANITE_FOR_DOCLING_2B = StageModelPreset(
     preset_id="granite_for_docling_2b",
-    name="Granite-for-Docling-2B",
+    name="Granite-Docling-v2-2B",
     description=(
-        "IBM Granite for Docling 2B doclang model for document conversion "
+        "IBM Granite Docling v2 2B doclang model for document conversion "
         "(2.2B parameters)"
     ),
     model_spec=VlmModelSpec(

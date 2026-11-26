@@ -251,7 +251,7 @@ converter = DocumentConverter(
 result = converter.convert("report.pdf")
 ```
 
-To select what a Granite for Docling preset extracts, pass `doclang` tasks. The
+To select what a Granite Docling v2 preset extracts, pass `doclang` tasks. The
 model returns only those elements; without `DocLangTask.LAYOUT` they have no
 bounding boxes, and `DocLangTask.DETAILED` adds picture descriptions:
 

@@ -1,16 +1,16 @@
 # %% [markdown]
-# Crop-based conversion with Granite for Docling.
+# Crop-based conversion with Granite Docling v2.
 #
 # What this example does
 # - Runs the experimental `LayoutCropVlmPipeline`: the Docling layout model finds the
-#   regions of each page, Granite for Docling recognizes every region from its crop,
+#   regions of each page, Granite Docling v2 recognizes every region from its crop,
 #   and the standard assembly and reading-order stages pack the results.
 # - Talks to the model through an OpenAI-compatible server (e.g. vLLM).
 # - Writes DocLang, Markdown and JSON for every input.
 #
 # Prerequisites
-# - A server that serves a Granite for Docling checkpoint, for example:
-#   `vllm serve <model-dir> --served-model-name granite-for-docling --port 8000`
+# - A server that serves a Granite Docling v2 checkpoint, for example:
+#   `vllm serve <model-dir> --served-model-name granite-docling-v2 --port 8000`
 #
 # How to run
 # - `python docs/examples/layout_crop_vlm_granite_for_docling.py INPUT [INPUT ...]`
@@ -53,7 +53,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("inputs", nargs="+", type=Path)
     parser.add_argument("--url", default="http://localhost:8000/v1/chat/completions")
-    parser.add_argument("--model", default="granite-for-docling")
+    parser.add_argument("--model", default="granite-docling-v2")
     parser.add_argument("--out", type=Path, default=Path("scratch/layout_crop_vlm"))
     parser.add_argument("--concurrency", type=int, default=16)
     parser.add_argument(

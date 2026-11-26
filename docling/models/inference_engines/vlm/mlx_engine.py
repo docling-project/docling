@@ -279,7 +279,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     "temperature": input_data.temperature,
                 }
                 # mlx-vlm forwards these to the processor, for example
-                # fine_route for Granite for Docling.
+                # fine_route for Granite Docling v2.
                 generation_kwargs.update(
                     input_data.extra_generation_config.get("extra_processor_kwargs", {})
                 )

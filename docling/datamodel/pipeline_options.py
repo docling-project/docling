@@ -1169,7 +1169,7 @@ class NemotronParseOptions(BaseModel):
 
 
 class DocLangOptions(BaseModel):
-    """What a Granite for Docling model extracts from each page."""
+    """What a Granite Docling v2 model extracts from each page."""
 
     tasks: list[DocLangTask] | None = Field(
         default=None,
