@@ -72,6 +72,7 @@ class ReadingOrderOptions(BaseModel):
 
     model_names: str = ""  # e.g. "language;term;reference"
     use_page_separators: bool = False
+    reorder_elements: bool = True  # if False, keep the assembled order as-is
 
 
 class ReadingOrderModel:
@@ -1117,7 +1118,7 @@ class ReadingOrderModel:
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
             page_elements = self._assembled_to_readingorder_elements(conv_res)
             page_separators: list[SeparatorElement] = []
-            if self.options.use_page_separators:
+            if self.options.use_page_separators and self.options.reorder_elements:
                 elements_by_page: dict[int, list[ReadingOrderPageElement]] = {}
                 for element in page_elements:
                     elements_by_page.setdefault(element.page_no, []).append(element)
@@ -1196,7 +1197,7 @@ class ReadingOrderModel:
                             page_separators if parent_ref is None else None
                         ),
                     )
-                    if len(siblings) > 1
+                    if self.options.reorder_elements and len(siblings) > 1
                     else siblings
                 )
                 for parent_ref, siblings in siblings_by_parent.items()

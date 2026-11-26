@@ -2353,6 +2353,18 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         - `examples/pipeline_options_advanced.py`: Comprehensive configuration examples.
     """
 
+    do_reading_order: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable reading-order prediction to reorder document elements into a logical reading sequence. "
+                "When disabled, elements retain the order produced by the layout postprocessor, while caption, "
+                "footnote and merge mapping still run. Disabling can improve results for PDFs where the "
+                "reading-order predictor is misled, such as scanned pages that also carry a native text layer "
+                "and therefore yield many small orphan clusters."
+            )
+        ),
+    ] = True
     do_table_structure: Annotated[
         bool,
         Field(
