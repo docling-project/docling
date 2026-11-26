@@ -11,9 +11,13 @@ tables.
 """
 
 import logging
+import math
 import re
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
+
+import numpy as np
 
 from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
 from docling_core.types.doc import (
@@ -53,9 +57,54 @@ _DOCLANG_CLOSE = "</doclang>"
 _TAG_RE = re.compile(r"<[^>]+>")
 _CDATA_RE = re.compile(r"<!\[CDATA\[(.*?)(?:\]\]>|$)", re.DOTALL)
 
+# Granite Docling v2 image processor: tile side and grid limits.
+_TILE = 512
+_MAX_TILES = 32
+_MAX_SIDE_TILES = 16
+# Native canvas: short side the crop is upscaled to, and the magnification cap.
+_CANVAS_SHORT_SIDE = 40.0
+_CANVAS_MAX_UPSCALE = 3.0
+
+
+def native_tile_canvas(
+    image: PILImage.Image, max_tiles: int = _MAX_TILES
+) -> PILImage.Image:
+    """Center the crop, aspect kept, on a canvas of whole tiles.
+
+    The processor stretches an image to the tile grid closest to its aspect
+    ratio. A tall, narrow crop then has its glyphs stretched by very different
+    factors along the two axes; on the canvas they keep their shape. The crop is
+    upscaled to a short side of 40 pixels (3x at most) and shrunk only when the
+    grid would exceed `max_tiles`.
+    """
+    image = image.convert("RGB")
+    w, h = image.size
+    scale = min(max(_CANVAS_SHORT_SIDE / max(1, min(w, h)), 1.0), _CANVAS_MAX_UPSCALE)
+    while True:
+        cols = max(1, math.ceil(w * scale / _TILE))
+        rows = max(1, math.ceil(h * scale / _TILE))
+        if (
+            cols * rows <= max_tiles
+            and cols <= _MAX_SIDE_TILES
+            and rows <= _MAX_SIDE_TILES
+        ):
+            break
+        scale *= 0.9
+    nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
+    if (nw, nh) != (w, h):
+        image = image.resize((nw, nh), PILImage.Resampling.LANCZOS)
+    pixels = np.asarray(image)
+    border = np.concatenate([pixels[0], pixels[-1], pixels[:, 0], pixels[:, -1]])
+    background = tuple(int(v) for v in np.median(border, axis=0))
+    canvas = PILImage.new("RGB", (cols * _TILE, rows * _TILE), background)
+    canvas.paste(image, ((cols * _TILE - nw) // 2, (rows * _TILE - nh) // 2))
+    return canvas
+
 
 class LayoutCropVlmModel(BasePageModel):
     """Page stage that reads each layout region from its crop with a VLM."""
+
+    _warned_vllm_tiles = False
 
     def __init__(
         self,
@@ -96,11 +145,14 @@ class LayoutCropVlmModel(BasePageModel):
             return self.options.default_task
         return None
 
-    def _crop(self, page: Page, cluster: Cluster) -> PILImage.Image | None:
+    def _crop(
+        self, page: Page, cluster: Cluster, task: CropTask
+    ) -> PILImage.Image | None:
         assert page.size is not None
         bbox = cluster.bbox
-        pad_x = bbox.width * self.options.crop_padding
-        pad_y = bbox.height * self.options.crop_padding
+        min_pad = self.options.crop_min_padding
+        pad_x = max(bbox.width * self.options.crop_padding, min_pad)
+        pad_y = max(bbox.height * self.options.crop_padding, min_pad)
         padded = BoundingBox(
             l=max(0.0, bbox.l - pad_x),
             t=max(0.0, bbox.t - pad_y),
@@ -110,7 +162,39 @@ class LayoutCropVlmModel(BasePageModel):
         )
         if padded.width < 1 or padded.height < 1:
             return None
-        return page.get_image(scale=self.options.crop_scale, cropbox=padded)
+        image = page.get_image(scale=self.options.crop_scale, cropbox=padded)
+        if image is None:
+            return None
+        if image.width < image.height * self.options.native_canvas_max_aspect:
+            image = native_tile_canvas(image, task.max_tiles or _MAX_TILES)
+        return image
+
+    @staticmethod
+    def _generation_config(
+        base: dict[str, Any], task: CropTask, engine_type: VlmEngineType
+    ) -> dict[str, Any]:
+        """The model spec's runtime config, plus the task's tile limit."""
+        if task.max_tiles is None:
+            return base
+        if engine_type == VlmEngineType.VLLM:
+            # vLLM rejects a per-request `max_patches` (the processor output no
+            # longer matches the image token count vLLM derived). The limit has
+            # to be set when the model is loaded, for every crop alike.
+            if not LayoutCropVlmModel._warned_vllm_tiles:
+                LayoutCropVlmModel._warned_vllm_tiles = True
+                _log.warning(
+                    "vLLM cannot change the tile limit per crop; the crops use "
+                    "the processor's limit. To cap the tiles, set "
+                    "`mm_processor_kwargs={'max_patches': %d}` in the vLLM "
+                    "engine's extra_config.",
+                    task.max_tiles,
+                )
+            return base
+        processor_kwargs = {
+            **base.get("extra_processor_kwargs", {}),
+            "max_patches": task.max_tiles,
+        }
+        return {**base, "extra_processor_kwargs": processor_kwargs}
 
     @staticmethod
     def _parse_reply(text: str) -> DoclingDocument | None:
@@ -207,8 +291,9 @@ class LayoutCropVlmModel(BasePageModel):
         with TimeRecorder(conv_res, "layout_crop_vlm"):
             model_spec = self.options.vlm_options.model_spec
             stop_strings = list(model_spec.stop_strings)
+            engine_type = self._resolve_runtime_engine_type()
             extra_generation_config = model_spec.get_runtime_input_extra_config(
-                self._resolve_runtime_engine_type()
+                engine_type
             )
 
             targets: list[tuple[Page, Cluster]] = []
@@ -224,7 +309,7 @@ class LayoutCropVlmModel(BasePageModel):
                     task = self._task_for(cluster)
                     if task is None:
                         continue
-                    image = self._crop(page, cluster)
+                    image = self._crop(page, cluster, task)
                     if image is None:
                         continue
                     targets.append((page, cluster))
@@ -241,14 +326,29 @@ class LayoutCropVlmModel(BasePageModel):
                             max_new_tokens=self.options.max_new_tokens
                             or model_spec.max_new_tokens,
                             stop_strings=stop_strings,
-                            extra_generation_config=extra_generation_config,
+                            extra_generation_config=self._generation_config(
+                                extra_generation_config, task, engine_type
+                            ),
                         )
                     )
 
-            batch_size = self.options.engine_batch_size
-            for start in range(0, len(engine_inputs), batch_size):
+            # Engines apply the first input's processor settings to the whole
+            # batch, so crops with different tile limits go in separate batches.
+            groups: dict[int | None, list[int]] = {}
+            for index, (_, cluster) in enumerate(targets):
+                task = self._task_for(cluster)
+                assert task is not None
+                groups.setdefault(task.max_tiles, []).append(index)
+            batches = [
+                indices[start : start + self.options.engine_batch_size]
+                for indices in groups.values()
+                for start in range(
+                    0, len(indices), self.options.engine_batch_size
+                )
+            ]
+            for batch in batches:
                 outputs = self.engine.predict_batch(
-                    engine_inputs[start : start + batch_size]
+                    [engine_inputs[index] for index in batch]
                 )
                 # Every reply at least echoes its prefix or opens a DocLang element,
                 # so an empty one is a failed request. Failing the batch beats
@@ -259,7 +359,8 @@ class LayoutCropVlmModel(BasePageModel):
                         f"The VLM engine returned no reply for {failed} of "
                         f"{len(outputs)} regions."
                     )
-                for (page, cluster), output in zip(targets[start:], outputs):
+                for index, output in zip(batch, outputs):
+                    page, cluster = targets[index]
                     _log.debug(
                         "Page %s region %s (%s): %r",
                         page.page_no,

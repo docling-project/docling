@@ -27,6 +27,14 @@ class CropTask(BaseModel):
             "element type to the one the layout model detected."
         ),
     )
+    max_tiles: int | None = Field(
+        default=None,
+        description=(
+            "Upper bound on the image tiles the processor cuts the crop into "
+            "(Granite Docling v2 `max_patches`). None keeps the processor's "
+            "own limit."
+        ),
+    )
 
 
 # Granite Docling v2 is trained on `<doclang> [<task>]` prompts for single
@@ -56,6 +64,25 @@ def _default_crop_tasks() -> dict[DocItemLabel, CropTask]:
         DocItemLabel.FORMULA: DOCLANG_FORMULA_TASK,
         DocItemLabel.CODE: DOCLANG_CODE_TASK,
     }
+
+
+# The processor stretches every image to the tile grid that best matches its
+# aspect ratio, with up to 32 tiles, so a small crop is blown up to many tiles.
+# On OmniDocBench crops, Granite Docling v2 500M reads text, formulas and code
+# as well or better with at most 8 tiles and an 8-pixel minimum margin, at less
+# than half the image tokens. The 2B model reads small text worse with that cap,
+# so it keeps the processor's limits. Tables always keep the full grid.
+# default_repo_id -> (crop_min_padding in points, max_tiles for non-table tasks)
+_MODEL_CROP_DEFAULTS: dict[str, tuple[float, int]] = {
+    "ibm-granite/granite-docling-v2-500m": (4.0, 8),
+}
+_FULL_GRID_LABELS = {DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX}
+
+
+def _with_max_tiles(task: CropTask, max_tiles: int) -> CropTask:
+    if task.max_tiles is not None:
+        return task
+    return task.model_copy(update={"max_tiles": max_tiles})
 
 
 class LayoutCropVlmOptions(BaseModel):
@@ -90,6 +117,24 @@ class LayoutCropVlmOptions(BaseModel):
         default=0.02,
         description="Margin added around each region, as a fraction of its size.",
     )
+    crop_min_padding: float = Field(
+        default=0.0,
+        description=(
+            "Smallest margin around each region, in points. A fractional margin "
+            "alone leaves almost no room around narrow regions. Defaults to 4 "
+            "points (8 pixels at the default `crop_scale`) for Granite for "
+            "Docling 500M, 0 otherwise."
+        ),
+    )
+    native_canvas_max_aspect: float = Field(
+        default=0.5,
+        description=(
+            "Crops with width / height below this ratio (vertical text) are not "
+            "stretched to the tile grid: they keep their aspect ratio, upscaled to "
+            "a short side of 40 pixels at most 3x, centred on a canvas of whole "
+            "512-pixel tiles. 0 disables."
+        ),
+    )
     engine_batch_size: int = Field(
         default=16,
         description="Crops handed to the VLM engine in one call.",
@@ -98,6 +143,30 @@ class LayoutCropVlmOptions(BaseModel):
         default=None,
         description="Token budget per crop. Defaults to the model spec's budget.",
     )
+
+    @model_validator(mode="after")
+    def apply_model_crop_defaults(self) -> "LayoutCropVlmOptions":
+        """Apply the crop sizing measured for the selected model.
+
+        Only fields the caller left unset are filled in.
+        """
+        repo_id = self.vlm_options.model_spec.default_repo_id
+        defaults = _MODEL_CROP_DEFAULTS.get(repo_id)
+        if defaults is None:
+            return self
+        min_padding, max_tiles = defaults
+        if "crop_min_padding" not in self.model_fields_set:
+            self.crop_min_padding = min_padding
+        if "default_task" not in self.model_fields_set:
+            self.default_task = _with_max_tiles(self.default_task, max_tiles)
+        if "tasks" not in self.model_fields_set:
+            self.tasks = {
+                label: task
+                if label in _FULL_GRID_LABELS
+                else _with_max_tiles(task, max_tiles)
+                for label, task in self.tasks.items()
+            }
+        return self
 
     @model_validator(mode="after")
     def validate_response_format(self) -> "LayoutCropVlmOptions":
