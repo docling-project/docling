@@ -105,6 +105,15 @@ The option applies only to the docling-parse backend.
 
 ### Choosing an OCR engine
 
+The default OCR mode includes PDF bitmap regions outside layout detections on
+pages without visible native text. This preserves scanned text when layout
+detection misses a short paragraph. Pages with visible native text retain
+layout-guided OCR selection, so background and decorative images do not cause
+extra full-page OCR. Native text keeps priority during merging.
+`OcrMode.PDF_AWARE_LAYOUT_REGIONS` uses the same selection.
+Use `OcrMode.LAYOUT_REGIONS` for layout detections only, or
+`OcrMode.FULL_PAGE` to OCR the entire page and replace its text layer.
+
 ```python
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
