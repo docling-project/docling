@@ -105,9 +105,11 @@ result = converter.convert("document.pdf")
 For optimal GPU performance with large document batches, you can adjust batch sizes and explicitly configure the accelerator:
 
 ```python
-from docling.document_converter import DocumentConverter
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
 
 # Explicitly configure GPU acceleration
 accelerator_options = AcceleratorOptions(
@@ -116,6 +118,7 @@ accelerator_options = AcceleratorOptions(
 
 # Configure pipeline for optimal GPU performance
 pipeline_options = ThreadedPdfPipelineOptions(
+    accelerator_options=accelerator_options,
     ocr_batch_size=64,      # Increase batch size for GPU
     layout_batch_size=64,   # Increase batch size for GPU
     table_batch_size=4,
@@ -123,8 +126,12 @@ pipeline_options = ThreadedPdfPipelineOptions(
 
 # Create converter with custom settings
 converter = DocumentConverter(
-    accelerator_options=accelerator_options,
-    pipeline_options=pipeline_options,
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            pipeline_cls=ThreadedStandardPdfPipeline,
+            pipeline_options=pipeline_options,
+        ),
+    }
 )
 
 # Convert documents
@@ -181,8 +188,12 @@ llama-server.exe `
 Once your inference server is running, configure Docling to use it:
 
 ```python
+from docling.datamodel import vlm_model_specs
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.datamodel.settings import settings
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.pipeline.vlm_pipeline import VlmPipeline
 
 BATCH_SIZE = 64
 
@@ -197,8 +208,18 @@ vlm_options.concurrency = BATCH_SIZE
 settings.perf.page_batch_size = BATCH_SIZE
 
 # Create converter with VLM pipeline
+pipeline_options = VlmPipelineOptions(
+    vlm_options=vlm_options,
+    enable_remote_services=True,  # required when using a remote inference service
+)
+
 converter = DocumentConverter(
-    pipeline_options=vlm_options,
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            pipeline_cls=VlmPipeline,
+            pipeline_options=pipeline_options,
+        ),
+    }
 )
 ```
 
