@@ -395,6 +395,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         encoded-word must not stand up a forged header in the rendered document.
         `str.split()` covers every character `str.splitlines()` breaks on, and
         collapsing runs also unfolds a folded header to one space.
+        Null bytes are stripped so non-Unicode .msg headers parse cleanly.
 
         Args:
             value: Header string to sanitize.
@@ -402,7 +403,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             Single-line, single-spaced string.
         """
-        return " ".join(value.split())
+        return " ".join(value.replace("\x00", "").split())
 
     @staticmethod
     def _recover_msg_body(data: bytes, message: OxMsgMessage) -> str | None:
@@ -427,7 +428,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 if not ole.exists(stream_name):
                     return None
                 raw = ole.openstream(stream_name).read()
-            return raw.decode(encoding, errors="replace")
+            return raw.decode(encoding, errors="replace").rstrip("\x00")
         except Exception:
             return None
 
@@ -457,7 +458,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         email_message = EmailMessage()
 
         try:
-            subject = message.subject or ""
+            subject = (message.subject or "").rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             subject = ""
             _log.warning("Could not decode .msg subject")
@@ -465,7 +466,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             email_message["Subject"] = EmailDocumentBackend._header_safe(subject)
 
         try:
-            sender = message.sender or ""
+            sender = (message.sender or "").rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             sender = ""
             _log.warning("Could not decode .msg sender")
@@ -477,9 +478,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         grouped: dict[str, list[str]] = {}
         for recipient in message.recipients:
             try:
-                formatted = formataddr(
-                    (recipient.name or "", recipient.email_address or "")
-                )
+                r_name = (recipient.name or "").rstrip("\x00")
+                r_email = (recipient.email_address or "").rstrip("\x00")
+                formatted = formataddr((r_name, r_email))
             except (UnicodeDecodeError, LookupError):
                 _log.warning("Could not decode .msg recipient; skipping")
                 continue
@@ -504,6 +505,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             plain_body = message.body
+            if plain_body:
+                plain_body = plain_body.rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             # Recover via OLE stream with the message code page.
             plain_body = EmailDocumentBackend._recover_msg_body(data, message)
@@ -516,6 +519,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 _log.warning("Could not decode .msg plain-text body")
         try:
             html_body = message.html_body
+            if html_body:
+                html_body = html_body.rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             html_body = None
             _log.warning("Could not decode .msg HTML body")
@@ -529,10 +534,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             email_message.set_content("")
 
         for attachment in message.attachments:
-            mime_type = attachment.mime_type or "application/octet-stream"
+            mime_type = (attachment.mime_type or "application/octet-stream").rstrip(
+                "\x00"
+            )
             maintype, _, subtype = mime_type.partition("/")
+            maintype = maintype.rstrip("\x00")
+            subtype = subtype.rstrip("\x00")
             try:
                 filename = attachment.file_name
+                if filename:
+                    filename = filename.rstrip("\x00")
             except (UnicodeDecodeError, LookupError):
                 filename = None
                 _log.warning("Could not decode .msg attachment filename")
