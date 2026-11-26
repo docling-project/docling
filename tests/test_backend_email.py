@@ -1275,6 +1275,40 @@ def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
         assert b64encode(payload) not in flat
 
 
+def test_msg_with_nul_terminated_8bit_strings():
+    """8-bit string streams that end with NUL bytes do not leak into the document.
+
+    The fixture is msg_with_attachment.msg with every PtypString property stored
+    as PtypString8: the ASCII text followed by NUL bytes, message code page 1252.
+    python-oxmsg keeps the NUL bytes, and puts the sender's inside the quotes and
+    angle brackets of `"name" <address>`. See #5535.
+    """
+    from oxmsg import Message as OxMsgMessage
+
+    in_path = Path("tests/data/email/sources/msg_8bit_nul_terminated.msg")
+    assert OxMsgMessage.load(in_path.read_bytes()).subject.endswith("\x00")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EMAIL],
+        format_options={
+            InputFormat.EMAIL: EmailFormatOption(
+                backend_options=EmailBackendOptions(list_attachments=True)
+            )
+        },
+    )
+    doc = converter.convert(in_path).document
+    markdown = doc.export_to_markdown()
+
+    assert [item.text for item in doc.texts if "\x00" in item.text] == []
+    assert "\x00" not in markdown
+    assert "# Email with Attachment\n" in markdown
+    assert "From: Alice Example &lt;alice@example.com&gt;" in markdown
+    assert "To: Bob Example &lt;bob@example.com&gt;" in markdown
+    assert "This email contains an attachment." in markdown
+    assert "test.txt (text/plain)" in markdown
+    assert "report.pdf (application/pdf)" in markdown
+
+
 def test_msg_strips_trailing_nul_from_properties_and_body():
     """Verify that trailing NUL characters (\x00) from 8-bit .msg streams are stripped.
 
