@@ -36,7 +36,11 @@ def create_file_hash(path_or_stream: Union[BytesIO, Path]) -> str:
         with path_or_stream.open("rb") as afile:
             _hash_buf(afile)
     elif isinstance(path_or_stream, BytesIO):
-        _hash_buf(path_or_stream)
+        # Hash the whole buffer, whatever the stream position, and leave the
+        # position alone: a stream that was written to and not rewound, or one
+        # that a previous conversion read to the end, must hash like its bytes.
+        with path_or_stream.getbuffer() as view:
+            hasher.update(view)
 
     return hasher.hexdigest()
 
