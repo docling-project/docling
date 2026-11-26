@@ -53,16 +53,16 @@ def _decode_utf8_member_names(archive: ZipFile) -> None:
     its CP437 decoding.
 
     Only ``filename`` changes: ``zipfile`` compares ``orig_filename`` with the
-    local file header when a member is opened.
+    local file header when a member is opened. A name that ``zipfile`` has
+    already changed is kept, such as one that Python 3.12+ takes from an
+    Info-ZIP Unicode Path extra field.
     """
     for info in archive.infolist():
-        if info.flag_bits & _ZIP_UTF8_NAME_FLAG:
+        if info.flag_bits & _ZIP_UTF8_NAME_FLAG or info.filename != info.orig_filename:
             continue
         try:
             info.filename = info.filename.encode("cp437").decode("utf-8")
-        except UnicodeError:
-            # Not valid UTF-8, or Python 3.12+ already took the name from an
-            # Info-ZIP Unicode Path extra field and CP437 cannot encode it.
+        except UnicodeDecodeError:
             continue
     archive.NameToInfo = {info.filename: info for info in archive.infolist()}
 

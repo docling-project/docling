@@ -311,7 +311,7 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     [
         pytest.param("café.xhtml", "utf-8", False, id="utf-8"),
         pytest.param("café.xhtml", "cp437", False, id="cp437"),
-        pytest.param("дом.xhtml", "utf-8", True, id="utf-8-unicode-path-field"),
+        pytest.param("Ωäö.xhtml", "utf-8", True, id="utf-8-unicode-path-field"),
     ],
 )
 def test_epub_member_name_without_utf8_flag_is_read(
@@ -323,8 +323,9 @@ def test_epub_member_name_without_utf8_flag_is_read(
     Info-ZIP ``zip`` does not set it. ``zipfile`` then decodes the name as
     CP437, so the manifest href finds no member and the chapter is dropped
     while the conversion still reports success. An archive that stores the
-    name in CP437 must still be read, and so must a name that Python already
-    took from a Unicode Path extra field, even when CP437 cannot encode it.
+    name in CP437 must still be read, and a name that Python 3.12+ takes from
+    a Unicode Path extra field must be kept, even when its CP437 encoding
+    happens to be valid UTF-8 (as for ``Ωäö``).
     """
     epub_path = _build_epub_with_hrefs(
         tmp_path / "unflagged.epub",
