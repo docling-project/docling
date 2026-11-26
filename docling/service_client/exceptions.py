@@ -103,6 +103,11 @@ class ConversionError(DoclingServiceClientError):
     """Raised when a single conversion completes with failure."""
 
 
+class ExtractionError(DoclingServiceClientError):
+    """Raised when a single extraction completes with failure, or when a
+    single-source extract() unexpectedly fanned out to multiple documents."""
+
+
 @dataclass(slots=True)
 class BatchConversionError(DoclingServiceClientError):
     """Raised when one or more sources fail in convert_all()."""

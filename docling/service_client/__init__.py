@@ -3,16 +3,29 @@
 
 """Client SDK for interacting with docling-serve."""
 
+from docling.datamodel.extraction import (
+    DocumentExtractionResult,
+    ExtractionTarget,
+    ExtractionTemplate,
+)
+from docling.datamodel.service.options import ExtractDocumentsOptions
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
     BatchSourceRequestInput,
     BatchSourceRequestItem,
     BatchTargetRequestInput,
+    ExtractSourceRequestInput,
+    ExtractSourceRequestItem,
+    ExtractSourcesRequest,
+    ExtractTargetRequest,
+    FileSourceRequest,
     GenericSourceRequest,
     GenericTargetRequest,
     S3SourceRequest,
 )
 from docling.datamodel.service.responses import (
+    ExtractDocumentResponse,
+    ExtractionDocumentResult,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
 )
@@ -31,6 +44,7 @@ from docling.service_client.exceptions import (
     ArtifactDownloadError,
     ConversionError,
     DoclingServiceClientError,
+    ExtractionError,
     ResponseSchemaMismatchError,
     ResultExpiredError,
     ResultNotReadyError,
@@ -59,6 +73,18 @@ __all__ = [
     "ConversionJob",
     "DoclingServiceClient",
     "DoclingServiceClientError",
+    "DocumentExtractionResult",
+    "ExtractDocumentResponse",
+    "ExtractDocumentsOptions",
+    "ExtractSourceRequestInput",
+    "ExtractSourceRequestItem",
+    "ExtractSourcesRequest",
+    "ExtractTargetRequest",
+    "ExtractionDocumentResult",
+    "ExtractionError",
+    "ExtractionTarget",
+    "ExtractionTemplate",
+    "FileSourceRequest",
     "GenericSourceRequest",
     "GenericTargetRequest",
     "PresignedUrlConvertDocumentResponse",

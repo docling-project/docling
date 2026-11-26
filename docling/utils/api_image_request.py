@@ -11,6 +11,7 @@ import requests
 from PIL import Image
 from pydantic import AnyUrl, ValidationError
 from requests.adapters import HTTPAdapter
+from urllib3.exceptions import MaxRetryError, ReadTimeoutError
 from urllib3.util.retry import Retry
 
 from docling.datamodel.base_models import (
@@ -24,6 +25,7 @@ from docling.datamodel.base_models import (
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.stop_reason import normalize_stop_reason
+from docling.utils.utils import backend_error_message
 
 _log = logging.getLogger(__name__)
 
@@ -76,6 +78,17 @@ def _failed_streaming_request(reason: str) -> ApiImageStreamingRequestResult:
         error=reason,
         stop_reason=VlmStopReason.INFERENCE_ERROR,
     )
+
+
+def _model_request_error(
+    exc: requests.RequestException,
+) -> TimeoutError | ConnectionError:
+    reason = exc.args[0] if exc.args else exc
+    if isinstance(reason, MaxRetryError):
+        reason = reason.reason
+    if isinstance(exc, requests.Timeout) or isinstance(reason, ReadTimeoutError):
+        return TimeoutError(backend_error_message("Model API request timed out", exc))
+    return ConnectionError(backend_error_message("Model API request failed", exc))
 
 
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
@@ -195,6 +208,59 @@ def _resolve_usage_response_key(
     return usage_response_key
 
 
+def _post_openai_chat_completion(
+    *,
+    payload: dict[str, Any],
+    url: AnyUrl,
+    timeout: float,
+    headers: dict[str, str] | None,
+    usage_response_key: str | None,
+    token_extract_key: str | None,
+) -> ApiImageRequestResult:
+    try:
+        with _make_retry_session() as session:
+            response = session.post(
+                str(url),
+                headers=headers or {},
+                json=payload,
+                timeout=timeout,
+            )
+    except requests.RequestException as exc:
+        raise _model_request_error(exc) from exc
+    if not response.ok:
+        raise RuntimeError(
+            backend_error_message(
+                f"API request failed with status {response.status_code}",
+                RuntimeError(_response_preview(response.text)),
+            )
+        )
+
+    response_payload = _parse_response_json(response)
+    if response_payload is None:
+        raise ValueError(
+            f"HTTP {response.status_code}: response body was empty or not JSON"
+        )
+
+    usage_key = _resolve_usage_response_key(
+        usage_response_key=usage_response_key,
+        token_extract_key=token_extract_key,
+    )
+    usage = _extract_response_usage(response_payload, usage_key)
+    api_resp = OpenAiApiResponse.model_validate(response_payload)
+    generated_text = _extract_generated_text(api_resp.choices[0].message)
+    num_tokens = _extract_total_tokens(usage)
+    if num_tokens is None and api_resp.usage is not None:
+        num_tokens = api_resp.usage.total_tokens
+
+    return ApiImageRequestResult(
+        text=generated_text,
+        num_tokens=num_tokens,
+        stop_reason=_map_stop_reason(api_resp.choices[0].finish_reason),
+        usage=usage,
+        logprobs=api_resp.choices[0].logprobs,
+    )
+
+
 def api_image_request(
     image: Image.Image,
     prompt: str,
@@ -245,55 +311,17 @@ def api_image_request(
                 **params,
             }
 
-            headers = headers or {}
-
-            with _make_retry_session() as session:
-                r = session.post(
-                    str(url),
-                    headers=headers,
-                    json=payload,
-                    timeout=timeout,
-                )
-            if not r.ok:
-                _log.error(
-                    "Error calling the API. status=%s content_type=%s response=%r",
-                    r.status_code,
-                    r.headers.get("content-type"),
-                    _response_preview(r.text),
-                )
-                return _failed_request(
-                    f"HTTP {r.status_code}: {_response_preview(r.text)}"
-                )
-
-            response_payload = _parse_response_json(r)
-            if response_payload is None:
-                return _failed_request(
-                    f"HTTP {r.status_code}: response body was empty or not JSON"
-                )
-
-            usage_key = _resolve_usage_response_key(
+            return _post_openai_chat_completion(
+                payload=payload,
+                url=url,
+                timeout=timeout,
+                headers=headers,
                 usage_response_key=usage_response_key,
                 token_extract_key=token_extract_key,
             )
-            usage = _extract_response_usage(response_payload, usage_key)
-
-            api_resp = OpenAiApiResponse.model_validate(response_payload)
-            generated_text = _extract_generated_text(api_resp.choices[0].message)
-            num_tokens = _extract_total_tokens(usage)
-            if num_tokens is None and api_resp.usage is not None:
-                num_tokens = api_resp.usage.total_tokens
-            stop_reason = _map_stop_reason(api_resp.choices[0].finish_reason)
-
-            return ApiImageRequestResult(
-                text=generated_text,
-                num_tokens=num_tokens,
-                stop_reason=stop_reason,
-                usage=usage,
-                logprobs=api_resp.choices[0].logprobs,
-            )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
-            return _failed_request(f"{type(e).__name__}: {e}")
+            return _failed_request(str(e))
     else:
         return _failed_request("Could not encode the page image as PNG")
 
@@ -378,7 +406,10 @@ def api_image_request_streaming(
                             _response_preview(r.text),
                         )
                         return _failed_streaming_request(
-                            f"HTTP {r.status_code}: {_response_preview(r.text)}"
+                            backend_error_message(
+                                f"HTTP {r.status_code}",
+                                RuntimeError(_response_preview(r.text)),
+                            )
                         )
 
                     full_text = []
@@ -477,6 +508,8 @@ def api_image_request_streaming(
                                     return _result(VlmStopReason.STOP_SEQUENCE)
 
                     return _result(_map_stop_reason(finish_reason))
+        except requests.RequestException as exc:
+            return _failed_streaming_request(str(_model_request_error(exc)))
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
             return _failed_streaming_request(f"{type(e).__name__}: {e}")

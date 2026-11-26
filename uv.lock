@@ -2166,6 +2166,7 @@ all = [
     { name = "einops" },
     { name = "httpx" },
     { name = "huggingface-hub" },
+    { name = "jsonschema" },
     { name = "lxml" },
     { name = "mail-parser" },
     { name = "marko" },
@@ -2238,6 +2239,7 @@ convert-core = [
     { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 extract-core = [
+    { name = "jsonschema" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -2430,6 +2432,7 @@ standard = [
     { name = "docling-parse" },
     { name = "httpx" },
     { name = "huggingface-hub" },
+    { name = "jsonschema" },
     { name = "mail-parser" },
     { name = "marko" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2581,6 +2584,7 @@ requires-dist = [
     { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
     { name = "httpx", marker = "extra == 'service-client'", specifier = ">=0.28,<1.0.0" },
     { name = "huggingface-hub", marker = "extra == 'models-local'", specifier = ">=0.23,<3" },
+    { name = "jsonschema", marker = "extra == 'extract-core'", specifier = ">=4.18.0,<5.0.0" },
     { name = "langcodes", specifier = ">=3.5.0,<4.0.0" },
     { name = "librosa", marker = "extra == 'format-video'", specifier = ">=0.10.0,<2.0.0" },
     { name = "lxml", marker = "extra == 'format-xml-jats'", specifier = ">=4.0.0,<7.0.0" },

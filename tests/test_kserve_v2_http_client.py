@@ -16,6 +16,7 @@ and both directions of it are exercised here.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from urllib.parse import urlsplit
 
 import numpy as np
 import pytest
@@ -227,6 +228,21 @@ def test_error_statuses_are_raised_as_http_errors(kserve, status):
         _infer_once(_client(kserve))
 
 
+@pytest.mark.parametrize("debug_enabled", [False, True])
+def test_http_error_body_follows_debug_setting(kserve, monkeypatch, debug_enabled):
+    from docling.datamodel.settings import settings
+    from tests.fakes.http_service import Response
+
+    monkeypatch.setattr(settings.debug, "error_details", debug_enabled)
+    body = "upstream private-backend.internal:8080 failed"
+    kserve.service.add_route(
+        "POST", r".*/infer", lambda request, match: Response(body=body, status=500)
+    )
+    with pytest.raises(requests.exceptions.HTTPError, match="500") as exc_info:
+        _infer_once(_client(kserve))
+    assert (body in str(exc_info.value)) is debug_enabled
+
+
 def test_a_malformed_response_body_is_reported_as_such(kserve):
     from tests.fakes.http_service import Response
 
@@ -296,16 +312,22 @@ def test_a_timeout_propagates_to_the_caller(kserve):
 
     kserve.service.add_route("POST", r".*/infer", slow)
 
-    with pytest.raises(requests.exceptions.Timeout):
+    with pytest.raises(requests.exceptions.Timeout) as exc_info:
         _infer_once(_client(kserve, timeout=0.1))
+
+    # Public error text must not name the backend address.
+    port = str(urlsplit(kserve.service.base_url).port)
+    assert port not in str(exc_info.value)
 
 
 def test_an_unreachable_server_raises_a_connection_error(kserve):
     base_url = kserve.service.base_url
     kserve.service.stop()
 
-    with pytest.raises(requests.exceptions.ConnectionError):
+    with pytest.raises(requests.exceptions.ConnectionError) as exc_info:
         _client(kserve, base_url=base_url).get_model_metadata()
+
+    assert str(urlsplit(base_url).port) not in str(exc_info.value)
 
 
 def test_close_is_a_no_op_for_transport_parity(kserve):
