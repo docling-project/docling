@@ -6,12 +6,13 @@
 from docling.datamodel.base_models import VlmStopReason
 
 # Finish reasons used by OpenAI compatible chat completion endpoints. The model
-# ran out of tokens / hit the context window, refused to answer because of a
-# content policy, or the request was aborted before it could finish. All of them
-# leave the output incomplete.
+# ran out of tokens / hit the context window, stopped repeating itself, refused
+# to answer because of a content policy, or the request was aborted before it
+# could finish. All of them leave the output incomplete.
 _INCOMPLETE_FINISH_REASONS = {
     "length": VlmStopReason.LENGTH,
     "max_tokens": VlmStopReason.LENGTH,
+    "repetition": VlmStopReason.REPETITION,
     "content_filter": VlmStopReason.CONTENT_FILTERED,
     "abort": VlmStopReason.INFERENCE_ERROR,
     "error": VlmStopReason.INFERENCE_ERROR,

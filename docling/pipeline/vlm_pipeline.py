@@ -470,7 +470,8 @@ class VlmPipeline(PaginatedPipeline):
 
         Extends the base implementation to detect partial failures from VLM
         inference: a failed inference call (INFERENCE_ERROR), truncated output
-        (LENGTH) or filtered content (CONTENT_FILTERED).
+        (LENGTH), filtered content (CONTENT_FILTERED) or a generation stopped by
+        repetition detection (REPETITION).
         """
         status = conv_res.status
         if status in {ConversionStatus.PENDING, ConversionStatus.STARTED}:
@@ -506,6 +507,7 @@ class VlmPipeline(PaginatedPipeline):
             elif vlm_response.stop_reason in (
                 VlmStopReason.LENGTH,
                 VlmStopReason.CONTENT_FILTERED,
+                VlmStopReason.REPETITION,
             ):
                 conv_res.errors.append(
                     ErrorItem(

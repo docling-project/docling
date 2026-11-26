@@ -29,3 +29,7 @@ def test_a_vllm_stop_string_end_is_a_completed_call() -> None:
 @pytest.mark.parametrize("raw", ["abort", "error"])
 def test_a_request_that_did_not_finish_is_an_inference_error(raw) -> None:
     assert normalize_stop_reason(raw) == VlmStopReason.INFERENCE_ERROR
+
+
+def test_a_repetition_stop_is_not_a_completed_call() -> None:
+    assert normalize_stop_reason("repetition") == VlmStopReason.REPETITION
