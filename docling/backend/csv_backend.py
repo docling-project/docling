@@ -28,7 +28,8 @@ _SNIFF_SAMPLE_SIZE: Final[int] = 4096
 _DELIMITERS: Final[str] = ",;\t|:"
 # Excel reads a first line `sep=<char>` as the delimiter and does not show it.
 # The keyword is case-insensitive: real files use both `sep=;` and `SEP=;`.
-_SEP_LINE: Final[re.Pattern[str]] = re.compile(r"sep=(.)", re.IGNORECASE)
+# Trailing spaces or tabs are allowed after the character.
+_SEP_LINE: Final[re.Pattern[str]] = re.compile(r"sep=(.)[ \t]*", re.IGNORECASE)
 # csv.reader rejects fields over 131072 characters by default. The limit is a
 # C long, which has 32 bits on Windows, so sys.maxsize would overflow.
 _MAX_FIELD_SIZE: Final[int] = 2**31 - 1
@@ -187,6 +188,10 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             head = self.content.readline()
         data_start = 0
         sep_line = _SEP_LINE.fullmatch(head.rstrip("\r\n"))
+        if sep_line is not None and sep_line.group(1).isalnum():
+            # A letter or digit is a malformed hint, not a separator. Keep the
+            # line as data so it does not disappear from the table.
+            sep_line = None
         if sep_line is not None:
             data_start = self.content.tell()
             head = self.content.readline()
@@ -207,12 +212,13 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                 dialect = _SepDialect
             else:
                 dialect = _sniff_dialect(head, read_sample)
-            if dialect.delimiter not in _DELIMITERS:
-                raise RuntimeError(
-                    f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
-                )
-            else:
-                _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
+                # The separator hint names the delimiter; only a sniffed one is
+                # limited to the candidates the sniffer was given.
+                if dialect.delimiter not in _DELIMITERS:
+                    raise RuntimeError(
+                        f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
+                    )
+            _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
         except csv.Error as e:
             # Fall back to comma (e.g. single-column or insufficient data to detect).
             _log.info(
