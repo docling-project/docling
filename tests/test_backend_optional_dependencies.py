@@ -32,7 +32,9 @@ _TEX_SAMPLE = (
 )
 _JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
 _USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
-_PDF_SAMPLE = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
+_PDF_SAMPLE = (
+    Path(__file__).parent / "data" / "pdf" / "fixtures" / "bookmark_sample.pdf"
+)
 
 
 def _run_with_blocked_module(
@@ -231,7 +233,7 @@ def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
 
 
 def test_docling_parse_backend_operates_without_pypdfium2() -> None:
-    sample = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
+    sample = _PDF_SAMPLE
     body = (
         "from pathlib import Path\n"
         "from docling.backend.docling_parse_backend import "
@@ -308,11 +310,8 @@ def test_office_and_latex_backends_convert_without_pypdfium2(
     assert result.returncode == 0, result.stderr
 
 
-def test_powerpoint_uses_shared_pypdfium2_guard() -> None:
-    # PowerPoint used to gate the shared converter factory behind its own
-    # pypdfium2 import. On slim installs that bypassed the factory entirely, so
-    # users never saw its actionable install hint. Multiple backend instances
-    # must now reach the shared guard while the warning is still emitted once.
+def test_powerpoint_uses_shared_docling_parse_guard() -> None:
+    # PowerPoint must use the shared guard and warn once across backend instances.
     body = (
         "import logging\n"
         "from docling.backend.mspowerpoint_backend import "
@@ -325,10 +324,10 @@ def test_powerpoint_uses_shared_pypdfium2_guard() -> None:
         "    assert backend._get_libreoffice_converter() is None\n"
     )
 
-    result = _run_with_blocked_module("pypdfium2", body)
+    result = _run_with_blocked_module("docling_parse", body)
 
     assert result.returncode == 0, result.stderr
-    assert result.stderr.count("format-pdf-pypdfium2") == 1, result.stderr
+    assert result.stderr.count("format-pdf-docling") == 1, result.stderr
 
 
 def test_converter_constructs_without_chart_extraction_dependency() -> None:

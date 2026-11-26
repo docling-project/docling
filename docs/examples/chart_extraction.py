@@ -25,6 +25,11 @@
 # - The default preset selects MLX on compatible Apple Silicon systems and
 #   otherwise uses Transformers (granite_vision_v4).
 #   Pass --lmstudio to use the GGUF model served by LM Studio instead.
+# - Charts are cropped at `ChartExtractionVlmEngineOptions.scale`. The
+#   granite_vision_v4 presets use 4.0 (about 288 dpi); at lower scales the model
+#   can invent labels and values.
+#   With `generate_picture_images=True`, the stored picture image is used
+#   instead, so also set `images_scale` to 4.0.
 
 # %%
 

@@ -142,6 +142,8 @@ class TestSanitizeTextHyphenation:
         [
             (["algo-", "rithms"], "algorithms"),
             (["the veri-", "fication step"], "the verification step"),
+            # Uppercase hyphenation continues in uppercase, so the hyphen is a break.
+            (["INFOR-", "MATION"], "INFORMATION"),
         ],
     )
     def test_attached_hyphen_joins_split_word(self, model, lines, expected):
@@ -151,6 +153,27 @@ class TestSanitizeTextHyphenation:
     def test_attached_hyphen_on_non_alnum_token_is_kept(self, model):
         """An underscore-bearing token is not treated as a split word (unchanged)."""
         assert model.sanitize_text(["foo_bar-", "baz"]) == "foo_bar-baz"
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            # Chemical nomenclature, as reported: the prefix is one character.
+            (
+                ["undecanal or n-", "tridecanal, from each blend"],
+                "undecanal or n-tridecanal, from each blend",
+            ),
+            (["i-", "butyric acid"], "i-butyric acid"),
+            # A locant opens the continuation.
+            (["6-methyl-", "5-hepten-2-one"], "6-methyl-5-hepten-2-one"),
+            (["COVID-", "19 cases"], "COVID-19 cases"),
+            # Uppercase abbreviation + lowercase continuation is a real hyphen.
+            (["the DNA-", "binding domain"], "the DNA-binding domain"),
+            (["EØS-", "rettslige"], "EØS-rettslige"),
+        ],
+    )
+    def test_attached_hyphen_belonging_to_word_is_kept(self, model, lines, expected):
+        """A hyphen no hyphenation rule could have placed is part of the word."""
+        assert model.sanitize_text(list(lines)) == expected
 
     @pytest.mark.parametrize(
         ("lines", "expected"),

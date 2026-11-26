@@ -6,7 +6,9 @@ import os
 import re
 import threading
 import time
+import zipfile
 from contextlib import nullcontext
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -410,6 +412,52 @@ def test_chart_caption_is_parented_to_the_chart_container():
     container = picture.parent.resolve(doc)
     assert caption.self_ref in [child.cref for child in container.children]
     assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+
+def _docx_with_chart_xml(rewrite) -> BytesIO:
+    """Build a copy of CHART_DOCX whose chart part is changed by ``rewrite``."""
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    entries["word/charts/chart1.xml"] = rewrite(chart).encode("utf-8")
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def _declare_huge_point_count(chart: str) -> str:
+    return re.sub(r'<c:ptCount val="\d+"/>', f'<c:ptCount val="{10**11}"/>', chart)
+
+
+def _add_point_at_huge_index(chart: str) -> str:
+    far_point = f'<c:pt idx="{10**9}"><c:v>9</c:v></c:pt>'
+    return chart.replace('<c:ptCount val="4"/>', '<c:ptCount val="4"/>' + far_point, 1)
+
+
+@pytest.mark.parametrize(
+    "rewrite", [_declare_huge_point_count, _add_point_at_huge_index]
+)
+def test_chart_table_is_sized_by_the_cached_points(rewrite):
+    """The chart table follows the cached points, not the declared indexes.
+
+    Before, a list entry was made for each index up to ``c:ptCount`` or the
+    highest ``c:pt@idx``, so a small chart part could use gigabytes of memory.
+    Now a large point count adds no rows, and a point at an index past the
+    table size limit is dropped.
+    """
+    stream = DocumentStream(name="chart.docx", stream=_docx_with_chart_xml(rewrite))
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    chart = _single_chart_picture(doc)
+
+    assert chart.meta.tabular_chart is not None
+    assert (
+        _grid_from_table_data(chart.meta.tabular_chart.chart_data)
+        == EXPECTED_CHART_GRID
+    )
 
 
 def test_is_rich_table_cell(docx_paths):
@@ -2862,6 +2910,76 @@ def test_footnotes_and_endnotes_are_not_dropped():
     )
 
 
+def _position_of(value: str, attr: str = "y") -> float | int | None:
+    """Read one position attribute back through _get_paragraph_position."""
+    from lxml import etree
+
+    from docling.backend.msword_backend import MsWordDocumentBackend
+
+    backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
+    elem = etree.fromstring(
+        f'<p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+        f' {attr}="{value}"/>'
+    )
+
+    return MsWordDocumentBackend._get_paragraph_position(backend, elem)
+
+
+@pytest.mark.parametrize("attr", ["y", "top", "positionY", "y-position"])
+def test_get_paragraph_position_keeps_a_negative_sign(attr: str):
+    """A drawing anchored above its reference point has a legal negative offset.
+
+    The position feeds the top-to-bottom sort of floating textbox paragraphs, so
+    dropping the sign moves that drawing to the wrong end of the document.
+    """
+    assert _position_of("-45.5", attr=attr) == -45.5
+
+
+def test_get_paragraph_position_still_strips_units():
+    assert _position_of("45.5pt") == 45.5
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [("2e-5", 2.0), ("-2e-5", -2.0), ("1.5e-3in", 1.5)]
+)
+def test_get_paragraph_position_reads_exponent_notation_as_its_mantissa(
+    value: str, expected: float
+):
+    """A value in exponent notation is read, not dropped and not inflated.
+
+    Deleting every character outside the digits, the period and the minus leaves
+    "2-5" for "2e-5", which float() rejects, so the offset was swallowed by the
+    except and the drawing fell back to its source line. Deleting the minus too,
+    as the code did before this branch, leaves "25": an offset a million times
+    too large. Matching the number reads what is written, sign included. Word
+    writes these lengths with a unit suffix rather than an exponent, so this is
+    about the parser staying honest on input it did not expect.
+    """
+    assert _position_of(value) == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(".5", 0.5), ("-.5", -0.5)])
+def test_get_paragraph_position_keeps_a_decimal_without_its_leading_zero(
+    value: str, expected: float
+):
+    r"""A decimal written as ".5" keeps its magnitude and its sign.
+
+    This one guards the pattern rather than the fix: `-?\d+(?:\.\d+)?` requires a
+    digit before the period, so it would match the "5" in ".5" and return 5.0,
+    ten times too large and positive for "-.5".
+    """
+    assert _position_of(value) == expected
+
+
+def test_get_paragraph_position_falls_through_a_value_with_no_number():
+    """An attribute like y="auto" holds no offset, so the next hint decides.
+
+    re.search returns None there, and the source line is the documented last
+    resort of this method. A single parsed element is on line 1.
+    """
+    assert _position_of("auto") == 1
+
+
 @pytest.mark.parametrize(
     ("note_body", "expected"),
     [
@@ -3200,6 +3318,76 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("filename", "image_path"),
+    [
+        ("word_sample.docx", ".//a:blip"),
+        ("docx_vml_images.docx", ".//w:pict"),
+        ("drawingml.docx", ".//c:chart"),
+    ],
+)
+@pytest.mark.parametrize("content", ["symbol", "equation"])
+def test_image_paragraph_keeps_symbols_and_equations(
+    tmp_path, filename, image_path, content
+):
+    """An image does not hide a paragraph whose text uses no ``w:t`` nodes."""
+    document = Document(Path("tests/data/docx/sources") / filename)
+    paragraph = next(p for p in document.paragraphs if p._p.xpath(image_path))
+    # Keep the existing writer's image markup, relationship and package parts.
+    for child in list(document.element.body):
+        if child is not paragraph._p and child.tag != qn("w:sectPr"):
+            document.element.body.remove(child)
+    for node in paragraph._p.xpath(".//w:sym | .//m:oMath"):
+        node.getparent().remove(node)
+    if content == "symbol":
+        _append_sym(paragraph, "Symbol", "F061")
+        expected = (DocItemLabel.TEXT, "\N{GREEK SMALL LETTER ALPHA}")
+    else:
+        paragraph._p.append(
+            parse_xml(
+                '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+                "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+            )
+        )
+        expected = (DocItemLabel.FORMULA, "x=1")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert doc.pictures
+    assert [(item.label, item.text) for item in doc.texts].count(expected) == 1
+    text = next(item for item in doc.texts if (item.label, item.text) == expected)
+    assert text.parent.resolve(doc) is doc.body
+    items = [item for item, _ in doc.iterate_items()]
+    assert items.index(doc.pictures[-1]) < items.index(text)
+    assert expected[1] in doc.export_to_markdown()
+
+
+def test_image_paragraph_does_not_repeat_textbox_equation(tmp_path):
+    """A text box's equation belongs to its own paragraph, not its anchor."""
+    document = Document("tests/data/docx/sources/word_sample.docx")
+    paragraph = next(p for p in document.paragraphs if p._p.xpath(".//a:blip"))
+    for child in list(document.element.body):
+        if child is not paragraph._p and child.tag != qn("w:sectPr"):
+            document.element.body.remove(child)
+    paragraph._p.append(
+        parse_xml(
+            '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            'xmlns:v="urn:schemas-microsoft-com:vml" '
+            'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+            '<w:pict><v:shape id="TextBox1" style="width:144pt;height:72pt">'
+            "<v:textbox><w:txbxContent><w:p>"
+            "<m:oMath><m:r><m:t>x=1</m:t></m:r></m:oMath>"
+            "</w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r>"
+        )
+    )
+
+    doc = _convert_built(document, tmp_path)
+
+    formulas = [item for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert [item.text for item in formulas] == ["x=1"]
+    assert formulas[0].parent.resolve(doc) is not doc.body
+
+
+@pytest.mark.parametrize(
     ("tag", "expected"),
     [
         ("d", r"\left(x\right)"),
@@ -3227,6 +3415,46 @@ def test_equation_without_optional_properties_uses_defaults(tmp_path, tag, expec
     ]
 
 
+@pytest.mark.parametrize(
+    ("properties", "elements", "expected"),
+    [
+        ("", ["a", "b"], r"\left(a|b\right)"),
+        (
+            '<m:dPr><m:sepChr m:val=","/></m:dPr>',
+            ["x", "y", "z"],
+            r"\left(x,y,z\right)",
+        ),
+        (
+            '<m:dPr><m:begChr m:val="{"/><m:endChr m:val="}"/></m:dPr>',
+            ["a", "b"],
+            r"\left\{a|b\right\}",
+        ),
+        ('<m:dPr><m:sepChr m:val=""/></m:dPr>', ["a", "b"], r"\left(ab\right)"),
+    ],
+    ids=["default-separator", "comma-separator", "braces", "empty-separator"],
+)
+def test_equation_delimiter_keeps_every_element(
+    tmp_path, properties, elements, expected
+):
+    """A delimiter keeps each of its elements, with the separator between them."""
+    content = "".join(f"<m:e><m:r><m:t>{text}</m:t></m:r></m:e>" for text in elements)
+    omath_para = (
+        '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        f"<m:oMath><m:d>{properties}{content}</m:d></m:oMath>"
+        "</m:oMathPara>"
+    )
+    docx_path = tmp_path / "equation_delimiter.docx"
+    document = Document()
+    document.add_paragraph()._p.append(parse_xml(omath_para))
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+
+
 def test_symbol_font_case_and_whitespace_resilience(tmp_path):
     """Symbol font detection handles case and whitespace variations defensively."""
     docx_path = tmp_path / "symbol_font_casing.docx"
@@ -3241,3 +3469,166 @@ def test_symbol_font_case_and_whitespace_resilience(tmp_path):
     doc = get_converter().convert(docx_path).document
     texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
     assert texts == ["\N{GREEK SMALL LETTER ALPHA}", "\N{GREEK SMALL LETTER ALPHA}"]
+
+
+def _docx_with_xml_node(insert):
+    """Build a DOCX with a heading, a two-run paragraph and a 1x2 table, then let
+    ``insert`` add an XML comment or processing instruction to word/document.xml."""
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    doc.add_heading("Title", 1)
+    paragraph = doc.add_paragraph("first run ")
+    paragraph.add_run("second run")
+    table = doc.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "cell A"
+    table.cell(0, 1).text = "cell B"
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    out = BytesIO()
+    with zipfile.ZipFile(buf) as src, zipfile.ZipFile(out, "w") as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == "word/document.xml":
+                changed = insert(data)
+                assert changed != data
+                data = changed
+            dst.writestr(info, data)
+    out.seek(0)
+    return out
+
+
+_COMMENT = b"<!-- Created by docx4j 8.2.8 (Apache licensed) -->"
+
+
+@pytest.mark.parametrize(
+    "insert",
+    [
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1), id="body"
+        ),
+        pytest.param(
+            lambda x: re.sub(rb"(<w:p>|<w:p [^>]*>)", rb"\1" + _COMMENT, x, count=1),
+            id="paragraph",
+        ),
+        pytest.param(lambda x: x.replace(b"<w:r>", b"<w:r>" + _COMMENT, 1), id="run"),
+        pytest.param(
+            lambda x: x.replace(b"<w:tc>", b"<w:tc>" + _COMMENT, 1), id="table-cell"
+        ),
+        pytest.param(
+            lambda x: re.sub(
+                rb"(<w:tr[ >][^>]*>|<w:tr>)", rb"\1" + _COMMENT, x, count=1
+            ),
+            id="table-row",
+        ),
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body><?producer note?>", 1),
+            id="processing-instruction",
+        ),
+    ],
+)
+def test_xml_comments_and_processing_instructions_keep_body_text(insert):
+    """Regression test: an XML comment or processing instruction in the document
+    part (docx4j writes one at the start of the body) used to fail the whole
+    conversion with ``ValueError: Invalid input tag``, or drop the text of the
+    table it was in."""
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+    markdown = result.document.export_to_markdown()
+    for text in ("Title", "first run", "second run", "cell A", "cell B"):
+        assert text in markdown
+
+
+def test_xml_comment_text_goes_to_notes():
+    """XML comments in the document part are kept in the NOTES layer, out of the
+    body; blank comments and processing instructions are dropped."""
+
+    def insert(data):
+        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT + b"<!--   -->", 1)
+        # indented, in a paragraph that keeps its whitespace, so the comment has a tail
+        data = re.sub(
+            rb"<w:p( [^>]*)?>",
+            rb'<w:p\1 xml:space="preserve"><!-- indented -->\n  ',
+            data,
+            count=1,
+        )
+        data = data.replace(b">first run <", b">first <!-- inline -->run <", 1)
+        return data.replace(b"<w:tc>", b"<w:tc><?producer note?>", 1)
+
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    notes = [
+        item.text
+        for item, _ in doc.iterate_items(included_content_layers={ContentLayer.NOTES})
+        if isinstance(item, TextItem)
+    ]
+    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "indented", "inline"]
+    markdown = doc.export_to_markdown()
+    assert "# Title" in markdown
+    assert "first run second run" in markdown
+    assert "docx4j" not in markdown
+    assert "indented" not in markdown
+    assert "inline" not in markdown
+    assert "producer" not in markdown
+
+
+def test_xml_comments_in_footnotes_are_removed():
+    """python-docx loads footnotes and endnotes as plain parts, which the backend
+    parses itself: their XML comments and processing instructions are removed
+    too, and dropped like those of the other parts."""
+    body = (
+        "<w:p><!-- note --><w:r><w:t>Smith, J. <!-- inline -->(2020).</w:t></w:r>"
+        "<?producer note?><w:r><w:t> Example Study.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(name="notes.docx", stream=_docx_with_notes(body))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    footnotes = [item.text for item in doc.texts if item.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Smith, J. (2020). Example Study.", "An endnote body."]
+    assert not [item for item in doc.texts if item.content_layer == ContentLayer.NOTES]
+
+
+def test_xml_comments_in_charts_are_removed(monkeypatch):
+    """python-docx loads a chart as a plain part, which the backend parses itself:
+    its XML comments and processing instructions do not stop the chart's
+    classification or drop its data."""
+    import zipfile
+    from io import BytesIO
+
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    chart_xml = entries["word/charts/chart1.xml"]
+    for old, new in [
+        (b"<c:plotArea>", b"<c:plotArea><!-- x --><?producer note?>"),
+        (b"<c:v>4.3</c:v>", b"<c:v>4<!-- x -->.3</c:v>"),
+    ]:
+        assert chart_xml.count(old) == 1
+        chart_xml = chart_xml.replace(old, new)
+    entries["word/charts/chart1.xml"] = chart_xml
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+
+    stream = DocumentStream(name="chart.docx", stream=buffer)
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+    chart = _single_chart_picture(doc)
+
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.LINE_CHART
+    )
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
+        EXPECTED_CHART_GRID
+    )

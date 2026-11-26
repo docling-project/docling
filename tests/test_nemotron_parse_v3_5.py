@@ -3,7 +3,9 @@
 
 """Test the NVIDIA Nemotron 3.5 Parse preset, remote-code gate and output mapper."""
 
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 from docling_core.types.doc import (
@@ -30,6 +32,7 @@ from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
     TransformersVlmEngineOptions,
 )
+from docling.models.inference_engines.vlm.auto_inline_engine import AutoInlineVlmEngine
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.utils.nemotron_parse_v3_5_utils import (
     extract_nemotron_parse_v3_5_blocks,
@@ -64,8 +67,24 @@ def test_preset_pins_revision_and_requires_opt_in() -> None:
     assert spec.prompt == (
         "</s><s><predict_bbox><predict_classes><output_markdown><predict_text_in_pic>"
     )
-    assert spec.supported_engines == {VlmEngineType.TRANSFORMERS, VlmEngineType.API}
-    assert not spec.has_explicit_engine_export(VlmEngineType.MLX)
+    assert spec.supported_engines == {
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.MLX,
+        VlmEngineType.API,
+    }
+    assert spec.has_explicit_engine_export(VlmEngineType.MLX)
+
+    mlx_config = spec.get_engine_config(VlmEngineType.MLX)
+    assert (mlx_config.repo_id, mlx_config.revision) == (
+        "geoHeil/Nemotron-3.5-Parse-MLX-bf16",
+        "d6a6b5386601e04706e36268e0c003fca9671ade",
+    )
+    assert mlx_config.min_engine_version == "0.7.11"
+    assert "requires_trust_remote_code" not in mlx_config.extra_config
+    assert spec.get_runtime_input_extra_config(VlmEngineType.MLX) == {
+        "repetition_penalty": 1.1,
+        "repetition_context_size": 0,
+    }
 
     config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
     assert (config.repo_id, config.revision) == (_REPO_ID, _REVISION)
@@ -86,6 +105,34 @@ def test_preset_pins_revision_and_requires_opt_in() -> None:
         "repetition_penalty": 1.1,
         "skip_special_tokens": False,
     }
+
+
+@pytest.mark.parametrize(
+    ("mlx_version", "expected"),
+    [("0.7.10", VlmEngineType.TRANSFORMERS), ("0.7.11", VlmEngineType.MLX)],
+)
+def test_auto_inline_selects_mlx_only_from_mlx_vlm_0_7_11(
+    monkeypatch: pytest.MonkeyPatch, mlx_version: str, expected: VlmEngineType
+) -> None:
+    engine = AutoInlineVlmEngine(
+        options=AutoInlineVlmEngineOptions(),
+        accelerator_options=AcceleratorOptions(),
+        artifacts_path=None,
+    )
+    engine.model_spec = VlmConvertOptions.get_preset("nemotron_parse_v3_5").model_spec
+    # Simulate Apple Silicon with an installed mlx-vlm release of the given version.
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.decide_device",
+        lambda *args, **kwargs: "mps",
+    )
+    monkeypatch.setitem(sys.modules, "mlx_vlm", ModuleType("mlx_vlm"))
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm._utils._installed_engine_version",
+        lambda engine_type: mlx_version,
+    )
+
+    assert engine._select_engine() == expected
 
 
 def test_transformers_engine_refuses_remote_code_without_opt_in(

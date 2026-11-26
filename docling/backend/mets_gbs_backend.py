@@ -28,6 +28,7 @@ from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import check_image_pixels, open_image
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -445,8 +446,11 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
                 f"Total extracted data exceeds maximum limit of {self.options.max_total_bytes} bytes"
             )
 
-        buf = BytesIO(image_data)
-        im: PILImage = Image.open(buf)
+        try:
+            im: PILImage = open_image(image_data)
+        except (Image.DecompressionBombError, OSError, ValueError) as exc:
+            _log.warning(f"Page {page_no} image cannot be opened: {exc}; skipping.")
+            return None, None
 
         ocr_file = self._extract_member(ocr_info.path)
         if ocr_file is None:
@@ -485,7 +489,17 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         else:
             _log.error(f"Could not find ocr_page for page {page_no}")
 
-        im = im.resize(size=(round(size.width), round(size.height)))
+        # The page size comes from the hOCR, not from the image. Check both
+        # before the image is decoded and resized.
+        page_px = (round(size.width), round(size.height))
+        try:
+            check_image_pixels(im.size, self.options.max_image_pixels)
+            check_image_pixels(page_px, self.options.max_image_pixels)
+        except ValueError as exc:
+            _log.warning(f"Page {page_no}: {exc} Skipping.")
+            return None, None
+
+        im = im.resize(size=page_px)
         im = im.convert("RGB")
 
         # Extract all ocrx_word spans

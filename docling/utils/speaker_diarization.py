@@ -10,9 +10,13 @@ Assigns speaker labels to transcript segments by:
 4. Mapping each transcript segment to the dominant speaker in its time window
 """
 
+import importlib.metadata
+import importlib.util
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -71,6 +75,35 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
     return best_n
 
 
+def _import_webrtcvad() -> None:
+    """Import ``webrtcvad`` before ``resemblyzer`` imports it.
+
+    ``resemblyzer`` imports ``webrtcvad`` 2.0.10, which reads its own version
+    with ``pkg_resources``. setuptools 82 and later no longer ship
+    ``pkg_resources``, so that import fails and diarization is disabled,
+    although every dependency is installed. When ``pkg_resources`` is missing,
+    import ``webrtcvad`` with a minimal stand-in that answers
+    ``get_distribution()`` from ``importlib.metadata``. The stand-in is removed
+    after the import, so no other package sees it.
+
+    Raises:
+        ImportError: If ``webrtcvad`` is not installed.
+    """
+    if "webrtcvad" in sys.modules or importlib.util.find_spec("pkg_resources"):
+        return
+
+    def get_distribution(name: str) -> SimpleNamespace:
+        return SimpleNamespace(version=importlib.metadata.version(name))
+
+    stand_in = ModuleType("pkg_resources")
+    stand_in.__dict__["get_distribution"] = get_distribution
+    sys.modules["pkg_resources"] = stand_in
+    try:
+        import webrtcvad
+    finally:
+        del sys.modules["pkg_resources"]
+
+
 def diarize(
     wav_path: Path,
     num_speakers: int | None = None,
@@ -95,6 +128,8 @@ def diarize(
     try:
         import librosa
         import soundfile as sf
+
+        _import_webrtcvad()
         from resemblyzer import VoiceEncoder
         from resemblyzer.audio import (
             audio_norm_target_dBFS,

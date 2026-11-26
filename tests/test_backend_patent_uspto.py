@@ -11,7 +11,15 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from docling_core.types import DoclingDocument
-from docling_core.types.doc import DocItemLabel, TableData, TextItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    InlineGroup,
+    RichTableCell,
+    Script,
+    TableCell,
+    TableData,
+    TextItem,
+)
 
 from docling.backend.xml.uspto_backend import (
     PatentUsptoDocumentBackend,
@@ -229,6 +237,147 @@ def test_table_out_of_range_namest_does_not_crash():
     assert [cell.text for cell in ok.table_cells] == ["a", "b"]
 
 
+@pytest.mark.parametrize(
+    ("sup", "sub"),
+    [
+        ("sup", "sub"),  # ICE
+        ("superscript", "subscript"),  # application v1
+        ("SP", "SB"),  # grant v2.5
+    ],
+)
+def test_table_cell_scripts_are_rich_cells(sup: str, sub: str) -> None:
+    """A table entry with a sub- or superscript becomes a rich cell.
+
+    The cell refers to an inline group under the table. Each text item of the
+    group has the script of its run. An entry without a script stays a plain cell.
+    """
+    xml = (
+        '<table><tgroup cols="4">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        '<colspec colname="3" colwidth="1"/><colspec colname="4" colwidth="1"/>'
+        "<tbody><row>"
+        "<entry>plain</entry>"
+        f"<entry>ZnSO<{sub}>4</{sub}></entry>"
+        '<entry namest="3" nameend="4">'
+        f"m<{sup}>&#x2212;2 </{sup}>s<{sup}>&#x2212;1</{sup}></entry>"
+        "</row></tbody></tgroup></table>"
+    )
+    doc = DoclingDocument(name="scripts")
+    item = doc.add_table(data=TableData(num_rows=0, num_cols=0, table_cells=[]))
+    table_parser = XmlTable(xml)
+    table = table_parser.parse()
+    assert table is not None
+    item.data = table
+
+    table_parser.add_rich_cells(doc, item)
+
+    cells = item.data.table_cells
+    assert [type(cell) for cell in cells] == [
+        TableCell,
+        RichTableCell,
+        TableCell,  # the first copy of the spanning entry
+        RichTableCell,
+    ]
+    runs = []
+    for cell in cells:
+        if isinstance(cell, RichTableCell):
+            group = cell.ref.resolve(doc)
+            assert isinstance(group, InlineGroup)
+            assert group.parent is not None and group.parent.resolve(doc) is item
+            texts = [child.resolve(doc) for child in group.children]
+            assert all(isinstance(text, TextItem) for text in texts)
+            assert "".join(text.text for text in texts) == cell.text
+            runs.append([(text.text, text.formatting.script) for text in texts])
+    assert runs == [
+        [("ZnSO", Script.BASELINE), ("4", Script.SUB)],
+        [
+            ("m", Script.BASELINE),
+            ("\u22122 ", Script.SUPER),
+            ("s", Script.BASELINE),
+            ("\u22121", Script.SUPER),
+        ],
+    ]
+    assert "ZnSO<sub>4</sub>" in doc.export_to_html()
+
+
+def test_table_cell_script_runs_match_stripped_cell_text() -> None:
+    """The runs of a rich cell add up to the stripped cell text.
+
+    A whitespace-only run at the start or the end of the entry must not leave
+    a space at the edge of the next or previous run.
+    """
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody><row>"
+        "<entry> <sub> 4</sub>x</entry>"
+        "<entry>y<sup>2 </sup> </entry>"
+        "</row></tbody></tgroup></table>"
+    )
+    doc = DoclingDocument(name="scripts")
+    item = doc.add_table(data=TableData(num_rows=0, num_cols=0, table_cells=[]))
+    table_parser = XmlTable(xml)
+    table = table_parser.parse()
+    assert table is not None
+    item.data = table
+
+    table_parser.add_rich_cells(doc, item)
+
+    runs = []
+    for cell in item.data.table_cells:
+        assert isinstance(cell, RichTableCell)
+        group = cell.ref.resolve(doc)
+        texts = [child.resolve(doc) for child in group.children]
+        assert "".join(text.text for text in texts) == cell.text
+        runs.append([(text.text, text.formatting.script) for text in texts])
+    assert runs == [
+        [("4", Script.SUB), ("x", Script.BASELINE)],
+        [("y", Script.BASELINE), ("2", Script.SUPER)],
+    ]
+
+
+def test_table_cell_scripts_after_dropped_and_cleared_rows() -> None:
+    """Rich cells stay on their own cell after an empty row and a cleared row.
+
+    An empty row is dropped from the table. A row with more entries than columns
+    keeps its place but is cleared, and its scripts must not become rich cells.
+    """
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody>"
+        "<row><entry>a<sub>1</sub></entry><entry>b</entry></row>"
+        "<row><entry></entry><entry></entry></row>"
+        "<row><entry>c<sub>8</sub></entry><entry>d</entry><entry>e</entry></row>"
+        "<row><entry>f</entry><entry>g<sup>2</sup></entry></row>"
+        "</tbody></tgroup></table>"
+    )
+    doc = DoclingDocument(name="scripts")
+    item = doc.add_table(data=TableData(num_rows=0, num_cols=0, table_cells=[]))
+    table_parser = XmlTable(xml)
+    table = table_parser.parse()
+    assert table is not None
+    item.data = table
+
+    table_parser.add_rich_cells(doc, item)
+
+    assert (item.data.num_rows, item.data.num_cols) == (3, 2)
+    grid_text = [[cell.text for cell in row] for row in item.data.grid]
+    assert grid_text == [["a1", "b"], ["", ""], ["f", "g2"]]
+    rich = {}
+    for cell in item.data.table_cells:
+        if isinstance(cell, RichTableCell):
+            group = cell.ref.resolve(doc)
+            texts = [child.resolve(doc) for child in group.children]
+            rich[(cell.start_row_offset_idx, cell.start_col_offset_idx)] = [
+                (text.text, text.formatting.script) for text in texts
+            ]
+    assert rich == {
+        (0, 0): [("a", Script.BASELINE), ("1", Script.SUB)],
+        (2, 1): [("g", Script.BASELINE), ("2", Script.SUPER)],
+    }
+
+
 def test_extract_raw_tables_matches_line_leading_tables():
     """Tables start at a line-leading ``<table `` and end at the next ``</table>``."""
     content = (
@@ -399,7 +548,7 @@ def test_patent_uspto_ice(patents):
 
     assert doc.name == file_name
     texts = doc.texts
-    assert len(texts) == 183
+    assert len(texts) == 188  # 5 text items of the rich table cells
     assert isinstance(texts[0], TextItem)
     assert texts[0].text == "LIGHT EMITTING DEVICE AND PLANT CULTIVATION METHOD"
     assert texts[0].label == DocItemLabel.TITLE
@@ -558,6 +707,58 @@ def test_patent_uspto_grant_v2_italic_h() -> None:
     assert "\U0001d455" not in claim
 
 
+_SPLIT_TEXT = "DOCLINGLA&#66;" * 50_000
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param(
+            '<!DOCTYPE us-patent-application SYSTEM "us-patent-application-v44-2014-04-03.dtd" [ ]>\n'
+            f"<us-patent-application><description><p>{_SPLIT_TEXT}</p></description>"
+            f"<claims><claim><claim-text>{_SPLIT_TEXT}</claim-text></claim></claims>"
+            "</us-patent-application>\n",
+            id="ice",
+        ),
+        pytest.param(
+            '<!DOCTYPE PATDOC SYSTEM "ST32-US-Grant-025xml.dtd" [ ]>\n'
+            "<PATDOC><SDODE><BTEXT><PARA><PTEXT>"
+            f"<PDAT>{_SPLIT_TEXT}</PDAT></PTEXT></PARA></BTEXT></SDODE>"
+            "<SDOCL><CL><CLM><PARA><PTEXT>"
+            f"<PDAT>{_SPLIT_TEXT}</PDAT></PTEXT></PARA></CLM></CL></SDOCL>"
+            "</PATDOC>\n",
+            id="grant_v2",
+        ),
+        pytest.param(
+            '<!DOCTYPE patent-application-publication SYSTEM "pap-v15-2001-01-31.dtd" [ ]>\n'
+            "<patent-application-publication><subdoc-description>"
+            f"<paragraph>{_SPLIT_TEXT}</paragraph></subdoc-description>"
+            "<subdoc-claims><claim>"
+            f"<claim-text>{_SPLIT_TEXT}</claim-text></claim></subdoc-claims>"
+            "</patent-application-publication>\n",
+            id="app_v1",
+        ),
+    ],
+)
+def test_patent_uspto_text_in_many_chunks(source: str) -> None:
+    """Text that the parser reports in many small chunks is kept complete.
+
+    Each character reference splits the text of an element into one more chunk.
+    The handlers appended each chunk to a string, which copied the full text each
+    time, so a large paragraph took quadratic time.
+    """
+    content = f'<?xml version="1.0" encoding="UTF-8"?>\n{source}'
+    converter = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+
+    doc = converter.convert(
+        DocumentStream(name="split.xml", stream=BytesIO(content.encode("utf-8")))
+    ).document
+
+    expected = "DOCLINGLAB" * 50_000
+    texts = [item.text for item in doc.texts if item.text.startswith("DOCLINGLAB")]
+    assert texts == [expected, expected]
+
+
 def test_patent_uspto_app_v1(patents):
     """Test applications Full Text Data/XML Version 1.x."""
 
@@ -569,7 +770,7 @@ def test_patent_uspto_app_v1(patents):
 
     assert doc.name == file_name
     texts = doc.texts
-    assert len(texts) == 103
+    assert len(texts) == 118  # 15 text items of the rich table cells
     assert isinstance(texts[0], TextItem)
     assert texts[0].text == "Assay reagent"
     assert texts[0].label == DocItemLabel.TITLE

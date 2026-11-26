@@ -43,6 +43,7 @@ from docling.datamodel.pipeline_options_asr_model import (
 )
 from docling.pipeline.asr_transcriber import (
     _AsrModelFactory,
+    _keep_media,
     _merge_into_sentences,
 )
 from docling.pipeline.base_pipeline import BasePipeline
@@ -170,6 +171,8 @@ class VideoPipeline(BasePipeline):
         _log.info("Processing video document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._process_video(conv_res)
+        if self.pipeline_options.keep_media:
+            _keep_media(conv_res)
         return conv_res
 
     def _process_video(self, conv_res: ConversionResult) -> None:
@@ -326,6 +329,7 @@ class VideoPipeline(BasePipeline):
                 events.append((frame.timestamp, 0, frame))
 
             events.sort(key=lambda e: (e[0], e[1]))
+            track = conv_res.document.add_track() if events else None
 
             for _, event_type, payload in events:
                 if event_type == 0:
@@ -334,9 +338,10 @@ class VideoPipeline(BasePipeline):
                         conv_res.document.add_picture(
                             image=ImageRef.from_pil(frame.image, dpi=72),
                             content_layer=ContentLayer.BODY,
+                            parent=track,
                             source=TrackSource(
                                 start_time=frame.timestamp,
-                                end_time=frame.timestamp + 0.001,
+                                end_time=frame.timestamp,
                                 identifier=(
                                     f"scene:{frame.scene_id}"
                                     if frame.scene_id is not None
@@ -357,6 +362,7 @@ class VideoPipeline(BasePipeline):
                             label=DocItemLabel.TEXT,
                             text=item.text,
                             content_layer=ContentLayer.BODY,
+                            parent=track,
                             source=TrackSource(
                                 start_time=item.start_time,
                                 end_time=item.end_time,

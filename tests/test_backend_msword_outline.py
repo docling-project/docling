@@ -10,12 +10,16 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
+from pathlib import Path
+
 import pytest
+from docling_core.types.doc import ListItem, SectionHeaderItem
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+from docling.chunking import HierarchicalChunker
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, WordFormatOption
@@ -331,3 +335,53 @@ def test_numbered_paragraph_with_outline_level_is_a_heading_not_a_list_item(tmp_
         "## 2 Discussion",
         "Body text.",
     ]
+
+
+def test_empty_headings_preserve_parent_chunk_headings_and_list(tmp_path: Path):
+    """Empty headings emit no header and keep parent, chunk headings, and list."""
+    doc = Document()
+    doc.add_heading("Introduction", level=1)
+    doc.add_heading("", level=2)
+    doc.add_heading("   ", level=2)
+    doc.add_paragraph("Body text.")
+    doc.add_paragraph("Item 1", style="List Bullet")
+    doc.add_heading("", level=2)
+    doc.add_paragraph("Item 2", style="List Bullet")
+
+    docx_path = tmp_path / "empty_headings.docx"
+    doc.save(str(docx_path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    converted = converter.convert(docx_path).document
+    headers = [item for item in converted.texts if isinstance(item, SectionHeaderItem)]
+    assert [h.text for h in headers] == ["Introduction"]
+
+    body = next(item for item in converted.texts if item.text == "Body text.")
+    assert body.parent is not None
+    assert body.parent.resolve(converted).text == "Introduction"
+
+    chunks = list(HierarchicalChunker().chunk(converted))
+    assert chunks
+    assert all(c.meta.headings == ["Introduction"] for c in chunks)
+
+    list_items = [item for item in converted.texts if isinstance(item, ListItem)]
+    assert [li.text for li in list_items] == ["Item 1", "Item 2"]
+    assert list_items[0].parent is not None
+    assert list_items[0].parent == list_items[1].parent
+
+
+def test_empty_numbered_headings_do_not_advance_numbering(tmp_path: Path):
+    """Empty numbered headings do not advance heading counters."""
+    doc = Document()
+    num_id = _add_decimal_numbering(doc, 90)
+    for text in ("First", "", "   ", "Second"):
+        p = doc.add_heading(text, level=1)
+        _set_paragraph_numbering(p, num_id)
+
+    docx_path = tmp_path / "empty_numbered_headings.docx"
+    doc.save(str(docx_path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    converted = converter.convert(docx_path).document
+    headers = [item for item in converted.texts if isinstance(item, SectionHeaderItem)]
+    assert [h.text for h in headers] == ["1 First", "2 Second"]

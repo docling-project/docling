@@ -25,7 +25,7 @@ from docling.document_converter import (
 pytestmark = pytest.mark.ml_pdf_model
 
 # Exported from Word-style formatting (LibreOffice), with an embedded font.
-_PDF = Path("tests/data/pdf/script_position.pdf")
+_PDF = Path("tests/data/pdf/fixtures/script_position.pdf")
 
 
 def _convert(backend, enabled: bool):

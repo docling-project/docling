@@ -127,8 +127,10 @@ _CONTENT_RULES = (
     (
         CodeLanguageLabel.C_SHARP,
         re.compile(
+            # A single-word `namespace x {` is also C++ (and `namespace x;` is
+            # also PHP), so only a dotted name, which neither allows, is C#.
             r"\busing\s+System\b|\bConsole\.(Write|WriteLine)\b"
-            r"|\bnamespace\s+[\w.]+\s*[{;]"
+            r"|\bnamespace\s+\w+(\.\w+)+\s*[{;]"
         ),
     ),
     (

@@ -270,13 +270,15 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 2 body." in text
 
 
-def test_epub_percent_encoded_package_path_is_read(tmp_path: Path):
+@pytest.mark.parametrize("stored_name", ["OEBPS/my book.opf", "OEBPS/my%20book.opf"])
+def test_epub_percent_encoded_package_path_is_read(tmp_path: Path, stored_name: str):
     """The full-path of a rootfile is a URL, so its percent-escapes are decoded.
 
     A reference inside the container is a relative IRI reference, while the
     archive stores the literal file name. A package document whose name holds
     a space is therefore escaped in container.xml, and looking it up with the
-    escape still in place fails the whole conversion.
+    escape still in place fails the whole conversion. Some books store the
+    escaped name as is, and these must still convert.
     """
     container = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -306,7 +308,7 @@ def test_epub_percent_encoded_package_path_is_read(tmp_path: Path):
         zi.compress_type = zipfile.ZIP_STORED
         z.writestr(zi, "application/epub+zip")
         z.writestr("META-INF/container.xml", container)
-        z.writestr("OEBPS/my book.opf", opf)
+        z.writestr(stored_name, opf)
         z.writestr(
             "OEBPS/chapter-0.xhtml",
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -720,12 +722,16 @@ def _convert_epub_with_one_image(
         ("../Images/map.png?v=1", "Images/map.png"),
         ("../Images/map.png#top", "Images/map.png"),
         ("../Images/map%231.png", "Images/map#1.png"),
+        ("../Images/map%2520one.png", "Images/map%20one.png"),
     ],
 )
 def test_epub_image_source_ignores_query_and_fragment(
     tmp_path: Path, src: str, archive_image: str
 ):
-    """A query or fragment is not part of the file name; an escaped "#" is."""
+    """A query or fragment is not part of the file name; an escaped "#" is.
+
+    The src is decoded once: an escaped "%" stays in the file name.
+    """
     doc = _convert_epub_with_one_image(tmp_path, src, [archive_image])
 
     assert len(doc.pictures) == 1

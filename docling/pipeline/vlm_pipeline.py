@@ -70,6 +70,8 @@ from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 _DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
+# Any DocTags tag other than a <loc_N> coordinate.
+_DOCTAGS_ELEMENT_TAG_RE = re.compile(r"</?(?!loc_)[a-z][a-z0-9_]*>")
 # Formats whose mappers keep raw heading depths per page; the joined document is normalized.
 _RAW_HEADING_DEPTH_FORMATS = frozenset(
     {
@@ -554,6 +556,23 @@ class VlmPipeline(PaginatedPipeline):
         assert page.size is not None
 
         if response_format == ResponseFormat.DOCTAGS:
+            if predicted_text.strip() and not _DOCTAGS_ELEMENT_TAG_RE.search(
+                predicted_text
+            ):
+                # The DocTags tags are special tokens. A server that drops
+                # special tokens from its output leaves only the text and the
+                # <loc_N> coordinates, and the page parses as empty.
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message="No DocTags element tags found in VLM "
+                        "response. The server may drop special tokens from "
+                        "its output (skip_special_tokens).",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
             document = self._doctags_page_document(predicted_text, image)
         elif response_format == ResponseFormat.DOCLANG:
             document = self._doclang_page_document(conv_res, page, predicted_text)

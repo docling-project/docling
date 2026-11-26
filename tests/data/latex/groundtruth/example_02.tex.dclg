@@ -1,4 +1,4 @@
-<doclang version="0.9">
+<doclang version="0.10">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
@@ -33,10 +33,6 @@
     30
     <fcel/>
     Seattle
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <heading level="2">References</heading>

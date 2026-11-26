@@ -1,9 +1,22 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import pytest
+from io import BytesIO
 
+import pytest
+import torch
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
+from PIL import Image
+
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import (
+    Cluster,
+    InputFormat,
+    LayoutPrediction,
+    Page,
+)
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
     GraniteVisionTableStructureModel,
@@ -277,3 +290,74 @@ def test_factory_registration():
     factory.load_from_plugins()
     registered = list(factory.classes.values())
     assert GraniteVisionTableStructureModel in registered
+
+
+class _RecordingProcessor:
+    """Stands in for the GV processor and records the images it receives."""
+
+    def __init__(self) -> None:
+        self.images: list[Image.Image] = []
+
+    def apply_chat_template(self, conversation, **kwargs) -> str:
+        return "<tables_otsl>"
+
+    def __call__(self, *, text, images, **kwargs):
+        self.images = images
+        return _Inputs({"input_ids": torch.zeros((len(images), 1), dtype=torch.long)})
+
+    def decode(self, ids, **kwargs) -> str:
+        return "<fcel>a<nl>"
+
+
+class _Inputs(dict):
+    def to(self, device):
+        return self
+
+
+class _EchoModel:
+    def generate(self, *, input_ids, **kwargs):
+        return input_ids
+
+
+def test_table_crop_uses_configured_scale():
+    """Table crops are rendered at the option scale, not at a fixed 72 dpi."""
+    buf = BytesIO()
+    Image.new("RGB", (200, 100), "white").save(buf, format="PNG")
+    buf.seek(0)
+    in_doc = InputDocument(
+        path_or_stream=buf,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        filename="page.png",
+    )
+    page = Page(page_no=1, size=Size(width=200, height=100))
+    page._backend = in_doc._backend.load_page(0)
+    page.predictions.layout = LayoutPrediction(
+        clusters=[
+            Cluster(
+                id=0,
+                label=DocItemLabel.TABLE,
+                bbox=BoundingBox(
+                    l=5, t=20, r=105, b=70, coord_origin=CoordOrigin.TOPLEFT
+                ),
+            )
+        ]
+    )
+
+    model = GraniteVisionTableStructureModel(
+        enabled=False,
+        artifacts_path=None,
+        options=GraniteVisionTableStructureOptions(scale=3.0),
+        accelerator_options=AcceleratorOptions(),
+    )
+    processor = _RecordingProcessor()
+    model.enabled = True
+    model.device = "cpu"
+    model._processor = processor
+    model._model = _EchoModel()
+    model._model_max_length = 16
+
+    model.predict_tables(ConversionResult(input=in_doc), [page])
+
+    # 100 x 50 pt table at scale 3
+    assert [im.size for im in processor.images] == [(300, 150)]

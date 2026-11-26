@@ -382,6 +382,29 @@ def _convert_latex_table(latex_content: bytes) -> DoclingDocument:
 
 
 @pytest.mark.parametrize(
+    "rows_end",
+    [rb"\\", rb"\\ \hline", rb"\\ \bottomrule"],
+    ids=["linebreak", "hline", "bottomrule"],
+)
+def test_latex_table_without_empty_last_row(rows_end: bytes):
+    """A table whose last row ends with \\ has no empty row after it."""
+    doc = _convert_latex_table(
+        rb"\documentclass{article}\usepackage{booktabs}\begin{document}"
+        rb"\begin{tabular}{cc}" + b"\n"
+        rb"Model & Score \\" + b"\n"
+        rb"Base & 1.0 " + rows_end + b"\n"
+        rb"\end{tabular}\end{document}"
+    )
+
+    table = doc.tables[0].data
+    assert table.num_rows == 2
+    assert [[cell.text for cell in row] for row in table.grid] == [
+        ["Model", "Score"],
+        ["Base", "1.0"],
+    ]
+
+
+@pytest.mark.parametrize(
     "latex_content",
     [
         rb"\begin{tabular}{c}\multicolumn{1000000}{c}{x}\end{tabular}",

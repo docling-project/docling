@@ -59,6 +59,11 @@ from docling.backend.utils.archive_limits import (
     check_archive_limits,
     read_member,
 )
+from docling.backend.utils.charts import (
+    build_chart_table,
+    chart_points_to_list,
+    max_chart_data_rows,
+)
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.datamodel.backend_options import MsWordBackendOptions
@@ -67,6 +72,11 @@ from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
 from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
+from docling.utils.image_utils import (
+    PICTURE_IMAGE_FORMATS,
+    is_known_picture,
+    open_image,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -253,10 +263,58 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (1, "I"),
 )
 
-_RUN_TEXT_XPATH: Final[str] = (
-    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+_RUN_TEXT_XPATH: Final = etree.XPath(
+    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym",
+    namespaces=_OOXML_NAMESPACES,
 )
 """Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+
+# The XPath expressions below run once per body element, paragraph or run.
+# `element.xpath(...)` compiles its expression on every call, so they are
+# compiled once here.
+_RUN_BOLD_XPATH: Final = etree.XPath(".//w:b", namespaces=_OOXML_NAMESPACES)
+"""Bold elements in a run's properties."""
+
+_PARAGRAPH_MARK_BOLD_XPATH: Final = etree.XPath(
+    "./w:pPr/w:rPr/w:b", namespaces=_OOXML_NAMESPACES
+)
+"""Bold element of a paragraph mark."""
+
+_ALL_RUNS_XPATH: Final = etree.XPath(".//w:r", namespaces=_OOXML_NAMESPACES)
+"""Every run of a paragraph, including runs nested in hyperlinks or insertions."""
+
+_TABLE_CELL_ANCESTOR_XPATH: Final = etree.XPath(
+    "ancestor::w:tc", namespaces=_OOXML_NAMESPACES
+)
+"""Table cells that hold an element."""
+
+_SDT_CONTENT_RUNS_XPATH: Final = etree.XPath(
+    ".//w:sdtContent//w:r", namespaces=_OOXML_NAMESPACES
+)
+"""Runs inside an inline content control."""
+
+_TEXTBOX_XPATH: Final = etree.XPath(
+    ".//w:txbxContent|.//v:textbox//w:p", namespaces=_OOXML_NAMESPACES
+)
+"""Modern Word text boxes."""
+
+_ALT_TEXTBOX_XPATH: Final = etree.XPath(
+    ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
+    namespaces=_OOXML_NAMESPACES,
+)
+"""Text box paragraphs in DrawingML and VML formats."""
+
+_SHAPE_TEXT_XPATH: Final = etree.XPath(
+    ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t", namespaces=_OOXML_NAMESPACES
+)
+"""Shape text that is not in a standard text box."""
+
+_ANY_TEXTBOX_XPATH: Final = etree.XPath(
+    ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//w10:wrap//w:p"
+    "|.//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
+    namespaces=_OOXML_NAMESPACES,
+)
+"""Any text box or shape text content."""
 
 _SYMBOL_FONT: Final[str] = "symbol"
 
@@ -316,7 +374,7 @@ def _get_run_text(run: Run) -> str:
     """
     symbol_font = _is_symbol_font(run.font.name)
     parts: list[str] = []
-    for child in run._r.xpath(_RUN_TEXT_XPATH):
+    for child in _RUN_TEXT_XPATH(run._r):
         if child.tag == f"{_W_NS_CLARK}sym":
             parts.append(_get_sym_text(child))
         elif symbol_font and child.tag == f"{_W_NS_CLARK}t":
@@ -666,6 +724,43 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
+def _strip_xml_comment_nodes(root: etree._Element) -> None:
+    """Remove the XML comment nodes and processing instructions under ``root``.
+
+    The backend walks element children and reads their tag, which a comment does
+    not have, so a single one fails the conversion or drops the content of the
+    table it sits in. Text following a removed node is kept: lxml moves it, since
+    python-docx makes ``text`` read-only on paragraphs and hyperlinks, and clears
+    the run when it is set on a run.
+    """
+    etree.strip_elements(
+        root, etree.Comment, etree.ProcessingInstruction, with_tail=False
+    )
+
+
+def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
+    """Remove XML comment nodes and processing instructions from every XML part.
+
+    Word comments (``w:comment`` elements) are not affected. Returns the text of
+    the XML comments found in the main document part, in document order.
+
+    Some producers write them into the document body (docx4j adds
+    ``<!-- Created by docx4j ... -->``). python-docx loads footnotes, endnotes
+    and charts as plain parts: the backend parses those itself and strips them
+    there.
+    """
+    texts: list[str] = []
+    for part in docx_obj.part.package.iter_parts():
+        if not isinstance(part, XmlPart):
+            continue
+        if part is docx_obj.part:
+            for node in part.element.iter(etree.Comment):
+                if text := (node.text or "").strip():
+                    texts.append(text)
+        _strip_xml_comment_nodes(part.element)
+    return texts
+
+
 def _sanitize_docx(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
     """Rewrite a DOCX archive in memory, removing fragment-only relationship targets.
 
@@ -946,6 +1041,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._last_paragraph_content: (
             tuple[Any, list[tuple[str, Formatting | None, AnyUrl | Path | None]]] | None
         ) = None
+        self._xml_comments: list[str] = []
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -1009,6 +1105,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             limits=self._archive_limits,
         )
         if self.docx_obj:
+            self._xml_comments = _remove_xml_comment_nodes(self.docx_obj)
             self.valid = True
             self.current_part = self.docx_obj.part
             _normalize_list_style_types(self.docx_obj)
@@ -1077,6 +1174,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
             self._add_comments(self.docx_obj, doc)
+            for text in self._xml_comments:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    content_layer=ContentLayer.NOTES,
+                )
             # Add footnotes and endnotes (their body text lives in a separate part;
             # the in-body reference is otherwise silently empty, see docstring below)
             self._add_footnotes_and_endnotes(self.docx_obj, doc)
@@ -1403,30 +1506,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 and element not in self.processed_textbox_elements
             ):
                 # Modern Word textboxes
-                txbx_xpath = etree.XPath(
-                    ".//w:txbxContent|.//v:textbox//w:p",
-                    namespaces=_OOXML_NAMESPACES,
-                )
-                raw_textbox_elements = txbx_xpath(element)
+                raw_textbox_elements = _TEXTBOX_XPATH(element)
 
                 # No modern textboxes found, check for alternate/legacy textbox formats
                 if not raw_textbox_elements:
                     # Additional checks for textboxes in DrawingML and VML formats
-                    alt_txbx_xpath = etree.XPath(
-                        ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
-                        namespaces=_OOXML_NAMESPACES,
-                    )
-                    raw_textbox_elements = alt_txbx_xpath(element)
+                    raw_textbox_elements = _ALT_TEXTBOX_XPATH(element)
 
                     # Check for shape text that's not in a standard textbox
                     if not raw_textbox_elements:
-                        shape_text_xpath = etree.XPath(
-                            ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-                            namespaces=_OOXML_NAMESPACES,
-                        )
                         shape_text_elements = [
                             el
-                            for el in shape_text_xpath(element)
+                            for el in _SHAPE_TEXT_XPATH(element)
                             if el not in self.processed_textbox_elements
                         ]
                         if shape_text_elements:
@@ -1499,10 +1590,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 pics = self._handle_pictures(drawing_blip, doc)
                 added_elements.extend(pics)
                 # Check for Text after the Image
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
             # Check for VML images (legacy format, e.g., embedded Visio drawings)
@@ -1510,10 +1598,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 vml_pics = self._handle_vml_pictures(vml_images, doc)
                 added_elements.extend(vml_pics)
                 # Check for Text after the VML Image
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te2 = self._handle_text_elements(element, doc)
                     added_elements.extend(te2)
             # Check for DrawingML elements
@@ -1552,10 +1637,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         self._handle_drawingml(doc=doc, drawingml_els=other_els)
 
                 # Always process text in paragraph
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
                     added_elements.extend(te)
             # Check for Text
@@ -1567,6 +1649,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
 
         return doc, added_elements
+
+    @staticmethod
+    def _has_paragraph_text(element: BaseOxmlElement) -> bool:
+        """Include symbols and native equations when checking for paragraph text."""
+        if element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None:
+            return True
+        # A text box has its own paragraphs, which are walked separately.
+        return any(
+            next(node.iterancestors(qn("w:p")), None) is element
+            for node in element.iter(qn("w:sym"), f"{OMML_NS}oMath")
+        )
 
     def _walk_optional_container(
         self, container: BaseOxmlElement | None, doc: DoclingDocument
@@ -2201,7 +2294,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _is_in_table_cell(self, paragraph: Paragraph) -> bool:
         """Return True if the paragraph sits inside a table cell."""
-        return bool(paragraph._p.xpath("ancestor::w:tc"))
+        return bool(_TABLE_CELL_ANCESTOR_XPATH(paragraph._p))
 
     def _effective_style_font(self, style: ParagraphStyle | None) -> str:
         """Return the case-folded font family a style resolves to.
@@ -2253,7 +2346,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # run.text is empty and the filter drops them.
         runs = [
             run
-            for r_el in paragraph._p.xpath(".//w:r")
+            for r_el in _ALL_RUNS_XPATH(paragraph._p)
             if (run := Run(r_el, paragraph)).text.strip()
         ]
         mono_chars = 0
@@ -2486,7 +2579,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if not is_bold:
             try:
                 if run._element is not None:
-                    b_tags = run._element.xpath(".//w:b")
+                    b_tags = _RUN_BOLD_XPATH(run._element)
                     for b in b_tags:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
@@ -2494,7 +2587,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             break
 
                 if not is_bold and run._parent._element is not None:
-                    pPr_b = run._parent._element.xpath("./w:pPr/w:rPr/w:b")
+                    pPr_b = _PARAGRAPH_MARK_BOLD_XPATH(run._parent._element)
                     for b in pPr_b:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
@@ -2655,11 +2748,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 runs = [
                     run
                     for run in (
-                        Run(r_el, paragraph)
-                        for r_el in child.xpath(
-                            ".//w:sdtContent//w:r",
-                            namespaces=_OOXML_NAMESPACES,
-                        )
+                        Run(r_el, paragraph) for r_el in _SDT_CONTENT_RUNS_XPATH(child)
                     )
                     if _is_shown(run)
                 ]
@@ -2899,13 +2988,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for attr_name in ["y", "top", "positionY", "y-position", "position"]:
                 value = elem.get(attr_name)
                 if value:
-                    try:
-                        # Remove any non-numeric characters (like 'pt', 'px', etc.)
-                        clean_value = re.sub(r"[^0-9.]", "", value)
-                        if clean_value:
-                            return float(clean_value)
-                    except (ValueError, TypeError):
-                        pass
+                    # Read the leading number and ignore a unit suffix like
+                    # 'pt' or 'px'. The sign is part of it: a drawing anchored
+                    # above or left of its reference point carries a legal
+                    # negative offset, and dropping the minus turns it into a
+                    # position further down. A value with no number at all
+                    # falls through to the next candidate.
+                    match = re.search(r"-?\d*\.?\d+", value)
+                    if match:
+                        return float(match.group())
 
             # Check for position in transform attribute
             transform = elem.get("transform")
@@ -3291,6 +3382,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._last_child_item(doc, self.parents[self._get_level() - 1]), CodeItem
         )
         p_style_id, p_level = self._get_label_and_level(paragraph)
+        if not text and "Heading" in p_style_id:
+            return elem_ref
+
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
         if numid == 0:
@@ -3493,14 +3587,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
         self._update_history(p_style_id, p_level, numid, ilevel)
+        self._record_paragraph_items(para_element, elem_ref, comment_ids)
+        return elem_ref
 
-        # Store mapping of paragraph element to created items for comment linking
+    def _record_paragraph_items(
+        self,
+        para_element: BaseOxmlElement,
+        elem_ref: list[RefItem],
+        comment_ids: set[str],
+    ) -> None:
+        """Record created items and comment links for a paragraph."""
         if elem_ref:
             self.paragraph_to_items[para_element] = elem_ref
             if comment_ids:
                 self.paragraph_comment_map[para_element] = list(comment_ids)
-
-        return elem_ref
 
     def _add_body_text_items(
         self,
@@ -4342,12 +4442,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _has_textbox(self, element: BaseOxmlElement) -> bool:
         """Check if a docx element holds any textbox or shape text content."""
-        txbx_xpath = etree.XPath(
-            ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//w10:wrap//w:p"
-            "|.//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-            namespaces=_OOXML_NAMESPACES,
-        )
-        return bool(txbx_xpath(element))
+        return bool(_ANY_TEXTBOX_XPATH(element))
 
     def _is_rich_table_cell(self, cell: _Cell) -> bool:
         """Determine whether a docx cell should be parsed as a Docling RichTableCell.
@@ -4569,25 +4664,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "image",
                 )
                 pil_image: Image.Image | None = None
+                # LibreOffice can still draw a metafile, or a known picture
+                # format that Pillow cannot decode. Other data, for example
+                # PostScript, is skipped.
+                can_render = False
 
                 if image_data is None:
                     _log.warning("Warning: image cannot be found")
                 else:
                     try:
-                        image_bytes = BytesIO(image_data)
-                        pil_image = normalize_image_for_png(Image.open(image_bytes))
+                        pil_image = normalize_image_for_png(
+                            open_image(image_data, PICTURE_IMAGE_FORMATS)
+                        )
                         # Try to ensure the image is usable by converting to PNG
                         # This will fail for WMF/EMF files that PIL can't render
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
-                        pil_image = Image.open(test_bytes)
-                    except (UnidentifiedImageError, OSError, ValueError) as e:
+                        pil_image = Image.open(test_bytes, formats=["PNG"])
+                    except (
+                        Image.DecompressionBombError,
+                        UnidentifiedImageError,
+                        OSError,
+                        ValueError,
+                    ) as e:
                         # Pillow 13 reports truncated PNG chunks as ValueError.
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
+                        can_render = is_known_picture(image_data) or not isinstance(
+                            e, UnidentifiedImageError
+                        )
 
-                if pil_image is None and image is not None and image_data is not None:
+                if pil_image is None and image is not None and can_render:
                     _log.debug(
                         "Direct PIL loading failed, trying DOCX conversion via LibreOffice"
                     )
@@ -4643,24 +4751,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "VML image",
                 )
                 pil_image: Image.Image | None = None
+                can_render = False
 
                 if image_data is None:
                     _log.warning("Warning: VML image cannot be found")
                 else:
                     try:
-                        image_bytes = BytesIO(image_data)
-                        pil_image = normalize_image_for_png(Image.open(image_bytes))
+                        pil_image = normalize_image_for_png(
+                            open_image(image_data, PICTURE_IMAGE_FORMATS)
+                        )
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
-                        pil_image = Image.open(test_bytes)
-                    except (UnidentifiedImageError, OSError, Exception) as e:
-                        _log.debug(
-                            f"Direct PIL loading failed: {e}, trying DOCX conversion"
-                        )
+                        pil_image = Image.open(test_bytes, formats=["PNG"])
+                    except Exception as e:
+                        _log.debug(f"Direct PIL loading failed: {e}")
                         pil_image = None
+                        # LibreOffice can still draw a metafile, or a known
+                        # picture format that Pillow cannot decode. Other
+                        # data, for example PostScript, is skipped.
+                        can_render = is_known_picture(image_data) or not isinstance(
+                            e, UnidentifiedImageError
+                        )
+                        if not can_render:
+                            _log.warning(
+                                "Warning: VML image cannot be loaded by Pillow."
+                            )
 
-                    if pil_image is None and image_data is not None:
+                    if pil_image is None and can_render:
                         pil_image = self._convert_elements_via_docx(
                             imagedata, ["object", "pict"]
                         )
@@ -4736,10 +4854,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug("chart relationship %r not found in document part", rid)
             return None
         try:
-            return etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
+            chart_root = etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
         except etree.XMLSyntaxError:
             _log.debug("could not parse chart part for relationship %r", rid)
             return None
+        _strip_xml_comment_nodes(chart_root)
+        return chart_root
 
     def _classify_chart(self, chart_root: Any) -> PictureClassificationLabel:
         """Classify a chart from the first plot element under ``c:plotArea``.
@@ -4777,12 +4897,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return str(int(number))
         return str(number)
 
-    def _read_chart_cache(self, node: Any | None) -> list[str]:
+    def _read_chart_cache(
+        self, node: Any | None, max_rows: int, *, warn: bool = True
+    ) -> list[str]:
         """Read the cached ``c:pt`` values under a chart data source.
 
         Handles both cached references (``c:numCache``/``c:strCache``) and inline
         literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
         gaps are filled with empty strings so every series aligns to the same rows.
+        The list is sized by the points that are present and holds at most
+        ``max_rows`` entries; the declared ``c:ptCount`` is not used (see
+        ``chart_points_to_list``).
         """
         if node is None:
             return []
@@ -4805,25 +4930,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             points[idx] = self._chart_cell_text(
                 value.text if value is not None else None
             )
-        if not points:
-            return []
-
-        count = 0
-        count_el = cache.find("c:ptCount", namespaces=ns)
-        if count_el is not None and count_el.get("val"):
-            try:
-                count = int(count_el.get("val"))
-            except ValueError:
-                count = 0
-        length = max([count] + [idx + 1 for idx in points])
-        return [points.get(idx, "") for idx in range(length)]
+        return chart_points_to_list(points, max_rows, warn=warn)
 
     def _chart_series_name(self, series: Any) -> str:
         """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
         tx = series.find("c:tx", namespaces=_OOXML_NAMESPACES)
         if tx is None:
             return ""
-        cached = self._read_chart_cache(tx)
+        cached = self._read_chart_cache(tx, max_rows=1, warn=False)
         if cached:
             return cached[0]
         literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
@@ -4845,7 +4959,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         runs = [t.text for t in title.findall(".//a:t", namespaces=ns) if t.text]
         text = "".join(runs).strip()
         if not text:
-            cached = self._read_chart_cache(title)
+            cached = self._read_chart_cache(title, max_rows=1, warn=False)
             text = cached[0].strip() if cached else ""
         return text or None
 
@@ -4861,25 +4975,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         The plotted numbers and labels come from each series' inline cache
         (``c:numCache``/``c:strCache``), so no workbook reference resolution is
         needed. Scatter charts use ``c:xVal``/``c:yVal`` in place of ``c:cat``/
-        ``c:val``.
+        ``c:val``. ``build_chart_table`` lays the table out, so it has the same
+        size limit as the charts of the other backends.
 
         Args:
             chart_root: The parsed root of a ``chartN.xml`` part.
 
         Returns:
-            A TableData, or None if the chart exposes no usable series.
+            A TableData, or None if the chart exposes no usable series or no
+            populated data row.
         """
         ns = _OOXML_NAMESPACES
         series_list = chart_root.findall(".//c:ser", namespaces=ns)
         if not series_list:
             return None
+        max_rows = max_chart_data_rows(1 + len(series_list))
 
         categories: list[str] = []
         for series in series_list:
             cat = series.find("c:cat", namespaces=ns)
             if cat is None:
                 cat = series.find("c:xVal", namespaces=ns)
-            resolved = self._read_chart_cache(cat)
+            resolved = self._read_chart_cache(cat, max_rows)
             if resolved:
                 categories = resolved
                 break
@@ -4889,55 +5006,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             val = series.find("c:val", namespaces=ns)
             if val is None:
                 val = series.find("c:yVal", namespaces=ns)
-            values = self._read_chart_cache(val)
+            values = self._read_chart_cache(val, max_rows)
             columns.append((self._chart_series_name(series), values))
 
-        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
-        if num_data_rows == 0:
-            return None
-
-        num_rows = num_data_rows + 1
-        num_cols = 1 + len(columns)
-        cells: list[TableCell] = []
-
-        header_labels = [""] + [name for name, _ in columns]
-        for col_idx, label in enumerate(header_labels):
-            cells.append(
-                TableCell(
-                    text=label,
-                    row_span=1,
-                    col_span=1,
-                    start_row_offset_idx=0,
-                    end_row_offset_idx=1,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + 1,
-                    column_header=True,
-                    row_header=False,
-                )
-            )
-        for data_row in range(num_data_rows):
-            row_idx = data_row + 1
-            category = categories[data_row] if data_row < len(categories) else ""
-            row_texts = [category] + [
-                (values[data_row] if data_row < len(values) else "")
-                for _, values in columns
-            ]
-            for col_idx, text in enumerate(row_texts):
-                cells.append(
-                    TableCell(
-                        text=text,
-                        row_span=1,
-                        col_span=1,
-                        start_row_offset_idx=row_idx,
-                        end_row_offset_idx=row_idx + 1,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + 1,
-                        column_header=False,
-                        row_header=(col_idx == 0),
-                    )
-                )
-
-        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+        return build_chart_table(categories, columns)
 
     def _render_chart_image(self, drawing_el: Any) -> Image.Image | None:
         """Render a charted drawing to an image via LibreOffice.
@@ -5158,6 +5230,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             except Exception:
                 _log.warning(f"Failed to parse {tag_name}s part")
                 continue
+            _strip_xml_comment_nodes(root)
 
             # Hyperlink relationships of a note live in the note part.
             self.current_part = matches[0].target_part
