@@ -3394,3 +3394,57 @@ def test_details_in_table_cell_stays_in_the_cell(details: str):
     assert markdown.count("Run it twice") == 1
     assert "exampleRun" not in markdown
     assert markdown.rstrip().endswith("After the table")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("क्\u200dष", id="devanagari-conjunct-zwj"),
+        pytest.param("क्\u200cष", id="devanagari-conjunct-zwnj"),
+        # "می‌خواهم" ("I want"), written with escapes: the ZWNJ separates "mi" from the stem
+        pytest.param(
+            "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645", id="persian-zwnj"
+        ),
+        pytest.param("👨\u200d👩\u200d👧", id="emoji-family-zwj"),
+    ],
+)
+@pytest.mark.parametrize(
+    "template",
+    [
+        "<p>{}</p>",
+        "<h2>{}</h2>",
+        "<p><b>{}</b> tail</p>",
+        "<ul><li>{}</li></ul>",
+        "<table><tr><td>{}</td></tr></table>",
+    ],
+    ids=["paragraph", "heading", "inline-formatting", "list-item", "table-cell"],
+)
+def test_zero_width_joiners_are_kept(text: str, template: str):
+    # U+200D and U+200C change how Indic and Persian text is shaped and how emoji
+    # sequences are composed. They used to be dropped from the text.
+    doc = _convert_html(f"<html><body>{template.format(text)}</body></html>".encode())
+
+    assert text in doc.export_to_markdown()
+    if "<table>" not in template:
+        assert any(text in item.text for item in doc.texts)
+    else:
+        assert any(text in cell.text for cell in doc.tables[0].data.table_cells)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("a\u200bb", "ab"),  # zero-width space
+        ("a\u00adb", "ab"),  # soft hyphen
+        ("a\ufeffb", "ab"),  # zero width no-break space
+        ("a\u2060b", "ab"),  # word joiner
+        ("a\u00a0b", "a b"),  # no-break space
+        ("a\u202fb", "a b"),  # narrow no-break space
+        ("a\u2013b", "a-b"),  # en dash
+        ("a\u2019b", "a'b"),  # right single quotation mark
+        ("a\u2026b", "a...b"),  # ellipsis
+        ("क्\u200dष\u200b", "क्\u200dष"),  # only the non-shaping character goes
+    ],
+)
+def test_clean_unicode_still_normalizes_other_characters(raw: str, expected: str):
+    assert HTMLDocumentBackend._clean_unicode(raw) == expected
