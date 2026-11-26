@@ -106,6 +106,22 @@ def limited_tarinfo_class(limits: TarHeaderLimits) -> type[tarfile.TarInfo]:
                 )
             return super()._proc_member(tarfile_obj)  # type: ignore
 
+        # ``_proc_pax`` calls this on the pax header for a GNU sparse 1.0 member.
+        # It reads the sparse map from the member data, up to a count that the
+        # data gives, so no declared size bounds the read. METS-GBS packages do
+        # not use sparse members. Checked against the stdlib of Python 3.10 to
+        # 3.15.
+        def _proc_gnusparse_10(
+            self,
+            next: tarfile.TarInfo,
+            pax_headers: dict[str, str],
+            tarfile_obj: tarfile.TarFile,
+        ) -> None:
+            raise ArchiveLimitError(
+                f"TAR member at offset {next.offset} is a GNU sparse 1.0 file, "
+                "which is not supported."
+            )
+
     return _LimitedTarInfo
 
 

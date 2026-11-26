@@ -427,6 +427,15 @@ def _sparse(tar: tarfile.TarFile) -> None:
     tar.addfile(info)
 
 
+def _pax_sparse_10(tar: tarfile.TarFile) -> None:
+    # A GNU sparse 1.0 member: pax keys, and the sparse map in the member data.
+    info = tarfile.TarInfo(name="sparse.bin")
+    info.pax_headers = {"GNU.sparse.major": "1", "GNU.sparse.minor": "0"}
+    sparse_map = b"1\n0\n0\n"
+    info.size = len(sparse_map)
+    tar.addfile(info, BytesIO(sparse_map))
+
+
 def _headers_over_total(tar: tarfile.TarFile) -> None:
     # Each header is below the per-header limit, together they are above the total.
     for idx in range(3):
@@ -493,10 +502,19 @@ def test_extended_header_limit_rejects_archive(
     assert message in str(cause)
 
 
-def test_gnu_sparse_member_rejects_archive(test_doc_path, tmp_path):
-    """An old GNU sparse member is rejected before its extension blocks are read."""
+@pytest.mark.parametrize(
+    ("add_head", "tar_format"),
+    [
+        pytest.param(_sparse, tarfile.GNU_FORMAT, id="gnu-old"),
+        pytest.param(_pax_sparse_10, tarfile.PAX_FORMAT, id="pax-1.0"),
+    ],
+)
+def test_gnu_sparse_member_rejects_archive(
+    test_doc_path, tmp_path, add_head, tar_format
+):
+    """A GNU sparse member is rejected before its sparse map is read."""
     archive = tmp_path / "sparse.tar.gz"
-    _repack_with_head(test_doc_path, archive, _sparse, tarfile.GNU_FORMAT)
+    _repack_with_head(test_doc_path, archive, add_head, tar_format)
 
     assert _DocumentConversionInput._detect_mets_gbs(archive) is None
     in_doc = InputDocument(
