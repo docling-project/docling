@@ -14,6 +14,7 @@ client dependencies needed by this command.
 """
 
 import logging
+import os
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -76,7 +77,9 @@ _REMOTE_EPILOG = """\
 Authentication (precedence: flag > environment variable > .env file):
   --service-url      or  DOCLING_SERVICE_URL     (required)
   --api-key          or  DOCLING_SERVICE_API_KEY (optional; omit if unauthenticated)
-  A .env file in the working directory is loaded automatically when present.
+  The nearest .env file (working directory or a parent) is read for these two
+  variables only. Other keys in the file are ignored, and other docling
+  commands do not read .env.
 
 Exit codes:
   0  success; partially converted documents are written too (see --fail-on)
@@ -422,22 +425,41 @@ def convert_remote(
             raise typer.Exit(1)
 
 
-def _load_dotenv() -> None:
-    """Load a working-directory ``.env`` before command params resolve.
+_REMOTE_COMMAND = "convert-remote"
 
-    ``override=False`` keeps the intended precedence: a real environment variable
-    beats ``.env``, and Typer's flag-beats-envvar handling stays on top. ``.env``
-    support is best-effort — flags and environment variables still work without it.
+# The service settings that `convert-remote` documents. Only these keys are
+# read from a `.env` file; every other key in the file is ignored.
+_DOTENV_KEYS: frozenset[str] = frozenset(
+    {"DOCLING_SERVICE_URL", "DOCLING_SERVICE_API_KEY"}
+)
+
+
+def _load_dotenv(ctx: typer.Context) -> None:
+    """Set the ``convert-remote`` service settings from the nearest ``.env``.
+
+    This runs as the app callback, so it applies before the subcommand params
+    resolve and Typer sees the values through each option's ``envvar``. Other
+    commands do not read ``.env``. Only the keys in ``_DOTENV_KEYS`` are set,
+    and a real environment variable beats ``.env``; Typer's flag-beats-envvar
+    handling stays on top. ``.env`` support is best-effort: flags and
+    environment variables still work without it.
     """
+    if ctx.invoked_subcommand != _REMOTE_COMMAND:
+        return
     try:
-        from dotenv import find_dotenv, load_dotenv
-
-        # usecwd=True searches from the user's working directory; the default
-        # (usecwd=False) searches up from this installed package dir and never
-        # finds the user's .env.
-        load_dotenv(find_dotenv(usecwd=True), override=False)
+        from dotenv import dotenv_values, find_dotenv
     except ImportError:
-        pass
+        return
+
+    # usecwd=True searches from the user's working directory; the default
+    # (usecwd=False) searches up from this installed package dir and never
+    # finds the user's .env.
+    dotenv_path = find_dotenv(usecwd=True)
+    if not dotenv_path:
+        return
+    for key, value in dotenv_values(dotenv_path).items():
+        if key in _DOTENV_KEYS and value is not None and key not in os.environ:
+            os.environ[key] = value
 
 
 def register(app: "typer.Typer") -> None:
@@ -454,7 +476,7 @@ def register(app: "typer.Typer") -> None:
         ),
     )(_load_dotenv)
     app.command(
-        "convert-remote",
+        _REMOTE_COMMAND,
         no_args_is_help=True,
         help=_REMOTE_HELP,
         short_help=(

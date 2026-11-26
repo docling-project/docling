@@ -14,6 +14,10 @@ DOCLING_SERVICE_URL=https://your-docling-service.example.com
 DOCLING_SERVICE_API_KEY=your-api-key   # omit if the service is unauthenticated
 ```
 
+`docling convert-remote` reads only these two keys from the nearest `.env`
+(working directory or a parent); a real environment variable wins. Other keys
+in `.env` are ignored, and other `docling` commands do not read `.env`.
+
 Install docling-slim with the `service-client` extra :
 
 ```

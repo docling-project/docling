@@ -49,6 +49,10 @@ DOCLING_SERVICE_URL=https://your-docling-service.example.com
 DOCLING_SERVICE_API_KEY=your-api-key    # omit if the service is unauthenticated
 ```
 
+`docling convert-remote` reads only these two keys from the nearest `.env`
+(working directory or a parent); a real environment variable wins. Other keys
+in `.env` are ignored, and other `docling` commands do not read `.env`.
+
 Result artifacts (presigned URLs) are downloaded only from public addresses.
 If the artifact storage is on a private network (e.g. MinIO on `localhost` or
 in the same cluster), list its origin:
@@ -124,7 +128,8 @@ docling convert-remote report.pdf \
 ```
 
 `convert-remote` reads the same `DOCLING_SERVICE_URL` / `DOCLING_SERVICE_API_KEY`
-environment (or `.env`). Run `docling convert-remote --help` for all flags.
+environment (or only these two keys from `.env`). Run
+`docling convert-remote --help` for all flags.
 
 ## Errors
 
