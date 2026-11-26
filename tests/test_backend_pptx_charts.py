@@ -474,3 +474,35 @@ def test_chart_keeps_literal_series_name(tmp_path: Path, name: str):
         ["Q2", "20"],
         ["Q3", "30"],
     ]
+
+
+@pytest.mark.parametrize("linked", [False, True], ids=["rich-text", "cell-linked"])
+def test_chart_title_becomes_the_caption(tmp_path: Path, linked: bool):
+    """A chart title linked to a cell is read from the cell cache, as for axes."""
+    from lxml import etree
+    from pptx.oxml.ns import qn
+
+    prs, plot = _single_plot_deck("barChart")
+    chart = plot.getparent().getparent()
+    title = etree.Element(qn("c:title"))
+    title_text = etree.SubElement(title, qn("c:tx"))
+    if linked:
+        str_ref = etree.SubElement(title_text, qn("c:strRef"))
+        etree.SubElement(str_ref, qn("c:f")).text = "Sheet1!$B$1"
+        str_cache = etree.SubElement(str_ref, qn("c:strCache"))
+        etree.SubElement(str_cache, qn("c:ptCount")).set("val", "1")
+        point = etree.SubElement(str_cache, qn("c:pt"))
+        point.set("idx", "0")
+        etree.SubElement(point, qn("c:v")).text = "Sales 2026"
+    else:
+        rich = etree.SubElement(title_text, qn("c:rich"))
+        etree.SubElement(rich, qn("a:bodyPr"))
+        run = etree.SubElement(etree.SubElement(rich, qn("a:p")), qn("a:r"))
+        etree.SubElement(run, qn("a:t")).text = "Sales 2026"
+    chart.insert(0, title)
+    path = tmp_path / "chart_title.pptx"
+    prs.save(path)
+
+    doc = get_converter().convert(path).document
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].caption_text(doc) == "Sales 2026"

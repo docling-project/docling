@@ -1732,7 +1732,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         if not chart.has_title:
             return None
-        text = chart.chart_title.text_frame.text.strip()
+        title = chart.chart_title
+        # text_frame would replace a title linked to a cell with empty rich text.
+        text = title.text_frame.text.strip() if title.has_text_frame else ""
+        if not text:
+            text = "".join(
+                chart.element.chart.xpath("./c:title/c:tx/c:strRef//c:v/text()")
+            ).strip()
         return text or None
 
     @staticmethod
