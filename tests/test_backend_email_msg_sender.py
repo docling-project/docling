@@ -138,6 +138,39 @@ def test_msg_sender_header_ignores_parentheses_in_legacy_dn():
     )
 
 
+def test_msg_sender_properties_that_fail_to_decode_keep_the_from_line():
+    """The sender properties are guarded like every other .msg string read.
+
+    python-oxmsg maps some code pages to codec names that Python does not
+    know (e.g. "windows-950"), and it can pick the wrong codec for 8-bit
+    strings. A failed PidTagSenderName or PidTagSenderSmtpAddress read must
+    not stop the conversion: the From header then comes from the sender
+    string alone.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from oxmsg import Message as OxMsgMessage
+    from oxmsg.properties import Properties
+
+    original = Properties.str_prop_value
+
+    def str_prop_value(self: Properties, pid: int) -> str | None:
+        if pid in (0x0C1A, 0x5D01):
+            raise LookupError("unknown encoding: windows-950")
+        return original(self, pid)
+
+    data = Path("tests/data/email/sources/msg_exchange_sender.msg").read_bytes()
+    sender = PropertyMock(return_value='"Doe, Jonathan" </O=EX/OU=HQ/CN=U1>')
+    with (
+        patch.object(OxMsgMessage, "sender", sender),
+        patch.object(Properties, "str_prop_value", str_prop_value),
+    ):
+        rfc822, fallback = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+
+    assert b'From: "Doe, Jonathan"' in rfc822
+    assert fallback == '"Doe, Jonathan"'
+
+
 def test_msg_sender_header_keeps_bare_name_with_comma():
     """oxmsg returns PidTagSentRepresentingName unquoted, e.g. "Doe, Jonathan"."""
     header = EmailDocumentBackend._msg_sender_header

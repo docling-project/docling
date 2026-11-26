@@ -555,12 +555,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             sender = ""
             _log.warning("Could not decode .msg sender")
         if sender:
-            from_value, sender_fallback = EmailDocumentBackend._msg_sender_header(
-                sender,
-                sender_name=message.properties.str_prop_value(_SENDER_NAME_PROP_ID),
-                smtp_address=message.properties.str_prop_value(
+            try:
+                sender_name = message.properties.str_prop_value(_SENDER_NAME_PROP_ID)
+                smtp_address = message.properties.str_prop_value(
                     _SENDER_SMTP_ADDRESS_PROP_ID
-                ),
+                )
+            except (UnicodeDecodeError, LookupError):
+                sender_name = smtp_address = None
+                _log.warning("Could not decode .msg sender properties")
+            from_value, sender_fallback = EmailDocumentBackend._msg_sender_header(
+                sender, sender_name=sender_name, smtp_address=smtp_address
             )
             if from_value:
                 email_message["From"] = EmailDocumentBackend._header_safe(from_value)
