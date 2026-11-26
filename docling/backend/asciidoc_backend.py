@@ -3,6 +3,7 @@
 
 import logging
 import re
+import textwrap
 from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from io import BytesIO
@@ -603,6 +604,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # last. The lines between a pair run through this loop like any other,
         # so a comment inside such a block is a comment and not body text.
         open_content_blocks: list[str] = []
+        # Rows of a table may be indented, so no literal paragraph starts there.
+        in_table = False
 
         i = 0
         n = len(lines)
@@ -686,12 +689,41 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
+            if stripped == "|===":
+                in_table = not in_table
+
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
             if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
                 block_data = []
                 block_delimiter = "----"
                 block_language = source_attr.group(1)
                 i += 2
+                continue
+
+            # A verbatim style on a paragraph, or an indented first line (a
+            # literal paragraph), keeps the lines as written up to the next
+            # blank line, so a trailing " +" stays code and is no line break.
+            next_line = lines[i + 1].strip() if i + 1 < n else ""
+            styled = (
+                source_attr is not None or stripped in ("[listing]", "[literal]")
+            ) and next_line not in ("", "----", "....", *cls._CONTENT_BLOCK_DELIMITERS)
+            indented = (
+                stripped != ""
+                and line[:1].isspace()
+                and not in_table
+                and (i == 0 or not lines[i - 1].strip())
+                and not cls._is_list_item(line)
+            )
+            if styled or indented:
+                i += 1 if styled else 0
+                paragraph = []
+                while i < n and lines[i].strip():
+                    paragraph.append(lines[i].rstrip("\r\n"))
+                    i += 1
+                yield _LiteralBlock(
+                    text=textwrap.dedent("\n".join(paragraph)),
+                    language=source_attr.group(1) if source_attr else None,
+                )
                 continue
 
             yield line
