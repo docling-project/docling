@@ -18,6 +18,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
+from docling.models.utils.shared_models import load_shared_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.granite_vision_utils import granite_vision_4_needs_remote_code
 from docling.utils.otsl import parse_otsl_output
@@ -106,7 +107,8 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 trust_remote_code=trust_remote_code,
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
-            self._model = AutoModelForImageTextToText.from_pretrained(
+            self._model = load_shared_model(
+                AutoModelForImageTextToText,
                 artifacts_path,
                 device_map=self.device,
                 dtype=torch.bfloat16,

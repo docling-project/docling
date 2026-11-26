@@ -76,6 +76,12 @@ This preset loads the same official
 `ibm-granite/granite-vision-4.1-4b` repository. In Python, use
 `ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4_mlx")`.
 
+Stages that load the same Transformers weights with the same settings share one
+model in memory. For example, `--table-structure-engine granite_vision_table`
+with `--enrich-chart-extraction` loads `ibm-granite/granite-vision-4.1-4b` once.
+A stage with a different device, dtype, or attention implementation loads its
+own copy. Quantized models are not shared.
+
 ## Available local models
 
 By default, the vision-language models are running locally.
