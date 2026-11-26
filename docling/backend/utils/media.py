@@ -43,12 +43,12 @@ def media_kind(mimetype: Optional[str], location: str = "") -> Optional[MediaKin
     containers that older decks embed (e.g. ``.wmv``), which are recorded even though
     the video pipeline cannot read them.
     """
-    major = (mimetype or "").partition("/")[0]
+    major = (mimetype or "").strip().lower().partition("/")[0]
     if major == "video":
         return "video"
     if major == "audio":
         return "audio"
-    suffix = PurePosixPath(location).suffix.lower().removeprefix(".")
+    suffix = PurePosixPath(media_file_name(location)).suffix.lower().removeprefix(".")
     if (
         suffix in FormatToExtensions[InputFormat.VIDEO]
         or suffix in _LEGACY_VIDEO_EXTENSIONS
