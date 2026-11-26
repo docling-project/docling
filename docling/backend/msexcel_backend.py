@@ -314,6 +314,9 @@ def _format_excel_date(value: Any, fmt: str) -> str:
         return value.isoformat().split("T")[0]
     if fmt.lower() == "m/d/yy h:mm" and isinstance(value, datetime):
         return value.isoformat(sep=" ")
+    # A date is a positive number, so the first section applies. The formats in
+    # Excel's Format Cells list end with a text section, as in "m/d/yy;@".
+    fmt = re.split(r';(?=(?:[^"]*"[^"]*")*[^"]*$)', fmt)[0]
     parts = _EXCEL_DATE_TOKEN_RE.findall(fmt)
     if "".join(parts) != fmt:
         return str(value)
