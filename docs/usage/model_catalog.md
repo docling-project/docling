@@ -421,8 +421,10 @@ python -m sglang.launch_server \
 ```
 
 Keep the CUDA Graph flags. The vendor reports that eager mode can repeat box coordinates. Then
-point the preset at the server in the Python SDK. The CLI has no option for the API URL, so
-`--vlm-model unlimited_ocr2` uses the default OpenAI URL and is not useful without the SDK.
+point the preset at the server in the Python SDK. Without a URL, the preset uses the default
+local address of the generic API engine (`http://localhost:11434/v1/chat/completions`). The CLI
+has no option for the API URL, so `--vlm-model unlimited_ocr2` works only with a server at that
+address.
 
 ```python
 from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
