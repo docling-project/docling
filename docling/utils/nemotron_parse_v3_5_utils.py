@@ -17,7 +17,8 @@ from __future__ import annotations
 import html
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from itertools import groupby
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -111,6 +112,17 @@ class _LatexCell:
     row_span: int
     col_span: int
     header: bool
+
+
+@dataclass
+class _LatexOwner:
+    """The cell that a column holds, and the row where that cell starts."""
+
+    cell: _LatexCell
+    row: int
+
+    def covers(self, row: int) -> bool:
+        return self.row + self.cell.row_span > row
 
 
 def extract_nemotron_parse_v3_5_blocks(content: str) -> list[NemotronParseBlock]:
@@ -294,48 +306,55 @@ def _parse_latex_cell(text: str) -> _LatexCell:
     )
 
 
-def _place_empty_latex_cell(
-    cell: _LatexCell,
-    col: int,
-    row_index: int,
-    owners: dict[int, tuple[_LatexCell, int]],
-    entries: list[_LatexCell | tuple[_LatexCell, int]],
-) -> None:
-    """Record an empty cell across ``col..col+cell.col_span``, skipping covered columns."""
-    uncovered_start: int | None = None
-    end_col = col + cell.col_span
-    for owned_col in range(col, end_col):
-        owner = owners.get(owned_col)
-        if owner is not None and owner[1] + owner[0].row_span > row_index:
-            if uncovered_start is not None:
-                emitted = _LatexCell(
-                    text="",
-                    row_span=cell.row_span,
-                    col_span=owned_col - uncovered_start,
-                    header=cell.header,
-                )
-                for c in range(uncovered_start, owned_col):
-                    owners[c] = (emitted, row_index)
-                entries.append(emitted)
-                uncovered_start = None
-            entries.append(owner)
-        elif uncovered_start is None:
-            uncovered_start = owned_col
-    if uncovered_start is not None:
-        span = end_col - uncovered_start
-        emitted = (
-            cell
-            if span == cell.col_span
-            else _LatexCell(
-                text="",
-                row_span=cell.row_span,
-                col_span=span,
-                header=cell.header,
+def _place_latex_row(
+    row: str, row_index: int, owners: dict[int, _LatexOwner]
+) -> list[_LatexCell]:
+    """Place one LaTeX row and return the cells that HTML must emit for it.
+
+    LaTeX gives every cell an explicit column: each ``&`` moves past the full
+    ``\\multicolumn`` span, and a column under a ``\\multirow`` still holds an
+    empty placeholder. HTML instead omits covered columns. First, each text cell
+    ends every ``\\multirow`` it overlaps, as the predicted row span was too long.
+    Then, with the final spans known, each cell emits only its uncovered columns.
+    """
+    placed: list[tuple[int, _LatexCell]] = []
+    col = 0
+    for raw_cell in _split_top_level(row, "&"):
+        cell = _parse_latex_cell(raw_cell)
+        if col + cell.col_span > _MAX_TABLE_GRID_CELLS:
+            raise ValueError(f"LaTeX table exceeds {_MAX_TABLE_GRID_CELLS} columns")
+        placed.append((col, cell))
+        col += cell.col_span
+
+    for col, cell in placed:
+        if not cell.text:
+            continue
+        for owned_col in range(col, col + cell.col_span):
+            owner = owners.get(owned_col)
+            if owner is not None and owner.covers(row_index):
+                owner.cell.row_span = row_index - owner.row
+
+    emitted: list[_LatexCell] = []
+    for col, cell in placed:
+        # A text cell has no covered column left, so it always emits in full.
+        covered = [
+            (c, c in owners and owners[c].covers(row_index))
+            for c in range(col, col + cell.col_span)
+        ]
+        for is_covered, run in groupby(covered, key=lambda item: item[1]):
+            if is_covered:
+                continue
+            run_cols = [c for c, _ in run]
+            part = (
+                cell
+                if len(run_cols) == cell.col_span
+                else replace(cell, col_span=len(run_cols))
             )
-        )
-        for c in range(uncovered_start, end_col):
-            owners[c] = (emitted, row_index)
-        entries.append(emitted)
+            owner = _LatexOwner(cell=part, row=row_index)
+            for owned_col in run_cols:
+                owners[owned_col] = owner
+            emitted.append(part)
+    return emitted
 
 
 def latex_tabular_to_html(latex: str) -> str:
@@ -357,42 +376,11 @@ def latex_tabular_to_html(latex: str) -> str:
     if end >= 0:
         body = body[:end]
     rows = [row for row in _split_top_level(body, "\\\\") if row.strip()]
-    # Column -> (cell, start row) of the last cell placed in that column.
-    owners: dict[int, tuple[_LatexCell, int]] = {}
-    grid: list[list[_LatexCell]] = []
-    for row_index, row in enumerate(rows):
-        col = 0
-        # Real cells to emit, interleaved with (owner_cell, owner_row) markers for
-        # empty placeholders skipped under an active multirow on this row. If a
-        # later cell on the same row cuts that multirow short, its markers become
-        # empty cells so later columns stay aligned.
-        entries: list[_LatexCell | tuple[_LatexCell, int]] = []
-        for raw_cell in _split_top_level(row, "&"):
-            cell = _parse_latex_cell(raw_cell)
-            if col + cell.col_span > _MAX_TABLE_GRID_CELLS:
-                raise ValueError(f"LaTeX table exceeds {_MAX_TABLE_GRID_CELLS} columns")
-            if not cell.text:
-                _place_empty_latex_cell(cell, col, row_index, owners, entries)
-            else:
-                for owned_col in range(col, col + cell.col_span):
-                    owner = owners.get(owned_col)
-                    if owner is not None and owner[1] + owner[0].row_span > row_index:
-                        # Text under a multirow: the predicted row span was too long.
-                        owner[0].row_span = row_index - owner[1]
-                for owned_col in range(col, col + cell.col_span):
-                    owners[owned_col] = (cell, row_index)
-                entries.append(cell)
-            col += cell.col_span
-        grid.append(
-            [
-                entry
-                if isinstance(entry, _LatexCell)
-                else _LatexCell(text="", row_span=1, col_span=1, header=False)
-                for entry in entries
-                if isinstance(entry, _LatexCell)
-                or entry[1] + entry[0].row_span <= row_index
-            ]
-        )
+    # Column -> the last cell placed in that column.
+    owners: dict[int, _LatexOwner] = {}
+    grid = [
+        _place_latex_row(row, row_index, owners) for row_index, row in enumerate(rows)
+    ]
 
     html_rows: list[str] = []
     for cells in grid:
