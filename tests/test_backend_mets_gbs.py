@@ -2,15 +2,23 @@
 # SPDX-License-Identifier: MIT
 
 import tarfile
+from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend, MetsGbsPageBackend
+from docling.backend.utils import tar_limits
+from docling.backend.utils.archive_limits import ArchiveLimitError
+from docling.backend.utils.tar_limits import TarHeaderLimits
 from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import BoundingBox, DocumentStream, InputFormat
-from docling.datamodel.document import InputDocument, _DocumentConversionInput
+from docling.datamodel.document import (
+    InputDocument,
+    _DocumentConversionInput,
+    get_input_rejection_cause,
+)
 from docling.document_converter import DocumentConverter
 
 
@@ -391,3 +399,148 @@ def test_stream_input_matches_path_input(test_doc_path):
     assert from_stream.document_hash == from_path.document_hash
     from_path._backend.unload()
     from_stream._backend.unload()
+
+
+_LOW_TAR_HEADER_LIMITS = TarHeaderLimits(
+    max_header_bytes=4096, max_total_header_bytes=8192
+)
+
+
+def _no_head(tar: tarfile.TarFile) -> None:
+    """Add no member; the global pax header comes from ``pax_headers``."""
+
+
+def _long_name(tar: tarfile.TarFile) -> None:
+    tar.addfile(tarfile.TarInfo(name="n" * 5000), BytesIO())
+
+
+def _long_link(tar: tarfile.TarFile) -> None:
+    info = tarfile.TarInfo(name="link")
+    info.type = tarfile.SYMTYPE
+    info.linkname = "l" * 5000
+    tar.addfile(info)
+
+
+def _sparse(tar: tarfile.TarFile) -> None:
+    info = tarfile.TarInfo(name="sparse.bin")
+    info.type = tarfile.GNUTYPE_SPARSE
+    tar.addfile(info)
+
+
+def _pax_sparse_10(tar: tarfile.TarFile) -> None:
+    # A GNU sparse 1.0 member: pax keys, and the sparse map in the member data.
+    info = tarfile.TarInfo(name="sparse.bin")
+    info.pax_headers = {"GNU.sparse.major": "1", "GNU.sparse.minor": "0"}
+    sparse_map = b"1\n0\n0\n"
+    info.size = len(sparse_map)
+    tar.addfile(info, BytesIO(sparse_map))
+
+
+def _headers_over_total(tar: tarfile.TarFile) -> None:
+    # Each header is below the per-header limit, together they are above the total.
+    for idx in range(3):
+        tar.addfile(tarfile.TarInfo(name=f"{idx}" + "n" * 3000), BytesIO())
+
+
+def _repack_with_head(
+    source: Path,
+    target: Path,
+    add_head: Callable[[tarfile.TarFile], None],
+    tar_format: int = tarfile.PAX_FORMAT,
+    pax_headers: dict[str, str] | None = None,
+) -> None:
+    """Rewrite a METS-GBS archive with the members from `add_head` first."""
+    with (
+        tarfile.open(source, mode="r:gz") as src,
+        tarfile.open(
+            target, mode="w:gz", format=tar_format, pax_headers=pax_headers
+        ) as dst,
+    ):
+        add_head(dst)
+        for member in src:
+            dst.addfile(member, src.extractfile(member))
+
+
+@pytest.mark.parametrize(
+    ("add_head", "tar_format", "pax_headers", "message"),
+    [
+        pytest.param(_long_name, tarfile.PAX_FORMAT, None, "one header", id="pax-x"),
+        pytest.param(
+            _no_head,
+            tarfile.PAX_FORMAT,
+            {"comment": "c" * 5000},
+            "one header",
+            id="pax-g",
+        ),
+        pytest.param(_long_name, tarfile.GNU_FORMAT, None, "one header", id="gnu-L"),
+        pytest.param(_long_link, tarfile.GNU_FORMAT, None, "one header", id="gnu-K"),
+        pytest.param(
+            _headers_over_total, tarfile.PAX_FORMAT, None, "in total", id="total"
+        ),
+    ],
+)
+def test_extended_header_limit_rejects_archive(
+    test_doc_path, tmp_path, monkeypatch, add_head, tar_format, pax_headers, message
+):
+    """Extended-header payloads above the limits stop detection and the backend
+    before tarfile reads them, while the same archive passes the default limits."""
+    archive = tmp_path / "large_header.tar.gz"
+    _repack_with_head(test_doc_path, archive, add_head, tar_format, pax_headers)
+    assert _DocumentConversionInput._detect_mets_gbs(archive) == "application/mets+xml"
+
+    monkeypatch.setattr(tar_limits, "DEFAULT_TAR_HEADER_LIMITS", _LOW_TAR_HEADER_LIMITS)
+    assert _DocumentConversionInput._detect_mets_gbs(archive) is None
+
+    in_doc = InputDocument(
+        path_or_stream=archive,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+    )
+    assert not in_doc.valid
+    cause = get_input_rejection_cause(in_doc)
+    assert isinstance(cause, ArchiveLimitError)
+    assert message in str(cause)
+
+
+@pytest.mark.parametrize(
+    ("add_head", "tar_format"),
+    [
+        pytest.param(_sparse, tarfile.GNU_FORMAT, id="gnu-old"),
+        pytest.param(_pax_sparse_10, tarfile.PAX_FORMAT, id="pax-1.0"),
+    ],
+)
+def test_gnu_sparse_member_rejects_archive(
+    test_doc_path, tmp_path, add_head, tar_format
+):
+    """A GNU sparse member is rejected before its sparse map is read."""
+    archive = tmp_path / "sparse.tar.gz"
+    _repack_with_head(test_doc_path, archive, add_head, tar_format)
+
+    assert _DocumentConversionInput._detect_mets_gbs(archive) is None
+    in_doc = InputDocument(
+        path_or_stream=archive,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+    )
+    assert not in_doc.valid
+    assert isinstance(get_input_rejection_cause(in_doc), ArchiveLimitError)
+
+
+def test_long_member_name_within_header_limit_loads(test_doc_path, tmp_path):
+    """A member with a long name, stored with a pax header, still loads."""
+    archive = tmp_path / "long_name.tar.gz"
+    _repack_with_head(
+        test_doc_path,
+        archive,
+        lambda tar: tar.addfile(
+            tarfile.TarInfo(name="d" * 150 + "/" + "f" * 150 + ".bin"), BytesIO()
+        ),
+    )
+
+    assert _DocumentConversionInput._detect_mets_gbs(archive) == "application/mets+xml"
+    doc_backend: MetsGbsDocumentBackend = _get_backend(archive)
+    assert doc_backend.is_valid()
+    page_backend: MetsGbsPageBackend = doc_backend.load_page(0)
+    assert page_backend.is_valid()
+    page_backend.unload()
+    doc_backend.unload()
