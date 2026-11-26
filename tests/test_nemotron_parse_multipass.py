@@ -449,6 +449,10 @@ def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
     engine = TransformersVlmEngine.__new__(TransformersVlmEngine)
     engine._initialized = True
     engine.options = TransformersVlmEngineOptions()
+    # Tests that build engines with __new__ set the attributes predict_batch
+    # reads, including the loaded model's model_type; a non-Falcon value
+    # keeps the generic path.
+    engine.model_type = "nemotron_parse"
     engine.processor = Processor()
     engine.vlm_model = SimpleNamespace(
         generate=lambda **kwargs: torch.tensor([[9, 9, *row] for row in generated])
