@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import math
+import posixpath
 import re
 import shutil
 import warnings
@@ -25,7 +26,7 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -71,6 +72,8 @@ from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
     ArchiveLimits,
     check_archive_limits,
+    check_referenced_total,
+    read_member,
 )
 from docling.backend.utils.chartex import CHARTEX_NAMESPACE, read_chartex
 from docling.backend.utils.charts import (
@@ -280,6 +283,8 @@ def _trim_fragment_edges(
     )
 
 
+_NS_PACKAGE_RELS: Final = "http://schemas.openxmlformats.org/package/2006/relationships"
+
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
     load_dtd=False,
@@ -287,6 +292,74 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     dtd_validation=False,
 )
 """Safe XML parser to prevent XXE, DTD-over-network and entity-expansion attacks."""
+
+
+def _relationship_targets(
+    zip_file: ZipFile, source: str, max_bytes: int
+) -> dict[str, tuple[str, str]]:
+    """Return the internal relationships of a part, as id to (type, member).
+
+    Args:
+        zip_file: The open archive.
+        source: The member name of the source part, or "" for the package.
+        max_bytes: The largest decompressed size accepted for the rels part.
+    """
+    folder, name = posixpath.split(source)
+    rels_path = posixpath.join(folder, "_rels", f"{name}.rels")
+    if rels_path not in zip_file.NameToInfo:
+        return {}
+    root = etree.fromstring(
+        read_member(zip_file, rels_path, max_bytes), parser=_SAFE_XML_PARSER
+    )
+    targets: dict[str, tuple[str, str]] = {}
+    for rel in root.iterfind(f"{{{_NS_PACKAGE_RELS}}}Relationship"):
+        rel_id = rel.get("Id")
+        target = rel.get("Target")
+        if rel_id is None or target is None or rel.get("TargetMode") == "External":
+            continue
+        member = (
+            target.lstrip("/")
+            if target.startswith("/")
+            else posixpath.normpath(posixpath.join(folder, target))
+        )
+        targets[rel_id] = (rel.get("Type", ""), member)
+    return targets
+
+
+def _slide_references(zip_file: ZipFile, max_bytes: int) -> list[ZipInfo]:
+    """Return the archive member of each entry of the slide list, in order.
+
+    Several entries of ``p:sldIdLst`` can refer to the same slide part.
+
+    Args:
+        zip_file: The open archive.
+        max_bytes: The largest decompressed size accepted for each XML part.
+    """
+    main_parts = [
+        member
+        for rel_type, member in _relationship_targets(zip_file, "", max_bytes).values()
+        if rel_type.endswith("/officeDocument") and member in zip_file.NameToInfo
+    ]
+    if not main_parts:
+        return []
+    main_part = main_parts[0]
+    targets = _relationship_targets(zip_file, main_part, max_bytes)
+    root = etree.fromstring(
+        read_member(zip_file, main_part, max_bytes), parser=_SAFE_XML_PARSER
+    )
+    references: list[ZipInfo] = []
+    for slide_id in root.iterfind(".//{*}sldIdLst/{*}sldId"):
+        # The relationship namespace of r:id differs between Transitional and
+        # Strict files, so any namespaced "id" attribute is taken.
+        rel_ids = [
+            value
+            for key, value in slide_id.attrib.items()
+            if (name := etree.QName(key)).namespace and name.localname == "id"
+        ]
+        target = targets.get(rel_ids[0]) if rel_ids else None
+        if target is not None and (info := zip_file.NameToInfo.get(target[1])):
+            references.append(info)
+    return references
 
 
 @dataclass
@@ -543,6 +616,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         with ZipFile(self.path_or_stream, "r") as zip_file:
             check_archive_limits(zip_file, self._archive_limits)
+            # python-pptx returns a slide part once for each entry of the slide
+            # list, and the conversion emits the slide content each time.
+            check_referenced_total(
+                self._archive_limits,
+                _slide_references(zip_file, self._archive_limits.max_file_bytes),
+                zip_file.infolist(),
+            )
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
 
