@@ -64,7 +64,7 @@ class TableHelperMixin:
         finish_row_fn: Callable[[], None],
         parse_brace_args_fn: Callable[[str], list[str]],
     ):
-        if n.macroname == "\\":  # Row break
+        if n.macroname in ("\\", "tabularnewline"):  # Row break
             finish_row_fn()
 
         elif n.macroname == "multicolumn":
