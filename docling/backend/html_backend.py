@@ -3605,13 +3605,27 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
+        """Compute the size of the grid of an HTML table, taking spans into account.
+
+        The cells are laid out the way `parse_table_data` places them:
+
+        - A row of only `<th>` cells that all span several rows is a row header.
+          Its cells go in the grid row after the last data row (one row further
+          for each row header before it in the same run), with one row less of
+          rowspan, and the next data row shares that grid row.
+        - A row without cells is a row of the grid only when the rowspans of
+          earlier rows cover it; otherwise it adds no row.
+
+        The row groups of the table (`thead`, `tbody`, `tfoot`) are unwrapped
+        into the table first.
+
+        Args:
+            tag: The `<table>` element.
+
+        Returns:
+            The number of rows and the number of columns of the grid.
+        """
         HTMLDocumentBackend._unwrap_table_sections(tag)
-        # Find the number of rows and columns (taking into account spans).
-        # The cells are laid out the way parse_table_data places them: a row of
-        # only <th> cells that all span several rows is a row header, whose
-        # cells go in the grid row after the last data row (one row further for
-        # each row header before it in the run) with one row less of rowspan,
-        # and the next data row shares that grid row.
         num_rows: int = 0
         grid_row_cell_spans: list[list[tuple[int, int]]] = []
         covered_until = 0
