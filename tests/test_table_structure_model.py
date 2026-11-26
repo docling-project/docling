@@ -59,3 +59,91 @@ def test_table_tokens_prefer_ocr_words_over_their_line() -> None:
         ("Week", True),
         ("Begin", True),
     ]
+
+
+def test_table_tokens_keep_native_lines_without_word_cells() -> None:
+    # Backends such as PyPdfiumDocumentBackend emit textline_cells only
+    # (word_cells is empty). When OCR keeps even one cell in the table
+    # cluster, all surviving native lines must still reach TableFormer.
+    col_header = _cell(BoundingBox(l=10, t=10, r=80, b=22), "Function", from_ocr=False)
+    row_value = _cell(BoundingBox(l=10, t=30, r=80, b=42), "Govern", from_ocr=False)
+    ocr_noise = _cell(BoundingBox(l=120, t=30, r=150, b=42), "| =|", from_ocr=True)
+
+    tokens = _words_and_ocr_cells(
+        word_cells=[],
+        cluster_cells=[col_header, row_value, ocr_noise],
+    )
+
+    assert [(c.text, c.from_ocr) for c in tokens] == [
+        ("Function", False),
+        ("Govern", False),
+        ("| =|", True),
+    ]
+
+
+def test_table_tokens_drop_ocr_words_on_native_lines_without_native_words() -> None:
+    # When a line-only PDF backend is paired with a word-level OCR plugin,
+    # OCR words overlapping a kept native line must be dropped, while OCR
+    # words on an OCR line replace that OCR line.
+    header = _cell(HEADER_BOX, "Week Begin", from_ocr=True)
+    native_line = _cell(VALUE_BOX, "5000", from_ocr=False)
+    ocr_words = [
+        _cell(BoundingBox(l=0, t=0, r=22, b=10), "Week", from_ocr=True),
+        _cell(BoundingBox(l=26, t=0, r=50, b=10), "Begin", from_ocr=True),
+        _cell(VALUE_BOX, "5000", from_ocr=True),
+    ]
+
+    tokens = _words_and_ocr_cells(
+        word_cells=ocr_words,
+        cluster_cells=[header, native_line],
+    )
+
+    assert [(c.text, c.from_ocr) for c in tokens] == [
+        ("5000", False),
+        ("Week", True),
+        ("Begin", True),
+    ]
+
+
+def test_table_tokens_keep_uncovered_native_lines_alongside_native_words() -> None:
+    # Native lines covered by finer native words use those words, while any
+    # surviving native line without covering native words is retained.
+    row1 = _cell(BoundingBox(l=10, t=10, r=90, b=22), "Row 1", from_ocr=False)
+    row2 = _cell(BoundingBox(l=10, t=30, r=90, b=42), "Row 2", from_ocr=False)
+    ocr_note = _cell(BoundingBox(l=10, t=50, r=90, b=62), "Note", from_ocr=True)
+    words = [
+        _cell(BoundingBox(l=10, t=10, r=45, b=22), "Row", from_ocr=False),
+        _cell(BoundingBox(l=55, t=10, r=90, b=22), "1", from_ocr=False),
+    ]
+
+    tokens = _words_and_ocr_cells(
+        word_cells=words,
+        cluster_cells=[row1, row2, ocr_note],
+    )
+
+    assert [(c.text, c.from_ocr) for c in tokens] == [
+        ("Row", False),
+        ("1", False),
+        ("Row 2", False),
+        ("Note", True),
+    ]
+
+
+def test_table_tokens_ignore_blank_word_cells() -> None:
+    # A whitespace-only word cell must not mask a non-empty line cell.
+    native_line = _cell(VALUE_BOX, "5000", from_ocr=False)
+    ocr_line = _cell(HEADER_BOX, "Week Begin", from_ocr=True)
+    blank_words = [
+        _cell(VALUE_BOX, "   ", from_ocr=False),
+        _cell(HEADER_BOX, " ", from_ocr=True),
+    ]
+
+    tokens = _words_and_ocr_cells(
+        word_cells=blank_words,
+        cluster_cells=[native_line, ocr_line],
+    )
+
+    assert [(c.text, c.from_ocr) for c in tokens] == [
+        ("5000", False),
+        ("Week Begin", True),
+    ]
