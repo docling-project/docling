@@ -25,6 +25,7 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.utils.tar_limits import open_tar_gz
 from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.exceptions import DocumentLoadError
@@ -253,11 +254,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         # Hashing the input document reads the stream to its end.
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
-        self._tar: tarfile.TarFile = (
-            tarfile.open(name=self.path_or_stream, mode="r:gz")
-            if isinstance(self.path_or_stream, Path)
-            else tarfile.open(fileobj=self.path_or_stream, mode="r:gz")
-        )
+        self._tar: tarfile.TarFile = open_tar_gz(self.path_or_stream)
         self.root_mets: etree._Element | None = None
         self.page_map: dict[int, _PageFiles] = {}
         self._total_bytes_extracted = 0

@@ -56,6 +56,7 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.utils.tar_limits import open_tar_gz
 from docling.datamodel.backend_options import (
     BackendOptions,
     MetsGbsBackendOptions,
@@ -1420,11 +1421,7 @@ class _DocumentConversionInput(BaseModel):
         member_count = 0
 
         try:
-            with tarfile.open(
-                name=content if isinstance(content, Path) else None,
-                fileobj=content if isinstance(content, BytesIO) else None,
-                mode="r:gz",
-            ) as tar:
+            with open_tar_gz(content) as tar:
                 # Iterate lazily so the member limit applies before all headers are read
                 for member in tar:
                     member_count += 1
