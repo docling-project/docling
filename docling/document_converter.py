@@ -115,6 +115,9 @@ from docling.datamodel.progress import (
     ProgressReporter,
 )
 from docling.datamodel.settings import (
+    DEFAULT_MAX_ZIP_EXPANDED_SIZE,
+    DEFAULT_MAX_ZIP_MEMBER_COUNT,
+    DEFAULT_MAX_ZIP_MEMBER_SIZE,
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
     PageRange,
@@ -701,6 +704,9 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        max_zip_member_size: int = DEFAULT_MAX_ZIP_MEMBER_SIZE,
+        max_zip_expanded_size: int = DEFAULT_MAX_ZIP_EXPANDED_SIZE,
+        max_zip_member_count: int = DEFAULT_MAX_ZIP_MEMBER_COUNT,
         progress_callback: Optional[ProgressCallback] = None,
     ) -> ConversionResult:
         """Convert one document fetched from a file path, URL, or DocumentStream.
@@ -724,6 +730,14 @@ class DocumentConverter:
                 Documents exceeding this number will not be converted.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
+            max_zip_member_size: Maximum size in bytes of one member of a ZIP
+                archive that is expanded into documents. Larger members are
+                not converted.
+            max_zip_expanded_size: Maximum total size in bytes of the members
+                read from a ZIP archive that is expanded into documents.
+            max_zip_member_count: Maximum number of members in a ZIP archive
+                that is expanded into documents. A larger archive is not
+                converted.
             progress_callback: Optional callable that receives the progress
                 events of this call only, on top of the converter-level
                 `progress_callback`. Use it when one converter serves several
@@ -764,6 +778,9 @@ class DocumentConverter:
                 max_file_size=max_file_size,
                 headers=headers,
                 page_range=page_range,
+                max_zip_member_size=max_zip_member_size,
+                max_zip_expanded_size=max_zip_expanded_size,
+                max_zip_member_count=max_zip_member_count,
                 progress_callback=progress_callback,
             )
         )
@@ -789,6 +806,9 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        max_zip_member_size: int = DEFAULT_MAX_ZIP_MEMBER_SIZE,
+        max_zip_expanded_size: int = DEFAULT_MAX_ZIP_EXPANDED_SIZE,
+        max_zip_member_count: int = DEFAULT_MAX_ZIP_MEMBER_COUNT,
         progress_callback: Optional[ProgressCallback] = None,
     ) -> Iterator[ConversionResult]:
         """Convert multiple documents from file paths, URLs, or DocumentStreams.
@@ -805,6 +825,15 @@ class DocumentConverter:
             max_file_size: Maximum file size in bytes. Documents exceeding this
                 limit will be skipped.
             page_range: Range of pages to convert in each document.
+            max_zip_member_size: Maximum size in bytes of one member of a ZIP
+                archive that is expanded into documents. Members exceeding this
+                limit will be skipped.
+            max_zip_expanded_size: Maximum total size in bytes of the members
+                read from a ZIP archive that is expanded into documents. Members
+                exceeding the remaining budget will be skipped.
+            max_zip_member_count: Maximum number of members in a ZIP archive
+                that is expanded into documents. A larger archive will be
+                skipped as a whole.
             progress_callback: Optional callable that receives the progress
                 events of this call only, on top of the converter-level
                 `progress_callback`. Use it when one converter serves several
@@ -836,6 +865,9 @@ class DocumentConverter:
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
             page_range=page_range,
+            max_zip_member_size=max_zip_member_size,
+            max_zip_expanded_size=max_zip_expanded_size,
+            max_zip_member_count=max_zip_member_count,
         )
         conv_input = _DocumentConversionInput(
             path_or_stream_iterator=source, limits=limits, headers=headers

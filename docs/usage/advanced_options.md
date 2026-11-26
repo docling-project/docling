@@ -881,6 +881,25 @@ than one member. By default, `convert_all()` raises on the first failed member.
 Pass `raises_on_error=False` to receive failure results and continue with later
 members. The configured file-size limit applies to each member and to the total
 size of successfully read members.
+
+Docling also applies default limits to the expansion of a generic ZIP archive.
+A member larger than 256 MiB (`max_zip_member_size`) fails, and a member that
+takes the total above 1 GiB (`max_zip_expanded_size`) fails. The other members
+still convert. An archive with more than 10,000 members (`max_zip_member_count`)
+fails as a whole, and Docling reads none of its members. A lower
+`max_file_size` replaces the two size limits. Pass the limits as keyword
+arguments to `convert()` or `convert_all()`:
+
+```python
+results = list(
+    converter.convert_all(
+        ["documents.zip"],
+        max_zip_member_size=512 * 1024 * 1024,
+        max_zip_expanded_size=4 * 1024 * 1024 * 1024,
+        max_zip_member_count=50_000,
+    )
+)
+```
 For image inputs, the page count is checked against `max_num_pages` before any
 page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits
