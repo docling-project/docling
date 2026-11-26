@@ -1,3 +1,38 @@
+## [v2.154.0](https://github.com/docling-project/docling/releases/tag/v2.154.0) - 2026-11-26
+
+### Feature
+
+* **iwork:** Read number, date and checkbox cells in Pages and Keynote tables ([#5215](https://github.com/docling-project/docling/issues/5215)) ([`1637d24`](https://github.com/docling-project/docling/commit/1637d24d77286edf4208bacd2daf5a148cf474a8))
+
+### Fix
+
+* **ocr:** Make the Tesseract CLI DPI hint optional ([#5564](https://github.com/docling-project/docling/issues/5564)) ([`9e196f7`](https://github.com/docling-project/docling/commit/9e196f7dc29c40afa8d229151d547fe494f6a306))
+* **email:** Keep display name of Exchange sender in .msg files ([#5420](https://github.com/docling-project/docling/issues/5420)) ([`8a3c661`](https://github.com/docling-project/docling/commit/8a3c661fa16aa2dd8caec0a603259152d9269e79))
+* **email:** Strip trailing NUL characters from .msg properties and body ([#5552](https://github.com/docling-project/docling/issues/5552)) ([`490746a`](https://github.com/docling-project/docling/commit/490746a0d2f46cc5d50b93befc8978375e8a9fcf))
+* **mets:** Limit the TAR extended-header data read before each member ([#5606](https://github.com/docling-project/docling/issues/5606)) ([`17285a8`](https://github.com/docling-project/docling/commit/17285a883ef6d2b4e3407ce066f544649070129c))
+* **pipeline:** Report incomplete slide media conversions ([#5566](https://github.com/docling-project/docling/issues/5566)) ([`b2ac496`](https://github.com/docling-project/docling/commit/b2ac49643c8a43f74ca65bdef2776a32845275c2))
+* **cli:** Read .env for convert-remote only with --env-file or --dotenv ([#5607](https://github.com/docling-project/docling/issues/5607)) ([`c9d5206`](https://github.com/docling-project/docling/commit/c9d52060e65a6c5cf0624674406c0e18b969d8cc))
+* **pptx:** Keep chart series names stored as literal text ([#5570](https://github.com/docling-project/docling/issues/5570)) ([`12974b3`](https://github.com/docling-project/docling/commit/12974b3706b36e97874d30babfaf30f4bd1ba3d2))
+* **latex:** End a table row at \tabularnewline ([#5560](https://github.com/docling-project/docling/issues/5560)) ([`6fceee6`](https://github.com/docling-project/docling/commit/6fceee6a36e3aab4ada28b0681dae3a5692fae3c))
+* **docx:** Build heading numbers from the w:lvlText of the numbering level ([#5555](https://github.com/docling-project/docling/issues/5555)) ([`fd729a4`](https://github.com/docling-project/docling/commit/fd729a4892a04918fadd4680ab7c6971dc3ed608))
+* Limit the expansion of generic ZIP inputs by default ([#5605](https://github.com/docling-project/docling/issues/5605)) ([`318cede`](https://github.com/docling-project/docling/commit/318cede4cfa2e4b05074bc6043288b5efa44af2a))
+* **latex:** Limit the expansion of user-defined macros ([#5610](https://github.com/docling-project/docling/issues/5610)) ([`dd2b5b2`](https://github.com/docling-project/docling/commit/dd2b5b287d30e2010236aad539b73b694ffba268))
+* **docx:** Preserve balanced braces when unwrapping OMML ensuremath macros ([#5609](https://github.com/docling-project/docling/issues/5609)) ([`d712a90`](https://github.com/docling-project/docling/commit/d712a90108db3612812d11e4bdc85c9638f05656))
+* **iwork:** Count decompressed IWA streams against max_total_bytes ([#5604](https://github.com/docling-project/docling/issues/5604)) ([`56291ff`](https://github.com/docling-project/docling/commit/56291ffc9257830e84235505b1f822d3494fdaf6))
+* **pptx:** Read table cells from their own XML element and clamp spans ([#5603](https://github.com/docling-project/docling/issues/5603)) ([`12693b9`](https://github.com/docling-project/docling/commit/12693b9a79e3695a5acba6c845d8377926ecd3bf))
+* **epub,pptx,xlsx:** Count repeated member references in archive limits ([#5602](https://github.com/docling-project/docling/issues/5602)) ([`6b4504e`](https://github.com/docling-project/docling/commit/6b4504ebe7dc8a9478a7753e2257ee17a76478a1))
+* **vlm:** Default the Unlimited-OCR presets to a local server ([#5608](https://github.com/docling-project/docling/issues/5608)) ([`041836e`](https://github.com/docling-project/docling/commit/041836ea34e0fb29041069725e80c49eae6d17e9))
+* **docx:** Keep the spelling of text chart labels ([#5559](https://github.com/docling-project/docling/issues/5559)) ([`44d7d46`](https://github.com/docling-project/docling/commit/44d7d46c33bdc0f746e84a2697cf7ae49757862a))
+* **nemotron-parse:** Resolve multi-column overlaps with multirow spans ([#5595](https://github.com/docling-project/docling/issues/5595)) ([`948ad72`](https://github.com/docling-project/docling/commit/948ad72ec47806e7c97b890e55fff378adf24f70))
+
+### Documentation
+
+* Fix the RTX guide snippets passing unknown DocumentConverter kwargs ([#5594](https://github.com/docling-project/docling/issues/5594)) ([`5805f42`](https://github.com/docling-project/docling/commit/5805f42314fcec6c15e1cc953b80926b45a0b1e8))
+
+### Performance
+
+* **latex:** Read sibling macro arguments without copying the node list ([#5611](https://github.com/docling-project/docling/issues/5611)) ([`af82e69`](https://github.com/docling-project/docling/commit/af82e69b86e8307a3bafa06ea63a8d15fd18f273))
+
 ## [v2.153.0](https://github.com/docling-project/docling/releases/tag/v2.153.0) - 2026-11-25
 
 ### Feature
