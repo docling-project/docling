@@ -34,6 +34,9 @@ from docling.datamodel.document import (
 from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
 from docling.datamodel.pipeline_options import PipelineOptions
 from docling.datamodel.settings import (
+    DEFAULT_MAX_ZIP_EXPANDED_SIZE,
+    DEFAULT_MAX_ZIP_MEMBER_COUNT,
+    DEFAULT_MAX_ZIP_MEMBER_SIZE,
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
     PageRange,
@@ -136,6 +139,9 @@ class DocumentExtractor:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        max_zip_member_size: int = DEFAULT_MAX_ZIP_MEMBER_SIZE,
+        max_zip_expanded_size: int = DEFAULT_MAX_ZIP_EXPANDED_SIZE,
+        max_zip_member_count: int = DEFAULT_MAX_ZIP_MEMBER_COUNT,
     ) -> ExtractionResult:
         all_res = self.extract_all(
             source=[source],
@@ -144,6 +150,9 @@ class DocumentExtractor:
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
             page_range=page_range,
+            max_zip_member_size=max_zip_member_size,
+            max_zip_expanded_size=max_zip_expanded_size,
+            max_zip_member_count=max_zip_member_count,
             template=template,
         )
         return next(all_res)
@@ -158,11 +167,17 @@ class DocumentExtractor:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        max_zip_member_size: int = DEFAULT_MAX_ZIP_MEMBER_SIZE,
+        max_zip_expanded_size: int = DEFAULT_MAX_ZIP_EXPANDED_SIZE,
+        max_zip_member_count: int = DEFAULT_MAX_ZIP_MEMBER_COUNT,
     ) -> Iterator[ExtractionResult]:
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
             page_range=page_range,
+            max_zip_member_size=max_zip_member_size,
+            max_zip_expanded_size=max_zip_expanded_size,
+            max_zip_member_count=max_zip_member_count,
         )
         conv_input = _DocumentConversionInput(
             path_or_stream_iterator=source, limits=limits, headers=headers
