@@ -421,13 +421,16 @@ class MacroHandlerMixin:
         self,
         node: LatexMacroNode,
         text_buffer: list[str | InlineFormula],
-        following_nodes=None,
+        siblings: list,
+        next_index: int,
     ) -> None:
         term = self._item_term(node)
         if term:
             text_buffer.append(f"{term}: ")
-            if following_nodes and isinstance(following_nodes[0], LatexCharsNode):
-                following_nodes[0].chars = following_nodes[0].chars.lstrip()
+            if next_index < len(siblings):
+                next_node = siblings[next_index]
+                if isinstance(next_node, LatexCharsNode):
+                    next_node.chars = next_node.chars.lstrip()
 
     def _append_custom_math_expansion(
         self,
@@ -476,8 +479,14 @@ class MacroHandlerMixin:
         text_label: DocItemLabel | None,
         text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
-        following_nodes=None,
+        siblings: list,
+        next_index: int,
     ) -> int:
+        """Append the inline text of ``node`` and return the sibling count it used.
+
+        ``siblings[next_index:]`` are the nodes after ``node``. The handlers read
+        them in place, without a copy of the list.
+        """
         char_text = self._char_macro_to_text(node)
         if char_text is not None:
             text_buffer.append(char_text)
@@ -496,7 +505,7 @@ class MacroHandlerMixin:
             self._append_ensuremath(node, text_buffer)
         elif node.macroname in self._custom_macros:
             expansion, consumed = self._expand_custom_macro_invocation(
-                node, following_nodes or []
+                node, siblings, next_index
             )
             if expansion:
                 _log.debug(
@@ -547,7 +556,7 @@ class MacroHandlerMixin:
                         text_buffer.append(text)
         elif node.macroname == "item":
             flush_fn()
-            self._process_item_macro_inline(node, text_buffer, following_nodes)
+            self._process_item_macro_inline(node, text_buffer, siblings, next_index)
         elif node.macroname == "label":
             self._process_macro(node, doc, parent, formatting, text_label)
         else:
@@ -887,7 +896,7 @@ class MacroHandlerMixin:
             return 0
 
     def _extract_custom_macro_invocation_args(
-        self, following_nodes, expected_arg_count: int
+        self, siblings: list, next_index: int, expected_arg_count: int
     ) -> tuple[list[str], int]:
         if expected_arg_count <= 0:
             return [], 0
@@ -895,7 +904,8 @@ class MacroHandlerMixin:
         arg_values: list[str] = []
         consumed = 0
 
-        for next_node in following_nodes:
+        for index in range(next_index, len(siblings)):
+            next_node = siblings[index]
             if len(arg_values) >= expected_arg_count:
                 break
 
@@ -949,7 +959,7 @@ class MacroHandlerMixin:
         return self._nodes_to_text(parsed_nodes)
 
     def _expand_custom_macro_invocation(
-        self, node: LatexMacroNode, following_nodes
+        self, node: LatexMacroNode, siblings: list, next_index: int
     ) -> tuple[str, int]:
         """Return the expansion of a custom macro and the arguments it consumes.
 
@@ -962,7 +972,7 @@ class MacroHandlerMixin:
         consumed = 0
         if expected_arg_count > 0:
             arg_values, consumed = self._extract_custom_macro_invocation_args(
-                following_nodes, expected_arg_count
+                siblings, next_index, expected_arg_count
             )
         if expected_arg_count <= 0 or len(arg_values) < expected_arg_count:
             definition = self._custom_macros[node.macroname]

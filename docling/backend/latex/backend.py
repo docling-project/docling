@@ -420,7 +420,8 @@ class LatexDocumentBackend(
                             text_label,
                             text_buffer,
                             flush_text_buffer,
-                            nodes[idx + 1 :],
+                            nodes,
+                            idx + 1,
                         )
 
                 elif isinstance(node, LatexEnvironmentNode):

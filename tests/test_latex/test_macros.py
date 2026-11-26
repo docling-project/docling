@@ -443,6 +443,34 @@ This is \\myterm and the value is \\myvalue.
     assert "special term" in md and "42" in md
 
 
+def test_latex_long_run_of_sibling_macros():
+    """A long run of sibling macros keeps every custom macro argument and text."""
+    count = 3000
+    run = r"\pair{a} {b} \textbf{w} " * count
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\newcommand{\\pair}[2]{#1-#2}\n"
+        "\\begin{document}\n"
+        f"\\section{{{run}}}\n"
+        f"{run}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    expected = " ".join(["a-b w"] * count)
+    headings = [t.text for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    paragraphs = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert headings == [expected]
+    assert paragraphs[-1] == expected
+
+
 def extract_macro_name_old(raw_string):
     """The OLD buggy implementation"""
     # This was the original broken code
