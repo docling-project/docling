@@ -287,7 +287,14 @@
         }
       ],
       "orig": "With footnote",
-      "text": "With footnote"
+      "text": "With footnote",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/2",
@@ -341,7 +348,14 @@
         }
       ],
       "orig": "A rectangle shape with this text inside.",
-      "text": "A rectangle shape with this text inside."
+      "text": "A rectangle shape with this text inside.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/4",
@@ -368,7 +382,14 @@
         }
       ],
       "orig": "Let’s introduce a list",
-      "text": "Let’s introduce a list"
+      "text": "Let’s introduce a list",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/5",
@@ -396,6 +417,13 @@
       ],
       "orig": "With foo",
       "text": "With foo",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -425,6 +453,13 @@
       ],
       "orig": "Bar",
       "text": "Bar",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -454,6 +489,13 @@
       ],
       "orig": "And baz things",
       "text": "And baz things",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -510,6 +552,13 @@
       ],
       "orig": "List item4",
       "text": "List item4",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": true,
       "marker": "1."
     },
@@ -539,6 +588,13 @@
       ],
       "orig": "List item5",
       "text": "List item5",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": true,
       "marker": "2."
     },
@@ -568,6 +624,13 @@
       ],
       "orig": "List item6",
       "text": "List item6",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": true,
       "marker": "3."
     },
@@ -597,6 +660,13 @@
       ],
       "orig": "I1",
       "text": "I1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -626,6 +696,13 @@
       ],
       "orig": "I2",
       "text": "I2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -655,6 +732,13 @@
       ],
       "orig": "I3",
       "text": "I3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -684,6 +768,13 @@
       ],
       "orig": "I4",
       "text": "I4",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -712,7 +803,14 @@
         }
       ],
       "orig": "Some info:",
-      "text": "Some info:"
+      "text": "Some info:",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/17",
@@ -740,6 +838,13 @@
       ],
       "orig": "Item A",
       "text": "Item A",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -769,6 +874,13 @@
       ],
       "orig": "Item B",
       "text": "Item B",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -797,7 +909,14 @@
         }
       ],
       "orig": "Maybe a list?",
-      "text": "Maybe a list?"
+      "text": "Maybe a list?",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/20",
@@ -825,6 +944,13 @@
       ],
       "orig": "List1",
       "text": "List1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": true,
       "marker": "1."
     },
@@ -854,6 +980,13 @@
       ],
       "orig": "List2",
       "text": "List2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": true,
       "marker": "2."
     },
@@ -883,6 +1016,13 @@
       ],
       "orig": "List3",
       "text": "List3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": true,
       "marker": "3."
     },
@@ -912,6 +1052,13 @@
       ],
       "orig": "l1 ",
       "text": "l1 ",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -941,6 +1088,13 @@
       ],
       "orig": "l2",
       "text": "l2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -970,6 +1124,13 @@
       ],
       "orig": "l3",
       "text": "l3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
