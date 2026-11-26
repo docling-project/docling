@@ -719,6 +719,23 @@ class LatexBackendOptions(BaseBackendOptions):
             "Set to None to disable the timeout. Defaults to 30 s."
         ),
     )
+    max_macro_expansions: PositiveInt = Field(
+        50_000,
+        description=(
+            "Maximum number of expansions of user-defined macros (\\def, "
+            "\\newcommand) in one document. When the limit is reached, the "
+            "remaining macros are kept unexpanded and the conversion continues."
+        ),
+    )
+    max_macro_expansion_chars: PositiveInt = Field(
+        2_000_000,
+        description=(
+            "Maximum total number of characters that the expansions of "
+            "user-defined macros (\\def, \\newcommand) can produce in one "
+            "document. When the limit is reached, the remaining macros are "
+            "kept unexpanded and the conversion continues."
+        ),
+    )
     tikz_engine: Optional[Literal["tectonic"]] = Field(
         None,
         description=(

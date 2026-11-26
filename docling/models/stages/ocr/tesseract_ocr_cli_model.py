@@ -329,6 +329,7 @@ class TesseractOcrCliModel(BaseOcrModel):
             return
 
         dpi = _POINTS_PER_INCH * self.scale
+        image_dpi = (dpi, dpi) if self.options.embed_render_dpi else None
         for page_i, page in enumerate(page_batch):
             assert page._backend is not None
             if not page._backend.is_valid():
@@ -350,7 +351,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 suffix=".png", mode="w+b", delete=False
                             ) as image_file:
                                 fname = image_file.name
-                                high_res_image.save(image_file, dpi=(dpi, dpi))
+                                high_res_image.save(image_file, dpi=image_dpi)
                             doc_orientation = 0
                             df_osd: Optional[pd.DataFrame] = None
                             try:
@@ -374,7 +375,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 high_res_image = high_res_image.rotate(
                                     -doc_orientation, expand=True
                                 )
-                                high_res_image.save(fname, dpi=(dpi, dpi))
+                                high_res_image.save(fname, dpi=image_dpi)
                             try:
                                 df_result = self._run_tesseract(fname, df_osd)
                             except subprocess.CalledProcessError as exc:

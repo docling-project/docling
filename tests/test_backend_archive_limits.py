@@ -6,6 +6,7 @@
 import struct
 import tracemalloc
 import zipfile
+from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
 
@@ -231,3 +232,150 @@ def test_read_member_rejects_a_declared_size_over_the_limit() -> None:
         assert read_member(archive, "part.xml", 4097) == bytes(4097)
         with pytest.raises(ArchiveLimitError, match=r"part\.xml"):
             read_member(archive, "part.xml", 4096)
+
+
+# A document can refer to one member many times. The backends read or convert
+# the member once for each reference, so each reference counts its size.
+_REPEATED_MEMBER_BYTES = 2048
+_FEW_REFERENCES = 3
+_MANY_REFERENCES = 20
+
+
+def _rewrite(archive_bytes: bytes, member: str, content: bytes) -> bytes:
+    """Return a copy of the archive with ``member`` replaced by ``content``."""
+    buffer = BytesIO()
+    with (
+        zipfile.ZipFile(BytesIO(archive_bytes)) as original,
+        zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as rewritten,
+    ):
+        for info in original.infolist():
+            data = content if info.filename == member else original.read(info)
+            rewritten.writestr(info, data)
+    return buffer.getvalue()
+
+
+def _epub_with_repeated_spine(references: int) -> bytes:
+    text = "x" * _REPEATED_MEMBER_BYTES
+    itemrefs = '<itemref idref="c"/>' * references
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "META-INF/container.xml",
+            '<?xml version="1.0"?><container version="1.0" '
+            'xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles>'
+            '<rootfile full-path="content.opf" '
+            'media-type="application/oebps-package+xml"/></rootfiles></container>',
+        )
+        archive.writestr(
+            "content.opf",
+            '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" '
+            'version="3.0"><manifest><item id="c" href="c.xhtml" '
+            'media-type="application/xhtml+xml"/></manifest>'
+            f"<spine>{itemrefs}</spine></package>",
+        )
+        archive.writestr("c.xhtml", f"<html><body><p>{text}</p></body></html>")
+    return buffer.getvalue()
+
+
+def _pptx_with_repeated_slide(references: int) -> bytes:
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+    box.text_frame.text = "x" * _REPEATED_MEMBER_BYTES
+    buffer = BytesIO()
+    prs.save(buffer)
+    with zipfile.ZipFile(buffer) as archive:
+        xml = archive.read("ppt/presentation.xml").decode()
+    start = xml.index("<p:sldId ")
+    entry = xml[start : xml.index("/>", start) + 2]
+    entries = "".join(
+        entry.replace('id="256"', f'id="{256 + index}"') for index in range(references)
+    )
+    return _rewrite(
+        buffer.getvalue(),
+        "ppt/presentation.xml",
+        xml.replace(entry, entries).encode(),
+    )
+
+
+def _xlsx_with_repeated_sheet(references: int) -> bytes:
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    workbook.active["A1"] = "x" * _REPEATED_MEMBER_BYTES
+    buffer = BytesIO()
+    workbook.save(buffer)
+    with zipfile.ZipFile(buffer) as archive:
+        xml = archive.read("xl/workbook.xml").decode()
+    start = xml.index("<sheet ")
+    entry = xml[start : xml.index("/>", start) + 2]
+    entries = "".join(
+        entry.replace('name="Sheet"', f'name="Sheet{index}"').replace(
+            'sheetId="1"', f'sheetId="{index + 1}"'
+        )
+        for index in range(references)
+    )
+    return _rewrite(
+        buffer.getvalue(), "xl/workbook.xml", xml.replace(entry, entries).encode()
+    )
+
+
+_REPEATED_CASES = [
+    pytest.param(InputFormat.EPUB, _epub_with_repeated_spine, "c.xhtml", id="epub"),
+    pytest.param(
+        InputFormat.PPTX,
+        _pptx_with_repeated_slide,
+        "ppt/slides/slide1.xml",
+        id="pptx",
+    ),
+    pytest.param(
+        InputFormat.XLSX,
+        _xlsx_with_repeated_sheet,
+        "xl/worksheets/sheet1.xml",
+        id="xlsx",
+    ),
+]
+
+
+@pytest.mark.parametrize(("input_format", "build", "member"), _REPEATED_CASES)
+def test_each_reference_to_a_member_counts_against_the_total(
+    input_format: InputFormat,
+    build: Callable[[int], bytes],
+    member: str,
+) -> None:
+    """A member referenced many times is rejected, a few references still load."""
+    many = build(_MANY_REFERENCES)
+    with zipfile.ZipFile(BytesIO(many)) as archive:
+        member_bytes = archive.getinfo(member).file_size
+        # EPUB counts only the content documents, OOXML the whole package.
+        base_bytes = (
+            0
+            if input_format == InputFormat.EPUB
+            else sum(info.file_size for info in archive.infolist()) - member_bytes
+        )
+    assert member_bytes >= _REPEATED_MEMBER_BYTES
+    backend_cls, options_cls, _ = _FORMATS[input_format]
+    options = options_cls(
+        max_total_bytes=base_bytes + 5 * member_bytes,
+        max_file_bytes=_MIB,
+    )
+
+    def load(data: bytes) -> InputDocument:
+        return InputDocument(
+            path_or_stream=BytesIO(data),
+            format=input_format,
+            backend=backend_cls,
+            backend_options=options,
+            filename=f"repeated.{input_format.value}",
+        )
+
+    assert load(build(_FEW_REFERENCES)).valid
+    rejected = load(many)
+    assert not rejected.valid
+    cause = get_input_rejection_cause(rejected)
+    assert isinstance(cause, ArchiveLimitError)
+    assert "max_total_bytes" in str(cause)

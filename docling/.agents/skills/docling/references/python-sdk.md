@@ -125,6 +125,10 @@ opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())  # macOS onl
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
 
+If the render DPI hint causes missing or misread text with the Tesseract CLI
+engine, use `TesseractCliOcrOptions(lang=["eng"], embed_render_dpi=False)`
+to let Tesseract determine the resolution.
+
 When a PDF looks right but its text copies out as garbage (a font whose glyphs
 were not mapped to real characters), let OCR replace the text of just those pages.
 Off by default; such pages then report `parse_score` 0 in the confidence report:
@@ -679,6 +683,25 @@ converter = DocumentConverter(
             backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
         ),
     }
+)
+```
+
+## Generic ZIP input limits
+
+Docling expands a ZIP archive that is not a known ZIP-based format into one
+document per member (use `convert_all()`). Defaults: 256 MiB per member, 1 GiB
+in total, 10,000 members. Set them with the `max_zip_member_size`,
+`max_zip_expanded_size` and `max_zip_member_count` keyword arguments of
+`convert()`, `convert_all()`, `DocumentExtractor.extract()` or `extract_all()`.
+A member over a size limit fails with a policy rejection and the other members
+still convert. An archive with too many members fails as a whole. A lower
+`max_file_size` replaces the two size limits.
+
+```python
+results = converter.convert_all(
+    ["documents.zip"],
+    max_zip_member_size=512 * 1024 * 1024,
+    max_zip_member_count=50_000,
 )
 ```
 

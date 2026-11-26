@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import re
+import threading
+import time
 from io import BytesIO
 from pathlib import Path
 
@@ -439,6 +441,34 @@ This is \\myterm and the value is \\myvalue.
     md = doc.export_to_markdown()
     # The macro expansion should work
     assert "special term" in md and "42" in md
+
+
+def test_latex_long_run_of_sibling_macros():
+    """A long run of sibling macros keeps every custom macro argument and text."""
+    count = 3000
+    run = r"\pair{a} {b} \textbf{w} " * count
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\newcommand{\\pair}[2]{#1-#2}\n"
+        "\\begin{document}\n"
+        f"\\section{{{run}}}\n"
+        f"{run}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    expected = " ".join(["a-b w"] * count)
+    headings = [t.text for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    paragraphs = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert headings == [expected]
+    assert paragraphs[-1] == expected
 
 
 def extract_macro_name_old(raw_string):
@@ -892,3 +922,110 @@ def test_hspace_argument_does_not_leak():
     assert "0.2cm" not in all_text, f"hspace argument leaked into text: {all_text!r}"
     assert "Left text" in all_text
     assert "Right text" in all_text
+
+
+def _convert_with_options(latex_content: bytes, options: LatexBackendOptions):
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(
+        in_doc=in_doc, path_or_stream=BytesIO(latex_content), options=options
+    )
+    return backend.convert()
+
+
+_NESTED_ZERO_ARG_MACROS = rb"""
+\documentclass{article}
+\def\a{xx}
+\def\b{\a\a}
+\def\c{\b\b}
+\def\d{\c\c}
+\begin{document}
+Value $\d$ end.
+\end{document}
+"""
+
+
+def test_latex_zero_arg_macro_expansion_stops_at_count_limit(caplog):
+    """Nested zero-argument macros in math stop expanding at the expansion limit."""
+    full = _convert_with_options(_NESTED_ZERO_ARG_MACROS, LatexBackendOptions())
+    full_formula = next(t.text for t in full.texts if t.label == DocItemLabel.FORMULA)
+    assert full_formula.count("x") == 16
+
+    with caplog.at_level("WARNING"):
+        doc = _convert_with_options(
+            _NESTED_ZERO_ARG_MACROS, LatexBackendOptions(max_macro_expansions=3)
+        )
+    formula = next(t.text for t in doc.texts if t.label == DocItemLabel.FORMULA)
+    assert formula.count("x") < 16
+    assert "\\" in formula  # the remaining macros are kept as written
+    assert "end." in doc.export_to_markdown()
+    limit_warnings = [
+        r for r in caplog.records if "macro expansion limit" in r.getMessage()
+    ]
+    assert len(limit_warnings) == 1
+
+
+def test_latex_zero_arg_macro_expansion_stops_at_length_limit():
+    """The expanded text of zero-argument macros stays within the length limit."""
+    doc = _convert_with_options(
+        _NESTED_ZERO_ARG_MACROS, LatexBackendOptions(max_macro_expansion_chars=12)
+    )
+    formula = next(t.text for t in doc.texts if t.label == DocItemLabel.FORMULA)
+    assert len(formula) <= len(r"\d") + 12
+
+
+_NESTED_ARG_MACROS = rb"""
+\documentclass{article}
+\newcommand{\twice}[1]{#1#1}
+\newcommand{\four}[1]{\twice{\twice{#1}}}
+\newcommand{\sixteen}[1]{\four{\four{#1}}}
+\begin{document}
+Start \sixteen{ab} end.
+\end{document}
+"""
+
+
+def test_latex_argument_macro_expansion_stops_at_length_limit():
+    """Nested macros with arguments stop expanding at the length limit."""
+    full = _convert_with_options(_NESTED_ARG_MACROS, LatexBackendOptions())
+    assert "ab" * 16 in full.export_to_markdown()
+
+    doc = _convert_with_options(
+        _NESTED_ARG_MACROS, LatexBackendOptions(max_macro_expansion_chars=20)
+    )
+    md = doc.export_to_markdown()
+    assert "Start" in md
+    assert "end." in md
+    assert md.count("ab") < 16
+
+
+def test_latex_timeout_stops_the_parse_thread(monkeypatch):
+    """After the parse timeout, the abandoned parse thread stops soon."""
+    from docling.backend.latex.context import MacroExpansionBudget
+
+    original_spend = MacroExpansionBudget.spend
+
+    def slow_spend(self, chars: int) -> bool:
+        time.sleep(0.01)
+        return original_spend(self, chars)
+
+    monkeypatch.setattr(MacroExpansionBudget, "spend", slow_spend)
+    # Without a stop, 1000 slow expansions take about 10 s.
+    latex_content = (
+        rb"\documentclass{article}\def\x{y}\begin{document}"
+        + rb"\x " * 1000
+        + rb"\end{document}"
+    )
+    threads_before = set(threading.enumerate())
+
+    doc = _convert_with_options(latex_content, LatexBackendOptions(parse_timeout=0.2))
+
+    assert doc.texts[0].text.startswith(r"\documentclass")  # the fallback text
+    new_threads = set(threading.enumerate()) - threads_before
+    for thread in new_threads:
+        thread.join(timeout=3)
+    assert not any(thread.is_alive() for thread in new_threads)

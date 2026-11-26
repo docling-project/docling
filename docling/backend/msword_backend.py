@@ -247,6 +247,13 @@ _NON_DECIMAL_NUMBERING_FORMATS: Final[frozenset[str]] = _VISIBLE_NUMBERING_FORMA
 }
 """numFmt values that cannot be rendered as a raw decimal counter."""
 
+_LEVEL_PLACEHOLDER: Final[re.Pattern[str]] = re.compile(r"%([1-9])")
+"""A level placeholder in ``w:lvlText``: ``%`` and one digit. ``%113.1.%2`` is
+``%1``, the text ``13.1.`` and ``%2``."""
+
+_HIDDEN_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset({"none", "bullet"})
+"""numFmt values of a level that shows no number."""
+
 _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (1000, "M"),
     (900, "CM"),
@@ -1027,6 +1034,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.level_start_ilevel: int = 0
         self.parents: dict[int, NodeItem | None] = {}
         self.numbered_headers: dict[int, int] = {}
+        # Counter of the last numbered heading, per (numId, ilvl).
+        self.heading_counters: dict[tuple[int, int], int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
         self.processed_textbox_elements: set[etree._Element] = set()
@@ -2083,6 +2092,67 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _format_enum_counter(counter, self._get_level_num_fmt(numid, lvl))
             )
         return ".".join(parts) + "."
+
+    def _set_heading_counter(self, numid: int, ilvl: int, counter: int) -> None:
+        """Store the counter of a numbered heading and clear the deeper levels."""
+        self.heading_counters = {
+            key: value
+            for key, value in self.heading_counters.items()
+            if key[0] != numid or key[1] < ilvl
+        }
+        self.heading_counters[(numid, ilvl)] = counter
+
+    def _build_heading_marker(self, numid: int, ilvl: int) -> str | None:
+        """Return the heading number that the ``w:lvlText`` of the level gives.
+
+        Each ``%N`` in the template is replaced with the counter of level
+        ``N - 1``, in the number format of that level. Other text in the
+        template is kept: ``1.1.%2`` gives ``1.1.3`` for the third heading of
+        level 1.
+
+        A level without ``w:lvlText``, or with an empty one, shows no number. A
+        template without ``%N`` is shown as it is.
+
+        Returns ``None`` for a template that only joins the decimal counters of
+        level 0 to ``ilvl``, such as ``%1.%2.``. The caller then writes the
+        counters joined with dots (``1.2``).
+        """
+        lvl_element = self._get_level_element(numid, ilvl)
+        if lvl_element is None:
+            return None
+        lvl_text_element = lvl_element.find("w:lvlText", namespaces=_OOXML_NAMESPACES)
+        lvl_text = (
+            lvl_text_element.get(self.XML_KEY) if lvl_text_element is not None else None
+        ) or ""
+
+        referenced_levels = [
+            int(digit) - 1 for digit in _LEVEL_PLACEHOLDER.findall(lvl_text)
+        ]
+        num_fmts = {
+            level: self._get_level_num_fmt(numid, level)
+            for level in set(referenced_levels)
+        }
+
+        only_separators = not _LEVEL_PLACEHOLDER.sub("", lvl_text).strip(" .)(:[]")
+        all_levels_in_order = referenced_levels == list(range(ilvl + 1))
+        all_decimal = not any(
+            num_fmt in _NON_DECIMAL_NUMBERING_FORMATS for num_fmt in num_fmts.values()
+        )
+        if only_separators and all_levels_in_order and all_decimal:
+            return None
+
+        def _level_number(match: re.Match[str]) -> str:
+            level = int(match.group(1)) - 1
+            if num_fmts[level] in _HIDDEN_NUMBERING_FORMATS:
+                return ""
+            # A level with no heading under the current parent heading shows
+            # its start value.
+            counter = self.heading_counters.get((numid, level))
+            if counter is None:
+                counter = self._get_start_value(numid, level)
+            return _format_enum_counter(counter, num_fmts[level])
+
+        return _LEVEL_PLACEHOLDER.sub(_level_number, lvl_text).strip()
 
     def _get_caption_numbering_marker(
         self, numid: int, ilevel: int, p_style_id: str
@@ -3683,6 +3753,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             add_level = 1
 
         if is_numbered_style:
+            unnumbered_text = text
             if add_level in self.numbered_headers:
                 self.numbered_headers[add_level] += 1
             else:
@@ -3743,6 +3814,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # with the same numId (e.g. "Tabell %1.%7"). Don't let the
                 # first list item reset that shared numbering sequence.
                 self.started_numids.add(numid)
+
+                self._set_heading_counter(
+                    numid, heading_ilevel, self.numbered_headers[add_level]
+                )
+                # Use the number from the w:lvlText of the level when it gives one.
+                marker = self._build_heading_marker(numid, heading_ilevel)
+                if marker is not None:
+                    text = f"{marker} {unnumbered_text}".strip()
 
         hd = doc.add_heading(
             parent=self.parents[parent_level],
@@ -4905,6 +4984,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Handles both cached references (``c:numCache``/``c:strCache``) and inline
         literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
         gaps are filled with empty strings so every series aligns to the same rows.
+        Only numeric caches are normalized; string caches keep their spelling.
         The list is sized by the points that are present and holds at most
         ``max_rows`` entries; the declared ``c:ptCount`` is not used (see
         ``chart_points_to_list``).
@@ -4920,6 +5000,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if cache is None:
             return []
 
+        numeric = etree.QName(cache).localname in ("numCache", "numLit")
         points: dict[int, str] = {}
         for pt in cache.findall("c:pt", namespaces=ns):
             try:
@@ -4927,9 +5008,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             except ValueError:
                 continue
             value = pt.find("c:v", namespaces=ns)
-            points[idx] = self._chart_cell_text(
-                value.text if value is not None else None
-            )
+            text = (value.text or "") if value is not None else ""
+            points[idx] = self._chart_cell_text(text) if numeric else text
         return chart_points_to_list(points, max_rows, warn=warn)
 
     def _chart_series_name(self, series: Any) -> str:
@@ -4941,7 +5021,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if cached:
             return cached[0]
         literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
-        return self._chart_cell_text(literal.text) if literal is not None else ""
+        return (literal.text or "") if literal is not None else ""
 
     def _chart_title_text(self, chart_root: Any) -> str | None:
         """Extract the chart's title text, or None when it has no title.

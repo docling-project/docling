@@ -41,13 +41,18 @@ pip install "docling-slim[service-client]"
 
 ## Configuration
 
-The client and the `docling convert-remote` CLI read the same settings — from
-the environment or a `.env` file in the working directory:
+Configure the service with these settings:
 
 ```
 DOCLING_SERVICE_URL=https://your-docling-service.example.com
 DOCLING_SERVICE_API_KEY=your-api-key    # omit if the service is unauthenticated
 ```
+
+`docling convert-remote` reads these variables from the environment. It reads
+a `.env` file only on request: `--env-file PATH` reads that file, and
+`--dotenv` reads `.env` in the working directory (not in a parent). It takes
+only these two keys from the file, without `${VAR}` expansion, and a flag or a
+real environment variable wins. Other `docling` commands do not read `.env`.
 
 Result artifacts (presigned URLs) are downloaded only from public addresses.
 If the artifact storage is on a private network (e.g. MinIO on `localhost` or
@@ -64,7 +69,7 @@ client = DoclingServiceClient(
 ```python
 from docling.service_client import DoclingServiceClient
 
-client = DoclingServiceClient(url=..., api_key=...)  # or rely on env / .env
+client = DoclingServiceClient(url=..., api_key=...)
 result = client.convert(source="path/to/report.pdf")  # local path or http(s) URL
 print(result.document.export_to_markdown())
 ```
@@ -124,7 +129,9 @@ docling convert-remote report.pdf \
 ```
 
 `convert-remote` reads the same `DOCLING_SERVICE_URL` / `DOCLING_SERVICE_API_KEY`
-environment (or `.env`). Run `docling convert-remote --help` for all flags.
+environment, or a `.env` file with `--dotenv` / `--env-file PATH`. It prints the
+service address and its source before it sends documents. Run
+`docling convert-remote --help` for all flags.
 
 ## Errors
 

@@ -246,15 +246,13 @@ def test_the_two_generations_disagree_only_where_their_themes_do():
 @pytest.mark.parametrize("source", _SHARED_DECK, ids=lambda path: path.name)
 def test_a_table_on_a_slide_is_read(source: Path):
     """A slide's table is the same TST archive, and the same sf:tabular-model,
-    that a Pages document embeds — including the cell it leaves empty."""
+    that a Pages document embeds — including the cell that holds a number."""
     doc = _backend(source).convert()
 
     assert len(doc.tables) == 1
     grid = doc.tables[0].data.grid
     assert [cell.text for cell in grid[0]] == ["Cell one", "Cell two", "Cell three"]
-    # The first cell of the last row holds a number, which is not guessed at —
-    # but it keeps its place, or the two text cells after it shift left.
-    assert [cell.text for cell in grid[2]] == ["", "Cell eight", "5/5/1985"]
+    assert [cell.text for cell in grid[2]] == ["7", "Cell eight", "5/5/1985"]
 
 
 @pytest.mark.parametrize("source", _SHARED_DECK, ids=lambda path: path.name)
@@ -543,6 +541,25 @@ def test_archive_limits_are_enforced(option: dict[str, int], message: str):
     the IWA archives are decompressed."""
     with pytest.raises(DocumentLoadError, match=message):
         _construct(KEYNOTE_2013, IWorkBackendOptions(**option))
+
+
+@pytest.mark.parametrize(
+    ("source", "limit"),
+    [(KEYNOTE_2013, 300_000), (KEYNOTE_2018, 100_000)],
+    ids=["flat", "nested"],
+)
+def test_decompressed_iwa_streams_count_against_the_total_size_limit(
+    source: Path, limit: int
+):
+    """The declared member sizes are those of the Snappy-compressed streams, so
+    each limit sits above every declared total of the fixture but below what
+    its IWA streams decompress to."""
+    with pytest.raises(
+        DocumentLoadError, match="decompresses past the max_total_bytes limit"
+    ):
+        _construct(source, IWorkBackendOptions(max_total_bytes=limit))
+
+    assert _construct(source).is_valid()
 
 
 def test_the_nested_index_is_held_to_the_same_limits():

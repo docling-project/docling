@@ -56,6 +56,8 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.utils.archive_limits import ArchiveLimitError, read_member
+from docling.backend.utils.tar_limits import open_tar_gz
 from docling.datamodel.backend_options import (
     BackendOptions,
     MetsGbsBackendOptions,
@@ -701,6 +703,19 @@ def _is_macos_archive_metadata(path: PurePosixPath) -> bool:
     return is_metadata
 
 
+def _zip_limit(
+    zip_limit: int, zip_limit_name: str, max_file_size: int
+) -> tuple[int, str]:
+    """Return the effective ZIP expansion limit and the name of the field that sets it.
+
+    A ``max_file_size`` lower than the ZIP-specific limit also applies to the
+    members of a generic ZIP input.
+    """
+    if max_file_size < zip_limit:
+        return max_file_size, "max_file_size"
+    return zip_limit, zip_limit_name
+
+
 class _DocumentConversionInput(BaseModel):
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
@@ -780,63 +795,85 @@ class _DocumentConversionInput(BaseModel):
                             )
                         ]
                         if members:
+                            member_limit, member_limit_name = _zip_limit(
+                                self.limits.max_zip_member_size,
+                                "max_zip_member_size",
+                                self.limits.max_file_size,
+                            )
+                            expanded_limit, expanded_limit_name = _zip_limit(
+                                self.limits.max_zip_expanded_size,
+                                "max_zip_expanded_size",
+                                self.limits.max_file_size,
+                            )
+                            if len(members) > self.limits.max_zip_member_count:
+                                # Reject the archive as a whole before any member
+                                # is read, like the archive limits of the backends.
+                                yield self._build_invalid_input_document(
+                                    name=obj.name,
+                                    format_options=format_options,
+                                    rejection=InputRejection(
+                                        message=(
+                                            f"ZIP archive has {len(members)} "
+                                            "members, exceeding the "
+                                            "max_zip_member_count limit of "
+                                            f"{self.limits.max_zip_member_count}."
+                                        ),
+                                        category=FailureCategory.POLICY,
+                                    ),
+                                )
+                                continue
                             expanded_size = 0
                             for info in members:
                                 member_name = (
                                     f"{obj.name}/{PurePosixPath(info.filename)}"
                                 )
-                                if info.file_size > self.limits.max_file_size:
-                                    yield self._build_invalid_input_document(
-                                        name=member_name,
-                                        format_options=format_options,
-                                        file_size=info.file_size,
-                                        rejection=InputRejection(
-                                            message=(
-                                                f"File size {info.file_size} exceeds "
-                                                f"the max_file_size limit of "
-                                                f"{self.limits.max_file_size} bytes."
+                                rejection_message: Optional[str] = None
+                                if info.file_size > member_limit:
+                                    rejection_message = (
+                                        f"File size {info.file_size} exceeds the "
+                                        f"{member_limit_name} limit of "
+                                        f"{member_limit} bytes."
+                                    )
+                                elif expanded_size + info.file_size > expanded_limit:
+                                    rejection_message = (
+                                        "Expanded ZIP contents exceed the "
+                                        f"{expanded_limit_name} limit of "
+                                        f"{expanded_limit} bytes."
+                                    )
+                                else:
+                                    try:
+                                        # Bound the bytes actually decompressed,
+                                        # not only the size the archive declares.
+                                        member_content = read_member(
+                                            archive,
+                                            info,
+                                            min(
+                                                member_limit,
+                                                expanded_limit - expanded_size,
                                             ),
-                                            category=FailureCategory.POLICY,
-                                        ),
-                                    )
-                                    continue
-                                if (
-                                    expanded_size + info.file_size
-                                    > self.limits.max_file_size
-                                ):
+                                        )
+                                    except ArchiveLimitError as exc:
+                                        rejection_message = str(exc)
+                                    except (
+                                        OSError,
+                                        RuntimeError,
+                                        zipfile.BadZipFile,
+                                    ) as exc:
+                                        rejection_message = (
+                                            f"Could not read ZIP member: {exc}"
+                                        )
+                                if rejection_message is not None:
                                     yield self._build_invalid_input_document(
                                         name=member_name,
                                         format_options=format_options,
                                         file_size=info.file_size,
                                         rejection=InputRejection(
-                                            message=(
-                                                "Expanded ZIP contents exceed the "
-                                                f"max_file_size limit of "
-                                                f"{self.limits.max_file_size} bytes."
-                                            ),
+                                            message=rejection_message,
                                             category=FailureCategory.POLICY,
                                         ),
                                     )
                                     continue
-
-                                try:
-                                    member_content = archive.read(info)
-                                except (
-                                    OSError,
-                                    RuntimeError,
-                                    zipfile.BadZipFile,
-                                ) as exc:
-                                    yield self._build_invalid_input_document(
-                                        name=member_name,
-                                        format_options=format_options,
-                                        file_size=info.file_size,
-                                        rejection=InputRejection(
-                                            message=f"Could not read ZIP member: {exc}",
-                                            category=FailureCategory.POLICY,
-                                        ),
-                                    )
-                                    continue
-                                expanded_size += info.file_size
+                                expanded_size += len(member_content)
                                 member = DocumentStream(
                                     name=member_name,
                                     stream=BytesIO(member_content),
@@ -1420,11 +1457,7 @@ class _DocumentConversionInput(BaseModel):
         member_count = 0
 
         try:
-            with tarfile.open(
-                name=content if isinstance(content, Path) else None,
-                fileobj=content if isinstance(content, BytesIO) else None,
-                mode="r:gz",
-            ) as tar:
+            with open_tar_gz(content) as tar:
                 # Iterate lazily so the member limit applies before all headers are read
                 for member in tar:
                     member_count += 1

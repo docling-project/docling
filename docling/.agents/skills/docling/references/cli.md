@@ -165,6 +165,7 @@ docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
 docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
 docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`
 docling scan.pdf --ocr-engine rapidocr --ocr-option model_size=tiny --output /tmp/  # engine-specific field
+docling scan.pdf --ocr-engine tesseract --ocr-lang eng --ocr-option embed_render_dpi=false  # let Tesseract determine the DPI
 ```
 
 `--ocr-option KEY=VALUE` (repeatable) sets any field of the selected OCR engine.

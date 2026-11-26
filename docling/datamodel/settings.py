@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Annotated, Iterator, Optional, Tuple
 
-from pydantic import AfterValidator, BaseModel
+from pydantic import AfterValidator, BaseModel, PositiveInt
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,11 +24,21 @@ PageRange = Annotated[Tuple[int, int], AfterValidator(_validate_page_range)]
 
 DEFAULT_PAGE_RANGE: PageRange = (1, sys.maxsize)
 
+# Default limits for the expansion of a generic ZIP input (see DocumentLimits).
+DEFAULT_MAX_ZIP_MEMBER_SIZE = 256 * 1024 * 1024  # 256 MiB per member
+DEFAULT_MAX_ZIP_EXPANDED_SIZE = 1024 * 1024 * 1024  # 1 GiB in total
+DEFAULT_MAX_ZIP_MEMBER_COUNT = 10_000
+
 
 class DocumentLimits(BaseModel):
     max_num_pages: int = sys.maxsize
     max_file_size: int = sys.maxsize
     page_range: PageRange = DEFAULT_PAGE_RANGE
+    # Limits for a generic ZIP input that Docling expands into one document per
+    # member. A lower max_file_size also applies to each member and to the total.
+    max_zip_member_size: PositiveInt = DEFAULT_MAX_ZIP_MEMBER_SIZE
+    max_zip_expanded_size: PositiveInt = DEFAULT_MAX_ZIP_EXPANDED_SIZE
+    max_zip_member_count: PositiveInt = DEFAULT_MAX_ZIP_MEMBER_COUNT
 
 
 class BatchConcurrencySettings(BaseModel):

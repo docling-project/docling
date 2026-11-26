@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.152.0"  # DO NOT EDIT, updated automatically
+version = "2.153.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -311,16 +311,16 @@ service-client = [
   'websockets>=14.0,<18.0',
   'typer>=0.19.0,<0.28.0',
   'rich>=13.0.0',
-  # Best-effort .env loading for `docling convert-remote`; the command still
-  # works (flags + env vars) if this is absent.
+  # `.env` reading for `docling convert-remote --env-file / --dotenv`; flags
+  # and environment variables work without it.
   'python-dotenv~=1.0',
 ]
 
 cli = [
   'typer>=0.19.0,<0.28.0',
   'rich>=13.0.0',
-  # Best-effort .env loading for `docling convert-remote`; the command still
-  # works (flags + env vars) if this is absent.
+  # `.env` reading for `docling convert-remote --env-file / --dotenv`; flags
+  # and environment variables work without it.
   'python-dotenv~=1.0',
 ]
 

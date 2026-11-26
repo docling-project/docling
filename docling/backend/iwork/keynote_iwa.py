@@ -149,6 +149,7 @@ def read_content(
     container: zipfile.ZipFile,
     data_prefix: str,
     max_file_bytes: int,
+    max_total_bytes: int,
     document_hash: str,
 ) -> Presentation:
     """Read a Keynote 6+ presentation out of its IWA object graph.
@@ -160,6 +161,8 @@ def read_content(
         container: The ``.key`` container, which holds the image data either way.
         data_prefix: What ``container`` puts in front of its ``Data/`` members.
         max_file_bytes: The largest member this is willing to decompress.
+        max_total_bytes: The most bytes all ``.iwa`` streams together may
+            decompress to.
         document_hash: The document's hash, for error messages.
 
     Returns:
@@ -169,7 +172,7 @@ def read_content(
         DocumentLoadError: If a member is too large, or the object graph has no
             document archive or no show.
     """
-    objects = read_objects(index, infos, max_file_bytes, KEYNOTE_KIND)
+    objects = read_objects(index, infos, max_file_bytes, max_total_bytes, KEYNOTE_KIND)
 
     document = next(
         (o for o in objects.values() if o.message_type == KN_DOCUMENT_ARCHIVE),

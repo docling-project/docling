@@ -88,6 +88,30 @@ def load_string(string: str) -> Iterator[str]:
         yield str(oMath2Latex(omath))
 
 
+def _unwrap_ensuremath(text: str) -> str:
+    """Strip \\ensuremath{...} wrappers while keeping balanced inner braces."""
+    prefix = "\\ensuremath{"
+    prefix_len = len(prefix)
+    while (start := text.find(prefix)) >= 0:
+        depth = 1
+        idx = start + prefix_len
+        while depth > 0 and idx < len(text):
+            ch = text[idx]
+            if ch == "\\":
+                idx += 2
+                continue
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+            idx += 1
+        if depth != 0:
+            break
+        inner = text[start + prefix_len : idx - 1]
+        text = f"{text[:start]} {inner} {text[idx:]}"
+    return text
+
+
 def escape_latex(strs: str) -> str:
     """Escape special LaTeX characters in a string.
 
@@ -818,8 +842,7 @@ class oMath2Latex(Tag2Method):
             out_latex_str = f" {out_latex_str[1:-1]} "
 
         if "ensuremath" in out_latex_str:
-            out_latex_str = out_latex_str.replace("\\ensuremath{", " ")
-            out_latex_str = out_latex_str.replace("}", " ")
+            out_latex_str = _unwrap_ensuremath(out_latex_str)
 
         if out_latex_str.strip().startswith("\\text"):
             out_latex_str = f" \\text{{{out_latex_str}}} "

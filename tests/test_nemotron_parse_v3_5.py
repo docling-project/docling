@@ -278,6 +278,87 @@ def test_table_cell_under_multirow_with_text_ends_the_span() -> None:
     assert grid == [["A", "1"], ["A", "2"], ["B", "3"]]
 
 
+def test_table_multicolumn_crossing_multirow_ends_the_span() -> None:
+    table = (
+        r"\begin{tabular}{ccc}"
+        r"A & \multirow{3}{*}{B} & C\\"
+        r"\multicolumn{2}{c}{Merged} & D\\"
+        r"X & Y & Z\\"
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert (data.num_rows, data.num_cols) == (3, 3)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B", "C"],
+        ["Merged", "Merged", "D"],
+        ["X", "Y", "Z"],
+    ]
+    cell_b = next(c for c in data.table_cells if c.text == "B")
+    assert cell_b.row_span == 1
+
+
+def test_table_empty_multicolumn_partially_under_multirow_keeps_column_alignment() -> (
+    None
+):
+    table = (
+        r"\begin{tabular}{ccc}"
+        r"\multirow{2}{*}{A} & B & C\\"
+        r"\multicolumn{2}{c}{\mbox{}} & D\\"
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert (data.num_rows, data.num_cols) == (2, 3)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B", "C"],
+        ["A", "", "D"],
+    ]
+
+
+def test_table_text_in_later_column_of_wide_multirow_keeps_column_alignment() -> None:
+    table = (
+        r"\begin{tabular}{ccc}"
+        r"\multicolumn{2}{c}{\multirow{2}{*}{AB}} & C\\"
+        r"\mbox{} & Y & D\\"
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert (data.num_rows, data.num_cols) == (2, 3)
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["AB", "AB", "C"],
+        ["", "Y", "D"],
+    ]
+    cell_ab = next(c for c in data.table_cells if c.text == "AB")
+    assert cell_ab.row_span == 1
+
+
+def test_table_empty_multirow_before_a_cut_keeps_its_row_span() -> None:
+    # Y ends AB on row 1, so the empty \multirow at column 0 is a real cell and
+    # covers row 2, where its placeholder is dropped.
+    table = (
+        r"\begin{tabular}{ccc}"
+        r"\multicolumn{2}{c}{\multirow{3}{*}{AB}} & C\\"
+        r"\multirow{2}{*}{} & Y & D\\"
+        r"\mbox{} & Z & E\\"
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["AB", "AB", "C"],
+        ["", "Y", "D"],
+        ["", "Z", "E"],
+    ]
+    empty = data.grid[1][0]
+    assert (empty.start_row_offset_idx, empty.end_row_offset_idx) == (1, 3)
+
+
 def test_chart_maps_classification_title_and_data() -> None:
     chart = (
         '<chart type="grouped_bar">\n'

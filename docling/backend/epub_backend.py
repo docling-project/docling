@@ -23,6 +23,7 @@ from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
     ArchiveLimits,
     check_archive_limits,
+    check_referenced_total,
     read_member,
 )
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
@@ -192,14 +193,17 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         if not self.epub_zip:
             return
         names = set(self.epub_zip.namelist())
-        members = [
-            self.epub_zip.getinfo(name)
-            for name in dict.fromkeys(self.content_files)
-            if name in names
+        references = [
+            self.epub_zip.getinfo(name) for name in self.content_files if name in names
         ]
+        limits = ArchiveLimits.from_options(self.options)
         check_archive_limits(
-            self.epub_zip, ArchiveLimits.from_options(self.options), members
+            self.epub_zip,
+            limits,
+            {info.filename: info for info in references}.values(),
         )
+        # convert() reads a content document once for each spine entry.
+        check_referenced_total(limits, references)
 
     def _safe_extract_epub(self, target_dir: Path) -> bool:
         """Safely extract EPUB contents with zip-bomb protection.

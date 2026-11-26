@@ -1308,7 +1308,7 @@ def test_msg_recovers_body_via_ole_on_decode_error():
         )
     )
     with patch.object(OxMsgMessage, "body", body_mock):
-        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+        rfc822, _ = EmailDocumentBackend._msg_to_rfc822_bytes(data)
 
     in_doc = InputDocument(
         path_or_stream=BytesIO(rfc822),
@@ -1344,7 +1344,7 @@ def test_msg_loads_when_html_body_raises_unicode_decode_error():
         )
     )
     with patch.object(OxMsgMessage, "html_body", html_mock):
-        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+        rfc822, _ = EmailDocumentBackend._msg_to_rfc822_bytes(data)
 
     backend = EmailDocumentBackend(
         in_doc=InputDocument(
@@ -1376,7 +1376,7 @@ def test_msg_loads_when_subject_raises_lookup_error():
         side_effect=LookupError("unknown encoding: windows-950")
     )
     with patch.object(OxMsgMessage, "subject", subject_mock):
-        rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+        rfc822, _ = EmailDocumentBackend._msg_to_rfc822_bytes(data)
 
     backend = EmailDocumentBackend(
         in_doc=InputDocument(
@@ -1402,7 +1402,7 @@ def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     payloads = [a.file_bytes for a in OxMsgMessage.load(data).attachments]
     assert len(payloads) == 2
 
-    rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+    rfc822, _ = EmailDocumentBackend._msg_to_rfc822_bytes(data)
     lowered = rfc822.lower()
 
     for name, mime in (
