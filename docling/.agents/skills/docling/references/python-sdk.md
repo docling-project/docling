@@ -125,6 +125,10 @@ opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())  # macOS onl
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
 
+If the render DPI hint causes missing or misread text with the Tesseract CLI
+engine, use `TesseractCliOcrOptions(lang=["eng"], embed_render_dpi=False)`
+to let Tesseract determine the resolution.
+
 When a PDF looks right but its text copies out as garbage (a font whose glyphs
 were not mapped to real characters), let OCR replace the text of just those pages.
 Off by default; such pages then report `parse_score` 0 in the confidence report:
