@@ -108,3 +108,41 @@ def test_msg_sender_header_falls_back_to_bare_sender_name():
     # Several addresses stay exactly as oxmsg gave them.
     multi = "Alice <alice@example.com>, Bob <bob@example.com>"
     assert header(multi, "Alice", None) == (multi, "")
+
+
+def test_msg_sender_header_ignores_parentheses_in_legacy_dn():
+    """A real legacy DN holds "(FYDIBOHF23SPDLT)"; it must not reach the name.
+
+    getaddresses() reads the group in parentheses as a comment and appends
+    it to the display name, so the name comes from PidTagSenderName.
+    """
+    header = EmailDocumentBackend._msg_sender_header
+    dn = (
+        "/O=EXCHANGELABS/OU=EXCHANGE ADMINISTRATIVE GROUP (FYDIBOHF23SPDLT)"
+        "/CN=RECIPIENTS/CN=4F5E6A7B8C9D-JDOE"
+    )
+    sender = f'"Doe, Jonathan" <{dn}>'
+
+    assert header(sender, "Doe, Jonathan", None) == (
+        '"Doe, Jonathan"',
+        '"Doe, Jonathan"',
+    )
+    assert header(sender, "Doe, Jonathan", "jdoe@corp.example") == (
+        '"Doe, Jonathan" <jdoe@corp.example>',
+        "",
+    )
+    # The property keeps quotes in a name that the parse would drop.
+    assert header(f'"Jonathan \\"JD\\" Doe" <{dn}>', 'Jonathan "JD" Doe', None) == (
+        '"Jonathan \\"JD\\" Doe"',
+        '"Jonathan \\"JD\\" Doe"',
+    )
+
+
+def test_msg_sender_header_keeps_bare_name_with_comma():
+    """oxmsg returns PidTagSentRepresentingName unquoted, e.g. "Doe, Jonathan"."""
+    header = EmailDocumentBackend._msg_sender_header
+
+    assert header("Doe, Jonathan", None, None) == (
+        '"Doe, Jonathan"',
+        '"Doe, Jonathan"',
+    )

@@ -439,23 +439,25 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         (quoted when it holds specials) and the fallback lets ``convert()``
         render the name from the oxmsg properties instead of dropping it.
         """
-        parsed = getaddresses([sender])
-        if len(parsed) != 1:
-            # Ambiguous input (e.g. several addresses in the From header):
-            # keep the sender exactly as oxmsg gave it.
-            return sender, ""
-        name, address = parsed[0]
-        if "@" in address:
-            # A real SMTP address: keep the sender exactly as oxmsg gave it.
-            return sender, ""
-
-        # No SMTP address in the sender string. Resolve the display name
-        # from the most reliable source: the parsed name when the sender
-        # holds an angle-addr, the bare sender string itself (oxmsg falls
-        # back to the sent-representing name, a bare display name, when no
-        # address is recorded at all), then the PidTagSenderName property.
         if "<" not in sender and "@" not in sender:
+            # oxmsg falls back to the sent-representing name when no address
+            # is recorded: a bare display name, which can hold a comma
+            # ("Doe, Jonathan") that getaddresses() would split on.
             name = unquote(sender)
+        else:
+            parsed = getaddresses([sender])
+            if len(parsed) != 1:
+                # Ambiguous input (e.g. several addresses in the From header):
+                # keep the sender exactly as oxmsg gave it.
+                return sender, ""
+            name, address = parsed[0]
+            if "@" in address:
+                # A real SMTP address: keep the sender exactly as oxmsg gave it.
+                return sender, ""
+            # oxmsg built this string from PidTagSenderName. getaddresses()
+            # reads the "(FYDIBOHF23SPDLT)" group of a real legacy DN as a
+            # comment and appends it to the name, so prefer the property.
+            name = sender_name or name
         if not name:
             name = sender_name or ""
         name = EmailDocumentBackend._header_safe(name)
