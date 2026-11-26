@@ -4,7 +4,11 @@
 import copy
 import logging
 import warnings
+from bisect import bisect_right
+from collections import defaultdict
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
+from itertools import groupby
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -79,6 +83,174 @@ def _words_and_ocr_cells(
     native_cells = native_words + _uncovered(native_lines, [*native_words, *ocr_lines])
     ocr_words = _uncovered([w for w in non_empty_words if w.from_ocr], native_cells)
     return native_cells + ocr_words + _uncovered(ocr_lines, ocr_words)
+
+
+def _full_rules(
+    segments: Iterable[tuple[float, float, float]],
+    start: float,
+    end: float,
+) -> dict[float, tuple[float, float]] | None:
+    """Join cell-by-cell borders and reject partial separators."""
+    rules = {}
+    for position, fragments in groupby(
+        sorted(segments), key=lambda segment: segment[0]
+    ):
+        _, left, right = next(fragments)
+        for _, lo, hi in fragments:
+            if left <= start and right >= end and lo > right:
+                break
+            if lo > right:
+                left = lo
+                right = hi
+            else:
+                right = max(right, hi)
+        if left > start or right < end:
+            return None
+        rules[position] = (left, right)
+    return rules
+
+
+@dataclass(frozen=True)
+class _RuledGrid:
+    rows: list[float]
+    cols: list[float]
+
+    @classmethod
+    def from_shape_lines(
+        cls, lines: Sequence[BoundingBox], bbox: BoundingBox
+    ) -> "_RuledGrid | None":
+        # Layout boxes are approximate. Require the outside rules near the box
+        # edges and every separator to connect both opposite outside rules.
+        margin = 4.0  # PDF points
+        if min(bbox.width, bbox.height) <= 2 * margin:
+            return None
+        horizontal = _full_rules(
+            (
+                (line.t, line.l, line.r)
+                for line in lines
+                if line.t == line.b
+                and bbox.t - margin <= line.t <= bbox.b + margin
+                and line.r > bbox.l + margin
+                and line.l < bbox.r - margin
+            ),
+            bbox.l + margin,
+            bbox.r - margin,
+        )
+        vertical = _full_rules(
+            (
+                (line.l, line.t, line.b)
+                for line in lines
+                if line.l == line.r
+                and bbox.l - margin <= line.l <= bbox.r + margin
+                and line.b > bbox.t + margin
+                and line.t < bbox.b - margin
+            ),
+            bbox.t + margin,
+            bbox.b - margin,
+        )
+        if (
+            horizontal is None
+            or len(horizontal) < 3
+            or vertical is None
+            or len(vertical) < 2
+        ):
+            return None
+        rows, cols = list(horizontal), list(vertical)
+        if (
+            abs(rows[0] - bbox.t) > margin
+            or abs(rows[-1] - bbox.b) > margin
+            or abs(cols[0] - bbox.l) > margin
+            or abs(cols[-1] - bbox.r) > margin
+        ):
+            return None
+        if any(lo > cols[0] or hi < cols[-1] for lo, hi in horizontal.values()) or any(
+            lo > rows[0] or hi < rows[-1] for lo, hi in vertical.values()
+        ):
+            return None
+        return cls(rows, cols)
+
+    def slot(self, bbox: BoundingBox) -> tuple[int, int] | None:
+        row = bisect_right(self.rows, bbox.t) - 1
+        col = bisect_right(self.cols, bbox.l) - 1
+        if (
+            0 <= row < len(self.rows) - 1
+            and 0 <= col < len(self.cols) - 1
+            and bbox.b <= self.rows[row + 1]
+            and bbox.r <= self.cols[col + 1]
+        ):
+            return row, col
+        return None
+
+
+def _repair_ruled_rows(
+    grid: _RuledGrid,
+    source_cells: Sequence[TextCell],
+    matched_cells: Sequence[tuple[TableCell, list[dict]]],
+    scale: float,
+) -> list[TableCell] | None:
+    """Reassign native words when TableFormer matched across a printed row rule."""
+    original_by_slot: dict[tuple[int, int], TableCell] = {}
+    crosses_row_rule = False
+    for cell, text_boxes in matched_cells:
+        slots = set()
+        for text_box in text_boxes:
+            slot = grid.slot(BoundingBox.model_validate(text_box).scaled(1 / scale))
+            if slot is None:
+                return None
+            slots.add(slot)
+        if len(slots) == 1:
+            (slot,) = slots
+            original_by_slot.setdefault(slot, cell)
+        elif len({row for row, _ in slots}) > 1:
+            crosses_row_rule = True
+    if not crosses_row_rule:
+        return None
+
+    words_by_slot: dict[tuple[int, int], list[tuple[str, BoundingBox]]] = defaultdict(
+        list
+    )
+    for source in source_cells:
+        if not source.text.strip():
+            continue
+        bbox = source.rect.to_bounding_box()
+        slot = grid.slot(bbox)
+        if source.from_ocr or slot is None:
+            return None
+        words_by_slot[slot].append((source.text, bbox))
+
+    # Keep the matcher's treatment of entirely empty rows and columns.
+    if (
+        len({row for row, _ in words_by_slot}) != len(grid.rows) - 1
+        or len({col for _, col in words_by_slot}) != len(grid.cols) - 1
+    ):
+        return None
+
+    repaired = []
+    for (row, col), words in sorted(words_by_slot.items()):
+        text = normalize_extracted_text(" ".join(word for word, _ in words))
+        bbox = BoundingBox.enclosing_bbox([box for _, box in words])
+        original = original_by_slot.get((row, col))
+        if (
+            original is not None
+            and original.text == text
+            and original.bbox is not None
+            and grid.slot(original.bbox) == (row, col)
+        ):
+            bbox = original.bbox
+        repaired.append(
+            TableCell(
+                bbox=bbox,
+                text=text,
+                start_row_offset_idx=row,
+                end_row_offset_idx=row + 1,
+                start_col_offset_idx=col,
+                end_col_offset_idx=col + 1,
+                column_header=original is not None and original.column_header,
+                row_header=original is not None and original.row_header,
+                row_section=original is not None and original.row_section,
+            )
+        )
+    return repaired
 
 
 class TableStructureModel(BaseTableStructureModel):
@@ -270,6 +442,8 @@ class TableStructureModel(BaseTableStructureModel):
                     predictions.append(table_prediction)
                     continue
 
+                shape_lines = page._shape_lines
+
                 page_input = {
                     "width": page.size.width * self.scale,
                     "height": page.size.height * self.scale,
@@ -345,7 +519,9 @@ class TableStructureModel(BaseTableStructureModel):
                             text_piece = page._backend.get_text_in_rect(the_bbox)
                             element["bbox"]["token"] = text_piece
 
-                        tc = TableCell.model_validate(element)
+                        # Validation consumes text_cell_bboxes. Keep them available
+                        # to check which printed rows the matcher combined.
+                        tc = TableCell.model_validate(element.copy())
                         if tc.bbox is not None:
                             tc.bbox = tc.bbox.scaled(1 / self.scale)
                         tc.text = normalize_extracted_text(tc.text)
@@ -378,6 +554,39 @@ class TableStructureModel(BaseTableStructureModel):
                         )
                         num_rows, num_cols, table_cells = 0, 0, []
                         keep_table_text_as_child(table_cluster, page)
+                    elif (
+                        self.do_cell_matching
+                        and any(
+                            len(element.get("text_cell_bboxes", ())) > 1
+                            for element in table_out["tf_responses"]
+                        )
+                        and self.mode == TableFormerMode.ACCURATE
+                    ):
+                        if shape_lines is None:
+                            shape_lines = page._backend.get_shape_lines() or []
+                        grid = _RuledGrid.from_shape_lines(
+                            shape_lines, table_cluster.bbox
+                        )
+                        if (
+                            grid is not None
+                            and len(grid.cols) - 1 == num_cols
+                            and len(grid.rows) - 1 >= num_rows
+                        ):
+                            repaired = _repair_ruled_rows(
+                                grid,
+                                tcells,
+                                [
+                                    (tc, element.get("text_cell_bboxes", []))
+                                    for tc, element in zip(
+                                        table_cells,
+                                        table_out["tf_responses"],
+                                        strict=True,
+                                    )
+                                ],
+                                self.scale,
+                            )
+                            if repaired is not None:
+                                num_rows, table_cells = len(grid.rows) - 1, repaired
 
                     tbl = Table(
                         otsl_seq=otsl_seq,
