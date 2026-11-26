@@ -82,6 +82,24 @@ relative to the document's directory. Without shell escape:
   Docling preserves the original TikZ source as fallback code metadata instead
   of dropping the figure.
 
+## LaTeX parse limits
+
+`LatexBackendOptions` also limits the work of one LaTeX conversion:
+
+- `parse_timeout`
+  Defaults to `30.0` seconds. When the parse takes longer, Docling returns the
+  raw LaTeX text as one text item, and the parse stops at its next macro
+  expansion or document node.
+- `max_macro_expansions`
+  Defaults to `50000`. The maximum number of expansions of user-defined macros
+  (`\def`, `\newcommand`) in one document.
+- `max_macro_expansion_chars`
+  Defaults to `2000000`. The maximum total number of characters that these
+  expansions can produce in one document.
+
+When a macro limit is reached, Docling logs one warning, keeps the remaining
+macros as they are written, and continues the conversion.
+
 
 ::: docling.datamodel.pipeline_options
     handler: python
