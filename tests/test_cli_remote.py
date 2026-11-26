@@ -105,10 +105,8 @@ def test_remote_help_is_self_sufficient():
         assert marker in help_text
 
 
-def test_remote_missing_url_exits_2(tmp_path, monkeypatch):
+def test_remote_missing_url_exits_2(monkeypatch):
     monkeypatch.delenv("DOCLING_SERVICE_URL", raising=False)
-    # Keep a .env file in a parent of the checkout out of the lookup.
-    monkeypatch.chdir(tmp_path)
     result = runner.invoke(app, ["convert-remote", "report.pdf"])
     assert result.exit_code == 2
     assert "No service URL" in result.output

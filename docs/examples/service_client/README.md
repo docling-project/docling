@@ -14,9 +14,11 @@ DOCLING_SERVICE_URL=https://your-docling-service.example.com
 DOCLING_SERVICE_API_KEY=your-api-key   # omit if the service is unauthenticated
 ```
 
-`docling convert-remote` reads only these two keys from the nearest `.env`
-(working directory or a parent); a real environment variable wins. Other keys
-in `.env` are ignored, and other `docling` commands do not read `.env`.
+`docling convert-remote` reads these variables from the environment. It reads
+a `.env` file only on request: `--env-file PATH` reads that file, and
+`--dotenv` reads `.env` in the working directory (not in a parent). It takes
+only these two keys from the file, without `${VAR}` expansion, and a flag or a
+real environment variable wins. Other `docling` commands do not read `.env`.
 
 Install docling-slim with the `service-client` extra :
 
