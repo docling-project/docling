@@ -466,6 +466,18 @@ def test_archive_limits_are_enforced():
         _load(NUMBERS_2013, IWorkBackendOptions(max_member_count=1))
 
 
+def test_decompressed_iwa_streams_count_against_the_total_size_limit():
+    """The declared member sizes are those of the Snappy-compressed streams, so
+    a limit above the declared total of the fixture, about 172 KB, must still
+    stop the IWA streams, which decompress to about 278 KB."""
+    with pytest.raises(
+        DocumentLoadError, match="decompresses past the max_total_bytes limit"
+    ):
+        _load(NUMBERS_2013, IWorkBackendOptions(max_total_bytes=200_000))
+
+    _load(NUMBERS_2013)
+
+
 def _chart_grid(picture: PictureItem) -> list[list[str]]:
     """Read a chart picture's attached data back as rows of text."""
     assert picture.meta is not None and picture.meta.tabular_chart is not None

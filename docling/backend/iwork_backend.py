@@ -321,7 +321,11 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         names = {info.filename for info in infos}
         if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
             return pages_iwa.read_content(
-                archive, infos, self.options.max_file_bytes, self.document_hash
+                archive,
+                infos,
+                self.options.max_file_bytes,
+                self.options.max_total_bytes,
+                self.document_hash,
             )
 
         legacy = next((n for n in _LEGACY_INDEX_MEMBERS if n in names), None)
@@ -456,6 +460,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 archive,
                 "",
                 self.options.max_file_bytes,
+                self.options.max_total_bytes,
                 self.document_hash,
             )
 
@@ -520,6 +525,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 archive,
                 member[: -len(_NESTED_INDEX_MEMBER)],
                 self.options.max_file_bytes,
+                self.options.max_total_bytes,
                 self.document_hash,
             )
 
@@ -1158,7 +1164,11 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         names = {info.filename for info in infos}
         if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
             return numbers_iwa.read_content(
-                archive, infos, self.options.max_file_bytes, self.document_hash
+                archive,
+                infos,
+                self.options.max_file_bytes,
+                self.options.max_total_bytes,
+                self.document_hash,
             )
 
         legacy = next((n for n in _LEGACY_INDEX_MEMBERS if n in names), None)
