@@ -337,6 +337,28 @@ def test_table_text_in_later_column_of_wide_multirow_keeps_column_alignment() ->
     assert cell_ab.row_span == 1
 
 
+def test_table_empty_multirow_before_a_cut_keeps_its_row_span() -> None:
+    # Y ends AB on row 1, so the empty \multirow at column 0 is a real cell and
+    # covers row 2, where its placeholder is dropped.
+    table = (
+        r"\begin{tabular}{ccc}"
+        r"\multicolumn{2}{c}{\multirow{3}{*}{AB}} & C\\"
+        r"\multirow{2}{*}{} & Y & D\\"
+        r"\mbox{} & Z & E\\"
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["AB", "AB", "C"],
+        ["", "Y", "D"],
+        ["", "Z", "E"],
+    ]
+    empty = data.grid[1][0]
+    assert (empty.start_row_offset_idx, empty.end_row_offset_idx) == (1, 3)
+
+
 def test_chart_maps_classification_title_and_data() -> None:
     chart = (
         '<chart type="grouped_bar">\n'
