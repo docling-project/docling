@@ -11,6 +11,8 @@ This test suite validates:
 5. All three stage types (VlmConvert, PictureDescription, CodeFormula)
 """
 
+from types import SimpleNamespace
+
 import pytest
 from pydantic import ValidationError
 
@@ -201,6 +203,10 @@ class TestRuntimeOptions:
             tokenizer = None
 
         class FakeModel:
+            # A real PreTrainedModel always carries .config with .model_type;
+            # the engine reads it once at load time.
+            config = SimpleNamespace(model_type="test")
+
             @classmethod
             def from_pretrained(cls, *args, **kwargs):
                 captured_kwargs.update(kwargs)
@@ -230,6 +236,11 @@ class TestRuntimeOptions:
         monkeypatch.setattr(
             tf_engine.GenerationConfig,
             "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_model_config",
             lambda *args, **kwargs: object(),
         )
 
@@ -273,6 +284,10 @@ class TestRuntimeOptions:
             tokenizer = None
 
         class FakeModel:
+            # A real PreTrainedModel always carries .config with .model_type;
+            # the engine reads it once at load time.
+            config = SimpleNamespace(model_type="test")
+
             @classmethod
             def from_pretrained(cls, *args, **kwargs):
                 model_kwargs.update(kwargs)
@@ -306,6 +321,11 @@ class TestRuntimeOptions:
             "from_pretrained",
             lambda *args, **kwargs: object(),
         )
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_model_config",
+            lambda *args, **kwargs: object(),
+        )
 
         engine = TransformersVlmEngine(
             options=TransformersVlmEngineOptions(
@@ -324,11 +344,7 @@ class TestRuntimeOptions:
 
         assert processor_kwargs["trust_remote_code"] is expected_trust_remote_code
         assert model_kwargs["trust_remote_code"] is expected_trust_remote_code
-        # Transformers 5 only honors the public ``attn_implementation`` kwarg;
-        # the private ``_attn_implementation`` spelling is a transformers 4
-        # holdover (see test_transformers_engine_uses_versioned_dtype_arg).
-        assert model_kwargs["attn_implementation"] is None
-        assert "_attn_implementation" not in model_kwargs
+        assert model_kwargs["_attn_implementation"] is None
 
     def test_dots_mocr_requires_flash_attn(self, monkeypatch):
         """dots.mocr remote code imports flash_attn even when SDPA is selected."""
