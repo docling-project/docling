@@ -135,7 +135,7 @@ class _TextBodyPart:
     delsp: bool | None
     """``None`` for fixed text, otherwise whether the part has ``delsp=yes``."""
     embedded: bool
-    """Whether the part is inside an attachment or an attached message."""
+    """Whether the part is inside an attachment container."""
 
 
 def _get_text_body_parts(message: Message, subtype: str) -> list[_TextBodyPart]:
@@ -144,8 +144,9 @@ def _get_text_body_parts(message: Message, subtype: str) -> list[_TextBodyPart]:
     A part is a body part when it has content and mailparser adds it to
     ``text_plain`` or ``text_html``: it is not an attachment and it is not a
     named part inside an attachment container. mailparser also adds the unnamed
-    parts of an attachment container or an attached ``message/rfc822``, which
-    are marked as embedded.
+    parts of an attachment container, such as a ``message/rfc822`` attachment,
+    which are marked as embedded. An inline ``message/rfc822`` part is not an
+    attachment, so its text stays in the body.
 
     Args:
         message: The parsed message.
@@ -156,23 +157,19 @@ def _get_text_body_parts(message: Message, subtype: str) -> list[_TextBodyPart]:
     """
     parts: list[_TextBodyPart] = []
     attachment_descendants: set[Message] = set()
-    embedded_descendants: set[Message] = set()
     for part in message.walk():
         inside_attachment = part in attachment_descendants
-        embedded = part in embedded_descendants
         children = part.get_payload()
         if isinstance(children, list):
-            child_parts = [child for child in children if isinstance(child, Message)]
             disposition = part.get_content_disposition()
             if (
                 inside_attachment
                 or disposition not in (None, "inline")
                 or (disposition != "inline" and part.get_filename())
             ):
-                attachment_descendants.update(child_parts)
-                embedded_descendants.update(child_parts)
-            elif embedded or part.get_content_maintype() == "message":
-                embedded_descendants.update(child_parts)
+                attachment_descendants.update(
+                    child for child in children if isinstance(child, Message)
+                )
             continue
         if (
             part.get_content_type() != f"text/{subtype}"
@@ -185,7 +182,7 @@ def _get_text_body_parts(message: Message, subtype: str) -> list[_TextBodyPart]:
             if _get_param(part, "format") == "flowed"
             else None
         )
-        parts.append(_TextBodyPart(delsp=delsp, embedded=embedded))
+        parts.append(_TextBodyPart(delsp=delsp, embedded=inside_attachment))
     return parts
 
 
@@ -676,8 +673,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     ) -> list[tuple[str, _TextBodyPart]]:
         """Pair each decoded body text with its part, without embedded parts.
 
-        The text of an attachment or an attached message is not part of the
-        body of this message.
+        The text inside an attachment, such as a ``message/rfc822`` attachment,
+        is not part of the body of this message.
 
         Args:
             texts: The decoded texts of ``text_plain`` or ``text_html``.
