@@ -2228,6 +2228,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # Iterate over the rows in the table
         start_row_span = 0
         row_idx = -1
+        # Row after the last one that the declared rowspans placed so far cover.
+        covered_until = 0
 
         # We don't want this recursive to support nested tables
         for row in element("tr", recursive=False):
@@ -2246,10 +2248,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             col_header = True
             row_header = True
             if not cells:
-                next_row = row_idx + 1
-                if next_row < num_rows and any(
-                    value is not None for value in grid[next_row]
-                ):
+                if covered_until > row_idx + 1:
                     row_header = False
                 else:
                     continue
@@ -2310,6 +2309,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     cell_bbox = rendered_cell.bbox
                 if row_header:
                     row_span -= 1
+                covered_until = max(covered_until, row_idx + start_row_span + row_span)
                 while (
                     col_idx < num_cols
                     and row_idx + start_row_span < num_rows
@@ -3606,48 +3606,51 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
         HTMLDocumentBackend._unwrap_table_sections(tag)
-        # Find the number of rows and columns (taking into account spans)
+        # Find the number of rows and columns (taking into account spans).
+        # The cells are laid out the way parse_table_data places them: a row of
+        # only <th> cells that all span several rows is a row header, whose
+        # cells go in the grid row after the last data row (one row further for
+        # each row header before it in the run) with one row less of rowspan,
+        # and the next data row shares that grid row.
         num_rows: int = 0
-        row_cell_spans: list[list[tuple[int, int]]] = []
+        grid_row_cell_spans: list[list[tuple[int, int]]] = []
         covered_until = 0
         header_run = 0
         for row in tag("tr", recursive=False):
             if not isinstance(row, Tag):
                 continue
-            cell_spans: list[tuple[int, int]] = []
             cells = row(["td", "th"], recursive=False)
             if not cells:
                 # A row without cells is a row of the table only when the
                 # rowspans of earlier rows cover it.
                 if covered_until > num_rows:
-                    row_cell_spans.append(cell_spans)
                     num_rows += 1
                     header_run = 0
                 continue
+            cell_spans: list[tuple[int, int]] = []
             is_row_header = True
             for cell in cells:
-                if not isinstance(row, Tag):
-                    continue
                 cell_tag = cast(Tag, cell)
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
                 cell_spans.append((col_span, row_span))
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
-            row_cell_spans.append(cell_spans)
-            max_span = max((rs for _, rs in cell_spans), default=1)
-            if not is_row_header:
-                covered_until = max(covered_until, num_rows + max_span)
+            if is_row_header:
+                header_run += 1
+                grid_row = num_rows - 1 + header_run
+                cell_spans = [(cs, rs - 1) for cs, rs in cell_spans]
+            else:
+                grid_row = num_rows
                 num_rows += 1
                 header_run = 0
-            else:
-                # parse_table_data puts the cells of a header row in the row
-                # after the rows of the header rows before it, and removes one
-                # row from their rowspan.
-                header_run += 1
-                covered_until = max(
-                    covered_until, num_rows - 1 + header_run + max_span - 1
-                )
-        return num_rows, table_width(row_cell_spans)
+            max_span = max(rs for _, rs in cell_spans)
+            covered_until = max(covered_until, grid_row + max_span)
+            while len(grid_row_cell_spans) <= grid_row:
+                grid_row_cell_spans.append([])
+            grid_row_cell_spans[grid_row].extend(cell_spans)
+        # The cells of row headers after the last data row get grid rows too.
+        num_rows = max(num_rows, len(grid_row_cell_spans))
+        return num_rows, table_width(grid_row_cell_spans)
 
     def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []

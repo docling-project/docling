@@ -495,6 +495,14 @@ def test_table_rowspan_shifts_later_cells_into_the_table():
             [["A", "B"], ["c", "d"]],
             id="th-header-rowspan-covers-the-row",
         ),
+        pytest.param(
+            b'<table><tr><td rowspan="3">a</td></tr>'
+            b"<tr></tr>"
+            b'<tr><th rowspan="2">C</th></tr>'
+            b"<tr><td>c</td></tr></table>",
+            [["a", "", ""], ["a", "", ""], ["a", "C", "c"]],
+            id="th-row-header-after-the-row",
+        ),
     ],
 )
 def test_table_row_without_cells(html: bytes, expected_grid: list[list[str]]):
@@ -502,12 +510,18 @@ def test_table_row_without_cells(html: bytes, expected_grid: list[list[str]]):
     # rows after it keep their place. A row without cells that no rowspan
     # covers holds no content and adds no row. An all-<th> header row is read
     # as the column header, and the grid still has room for every data row.
+    # A row of <th> cells that all span several rows is a row header that
+    # shares its grid row with the next data row, and the grid is wide enough
+    # for the cells of both.
     doc = _convert_html(html)
 
     assert len(doc.tables) == 1
     data = doc.tables[0].data
-    assert (data.num_rows, data.num_cols) == (len(expected_grid), 2)
+    assert (data.num_rows, data.num_cols) == (len(expected_grid), len(expected_grid[0]))
     assert [[cell.text for cell in row] for row in data.grid] == expected_grid
+    markdown = doc.export_to_markdown()
+    for text in {text for row in expected_grid for text in row if text}:
+        assert text in markdown
 
 
 def test_table_row_header_rowspan_keeps_the_row_cells():
