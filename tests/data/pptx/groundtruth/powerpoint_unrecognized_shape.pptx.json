@@ -184,6 +184,13 @@
       ],
       "orig": "Total revenue grew 18% year-over-year.",
       "text": "Total revenue grew 18% year-over-year.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -213,6 +220,13 @@
       ],
       "orig": "Enterprise segment led growth at 24%.",
       "text": "Enterprise segment led growth at 24%.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -242,6 +256,13 @@
       ],
       "orig": "APAC region exceeded targets by 12%.",
       "text": "APAC region exceeded targets by 12%.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -270,7 +291,14 @@
         }
       ],
       "orig": "Key Metrics",
-      "text": "Key Metrics"
+      "text": "Key Metrics",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/5",
@@ -297,7 +325,14 @@
         }
       ],
       "orig": "Monthly active users: 4.2M",
-      "text": "Monthly active users: 4.2M"
+      "text": "Monthly active users: 4.2M",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/6",
@@ -324,7 +359,14 @@
         }
       ],
       "orig": "Net retention rate: 112%",
-      "text": "Net retention rate: 112%"
+      "text": "Net retention rate: 112%",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/7",
@@ -351,7 +393,14 @@
         }
       ],
       "orig": "Text in an unrecognized shape",
-      "text": "Text in an unrecognized shape"
+      "text": "Text in an unrecognized shape",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/8",
@@ -406,6 +455,13 @@
       ],
       "orig": "1. Finalize pricing model",
       "text": "1. Finalize pricing model",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -435,6 +491,13 @@
       ],
       "orig": "2. Launch APAC campaign",
       "text": "2. Launch APAC campaign",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -464,6 +527,13 @@
       ],
       "orig": "3. Hire 3 additional SEs",
       "text": "3. Hire 3 additional SEs",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     }
