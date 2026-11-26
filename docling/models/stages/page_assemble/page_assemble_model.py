@@ -109,8 +109,9 @@ class PageAssembleModel(BasePageModel):
         hyphenation rule could have placed it: after a single-character token
         ("n-" / "octanal"), before a continuation opening on a digit
         ("6-methyl-" / "5-hepten-2-one"), or after an uppercase abbreviation
-        when the continuation is lowercase ("DNA-" / "binding"). There the
-        hyphen belongs to the word.
+        when the continuation is lowercase ("DNA-" / "binding"), or after an
+        all-lowercase word when the continuation opens on an uppercase letter
+        ("non-" / "Hodgkin"). There the hyphen belongs to the word.
 
         The joined text is then normalized: a few typographic characters are
         replaced by ASCII equivalents and ligatures are expanded.
@@ -132,6 +133,12 @@ class PageAssembleModel(BasePageModel):
                     and prev_words[-1][-1].isupper()
                     and line_words[0][0].islower()
                 )
+                hyphen_before_capitalized_word = (
+                    len(prev_words)
+                    and len(line_words)
+                    and prev_words[-1].islower()
+                    and line_words[0][0].isupper()
+                )
 
                 if (
                     hyphen_attached_to_word
@@ -142,6 +149,7 @@ class PageAssembleModel(BasePageModel):
                     and line_words[0].isalnum()
                     and not line_words[0][0].isdigit()
                     and not hyphen_after_uppercase_abbrev
+                    and not hyphen_before_capitalized_word
                 ):
                     lines[ix] = prev_line[:-1]
                 elif not hyphen_attached_to_word:
