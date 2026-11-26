@@ -47,6 +47,11 @@ cells follows separate handling.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+PowerPoint bubble charts retain three data columns per series: X values, Y values,
+and bubble sizes. Column headers include the series name and axis title, with
+`X` and `Y` as defaults for axes without titles. The chart title remains the
+picture caption.
+
 Video and audio on PPTX and ODP slides become tracks, with their poster frame or
 icon as the cover. The `video` or `audio` of the track gives the path of the media
 file inside the package, or the link of a linked file. Set `keep_media=True` in the
