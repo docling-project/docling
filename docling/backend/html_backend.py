@@ -303,6 +303,7 @@ _FORMAT_TAG_MAP: Final = {
     # "small",
     "s": {"strikethrough": True},
     "del": {"strikethrough": True},
+    "strike": {"strikethrough": True},
     "u": {"underline": True},
     "ins": {"underline": True},
     "sub": {"script": Script.SUB},
