@@ -140,6 +140,7 @@ def read_content(
     archive: zipfile.ZipFile,
     infos: list[zipfile.ZipInfo],
     max_file_bytes: int,
+    max_total_bytes: int,
     document_hash: str,
 ) -> list[Sheet]:
     """Read the sheets of a Numbers 3+ document out of its IWA object graph.
@@ -148,6 +149,8 @@ def read_content(
         archive: The open ``.numbers`` container.
         infos: Its members.
         max_file_bytes: The largest member this is willing to decompress.
+        max_total_bytes: The most bytes all ``.iwa`` streams together may
+            decompress to.
         document_hash: The document's hash, for error messages.
 
     Returns:
@@ -157,7 +160,9 @@ def read_content(
         DocumentLoadError: If a member is too large, or the object graph has no
             document archive.
     """
-    objects = read_objects(archive, infos, max_file_bytes, NUMBERS_KIND)
+    objects = read_objects(
+        archive, infos, max_file_bytes, max_total_bytes, NUMBERS_KIND
+    )
 
     document = next(
         (o for o in objects.values() if o.message_type == TN_DOCUMENT_ARCHIVE), None

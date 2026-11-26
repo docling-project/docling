@@ -543,6 +543,25 @@ def test_archive_limits_are_enforced(option: dict[str, int], message: str):
         _construct(KEYNOTE_2013, IWorkBackendOptions(**option))
 
 
+@pytest.mark.parametrize(
+    ("source", "limit"),
+    [(KEYNOTE_2013, 300_000), (KEYNOTE_2018, 100_000)],
+    ids=["flat", "nested"],
+)
+def test_decompressed_iwa_streams_count_against_the_total_size_limit(
+    source: Path, limit: int
+):
+    """The declared member sizes are those of the Snappy-compressed streams, so
+    each limit sits above every declared total of the fixture but below what
+    its IWA streams decompress to."""
+    with pytest.raises(
+        DocumentLoadError, match="decompresses past the max_total_bytes limit"
+    ):
+        _construct(source, IWorkBackendOptions(max_total_bytes=limit))
+
+    assert _construct(source).is_valid()
+
+
 def test_the_nested_index_is_held_to_the_same_limits():
     """The inner archive is where a nested-index presentation keeps everything,
     so bounding only the outer one would bound nothing."""
