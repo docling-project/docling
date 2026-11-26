@@ -706,6 +706,109 @@ def test_latex_textcolor_macro():
     assert "yellow" not in md
 
 
+def _latex_body_texts(latex_content: str) -> list[str]:
+    data = latex_content.encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(data),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(data))
+    doc = backend.convert()
+    return [item.text for item in doc.texts if item.content_layer == ContentLayer.BODY]
+
+
+def test_latex_newcommand_optional_argument():
+    """Use the default of a macro's first argument, or a plain [value]."""
+    texts = _latex_body_texts(
+        r"""\documentclass{article}
+\newcommand{\greet}[2][Hello]{#1, #2!}
+\newcommand{\one}[1][def]{<#1>}
+\newcommand{\pair}[2]{#1-#2}
+\newcommand{\emgreet}[2][\textbf{Hi}]{#1, #2!}
+\begin{document}
+\greet{World} and \greet[Hi]{There}.
+
+\greet{X} [1]
+
+\greet [Hi] {There}
+
+\one[Y]. \one.
+
+\greet[]{Z}
+
+\pair{A}{B} [1]
+
+\emgreet{World}
+
+\section{\greet{World}}
+\end{document}
+"""
+    )
+    assert texts == [
+        "Hello, World! and Hi, There!.",
+        "Hello, X! [1]",
+        "Hi, There!",
+        "<Y>. <def>.",
+        ", Z!",
+        "A-B [1]",
+        "Hi, World!",
+        "Hello, World!",
+    ]
+
+
+def test_latex_newcommand_optional_argument_declarations():
+    """Starred, renewed and provided macros keep the optional first argument."""
+    texts = _latex_body_texts(
+        r"""\documentclass{article}
+\newcommand{\greet}[2][Hello]{#1 #2}
+\renewcommand{\greet}[2][Hey]{#1 #2}
+\newcommand*{\starred}[2][Hello]{#1, #2!}
+\providecommand{\note}[1][TODO]{[#1]}
+\newcommand{\old}[2][Hello]{#1 #2}
+\renewcommand{\old}[1]{#1}
+\begin{document}
+\greet{World} \greet[Hi]{There}
+
+\starred{World} \starred[Hi]{There}
+
+\note. \note[done].
+
+\old{World}
+\end{document}
+"""
+    )
+    assert texts == [
+        "Hey World Hi There",
+        "Hello, World! Hi, There!",
+        "[TODO]. [done].",
+        "World",
+    ]
+
+
+def test_latex_newcommand_optional_argument_markup_falls_back():
+    """A bracket value with markup or nested brackets stays unparsed."""
+    markup = _latex_body_texts(
+        r"""\documentclass{article}
+\newcommand{\greet}[2][Hello]{#1, #2!}
+\begin{document}
+\greet[\emph{Hi}]{There}
+\end{document}
+"""
+    )
+    nested = _latex_body_texts(
+        r"""\documentclass{article}
+\newcommand{\greet}[2][Hello]{#1, #2!}
+\begin{document}
+\greet[a[b]]{c}
+\end{document}
+"""
+    )
+    assert markup == ["#1, #2![Hi]There"]
+    assert nested == ["#1, #2![a[b]]c"]
+
+
 def test_latex_custom_macro_parameters():
     """Test custom macros with parameters expand arguments before formatting is unwrapped."""
     latex_content = rb"""
