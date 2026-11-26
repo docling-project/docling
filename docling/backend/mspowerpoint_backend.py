@@ -85,6 +85,7 @@ from docling.backend.utils.charts import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.media import MediaKind, load_linked_media, media_ref
+from docling.backend.utils.table_spans import MAX_COLSPAN, MAX_ROWSPAN, clamp_span
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -444,6 +445,28 @@ _MAX_AUTO_NUMBER_START: Final = 32767
 """The largest ``a:buAutoNum/@startAt`` value that ``ST_TextBulletStartAtNum``
 allows. A larger value is invalid and would build very long letter or Roman
 markers."""
+
+
+def _declared_span(value: str | None, limit: int) -> int:
+    """Return a cell's ``gridSpan`` or ``rowSpan`` value, clamped to ``[1, limit]``.
+
+    Args:
+        value: The raw attribute value, or ``None`` when the cell has none.
+        limit: The largest span the cell can have at its place in the table.
+
+    Returns:
+        The span. A missing or non-integer value gives 1.
+    """
+    if value is None:
+        return 1
+    digits = value.strip()
+    if not (digits.isascii() and digits.isdigit()):
+        return 1
+    # Any value this long is above the limit; skip converting very long digit
+    # strings to int.
+    if len(digits.lstrip("0")) > len(str(limit)):
+        return max(limit, 1)
+    return clamp_span(int(digits), limit)
 
 
 def _auto_number_marker(value: int, scheme: Optional[str]) -> str:
@@ -1605,41 +1628,26 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Handling tables, images, charts
         if shape.has_table:
             table = shape.table
-            table_xml = shape._element
 
             prov = self._generate_prov(shape, slide_ind, "", slide_size)
 
-            num_cols = 0
-            num_rows = len(table.rows)
+            rows = [list(row.cells) for row in table.rows]
+            num_rows = len(rows)
+            num_cols = max((len(cells) for cells in rows), default=0)
             tcells = []
-            # Access the XML element for the shape that contains the table
-            table_xml = shape._element
 
-            for row_idx, row in enumerate(table.rows):
-                if len(row.cells) > num_cols:
-                    num_cols = len(row.cells)
-                for col_idx, cell in enumerate(row.cells):
-                    # Access the XML of the cell (this is the 'tc' element in table XML)
-                    cell_xml = table_xml.xpath(
-                        f".//a:tbl/a:tr[{row_idx + 1}]/a:tc[{col_idx + 1}]"
+            for row_idx, cells in enumerate(rows):
+                for col_idx, cell in enumerate(cells):
+                    # The cell's own a:tc element: the col_idx-th a:tc child of
+                    # the row_idx-th a:tr. Looking it up with an XPath per cell
+                    # scans the table each time.
+                    cell_xml = cell._tc
+                    row_span = _declared_span(
+                        cell_xml.get("rowSpan"), min(MAX_ROWSPAN, num_rows - row_idx)
                     )
-
-                    if not cell_xml:
-                        continue  # If no cell XML is found, skip
-
-                    cell_xml = cell_xml[0]  # Get the first matching XML node
-                    row_span = cell_xml.get("rowSpan")  # Vertical span
-                    col_span = cell_xml.get("gridSpan")  # Horizontal span
-
-                    if row_span is None:
-                        row_span = 1
-                    else:
-                        row_span = int(row_span)
-
-                    if col_span is None:
-                        col_span = 1
-                    else:
-                        col_span = int(col_span)
+                    col_span = _declared_span(
+                        cell_xml.get("gridSpan"), min(MAX_COLSPAN, num_cols - col_idx)
+                    )
 
                     icell = TableCell(
                         text=cell.text.strip(),
