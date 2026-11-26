@@ -202,6 +202,7 @@ def api_image_request(
     timeout: float = 20,
     headers: dict[str, str] | None = None,
     *,
+    http_client_params: dict[str, Any] | None = None,
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
     **params,
@@ -250,9 +251,13 @@ def api_image_request(
             with _make_retry_session() as session:
                 r = session.post(
                     str(url),
-                    headers=headers,
-                    json=payload,
-                    timeout=timeout,
+                    **{
+                        **(http_client_params or {}),
+                        "headers": headers,
+                        "json": payload,
+                        "timeout": timeout,
+                        "stream": False,
+                    },
                 )
             if not r.ok:
                 _log.error(
@@ -306,6 +311,7 @@ def api_image_request_streaming(
     timeout: float = 20,
     headers: dict[str, str] | None = None,
     generation_stoppers: list[GenerationStopper] = [],
+    http_client_params: dict[str, Any] | None = None,
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
     **params,
@@ -367,7 +373,14 @@ def api_image_request_streaming(
             # Stream the HTTP response
             with _make_retry_session() as session:
                 with session.post(
-                    str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
+                    str(url),
+                    **{
+                        **(http_client_params or {}),
+                        "headers": hdrs,
+                        "json": payload,
+                        "timeout": timeout,
+                        "stream": True,
+                    },
                 ) as r:
                     if not r.ok:
                         _log.error(

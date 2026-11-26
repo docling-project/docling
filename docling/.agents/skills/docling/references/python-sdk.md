@@ -396,6 +396,21 @@ converter = DocumentConverter(
 result = converter.convert("report.pdf")
 ```
 
+Set `http_client_params` on `ApiVlmEngineOptions`, `ApiVlmOptions`, or
+`PictureDescriptionApiOptions` to configure the HTTP request. These options use
+`requests.Session.post`, so use Requests arguments such as `verify` (a CA bundle
+path), `cert` (a client certificate), `proxies`, `auth`, or `cookies`:
+
+```python
+vlm_opts.http_client_params = {"verify": "/path/to/internal-ca-bundle.pem"}
+```
+
+These values do not enter the model generation payload. Dedicated `headers`,
+`timeout`, JSON payload, and streaming settings take precedence over matching
+keys in `http_client_params`. The default is an empty dictionary, which keeps
+the existing Requests defaults. Use Requests arguments; HTTPX `transport` and
+`ssl.SSLContext` values for `verify` are not supported.
+
 `enable_remote_services=True` is mandatory for any remote model — Docling blocks
 outbound HTTP by default.
 
