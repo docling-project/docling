@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import (
     BoundingBox,
@@ -18,6 +19,7 @@ from docling.datamodel.base_models import (
     Size,
 )
 from docling.datamodel.pipeline_options import LayoutPostprocessorOptions
+from docling.models.base_ocr_model import _empty_segmented_page
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
@@ -107,6 +109,48 @@ def test_runs_postprocessor_and_scores_processed_clusters() -> None:
     expected = float(np.mean([c.confidence for c in produced]))
     assert conv_res.confidence.pages[1].layout_score == pytest.approx(expected)
     assert conv_res.confidence.pages[1].layout_score == pytest.approx(0.7)
+
+
+def test_orphan_text_confidence_does_not_inflate_layout_score() -> None:
+    # The layout model finds a small footer, but its OCR cell is wider than
+    # the overlap threshold allows. Post-processing drops the model cluster
+    # and creates an orphan TEXT cluster with OCR confidence instead.
+    page = _page_with_raw_clusters(
+        [
+            Cluster(
+                id=0,
+                label=DocItemLabel.PAGE_FOOTER,
+                bbox=BoundingBox(l=295, t=803, r=301, b=813),
+                confidence=0.76,
+            )
+        ]
+    )
+    page.size = Size(width=595, height=842)
+    page.parsed_page = _empty_segmented_page(page)
+    page.parsed_page.textline_cells = [
+        TextCell(
+            index=0,
+            text="4",
+            orig="4",
+            from_ocr=True,
+            confidence=1.0,
+            rect=BoundingRectangle.from_bounding_box(
+                BoundingBox(l=289, t=798, r=311, b=817)
+            ),
+        )
+    ]
+
+    conv_res = _conv_res()
+    [prediction] = LayoutPostprocessingModel(
+        options=LayoutPostprocessorOptions()
+    ).postprocess_layout(conv_res, [page])
+
+    assert len(prediction.clusters) == 1
+    assert prediction.clusters[0].label == DocItemLabel.TEXT
+    assert prediction.clusters[0].confidence == pytest.approx(1.0)
+    # No model cluster survived, so OCR confidence must not produce an
+    # excellent layout score.
+    assert conv_res.confidence.pages[1].layout_score == pytest.approx(0.0)
 
 
 def test_invalid_page_passes_through_without_scoring() -> None:
