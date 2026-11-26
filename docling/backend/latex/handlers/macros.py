@@ -33,6 +33,7 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.context import MacroExpansionBudget
 from docling.backend.latex.handlers.math import InlineFormula
 from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
@@ -171,6 +172,7 @@ class MacroHandlerMixin:
         _custom_macro_num_args: dict[str, int]
         _masked_macro_spans: list[tuple[int, int]]
         _suppress_image_path_caption: bool
+        _expansion_budget: MacroExpansionBudget
         labels: dict[str, bool]
 
         def _process_nodes(
@@ -845,7 +847,20 @@ class MacroHandlerMixin:
         return " ".join(parts)
 
     def _expand_macros(self, latex_str: str) -> str:
+        budget = self._expansion_budget
+
+        def replacement(macro_def: str) -> Callable[[re.Match[str]], str]:
+            def replace(match: re.Match[str]) -> str:
+                # Past the budget, the macro stays as written.
+                if budget.spend(len(macro_def)):
+                    return macro_def
+                return match.group()
+
+            return replace
+
         for _ in range(10):
+            if budget.is_exhausted():
+                break
             previous = latex_str
             for macro_name, macro_def in self._custom_macros.items():
                 if self._custom_macro_num_args.get(macro_name, 0) > 0:
@@ -854,7 +869,7 @@ class MacroHandlerMixin:
                     continue
                 latex_str = re.sub(
                     rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
-                    lambda m: macro_def,
+                    replacement(macro_def),
                     latex_str,
                 )
             if latex_str == previous:
@@ -898,14 +913,31 @@ class MacroHandlerMixin:
         return arg_values, consumed
 
     def _render_custom_macro_expansion(
-        self, macro_name: str, arg_values: list[str]
-    ) -> str:
+        self, macro_name: str, arg_values: list[str], max_length: int
+    ) -> str | None:
+        """Substitute the arguments, or return None past ``max_length`` characters.
+
+        The length of each step is computed before the string is built.
+        """
         expansion = self._custom_macros[macro_name]
         for idx in range(len(arg_values), 0, -1):
-            expansion = expansion.replace(f"#{idx}", arg_values[idx - 1])
+            placeholder = f"#{idx}"
+            value = arg_values[idx - 1]
+            length = len(expansion) + expansion.count(placeholder) * (
+                len(value) - len(placeholder)
+            )
+            if length > max_length:
+                return None
+            expansion = expansion.replace(placeholder, value)
+        if len(expansion) > max_length:
+            return None
         return expansion
 
     def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str:
+        # Past the budget, the fragment is kept as written: parsing it again
+        # would expand its macros again.
+        if self._expansion_budget.is_exhausted():
+            return latex_fragment
         try:
             walker = LatexWalker(
                 latex_fragment, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
@@ -919,17 +951,34 @@ class MacroHandlerMixin:
     def _expand_custom_macro_invocation(
         self, node: LatexMacroNode, following_nodes
     ) -> tuple[str, int]:
+        """Return the expansion of a custom macro and the arguments it consumes.
+
+        Past the expansion budget, the macro is returned as written and its
+        arguments stay in the following nodes.
+        """
+        budget = self._expansion_budget
         expected_arg_count = self._custom_macro_num_args.get(node.macroname, 0)
-        if expected_arg_count <= 0:
-            return self._custom_macros[node.macroname], 0
+        arg_values: list[str] = []
+        consumed = 0
+        if expected_arg_count > 0:
+            arg_values, consumed = self._extract_custom_macro_invocation_args(
+                following_nodes, expected_arg_count
+            )
+        if expected_arg_count <= 0 or len(arg_values) < expected_arg_count:
+            definition = self._custom_macros[node.macroname]
+            if not budget.spend(len(definition)):
+                return node.latex_verbatim(), 0
+            return definition, 0
 
-        arg_values, consumed = self._extract_custom_macro_invocation_args(
-            following_nodes, expected_arg_count
+        expansion = self._render_custom_macro_expansion(
+            node.macroname, arg_values, budget.remaining_chars()
         )
-        if len(arg_values) < expected_arg_count:
-            return self._custom_macros[node.macroname], 0
-
-        return self._render_custom_macro_expansion(node.macroname, arg_values), consumed
+        if expansion is None:
+            budget.exceed()
+            return node.latex_verbatim(), 0
+        if not budget.spend(len(expansion)):
+            return node.latex_verbatim(), 0
+        return expansion, consumed
 
     def _get_heading_level(self, macroname: str) -> int:
         levels = {
