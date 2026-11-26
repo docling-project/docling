@@ -294,6 +294,50 @@ def _parse_latex_cell(text: str) -> _LatexCell:
     )
 
 
+def _place_empty_latex_cell(
+    cell: _LatexCell,
+    col: int,
+    row_index: int,
+    owners: dict[int, tuple[_LatexCell, int]],
+    entries: list[_LatexCell | tuple[_LatexCell, int]],
+) -> None:
+    """Record an empty cell across ``col..col+cell.col_span``, skipping covered columns."""
+    uncovered_start: int | None = None
+    end_col = col + cell.col_span
+    for owned_col in range(col, end_col):
+        owner = owners.get(owned_col)
+        if owner is not None and owner[1] + owner[0].row_span > row_index:
+            if uncovered_start is not None:
+                emitted = _LatexCell(
+                    text="",
+                    row_span=cell.row_span,
+                    col_span=owned_col - uncovered_start,
+                    header=cell.header,
+                )
+                for c in range(uncovered_start, owned_col):
+                    owners[c] = (emitted, row_index)
+                entries.append(emitted)
+                uncovered_start = None
+            entries.append(owner)
+        elif uncovered_start is None:
+            uncovered_start = owned_col
+    if uncovered_start is not None:
+        span = end_col - uncovered_start
+        emitted = (
+            cell
+            if span == cell.col_span
+            else _LatexCell(
+                text="",
+                row_span=cell.row_span,
+                col_span=span,
+                header=cell.header,
+            )
+        )
+        for c in range(uncovered_start, end_col):
+            owners[c] = (emitted, row_index)
+        entries.append(emitted)
+
+
 def latex_tabular_to_html(latex: str) -> str:
     """Convert Nemotron's LaTeX ``tabular`` dialect to an HTML table.
 
@@ -318,23 +362,37 @@ def latex_tabular_to_html(latex: str) -> str:
     grid: list[list[_LatexCell]] = []
     for row_index, row in enumerate(rows):
         col = 0
-        cells: list[_LatexCell] = []
+        # Real cells to emit, interleaved with (owner_cell, owner_row) markers for
+        # empty placeholders skipped under an active multirow on this row. If a
+        # later cell on the same row cuts that multirow short, its markers become
+        # empty cells so later columns stay aligned.
+        entries: list[_LatexCell | tuple[_LatexCell, int]] = []
         for raw_cell in _split_top_level(row, "&"):
             cell = _parse_latex_cell(raw_cell)
-            owner = owners.get(col)
-            if owner is not None and owner[1] + owner[0].row_span > row_index:
-                if not cell.text:
-                    col += cell.col_span
-                    continue
-                # Text under a multirow: the predicted row span was too long.
-                owner[0].row_span = row_index - owner[1]
             if col + cell.col_span > _MAX_TABLE_GRID_CELLS:
                 raise ValueError(f"LaTeX table exceeds {_MAX_TABLE_GRID_CELLS} columns")
-            for owned_col in range(col, col + cell.col_span):
-                owners[owned_col] = (cell, row_index)
-            cells.append(cell)
+            if not cell.text:
+                _place_empty_latex_cell(cell, col, row_index, owners, entries)
+            else:
+                for owned_col in range(col, col + cell.col_span):
+                    owner = owners.get(owned_col)
+                    if owner is not None and owner[1] + owner[0].row_span > row_index:
+                        # Text under a multirow: the predicted row span was too long.
+                        owner[0].row_span = row_index - owner[1]
+                for owned_col in range(col, col + cell.col_span):
+                    owners[owned_col] = (cell, row_index)
+                entries.append(cell)
             col += cell.col_span
-        grid.append(cells)
+        grid.append(
+            [
+                entry
+                if isinstance(entry, _LatexCell)
+                else _LatexCell(text="", row_span=1, col_span=1, header=False)
+                for entry in entries
+                if isinstance(entry, _LatexCell)
+                or entry[1] + entry[0].row_span <= row_index
+            ]
+        )
 
     html_rows: list[str] = []
     for cells in grid:
