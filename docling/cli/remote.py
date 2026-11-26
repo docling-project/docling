@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 from docling_core.types.doc import ImageRefMode
+from rich.markup import escape
 
 from docling.cli.export_utils import (
     _export_flags_from_formats,
@@ -389,7 +390,12 @@ def convert_remote(
         )
         raise typer.Exit(2)
     # Show where the documents go before anything is sent.
-    err_console.print(f"Docling service: {service_url} (from {url_source})")
+    # soft_wrap keeps the line whole, and escape() keeps "[...]" in the URL or
+    # path from being read as Rich markup.
+    err_console.print(
+        f"Docling service: {escape(service_url)} (from {escape(url_source)})",
+        soft_wrap=True,
+    )
 
     # Forward --from only when set: the default list can contain formats an
     # older service rejects.

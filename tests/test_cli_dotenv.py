@@ -58,6 +58,11 @@ def _remote(source, *args: str):
     return runner.invoke(app, ["convert-remote", str(source), *args])
 
 
+def _text(result) -> str:
+    # Rich wraps messages at the console width; compare without line breaks.
+    return " ".join(result.output.split())
+
+
 def test_dotenv_is_not_read_without_an_option(tmp_path, monkeypatch, client, source):
     (tmp_path / ".env").write_text(
         "DOCLING_SERVICE_URL=https://dotenv.example.com\n", encoding="utf-8"
@@ -68,7 +73,7 @@ def test_dotenv_is_not_read_without_an_option(tmp_path, monkeypatch, client, sou
         monkeypatch.chdir(cwd)
         result = _remote(source)
         assert result.exit_code == 2, result.output
-        assert "No service URL" in result.output
+        assert "No service URL" in _text(result)
     assert client.kwargs is None
 
 
@@ -83,7 +88,7 @@ def test_dotenv_reads_only_the_working_directory(tmp_path, monkeypatch, client, 
     result = _remote(source, "--dotenv")
 
     assert result.exit_code == 2, result.output
-    assert "no .env file in this directory" in result.output
+    assert "no .env file in this directory" in _text(result)
     assert client.kwargs is None
 
 
