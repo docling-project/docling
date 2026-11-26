@@ -8,8 +8,8 @@ each ``TN.SheetArchive`` lists what is drawn on it, and every drawable read is a
 table, a chart, a picture or a sticky note. Tables themselves are the same
 ``TST`` archives Pages embeds, so :mod:`docling.backend.iwork.tables` reads them;
 what is added here is everything around them — the sheets, the frames that
-position them, and the values and pictures a spreadsheet cell holds that a Pages
-cell never does.
+position them, and the pictures a spreadsheet cell holds that a Pages cell never
+does.
 
 Only the message and field numbers are format knowledge; the container layer
 lives in :mod:`docling.backend.iwork.iwa`.
@@ -23,7 +23,7 @@ from datetime import datetime
 from docling.backend.iwork import archives, cells
 from docling.backend.iwork.archives import IWAReader, drawable_geometry, read_objects
 from docling.backend.iwork.charts import TSCH_CHART_DRAWABLE, iwa_chart
-from docling.backend.iwork.content import Geometry
+from docling.backend.iwork.content import Geometry, moment
 from docling.backend.iwork.iwa import IWAObject
 from docling.backend.iwork.numbers_content import (
     MAX_TABLE_CELLS,
@@ -33,11 +33,6 @@ from docling.backend.iwork.numbers_content import (
     PlacedPicture,
     Sheet,
     Table,
-    format_bool,
-    format_date,
-    format_duration,
-    format_number,
-    moment,
     sheet_order,
 )
 from docling.exceptions import DocumentLoadError
@@ -305,7 +300,7 @@ def read_cells(
         if placed.row >= num_rows or placed.col >= num_cols:
             continue
         decoded = cells.iwa_cell(placed.storage, placed.start, values)
-        rendered = render(decoded)
+        rendered = cells.render(decoded)
         style = decoded.style if decoded is not None else None
         data = fills.get(style) if style is not None else None
         picture = reader.data_picture(data) if data is not None else None
@@ -350,33 +345,6 @@ def image_fill(
             return None
         message = nested
     return archives.iwa_reference_field(message, IMAGE_FILL_DATA_FIELD)
-
-
-def render(decoded: cells.Cell | None) -> str | None:
-    """Turn a decoded cell into the text the spreadsheet shows in it.
-
-    Args:
-        decoded: The cell as the table layer read it.
-
-    Returns:
-        The text, or None for an empty cell or a value type this reader has not
-        been shown how to render.
-    """
-    if decoded is None or decoded.type == cells.CELL_TYPE_EMPTY:
-        return None
-    if decoded.type in (cells.CELL_TYPE_TEXT, cells.CELL_TYPE_RICH_TEXT):
-        return decoded.text
-    if decoded.number is None:
-        return None
-    if decoded.type in (cells.CELL_TYPE_NUMBER, cells.CELL_TYPE_CURRENCY):
-        return format_number(decoded.number)
-    if decoded.type == cells.CELL_TYPE_DATE:
-        return format_date(decoded.number)
-    if decoded.type == cells.CELL_TYPE_DURATION:
-        return format_duration(decoded.number)
-    if decoded.type == cells.CELL_TYPE_BOOL:
-        return format_bool(decoded.number)
-    return None
 
 
 def read_chart(
