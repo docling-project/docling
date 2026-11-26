@@ -4905,6 +4905,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Handles both cached references (``c:numCache``/``c:strCache``) and inline
         literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
         gaps are filled with empty strings so every series aligns to the same rows.
+        Only numeric caches are normalized; string caches keep their spelling.
         The list is sized by the points that are present and holds at most
         ``max_rows`` entries; the declared ``c:ptCount`` is not used (see
         ``chart_points_to_list``).
@@ -4920,6 +4921,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if cache is None:
             return []
 
+        numeric = etree.QName(cache).localname in ("numCache", "numLit")
         points: dict[int, str] = {}
         for pt in cache.findall("c:pt", namespaces=ns):
             try:
@@ -4927,9 +4929,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             except ValueError:
                 continue
             value = pt.find("c:v", namespaces=ns)
-            points[idx] = self._chart_cell_text(
-                value.text if value is not None else None
-            )
+            text = (value.text or "") if value is not None else ""
+            points[idx] = self._chart_cell_text(text) if numeric else text
         return chart_points_to_list(points, max_rows, warn=warn)
 
     def _chart_series_name(self, series: Any) -> str:
@@ -4941,7 +4942,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if cached:
             return cached[0]
         literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
-        return self._chart_cell_text(literal.text) if literal is not None else ""
+        return (literal.text or "") if literal is not None else ""
 
     def _chart_title_text(self, chart_root: Any) -> str | None:
         """Extract the chart's title text, or None when it has no title.
