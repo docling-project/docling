@@ -86,25 +86,38 @@ Schema-specific support:
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
 
-MediaWiki inputs use `InputFormat.MEDIAWIKI` in the SDK and `--from mediawiki`
-in the CLI. Docling also accepts `.tar`, `.tar.gz`, and `.tgz` archives that
-contain MediaWiki XML or wikitext. Each input produces one Docling document.
-Docling imports the latest revision of each exported page and processes
-archive members in archive order.
+### MediaWiki
 
-The parser runs locally and preserves headings, emphasis, links, lists, and
-tables. It extracts named fields from common infobox and taxobox templates and
-provides approximate output for selected common templates, including dates,
-lists, units, language text, and citations. It does not execute template code
-or Lua modules; other templates are omitted, and extracted fields may differ
-from a rendered wiki page. A wikitext page
-can contain up to 4,194,304 characters. Compressed files and archives can
-contain up to 512 MiB of uncompressed data. Tar archives can have up to
-10,000 members. The `format-html` extra provides the renderer for Docling Slim.
+Use `InputFormat.MEDIAWIKI` in the SDK or `--from mediawiki` in the CLI. Each
+MediaWiki XML export or wikitext file produces one Docling document. Both can use
+gzip compression. For a multi-page XML export, Docling imports the latest
+revision of each page in export order. The SDK also accepts a generic ZIP as a
+batch and converts each supported member to its own document.
+
+The parser runs locally and preserves headings, emphasis, links, lists, tables,
+formulas, code languages, and file captions. Pictures retain their captions
+without loading the image. The parser extracts named fields from common infobox
+and taxobox templates. It approximates selected templates for dates, lists,
+units, language text, and citations. It leaves out other templates and all Lua
+modules. The `format-html` extra enables MediaWiki conversion in Docling Slim.
+
+The parser uses these size limits by default. You can set them with
+`MediaWikiBackendOptions`.
+
+| Option | Default | Limit |
+|--------|---------|-------|
+| `max_total_bytes` | 512 MiB | Input size after any decompression |
+| `max_file_bytes` | 16 MiB | Standalone wikitext size after any decompression |
+| `max_page_chars` | 4,194,304 | Characters in a page revision or standalone wikitext file |
+| `max_inline_reference_bytes` | 16 MiB | Total rendered inline citation bytes per input, including repeated citations |
+
+The parser limits list nesting to 32 levels and bounds the work spent on
+ambiguous or incomplete markup.
 
 By default, MediaWiki conversion omits `<ref>` citations and drops empty
-sections. Regular superscripts remain. Select another citation mode through the
-SDK:
+sections. Regular superscripts remain. Set `preserve_bold=False` or
+`preserve_italic=False` to remove that style and keep its text. This example
+keeps italic formatting, removes bold formatting, and lists citations.
 
 ```python
 from docling.datamodel.backend_options import MediaWikiBackendOptions
@@ -113,7 +126,9 @@ from docling.document_converter import DocumentConverter, MediaWikiFormatOption
 
 converter = DocumentConverter(format_options={
     InputFormat.MEDIAWIKI: MediaWikiFormatOption(
-        backend_options=MediaWikiBackendOptions(reference_mode="list")
+        backend_options=MediaWikiBackendOptions(
+            reference_mode="list", preserve_bold=False
+        )
     )
 })
 result = converter.convert("article.wiki")

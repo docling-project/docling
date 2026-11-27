@@ -25,7 +25,7 @@ class WikiPage:
 
 
 class _ExportReader:
-    def __init__(self) -> None:
+    def __init__(self, max_page_chars: int) -> None:
         self.pages: list[WikiPage] = []
         self._stack: list[str] = []
         self._namespace = ""
@@ -35,6 +35,10 @@ class _ExportReader:
         self._wiki_base: str | None = None
         self._latest: tuple[datetime, int] = (_EARLIEST, -1)
         self._wikitext: str | None = None
+        self._max_page_chars = max_page_chars
+        self._revision_depth = 0
+        self._revision_chars = 0
+        self._text_depth = 0
 
     def start(self, tag: str, attrs: dict[str, str]) -> None:
         if not self._stack:
@@ -58,11 +62,20 @@ class _ExportReader:
             ):
                 self._tree = TreeBuilder()
                 self._capture_depth = depth
+                if tag == self._name("revision"):
+                    self._revision_depth = depth
+                    self._revision_chars = 0
         if self._tree is not None:
             self._tree.start(tag, attrs)
+        if self._revision_depth and tag == self._name("text") and not self._text_depth:
+            self._text_depth = depth
 
     def end(self, tag: str) -> None:
         depth = len(self._stack)
+        if depth == self._text_depth:
+            self._text_depth = 0
+        if depth == self._revision_depth:
+            self._revision_depth = 0
         if self._tree is not None:
             self._tree.end(tag)
             if depth == self._capture_depth:
@@ -74,6 +87,13 @@ class _ExportReader:
         self._stack.pop()
 
     def data(self, data: str) -> None:
+        if self._text_depth:
+            self._revision_chars += len(data)
+            if self._revision_chars > self._max_page_chars:
+                raise DocumentLoadError(
+                    f"MediaWiki revision for {self._title!r} exceeds "
+                    f"max_page_chars ({self._max_page_chars})."
+                )
         if self._tree is not None:
             self._tree.data(data)
 
@@ -139,9 +159,9 @@ class _ExportReader:
         return text.text or ""
 
 
-def read_wiki_pages(stream: BinaryReader) -> Iterator[WikiPage]:
+def read_wiki_pages(stream: BinaryReader, max_page_chars: int) -> Iterator[WikiPage]:
     """Stream an export without retaining completed pages or old revisions."""
-    target = _ExportReader()
+    target = _ExportReader(max_page_chars)
     parser = XMLParser(target=target)
     while chunk := stream.read(_XML_CHUNK_BYTES):
         parser.feed(chunk)

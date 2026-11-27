@@ -65,6 +65,23 @@ class MediaWikiBackendOptions(BaseBackendOptions):
     reference_mode: Literal["omit", "inline", "list"] = Field(
         "omit", description="Omit references, render inline, or render a numbered list."
     )
+    preserve_bold: bool = Field(True, description="Preserve bold inline formatting.")
+    preserve_italic: bool = Field(
+        True, description="Preserve italic inline formatting."
+    )
+    max_total_bytes: PositiveInt = Field(
+        512 * 1024 * 1024, description="Maximum decompressed input size in bytes."
+    )
+    max_file_bytes: PositiveInt = Field(
+        16 * 1024 * 1024, description="Maximum standalone wikitext size in bytes."
+    )
+    max_page_chars: PositiveInt = Field(
+        4 * 1024 * 1024, description="Maximum wikitext characters per page revision."
+    )
+    max_inline_reference_bytes: PositiveInt = Field(
+        16 * 1024 * 1024,
+        description="Maximum rendered inline reference bytes per input file.",
+    )
 
 
 class CsvBackendOptions(TextBackendOptions):

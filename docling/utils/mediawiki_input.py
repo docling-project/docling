@@ -1,32 +1,28 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Recognize and open MediaWiki source files and archive members."""
+"""Recognize and open single MediaWiki source files."""
 
 from __future__ import annotations
 
 import gzip
 import tarfile
 import zlib
-from collections.abc import Generator, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from enum import Enum
-from io import BufferedReader, BytesIO, RawIOBase
+from io import BytesIO
 from pathlib import Path
-from typing import Protocol
+from typing import BinaryIO, Protocol
 from xml.parsers import expat
-
-from typing_extensions import Buffer
 
 from docling.exceptions import DocumentLoadError
 
 _HEAD_BYTES = 8192
-_TAR_SUFFIXES = (".tar", ".tar.gz", ".tgz")
+_GZIP_PROBE_BYTES = 64 * 1024
 _WIKITEXT_SUFFIXES = (".wiki", ".wikitext")
 _GZIP_MAGIC = b"\x1f\x8b"
-_MAX_ARCHIVE_BYTES = 512 * 1024 * 1024
-_MAX_ARCHIVE_MEMBERS = 10_000
 
 
 class MediaWikiSourceKind(Enum):
@@ -35,7 +31,7 @@ class MediaWikiSourceKind(Enum):
 
 
 class BinaryReader(Protocol):
-    def read(self, size: int = -1, /) -> bytes: ...
+    def read(self, size: int, /) -> bytes: ...
 
 
 @dataclass(frozen=True)
@@ -43,8 +39,12 @@ class MediaWikiSource:
     name: str
     kind: MediaWikiSourceKind
     stream: BinaryReader
-    mimetype: str
-    archive_member: bool = False
+
+
+@dataclass(frozen=True)
+class GzipProbe:
+    mediawiki: MediaWikiSourceKind | None = None
+    is_tar: bool = False
 
 
 class _XmlRootFound(Exception):
@@ -85,126 +85,122 @@ def is_mediawiki_xml(head: bytes) -> bool:
     return False
 
 
-class _SourceReader(RawIOBase):
-    """Bound decompression, including bytes skipped by tarfile."""
+def is_mediawiki_xml_file(path: Path) -> bool:
+    try:
+        with path.open("rb") as file:
+            return is_mediawiki_xml(file.read(_HEAD_BYTES))
+    except OSError:
+        return False
 
-    def __init__(self, stream: BinaryReader, limit: int | None) -> None:
-        super().__init__()
-        self.stream = stream
-        self.remaining = limit
 
-    def readable(self) -> bool:
-        return True
+class _SourceReader:
+    def __init__(self, stream: BinaryReader, limit: int) -> None:
+        self._stream = stream
+        self._limit = self._remaining = limit
 
-    def readinto(self, buffer: Buffer) -> int:
-        view = memoryview(buffer).cast("B")
-        if self.remaining is None:
-            data = self.stream.read(len(view))
-            view[: len(data)] = data
-            return len(data)
-        data = self.stream.read(min(len(view), self.remaining + 1))
-        if len(data) > self.remaining:
+    def read(self, size: int, /) -> bytes:
+        data = self._stream.read(min(size, self._remaining + 1))
+        if len(data) > self._remaining:
             raise DocumentLoadError(
-                f"MediaWiki archive exceeds the {_MAX_ARCHIVE_BYTES}-byte limit."
+                f"MediaWiki input exceeds max_total_bytes ({self._limit})."
             )
-        view[: len(data)] = data
-        self.remaining -= len(data)
-        return len(data)
+        self._remaining -= len(data)
+        return data
+
+
+def is_wikitext_name(name: str) -> bool:
+    return name.lower().endswith(_WIKITEXT_SUFFIXES)
 
 
 def _source_kind(name: str, head: bytes) -> MediaWikiSourceKind | None:
     if is_mediawiki_xml(head):
         return MediaWikiSourceKind.XML
-    if name.lower().endswith(_WIKITEXT_SUFFIXES):
+    if is_wikitext_name(name):
         return MediaWikiSourceKind.WIKITEXT
     return None
 
 
-def _tar_sources(
-    archive: BufferedReader[_SourceReader],
-) -> Generator[MediaWikiSource, None, None]:
-    with tarfile.open(fileobj=archive, mode="r|") as tar:
-        for index, member in enumerate(tar, start=1):
-            if index > _MAX_ARCHIVE_MEMBERS:
-                raise DocumentLoadError(
-                    f"MediaWiki archive exceeds the {_MAX_ARCHIVE_MEMBERS}-member limit."
-                )
-            if member.size > _MAX_ARCHIVE_BYTES:
-                raise DocumentLoadError(
-                    f"MediaWiki archive member {member.name!r} exceeds the archive size limit."
-                )
-            if not member.isreg():
-                continue
-            source = tar.extractfile(member)
-            if source is None:
-                continue
-            # tarfile's streaming member has read(), but no readinto().
-            with (
-                source,
-                BufferedReader(_SourceReader(source, _MAX_ARCHIVE_BYTES)) as payload,
-            ):
-                kind = _source_kind(member.name, payload.peek(_HEAD_BYTES))
-                if kind is not None:
-                    yield MediaWikiSource(
-                        member.name,
-                        kind,
-                        payload,
-                        "application/x-tar",
-                        archive_member=True,
-                    )
+def _is_tar_header(head: bytes) -> bool:
+    try:
+        tarfile.TarInfo.frombuf(head[:512], "utf-8", "surrogateescape")
+    except tarfile.HeaderError:
+        return False
+    return True
+
+
+def _gzip_payload_name(name: str) -> str:
+    return name[:-3] if name.lower().endswith(".gz") else name
+
+
+def _probe_gzip(raw: BinaryIO, name: str, *, mediawiki_allowed: bool) -> GzipProbe:
+    # Use zlib so that a large gzip header, empty members, or a malformed
+    # stream cannot cause detection to read beyond the compressed prefix.
+    remaining = _GZIP_PROBE_BYTES
+    head = bytearray()
+    member = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    try:
+        while remaining and len(head) < _HEAD_BYTES:
+            if not (compressed := raw.read(min(1024, remaining))):
+                break
+            remaining -= len(compressed)
+            while compressed and len(head) < _HEAD_BYTES:
+                if member.eof:
+                    compressed = compressed.lstrip(b"\x00")
+                    if not compressed:
+                        break
+                    member = zlib.decompressobj(16 + zlib.MAX_WBITS)
+                head.extend(member.decompress(compressed, _HEAD_BYTES - len(head)))
+                compressed = member.unused_data
+    except zlib.error:
+        return GzipProbe()
+    if _is_tar_header(bytes(head)):
+        return GzipProbe(is_tar=True)
+    if mediawiki_allowed:
+        return GzipProbe(mediawiki=_source_kind(_gzip_payload_name(name), bytes(head)))
+    return GzipProbe()
+
+
+def probe_gzip(
+    source: Path | BytesIO, name: str, *, mediawiki_allowed: bool
+) -> GzipProbe:
+    """Classify a gzip prefix without opening an archive or moving the input stream."""
+    try:
+        with _open_source(source) as raw:
+            return _probe_gzip(raw, name, mediawiki_allowed=mediawiki_allowed)
+    except OSError:
+        return GzipProbe()
 
 
 @contextmanager
-def open_mediawiki_sources(
-    source: Path | BytesIO, name: str
-) -> Iterator[Iterator[MediaWikiSource]]:
-    """Open sources for sequential reading without extracting to the filesystem."""
+def _open_source(source: Path | BytesIO) -> Iterator[BinaryIO]:
     with source.open("rb") if isinstance(source, Path) else nullcontext(source) as raw:
         position = raw.tell()
         try:
             raw.seek(0)
-            raw_head = raw.read(512)
-            compressed = raw_head.startswith(_GZIP_MAGIC)
-            payload_name = name
-            if compressed and name.lower().endswith(".gz"):
-                payload_name = name[:-3]
-            wikitext = is_wikitext_name(payload_name)
-            archive = name.lower().endswith(_TAR_SUFFIXES) or (
-                not wikitext and raw_head[257:262] == b"ustar"
-            )
-            raw.seek(0)
-            with gzip.GzipFile(fileobj=raw) if compressed else nullcontext(raw) as data:
-                limit = _MAX_ARCHIVE_BYTES if compressed or archive else None
-                with BufferedReader(_SourceReader(data, limit)) as reader:
-                    head = reader.peek(_HEAD_BYTES)
-                    if archive or (
-                        compressed and not wikitext and head[257:262] == b"ustar"
-                    ):
-                        members = _tar_sources(reader)
-                        try:
-                            yield members
-                        finally:
-                            members.close()
-                        return
-                    kind = _source_kind(payload_name, head)
-                    if kind is None:
-                        yield iter(())
-                    else:
-                        yield iter(
-                            (MediaWikiSource(payload_name, kind, reader, kind.value),)
-                        )
+            yield raw
         finally:
             if isinstance(source, BytesIO):
                 source.seek(position)
 
 
-def is_mediawiki_archive(source: Path | BytesIO, name: str) -> bool:
-    try:
-        with open_mediawiki_sources(source, name) as members:
-            return next(members, None) is not None
-    except (DocumentLoadError, OSError, EOFError, tarfile.TarError, zlib.error):
-        return False
-
-
-def is_wikitext_name(name: str) -> bool:
-    return name.lower().endswith(_WIKITEXT_SUFFIXES)
+@contextmanager
+def open_mediawiki_source(
+    source: Path | BytesIO, name: str, max_total_bytes: int
+) -> Iterator[MediaWikiSource]:
+    """Open one source and bound bytes read after optional decompression."""
+    with _open_source(source) as raw:
+        compressed = raw.read(len(_GZIP_MAGIC)) == _GZIP_MAGIC
+        raw.seek(0)
+        if compressed:
+            kind = _probe_gzip(raw, name, mediawiki_allowed=True).mediawiki
+            name = _gzip_payload_name(name)
+        else:
+            head = raw.read(_HEAD_BYTES)
+            kind = None if _is_tar_header(head) else _source_kind(name, head)
+        if kind is None:
+            raise DocumentLoadError(
+                "Expected one MediaWiki XML export or wikitext file."
+            )
+        raw.seek(0)
+        with gzip.GzipFile(fileobj=raw) if compressed else nullcontext(raw) as data:
+            yield MediaWikiSource(name, kind, _SourceReader(data, max_total_bytes))

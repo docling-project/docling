@@ -21,15 +21,8 @@ data = doc.export_to_dict()  # structured / lossless
 `result.status` reports success/failure; `result.document` is always a
 `DoclingDocument`.
 
-Use `converter.convert("export.xml.gz")` for a MediaWiki export. Use
-`converter.convert_string(text, format=InputFormat.MEDIAWIKI)` for wikitext in
-memory. Import `InputFormat` from `docling.datamodel.base_models`.
-MediaWiki reference citations are omitted by default. Configure
-`MediaWikiFormatOption(backend_options=MediaWikiBackendOptions(reference_mode="inline"))`
-to keep their text in superscript, or use `reference_mode="list"` for numbered
-superscripts and reference lists. Import `MediaWikiBackendOptions` from
-`docling.datamodel.backend_options` and `MediaWikiFormatOption` from
-`docling.document_converter`.
+Use `converter.convert("export.xml.gz")` for an export or `converter.convert_string(text, format=InputFormat.MEDIAWIKI)` for wikitext in memory.
+See [MediaWiki supported formats](https://docling-project.github.io/docling/usage/supported_formats/#mediawiki) for limits and formatting options.
 
 ## Configuring the pipeline with PipelineOptions
 

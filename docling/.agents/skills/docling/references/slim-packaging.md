@@ -41,12 +41,13 @@ Extras compose — combine them with commas:
 - `format-pdf` (`format-pdf-pypdfium2`, `format-pdf-docling`)
 - `format-office` (`format-docx`, `format-pptx`, `format-xlsx`)
 - `format-web` (`format-html`, `format-markdown`)
-- `format-html` also enables conversion of MediaWiki exports and wikitext.
 - `format-opendocument` (ODT/ODS/ODP)
 - `format-latex`, `format-email`
 - `format-xml-jats`, `format-xml-uspto`, `format-xml-xbrl`
 - `format-html-render` (Playwright for JS-rendered HTML)
 - `format-audio` (ASR), `format-video` (ASR + diarization; needs a C compiler)
+
+`format-html` also enables conversion of MediaWiki exports and wikitext.
 
 **OCR engines** — install only the one(s) you use
 - `feat-ocr-rapidocr` (lightweight), `feat-ocr-rapidocr-onnx`

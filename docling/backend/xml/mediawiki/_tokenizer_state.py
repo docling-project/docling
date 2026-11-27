@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
-# Adapted from mwparserfromhell v0.7.2 by Ben Kurtovic. See LICENSE.
+# Adapted from mwparserfromhell v0.7.2 (MIT).
+# SPDX-FileCopyrightText: 2012-2025 Ben Kurtovic
 
 """State used while recognizing tags and finding valid tokenization routes."""
 
+from dataclasses import dataclass
 from enum import Enum
 
 
@@ -48,3 +50,33 @@ END = Sentinel.END
 
 MARKERS: set[str | Sentinel] = {*"""{}[]<>|=&'"#*;:/-!\n""", START, END}
 URI_SCHEME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+.-"
+
+
+@dataclass
+class ClosingPositions:
+    """Last possible closing delimiter for routes that can scan to EOF."""
+
+    brace: int = -1
+    bracket: int = -1
+    comment: int = -1
+    table: int = -1
+    tag: int = -1
+
+    @classmethod
+    def from_segments(cls, segments: list[str]) -> "ClosingPositions":
+        positions = cls()
+        previous = before_previous = ""
+        for index, segment in enumerate(segments):
+            if segment == "}":
+                if previous == "}":
+                    positions.brace = index - 1
+                elif previous == "|":
+                    positions.table = index - 1
+            elif segment == "]":
+                positions.bracket = index
+            elif segment == ">" and previous == before_previous == "-":
+                positions.comment = index - 2
+            elif segment == "/" and previous == "<":
+                positions.tag = index - 1
+            before_previous, previous = previous, segment
+        return positions

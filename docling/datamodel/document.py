@@ -8,12 +8,12 @@ import logging
 import platform
 import re
 import sys
-import tarfile
 import zipfile
-from collections.abc import Iterable, Mapping
+from collections.abc import Container, Iterable, Mapping
 from datetime import datetime
 from enum import Enum
 from io import BytesIO
+from itertools import islice
 from pathlib import Path, PurePath, PurePosixPath
 from typing import (
     TYPE_CHECKING,
@@ -81,9 +81,9 @@ from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
 from docling.utils.mediawiki_input import (
-    is_mediawiki_archive,
     is_mediawiki_xml,
     is_wikitext_name,
+    probe_gzip,
 )
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
@@ -784,7 +784,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 obj = item
                 backend_input = item
-            format = self._guess_format(obj)
+            format = self._guess_format(obj, format_options)
             if format is None:
                 path_or_stream = obj if isinstance(obj, Path) else obj.stream
                 try:
@@ -883,7 +883,9 @@ class _DocumentConversionInput(BaseModel):
                                     name=member_name,
                                     stream=BytesIO(member_content),
                                 )
-                                member_format = self._guess_format(member)
+                                member_format = self._guess_format(
+                                    member, format_options
+                                )
                                 option = format_options.get(member_format)
                                 member_backend = (
                                     option.backend
@@ -945,7 +947,9 @@ class _DocumentConversionInput(BaseModel):
         file_size: int = 0,
         rejection: Optional[InputRejection] = None,
     ) -> InputDocument:
-        guessed_format = self._guess_format(DocumentStream(name=name, stream=BytesIO()))
+        guessed_format = self._guess_format(
+            DocumentStream(name=name, stream=BytesIO()), format_options
+        )
         if guessed_format is None:
             guessed_format = next(iter(format_options.keys()))
 
@@ -991,9 +995,14 @@ class _DocumentConversionInput(BaseModel):
             return PurePath(source).name or source
         return resolve_remote_filename(http_url=http_url, response_headers={})
 
-    def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
+    def _guess_format(
+        self,
+        obj: Union[Path, DocumentStream],
+        allowed_formats: Container[InputFormat] = frozenset(InputFormat),
+    ) -> Optional[InputFormat]:
+        mediawiki_allowed = InputFormat.MEDIAWIKI in allowed_formats
         # Wikitext can contain byte sequences that match binary file signatures.
-        if is_wikitext_name(obj.name):
+        if mediawiki_allowed and is_wikitext_name(obj.name):
             return InputFormat.MEDIAWIKI
 
         content = b""  # empty binary blob
@@ -1074,23 +1083,21 @@ class _DocumentConversionInput(BaseModel):
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
 
-        if mime is None or mime.lower() in {
-            "application/octet-stream",
-            "application/xml",
-        }:
-            if is_mediawiki_xml(content):
-                return InputFormat.MEDIAWIKI
-        if mime is not None and mime.lower() in {
-            "application/gzip",
-            "application/x-tar",
-        }:
+        if mime == "application/gzip" and (
+            mediawiki_allowed or InputFormat.METS_GBS in allowed_formats
+        ):
             source = obj if isinstance(obj, Path) else obj.stream
-            if is_mediawiki_archive(source, obj.name):
+            probe = probe_gzip(source, obj.name, mediawiki_allowed=mediawiki_allowed)
+            if probe.is_tar:
+                mime = self._detect_mets_gbs(obj) or mime
+            elif probe.mediawiki is not None:
                 return InputFormat.MEDIAWIKI
-
-        if mime is not None and mime.lower() == "application/gzip":
-            if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
-                mime = detected_mime
+        elif (
+            mediawiki_allowed
+            and mime in (None, "application/octet-stream", "application/xml")
+            and is_mediawiki_xml(content)
+        ):
+            return InputFormat.MEDIAWIKI
 
         if not mime or mime.lower() == "application/octet-stream":
             if detected_afp := _DocumentConversionInput._detect_afp(content):
@@ -1469,40 +1476,19 @@ class _DocumentConversionInput(BaseModel):
     def _detect_mets_gbs(
         obj: Union[Path, DocumentStream],
     ) -> Optional[Literal["application/mets+xml"]]:
-        # Use default limits for safe format detection
-        default_options = MetsGbsBackendOptions()
-        max_file_bytes = default_options.max_file_bytes
-        max_member_count = default_options.max_member_count
-
+        limits = MetsGbsBackendOptions()
         content = obj if isinstance(obj, Path) else obj.stream
-        tar: tarfile.TarFile
-        member: tarfile.TarInfo
-        member_count = 0
-
+        limit = limits.max_file_bytes
         try:
             with open_tar_gz(content) as tar:
-                # Iterate lazily so the member limit applies before all headers are read
-                for member in tar:
-                    member_count += 1
-                    if member_count > max_member_count:
-                        _log.warning(
-                            f"Archive exceeds member count limit ({max_member_count}) during format detection"
-                        )
-                        return None
-
-                    if member.name.endswith(".xml"):
-                        file = tar.extractfile(member)
-                        if file is not None:
-                            xml_content = file.read(max_file_bytes + 1)
-                            if len(xml_content) > max_file_bytes:
-                                _log.warning(
-                                    f"XML file {member.name} exceeds size limit ({max_file_bytes} bytes) during format detection"
-                                )
-                                continue
-
-                            content_str = xml_content.decode(errors="ignore")
-                            if "http://www.loc.gov/METS/" in content_str:
-                                return "application/mets+xml"
+                for member in islice(tar, limits.max_member_count):
+                    if not member.name.endswith(".xml") or member.size > limit:
+                        continue
+                    if (file := tar.extractfile(member)) is not None:
+                        with file:
+                            xml = file.read(limit + 1)
+                        if len(xml) <= limit and b"http://www.loc.gov/METS/" in xml:
+                            return "application/mets+xml"
         except Exception as e:
             _log.warning(f"Error during METS-GBS format detection: {e}")
             return None

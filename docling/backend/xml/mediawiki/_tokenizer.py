@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
-# Adapted from mwparserfromhell v0.7.2 by Ben Kurtovic. See LICENSE.
+# Adapted from mwparserfromhell v0.7.2 (MIT).
+# SPDX-FileCopyrightText: 2012-2025 Ben Kurtovic
 
 """Recognize MediaWiki markup using context-sensitive tokenization."""
 
-import html.entities
 import math
 import re
-from typing import Literal, NoReturn, cast, overload
+from typing import NoReturn, cast
 
 from docling.backend.xml.mediawiki import _contexts as contexts, _tokens as tokens
 from docling.backend.xml.mediawiki._syntax import (
@@ -16,6 +16,7 @@ from docling.backend.xml.mediawiki._syntax import (
     is_scheme,
     is_single,
     is_single_only,
+    parse_entity,
 )
 from docling.backend.xml.mediawiki._tokenizer_state import (
     END,
@@ -23,6 +24,7 @@ from docling.backend.xml.mediawiki._tokenizer_state import (
     START,
     URI_SCHEME_CHARS,
     BadRoute,
+    ClosingPositions,
     ParserError,
     Sentinel,
     TagOpenData,
@@ -33,6 +35,8 @@ class Tokenizer:
     """Creates a list of tokens from a string of wikicode."""
 
     MAX_DEPTH = 100
+    MAX_LIST_DEPTH = 32
+    MAX_WORK_PER_CHAR = 64
     regex = re.compile(r"([{}\[\]<>|=&'#*;:/\\\"\-!\n])", flags=re.IGNORECASE)
     tag_splitter = re.compile(r"([\s\"\'\\]+)")
 
@@ -43,6 +47,8 @@ class Tokenizer:
         self._global = 0
         self._depth = 0
         self._bad_routes = set()
+        self._closers = ClosingPositions()
+        self.work = self._work_limit = 0
 
     @property
     def _stack(self):
@@ -136,37 +142,16 @@ class Tokenizer:
             self._emit_all(stack)
         self._head -= 1
 
-    @overload
-    def _read(
-        self, *, strict: Literal[False] = False
-    ) -> str | Literal[Sentinel.END]: ...
-
-    @overload
-    def _read(self, *, strict: Literal[True]) -> str: ...
-
-    @overload
-    def _read(
-        self, delta: int = 0, *, strict: Literal[False] = False
-    ) -> str | Literal[Sentinel.START, Sentinel.END]: ...
-
-    @overload
-    def _read(
-        self, delta: int = 0, *, strict: Literal[True]
-    ) -> str | Literal[Sentinel.START]: ...
-
-    def _read(
-        self, delta: int = 0, *, strict: bool = False
-    ) -> str | Literal[Sentinel.START, Sentinel.END]:
-        """Read a relative input segment or fail a strict read at end of input."""
+    def _read(self, delta: int = 0) -> str | Sentinel:
+        """Read a relative input segment and charge it to the work limit."""
         index = self._head + delta
-        if index < 0:
-            return START
-        try:
-            return self._text[index]
-        except IndexError:
-            if strict:
-                self._fail_route()
-            return END
+        segment = self._text[index] if 0 <= index < len(self._text) else None
+        self.work += len(segment) if segment is not None else 1
+        if self.work > self._work_limit:
+            raise ParserError("MediaWiki tokenizer exceeded its work limit.")
+        if segment is not None:
+            return segment
+        return START if index < 0 else END
 
     def _parse_template(self, has_content):
         """Parse a template at the head of the wikicode string."""
@@ -197,6 +182,9 @@ class Tokenizer:
 
     def _parse_template_or_argument(self):
         """Parse a template or argument at the head of the wikicode string."""
+        if self._head >= self._closers.brace:
+            self._emit_text("{")
+            return
         self._head += 2
         braces = 2
         while self._read() == "{":
@@ -284,6 +272,8 @@ class Tokenizer:
             self._head = reset + 1
             try:
                 # Otherwise, actually parse it as a wikilink:
+                if self._closers.bracket < self._head:
+                    raise BadRoute()
                 wikilink = self._parse(contexts.WIKILINK_TITLE)
             except BadRoute:
                 self._head = reset
@@ -408,6 +398,8 @@ class Tokenizer:
     def _really_parse_external_link(self, brackets):
         """Really parse an external link."""
         if brackets:
+            if self._closers.bracket < self._head:
+                raise BadRoute()
             self._parse_bracketed_uri_scheme()
             invalid = ("\n", " ", "]")
             punct = ()
@@ -555,64 +547,25 @@ class Tokenizer:
             self._emit_all(after)
             return self._pop(), after_level
 
-    def _really_parse_entity(self):
-        """Actually parse an HTML entity and ensure that it is valid."""
-        self._emit(tokens.HTMLEntityStart())
-        self._head += 1
-
-        this = self._read(strict=True)
-        if this == "#":
-            numeric = True
-            self._emit(tokens.HTMLEntityNumeric())
-            self._head += 1
-            this = self._read(strict=True)
-            if this[0].lower() == "x":
-                hexadecimal = True
-                self._emit(tokens.HTMLEntityHex(char=this[0]))
-                this = this[1:]
-                if not this:
-                    self._fail_route()
-            else:
-                hexadecimal = False
-        else:
-            numeric = hexadecimal = False
-
-        valid = "0123456789abcdefABCDEF" if hexadecimal else "0123456789"
-        if not numeric and not hexadecimal:
-            valid += "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        if not all(char in valid for char in this):
-            self._fail_route()
-
-        self._head += 1
-        if self._read() != ";":
-            self._fail_route()
-        if numeric:
-            test = int(this, 16) if hexadecimal else int(this)
-            if test < 1 or test > 0x10FFFF:
-                self._fail_route()
-        else:
-            if this not in html.entities.entitydefs:
-                self._fail_route()
-
-        self._emit(tokens.Text(text=this))
-        self._emit(tokens.HTMLEntityEnd())
-
     def _parse_entity(self):
-        """Parse an HTML entity at the head of the wikicode string."""
-        reset = self._head
-        try:
-            self._push(contexts.HTML_ENTITY)
-            self._really_parse_entity()
-        except BadRoute:
-            self._head = reset
-            self._emit_text(self._read())
-        else:
-            self._emit_all(self._pop())
+        numeric = self._read(1) == "#"
+        end = 3 if numeric else 2
+        body = self._read(end - 1)
+        if isinstance(body, str) and self._read(end) == ";":
+            if entity := parse_entity(body, numeric):
+                self._emit_all(entity)
+                self._head += end
+                return
+        self._emit_text("&")
 
     def _parse_comment(self):
         """Parse an HTML comment at the head of the wikicode string."""
         self._head += 4
         reset = self._head - 1
+        if self._closers.comment < self._head:
+            self._head = reset
+            self._emit_text("<!--")
+            return
         self._push()
         while True:
             this = self._read()
@@ -855,9 +808,12 @@ class Tokenizer:
             elif this == ">" and can_exit:
                 self._handle_tag_close_open(data, tokens.TagCloseOpen)
                 self._context = contexts.TAG_BODY
-                if is_single_only(self._stack[1]["text"]):
+                name = self._stack[1]["text"]
+                if is_single_only(name):
                     return self._handle_single_only_tag_end()
-                if is_parsable(self._stack[1]["text"]):
+                if not is_single(name) and self._closers.tag < self._head:
+                    self._fail_route()
+                if is_parsable(name):
                     return self._parse(push=False)
                 return self._handle_blacklisted_tag()
             elif this == "/" and nxt == ">" and can_exit:
@@ -1040,10 +996,12 @@ class Tokenizer:
 
     def _handle_list(self):
         """Handle a wiki-style list (``#``, ``*``, ``;``, ``:``)."""
-        self._handle_list_marker()
-        while self._read(1) in ("#", "*", ";", ":"):
-            self._head += 1
+        for _ in range(self.MAX_LIST_DEPTH):
             self._handle_list_marker()
+            if self._read(1) not in ("#", "*", ";", ":"):
+                return
+            self._head += 1
+        raise ParserError(f"MediaWiki list depth exceeds {self.MAX_LIST_DEPTH}.")
 
     def _handle_hr(self):
         """Handle a wiki-style horizontal rule (``----``) in the string."""
@@ -1428,7 +1386,7 @@ class Tokenizer:
                     )
                 )
             ):
-                if self._can_recurse():
+                if self._can_recurse() and self._head < self._closers.table:
                     self._parse_table()
                 else:
                     self._emit_text("{")
@@ -1489,6 +1447,9 @@ class Tokenizer:
         self._text = [segment for segment in split if segment]
         self._head = self._global = self._depth = 0
         self._bad_routes = set()
+        self._closers = ClosingPositions.from_segments(self._text)
+        self.work = 0
+        self._work_limit = self.MAX_WORK_PER_CHAR * len(text) + 1024
 
         try:
             result = self._parse()

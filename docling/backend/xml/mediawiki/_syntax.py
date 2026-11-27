@@ -1,8 +1,13 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
-# Adapted from mwparserfromhell v0.7.2 by Ben Kurtovic. See LICENSE.
+# Adapted from mwparserfromhell v0.7.2 (MIT).
+# SPDX-FileCopyrightText: 2012-2025 Ben Kurtovic
 
 """Character, tag, and link rules for MediaWiki wikitext."""
+
+import html.entities
+
+from docling.backend.xml.mediawiki import _tokens as tokens
 
 URI_SCHEMES = {
     # [wikimedia/mediawiki.git]/includes/DefaultSettings.php @ 5c660de5d0
@@ -94,3 +99,29 @@ def is_scheme(scheme: str, slashes: bool = True) -> bool:
     if slashes:
         return scheme in URI_SCHEMES
     return scheme in URI_SCHEMES and not URI_SCHEMES[scheme]
+
+
+def parse_entity(body: str, numeric: bool) -> list[tokens.Token] | None:
+    """Return the tokens for a valid, semicolon-terminated entity body."""
+    result = [tokens.HTMLEntityStart()]
+    if numeric:
+        result.append(tokens.HTMLEntityNumeric())
+        if body.startswith(("x", "X")):
+            result.append(tokens.HTMLEntityHex(char=body[0]))
+            body = body[1:]
+            alphabet, base, max_digits = "0123456789abcdefABCDEF", 16, 6
+        else:
+            alphabet, base, max_digits = "0123456789", 10, 7
+        significant = body.lstrip("0")
+        if (
+            not significant
+            or len(significant) > max_digits
+            or any(char not in alphabet for char in significant)
+            or int(significant, base) > 0x10FFFF
+        ):
+            return None
+        body = significant
+    elif body not in html.entities.entitydefs:
+        return None
+    result.extend((tokens.Text(text=body), tokens.HTMLEntityEnd()))
+    return result

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
-# Adapted from mwparserfromhell v0.7.2 by Ben Kurtovic. See LICENSE.
+# Adapted from mwparserfromhell v0.7.2 (MIT).
+# SPDX-FileCopyrightText: 2012-2025 Ben Kurtovic
 
 """Bit flags for the tokenizer's current grammar context."""
 
@@ -84,8 +85,6 @@ TABLE = (
     + TABLE_TD_LINE
     + TABLE_TH_LINE
 )
-
-HTML_ENTITY = 1 << 37
 
 # Global contexts:
 

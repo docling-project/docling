@@ -11,10 +11,13 @@ from typing import Literal
 from urllib.parse import quote, urljoin, urlsplit
 
 from docling.backend.xml.mediawiki import _tokens as tokens
+from docling.backend.xml.mediawiki._emphasis import normalize_emphasis
 from docling.backend.xml.mediawiki._parser import Node, Syntax, parse_wikitext
+from docling.exceptions import DocumentLoadError
 
 _LIST_CONTAINER = {"*": "ul", "#": "ol", ";": "dl", ":": "dl"}
 _LIST_ITEM = {"*": "li", "#": "li", ";": "dt", ":": "dd"}
+_EMPHASIS_ALIASES = {"strong": "b", "em": "i"}
 _BLOCK_TAGS = frozenset(
     {
         "blockquote",
@@ -99,6 +102,19 @@ class _ListFrame:
     item: str | None = None
 
 
+@dataclass
+class InlineReferenceBudget:
+    limit: int
+    used: int = 0
+
+    def charge(self, size: int) -> None:
+        if size > self.limit - self.used:
+            raise DocumentLoadError(
+                f"MediaWiki inline references exceed max_inline_reference_bytes ({self.limit})."
+            )
+        self.used += size
+
+
 def _split(nodes: Sequence[Node], separator: type[tokens.Token]) -> list[list[Node]]:
     parts: list[list[Node]] = [[]]
     for node in nodes:
@@ -107,6 +123,47 @@ def _split(nodes: Sequence[Node], separator: type[tokens.Token]) -> list[list[No
         else:
             parts[-1].append(node)
     return parts
+
+
+def _file_options(nodes: Sequence[Node]) -> list[list[Node]]:
+    options: list[list[Node]] = [[]]
+    for node in nodes:
+        if isinstance(node, tokens.Text):
+            first, *rest = node["text"].split("|")
+            if first:
+                options[-1].append(tokens.Text(text=first))
+            options.extend([tokens.Text(text=value)] if value else [] for value in rest)
+        else:
+            options[-1].append(node)
+    return options
+
+
+def _is_file_option(value: str) -> bool:
+    return (
+        value
+        in {
+            "thumb",
+            "thumbnail",
+            "frame",
+            "frameless",
+            "border",
+            "left",
+            "right",
+            "center",
+            "none",
+            "baseline",
+            "sub",
+            "super",
+            "top",
+            "text-top",
+            "middle",
+            "bottom",
+            "text-bottom",
+            "upright",
+        }
+        or value.startswith(("alt=", "link=", "class=", "lang=", "page=", "upright="))
+        or re.fullmatch(r"(?:\d+(?:x\d+)?|x\d+)px", value) is not None
+    )
 
 
 def _plain(nodes: Sequence[Node]) -> str:
@@ -208,6 +265,13 @@ def _is_block(node: Syntax) -> bool:
         }
     if isinstance(node.start, tokens.HeadingStart):
         return True
+    if isinstance(node.start, tokens.WikilinkOpen):
+        target = next(
+            (part for part in node.children if isinstance(part, tokens.Text)), None
+        )
+        return target is not None and target["text"].strip().lower().startswith(
+            ("file:", "image:")
+        )
     if isinstance(node.start, tokens.TagOpenOpen):
         return not _list_marker(node) and _tag(node).name in (
             _BLOCK_TAGS | {"references"}
@@ -218,7 +282,15 @@ def _is_block(node: Syntax) -> bool:
 def _lines(nodes: Sequence[Node]) -> Iterator[list[Node] | Syntax]:
     line: list[Node] = []
     for node in nodes:
-        if isinstance(node, Syntax) and _is_block(node):
+        if (
+            isinstance(node, Syntax)
+            and _is_block(node)
+            and not (
+                isinstance(node.start, tokens.WikilinkOpen)
+                and line
+                and _list_marker(line[0])
+            )
+        ):
             if line:
                 yield line
                 line = []
@@ -248,10 +320,15 @@ def _link(href: str, label: str, *, allow_relative: bool) -> str:
 
 class _Renderer:
     def __init__(
-        self, wiki_base: str | None, reference_mode: Literal["omit", "inline", "list"]
+        self,
+        wiki_base: str | None,
+        reference_mode: Literal["omit", "inline", "list"],
+        reference_budget: InlineReferenceBudget,
     ) -> None:
         self.wiki_base = wiki_base
         self.reference_mode = reference_mode
+        self._reference_budget = reference_budget
+        self._inline_references: dict[tuple[str, str], tuple[str, int]] = {}
         self._reference_nodes: dict[int, tuple[str, str]] = {}
         self._reference_bodies: dict[tuple[str, str], Sequence[Node]] = {}
         self._reference_order: dict[str, list[tuple[str, str]]] = {}
@@ -311,8 +388,13 @@ class _Renderer:
         if body is None:
             return ""
         if self.reference_mode == "inline":
-            content = self.inlines(body)
-            return f"<sup>{content}</sup>" if content else ""
+            if key not in self._inline_references:
+                content = self.inlines(body)
+                rendered = f"<sup>{content}</sup>" if content else ""
+                self._inline_references[key] = rendered, len(rendered.encode("utf-8"))
+            rendered, size = self._inline_references[key]
+            self._reference_budget.charge(size)
+            return rendered
         number = self._reference_numbers[key]
         prefix = f"{escape(key[0])} " if key[0] else ""
         return f"<sup>[{prefix}{number}]</sup>"
@@ -443,10 +525,7 @@ class _Renderer:
         output.append(f"<{frame.item}>{content.strip()}")
 
     def inlines(self, nodes: Sequence[Node]) -> str:
-        result = "".join(self.inline(node) for node in nodes)
-        for tag in ("i", "b"):
-            result = result.replace(f"</{tag}><{tag}>", "")
-        return result
+        return "".join(self.inline(node) for node in nodes)
 
     def inline(self, node: Node) -> str:
         if isinstance(node, tokens.Text):
@@ -596,12 +675,19 @@ class _Renderer:
         if colon and namespace.lower() == "category":
             return ""
         if colon and namespace.lower() in {"file", "image"}:
-            caption = self.inlines(label[0]).rsplit("|", 1)[-1].strip() if label else ""
+            caption_nodes: Sequence[Node] = ()
+            for option in _file_options(label[0]) if label else ():
+                if option and (
+                    not all(isinstance(part, tokens.Text) for part in option)
+                    or not _is_file_option(_plain(option).strip().lower())
+                ):
+                    caption_nodes = option
+            caption = self.inlines(caption_nodes).strip()
+            image = f'<img alt="{escape(local_title.strip(), quote=True)}">'
             return (
-                caption
+                f"<figure>{image}<figcaption>{caption}</figcaption></figure>"
                 if caption
-                and caption not in {"thumb", "thumbnail", "frame", "frameless"}
-                else escape(local_title)
+                else f"<figure>{image}</figure>"
             )
         title = title.removeprefix(":")
         visible = self.inlines(label[0]) if label and label[0] else escape(title)
@@ -613,23 +699,36 @@ class _Renderer:
             href = urljoin(self.wiki_base, href)
         return _link(href, visible, allow_relative=True) if href else visible
 
-    def _render_tag(self, tag: _Tag) -> str:
-        name = tag.name
+    def _render_tag(self, tag: _Tag, content: str | None = None) -> str:
+        name = _EMPHASIS_ALIASES.get(tag.name, tag.name)
         if name in _HIDDEN_TAGS:
             return ""
         if name in {"hr", "br", "wbr"}:
             return f"<{name}>"
         if name in {"pre", "source", "syntaxhighlight"}:
-            return f"<pre>{escape(_plain(tag.body), quote=False)}</pre>"
-        if name in {"math", "chem", "ce"}:
+            body = escape(_plain(tag.body), quote=False)
+            language = tag.attrs.get("lang", "").strip()
+            if language and name != "pre":
+                return (
+                    f'<pre class="language-{escape(language, quote=True)}">{body}</pre>'
+                )
+            return f"<pre>{body}</pre>"
+        if name == "math":
+            return (
+                f'<span data-math-tex="">{escape(_plain(tag.body), quote=False)}</span>'
+            )
+        if name in {"chem", "ce"}:
             return f"<code>{escape(_plain(tag.body), quote=False)}</code>"
         if name == "table":
             return self._table(tag.body)
-        content = self.inlines(tag.body)
+        if content is None:
+            content = self.inlines(tag.body)
         if name == "a":
             return _link(tag.attrs.get("href", ""), content, allow_relative=True)
         if name == "ref":
             return f"<sup>{content}</sup>" if content else ""
+        if name == "span":
+            return content
         if name in _BLOCK_TAGS or name in _INLINE_TAGS or name in _TABLE_TAGS:
             attrs = ""
             if name in {"td", "th"}:
@@ -656,7 +755,7 @@ class _Renderer:
                 if tag.marker == "|" and content.startswith("+"):
                     output.append(f"<caption>{content[1:].strip()}</caption>")
                 else:
-                    cells.append(self._render_tag(tag))
+                    cells.append(self._render_tag(tag, content))
                 continue
             if cells:
                 output.append("<tr>" + "".join(cells) + "</tr>")
@@ -671,10 +770,16 @@ def render_wikitext(
     source: str,
     wiki_base: str | None = None,
     reference_mode: Literal["omit", "inline", "list"] = "omit",
+    *,
+    preserve_bold: bool = True,
+    preserve_italic: bool = True,
+    reference_budget: InlineReferenceBudget | None = None,
 ) -> str:
     """Render wiki structure and text without fetching resources."""
     nodes = parse_wikitext(source)
-    renderer = _Renderer(wiki_base, reference_mode)
+    if reference_budget is None:
+        reference_budget = InlineReferenceBudget(16 * 1024 * 1024)
+    renderer = _Renderer(wiki_base, reference_mode, reference_budget)
     if reference_mode != "omit":
         renderer.collect_references(nodes)
         for keys in renderer._reference_order.values():
@@ -682,4 +787,8 @@ def render_wikitext(
             renderer._reference_numbers.update(
                 (key, number) for number, key in enumerate(valid, 1)
             )
-    return renderer.blocks(nodes)
+    return normalize_emphasis(
+        renderer.blocks(nodes),
+        preserve_bold=preserve_bold,
+        preserve_italic=preserve_italic,
+    )

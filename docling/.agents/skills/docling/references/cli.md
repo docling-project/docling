@@ -58,7 +58,8 @@ XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
 `--from pdf --from docx ./inbox` to batch-convert a directory.
 
 `--from mediawiki` accepts MediaWiki XML exports and `.wiki` or `.wikitext`
-files. These can also arrive as gzip-compressed files or inside tar archives.
+files, with optional gzip compression. Each input produces one document.
+For default size and parser limits, see the [MediaWiki supported formats](https://docling-project.github.io/docling/usage/supported_formats/#mediawiki).
 
 ## Picking a pipeline (PDF / images)
 

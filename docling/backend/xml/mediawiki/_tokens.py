@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
-# Adapted from mwparserfromhell v0.7.2 by Ben Kurtovic. See LICENSE.
+# Adapted from mwparserfromhell v0.7.2 (MIT).
+# SPDX-FileCopyrightText: 2012-2025 Ben Kurtovic
 
 """Token types emitted by the wikitext tokenizer."""
 
