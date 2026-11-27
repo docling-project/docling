@@ -423,7 +423,17 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             return None, None
 
         # Security: limit extraction size to prevent decompression bombs
-        image_file = self._extract_member(image_info.path)
+        try:
+            image_file = self._extract_member(image_info.path)
+        except KeyError:
+            # The METS XML names a member the archive does not hold, as a
+            # partial download does. Report the page as unparseable, the same
+            # as the fptr being absent above, rather than failing every page.
+            _log.warning(
+                f"Page {page_no} names the image member '{image_info.path}', "
+                "which the archive does not contain; skipping."
+            )
+            return None, None
         if image_file is None:
             raise RuntimeError(
                 f"Archive member '{image_info.path}' is not a regular file "
@@ -449,7 +459,14 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             _log.warning(f"Page {page_no} image cannot be opened: {exc}; skipping.")
             return None, None
 
-        ocr_file = self._extract_member(ocr_info.path)
+        try:
+            ocr_file = self._extract_member(ocr_info.path)
+        except KeyError:
+            _log.warning(
+                f"Page {page_no} names the coordOCR member '{ocr_info.path}', "
+                "which the archive does not contain; skipping."
+            )
+            return None, None
         if ocr_file is None:
             raise RuntimeError(
                 f"Archive member '{ocr_info.path}' is not a regular file "
