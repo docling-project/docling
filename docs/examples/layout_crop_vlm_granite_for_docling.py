@@ -21,6 +21,8 @@
 # - Each region is sent with the `<doclang> [<task>]` prompt matching its layout label
 #   and the reply is forced to open with the matching element tag, so the detected
 #   region type is never re-decided by the VLM.
+# - The API uses the server's tile limit for every crop. To cap all crops at
+#   eight tiles, start vLLM with `--mm-processor-kwargs '{"max_patches":8}'`.
 # - Pictures are kept as pictures; their content is not sent to the VLM.
 
 # %%

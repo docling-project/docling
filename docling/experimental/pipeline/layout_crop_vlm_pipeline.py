@@ -21,10 +21,6 @@ from docling.experimental.datamodel.layout_crop_vlm_pipeline_options import (
     LayoutCropVlmPipelineOptions,
 )
 from docling.experimental.models.layout_crop_vlm_model import LayoutCropVlmModel
-from docling.models.stages.page_preprocessing.page_preprocessing_model import (
-    PagePreprocessingModel,
-    PagePreprocessingOptions,
-)
 from docling.pipeline.standard_pdf_pipeline import (
     PreprocessThreadedStage,
     RunContext,
@@ -47,12 +43,9 @@ class LayoutCropVlmPipeline(StandardPdfPipeline):
         super()._init_models()
         opts: LayoutCropVlmPipelineOptions = self.pipeline_options  # type: ignore[assignment]
 
-        # All content comes from the VLM, so the native text cells are not decoded.
-        self.preprocessing_model = PagePreprocessingModel(
-            options=PagePreprocessingOptions(
-                images_scale=opts.images_scale,
-                skip_cell_extraction=True,
-            )
+        # Form extraction reads native widgets from the segmented page.
+        self.preprocessing_model.options.skip_cell_extraction = (
+            not opts.extract_form_fields
         )
         self.crop_vlm_model = LayoutCropVlmModel(
             enabled=True,
@@ -104,11 +97,17 @@ class LayoutCropVlmPipeline(StandardPdfPipeline):
         preprocess.add_output_queue(layout.input_queue)
         layout.add_output_queue(layout_postprocess.input_queue)
         layout_postprocess.add_output_queue(crop_vlm.input_queue)
-        crop_vlm.add_output_queue(assemble.input_queue)
+        stages = [preprocess, layout, layout_postprocess, crop_vlm]
+        if opts.extract_form_fields:
+            form_field = _stage("form_field", self.form_field_model, 1)
+            crop_vlm.add_output_queue(form_field.input_queue)
+            stages.append(form_field)
+        stages[-1].add_output_queue(assemble.input_queue)
+        stages.append(assemble)
         assemble.add_output_queue(output_q)
 
         return RunContext(
-            stages=[preprocess, layout, layout_postprocess, crop_vlm, assemble],
+            stages=stages,
             first_stage=preprocess,
             output_queue=output_q,
             timed_out_run_ids=timed_out_run_ids,

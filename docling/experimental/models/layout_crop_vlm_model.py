@@ -18,15 +18,17 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-
 from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
 from docling_core.types.doc import (
     BoundingBox,
+    CodeItem,
+    DocItemLabel,
     DoclingDocument,
     TableItem,
     TextItem,
 )
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.page import BoundingRectangle, TextCell, TextCellUnit
 from PIL import Image as PILImage
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -77,6 +79,8 @@ def native_tile_canvas(
     upscaled to a short side of 40 pixels (3x at most) and shrunk only when the
     grid would exceed `max_tiles`.
     """
+    if max_tiles < 1:
+        raise ValueError("max_tiles must be positive")
     image = image.convert("RGB")
     w, h = image.size
     scale = min(max(_CANVAS_SHORT_SIDE / max(1, min(w, h)), 1.0), _CANVAS_MAX_UPSCALE)
@@ -105,6 +109,7 @@ class LayoutCropVlmModel(BasePageModel):
     """Page stage that reads each layout region from its crop with a VLM."""
 
     _warned_vllm_tiles = False
+    _warned_api_tiles = False
 
     def __init__(
         self,
@@ -190,6 +195,14 @@ class LayoutCropVlmModel(BasePageModel):
                     task.max_tiles,
                 )
             return base
+        if VlmEngineType.is_api_variant(engine_type):
+            if not LayoutCropVlmModel._warned_api_tiles:
+                _log.warning(
+                    "The API engine uses the server's tile limit. Configure a tile "
+                    "cap on the server at startup to apply it to all crops."
+                )
+                LayoutCropVlmModel._warned_api_tiles = True
+            return base
         processor_kwargs = {
             **base.get("extra_processor_kwargs", {}),
             "max_patches": task.max_tiles,
@@ -224,18 +237,38 @@ class LayoutCropVlmModel(BasePageModel):
         text = _CDATA_RE.sub(lambda m: m.group(1), text)
         return re.sub(r"\s+", " ", _TAG_RE.sub(" ", text)).strip()
 
-    def _apply_text(self, cluster: Cluster, reply: str) -> None:
+    def _apply_text(
+        self, cluster: Cluster, reply: str, page: Page | None = None
+    ) -> None:
         doc = self._parse_reply(reply)
         if doc is None:
             text = self._salvage_text(reply)
         else:
-            text = "\n".join(
-                item.text
-                for item, _ in doc.iterate_items()
-                if isinstance(item, TextItem) and item.text.strip()
-            )
+            lines = []
+            for item, _ in doc.iterate_items(included_content_layers=set(ContentLayer)):
+                if isinstance(item, TextItem) and item.text.strip():
+                    lines.append(item.text)
+                    if cluster.label == DocItemLabel.CODE and isinstance(
+                        item, CodeItem
+                    ):
+                        cluster.code_language = item.code_language
+            text = "\n".join(lines)
         if not text:
             return
+        # Several checkbox labels can share a single layout crop. Preserve their
+        # individual positions when the PDF lines agree with the recognized text.
+        if (
+            page is not None
+            and page.parsed_page is not None
+            and page.parsed_page.widgets
+            and cluster.label == DocItemLabel.TEXT
+        ):
+            native_lines = page.parsed_page.get_cells_in_bbox(
+                TextCellUnit.LINE, cluster.bbox, ios=0.5
+            )
+            if " ".join(cell.text for cell in native_lines).split() == text.split():
+                cluster.cells = native_lines
+                return
         cluster.cells = [
             TextCell(
                 index=0,
@@ -342,9 +375,7 @@ class LayoutCropVlmModel(BasePageModel):
             batches = [
                 indices[start : start + self.options.engine_batch_size]
                 for indices in groups.values()
-                for start in range(
-                    0, len(indices), self.options.engine_batch_size
-                )
+                for start in range(0, len(indices), self.options.engine_batch_size)
             ]
             for batch in batches:
                 outputs = self.engine.predict_batch(
@@ -371,7 +402,7 @@ class LayoutCropVlmModel(BasePageModel):
                     if cluster.label in TABLE_LABELS:
                         self._apply_table(page, cluster, output.text)
                     else:
-                        self._apply_text(cluster, output.text)
+                        self._apply_text(cluster, output.text, page)
 
         yield from page_list
 

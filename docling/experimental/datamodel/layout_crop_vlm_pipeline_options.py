@@ -29,6 +29,7 @@ class CropTask(BaseModel):
     )
     max_tiles: int | None = Field(
         default=None,
+        ge=1,
         description=(
             "Upper bound on the image tiles the processor cuts the crop into "
             "(Granite Docling v2 `max_patches`). None keeps the processor's "
@@ -137,6 +138,7 @@ class LayoutCropVlmOptions(BaseModel):
     )
     engine_batch_size: int = Field(
         default=16,
+        ge=1,
         description="Crops handed to the VLM engine in one call.",
     )
     max_new_tokens: int | None = Field(
