@@ -62,8 +62,9 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             else:
                 _log.warning(
                     f"Model artifacts not found at {artifacts_path / self._model_repo_folder},"
-                    " they will be downloaded."
+                    " downloading them now."
                 )
+                artifacts_path = self.download_models()
 
             self._load_model(artifacts_path)
 
