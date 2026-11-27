@@ -63,7 +63,7 @@ depends_on = []
 [[modules]]
 path = "docling.backend.json"
 layer = "core"
-depends_on = ["docling.backend", "docling.datamodel"]
+depends_on = ["docling.backend", "docling.datamodel", "docling.datamodel.backend_options"]
 
 [[modules]]
 path = "docling.backend.latex"
