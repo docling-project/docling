@@ -23,6 +23,7 @@ from docling_core.types.doc import (
     ListItem,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
     TableData,
     TableItem,
 )
@@ -32,6 +33,7 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
+from docx.text.run import Run
 from lxml import etree
 from PIL import Image
 from pydantic import AnyUrl
@@ -1130,6 +1132,145 @@ def test_table_cell_text_reads_symbols_like_a_paragraph(tmp_path):
     assert doc.texts[0].text == "20\N{DEGREE SIGN}"
 
 
+def _wrap_word_runs(tag: str, *runs: Run) -> None:
+    wrapper = OxmlElement(f"w:{tag}")
+    runs[0]._r.addprevious(wrapper)
+    if tag == "sdt":
+        wrapper.append(OxmlElement("w:sdtPr"))
+        content = OxmlElement("w:sdtContent")
+        wrapper.append(content)
+    else:
+        content = wrapper
+        if tag in {"ins", "moveTo", "moveFrom"}:
+            wrapper.set(qn("w:id"), "1")
+            wrapper.set(qn("w:author"), "Reviewer")
+    for run in runs:
+        content.append(run._r)
+
+
+def test_nested_word_runs_keep_moved_text(tmp_path: Path) -> None:
+    document = Document()
+    body = document.add_paragraph("before ")
+    _wrap_word_runs("moveFrom", body.add_run("old position"))
+    _wrap_word_runs("moveTo", body.add_run("moved body"))
+    body.add_run(" after")
+    _wrap_word_runs("moveTo", document.add_heading(level=1).add_run("moved heading"))
+    bullet = document.add_paragraph(style="List Bullet")
+    _wrap_word_runs("moveTo", bullet.add_run("moved bullet"))
+    table = document.add_table(rows=1, cols=2)
+    _wrap_word_runs("moveTo", table.cell(0, 0).paragraphs[0].add_run("plain cell"))
+    rich = table.cell(0, 1).paragraphs[0].add_run("rich cell")
+    rich.bold = True
+    _wrap_word_runs("moveTo", rich)
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "before moved body after",
+        "moved heading",
+        "moved bullet",
+        "rich cell",
+    ]
+    assert isinstance(doc.texts[1], SectionHeaderItem)
+    assert isinstance(doc.texts[2], ListItem)
+    plain_cell, rich_cell = doc.tables[0].data.table_cells
+    assert plain_cell.text == "plain cell"
+    assert not isinstance(plain_cell, RichTableCell)
+    assert isinstance(rich_cell, RichTableCell)
+    assert rich_cell.text == "rich cell"
+    assert "**rich cell**" in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize("wrapper", ["ins", "smartTag"])
+def test_nested_word_runs_keep_formatted_cell_list(
+    tmp_path: Path, wrapper: str
+) -> None:
+    document = Document()
+    table = document.add_table(rows=1, cols=2)
+    for cell in table.rows[0].cells:
+        paragraph = cell.paragraphs[0]
+        paragraph.style = "List Number"
+        paragraph.add_run("list entry").bold = True
+    _wrap_word_runs(wrapper, table.cell(0, 0).paragraphs[0].runs[0])
+
+    doc = _convert_built(document, tmp_path)
+
+    assert all(
+        isinstance(cell, RichTableCell) for cell in doc.tables[0].data.table_cells
+    )
+    entries = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert len(entries) == 2
+    assert [item.marker for item in entries] == ["1.", "2."]
+    assert all(item.text == "list entry" and item.formatting.bold for item in entries)
+
+
+@pytest.mark.parametrize("location", ["body", "list", "cell"])
+def test_nested_word_runs_keep_content_control_formatting(
+    tmp_path: Path, location: str
+) -> None:
+    document = Document()
+    if location == "cell":
+        table = document.add_table(rows=1, cols=2)
+        table.cell(0, 1).text = "sibling cell"
+        paragraph = table.cell(0, 0).paragraphs[0]
+    else:
+        paragraph = document.add_paragraph(
+            style="List Number" if location == "list" else None
+        )
+    paragraph.add_run("before ")
+    bold = paragraph.add_run("bold")
+    bold.bold = True
+    italic = paragraph.add_run("italic\tline\n20")
+    italic.italic = True
+    symbol = OxmlElement("w:sym")
+    symbol.set(qn("w:font"), "Symbol")
+    symbol.set(qn("w:char"), "F0B0")
+    italic._r.append(symbol)
+    _wrap_word_runs("sdt", bold, italic)
+    paragraph.add_run(" after")
+
+    doc = _convert_built(document, tmp_path)
+
+    spans = [item for item in doc.texts if item.text and item.text != "sibling cell"]
+    assert "".join(item.text for item in spans) == "before bolditalic\tline\n20° after"
+    assert [(item.text, item.formatting) for item in spans[1:3]] == [
+        ("bold", Formatting(bold=True)),
+        ("italic\tline\n20°", Formatting(italic=True)),
+    ]
+    if location == "cell":
+        cell = doc.tables[0].data.table_cells[0]
+        assert isinstance(cell, RichTableCell)
+        assert cell.text == "before bolditalic\tline\n20° after"
+    elif location == "list":
+        assert any(isinstance(item, ListItem) and item.marker for item in doc.texts)
+
+
+def test_nested_word_runs_keep_code_typing(tmp_path: Path) -> None:
+    document = Document()
+    _add_code_style(document)
+    paragraph = document.add_paragraph()
+    run = paragraph.add_run("x = compute(y);")
+    run.font.name = "Consolas"
+    _wrap_word_runs("ins", run)
+    _add_mono(document, "    return x")
+    document.add_paragraph("Ordinary prose.")
+    table = document.add_table(rows=1, cols=2)
+    for cell in table.rows[0].cells:
+        cell.paragraphs[0].style = "Source Code"
+    _wrap_word_runs("ins", table.cell(0, 0).paragraphs[0].add_run("print(x)"))
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in _code_items(doc)] == [
+        "x = compute(y);\n    return x",
+        "print(x)",
+    ]
+    assert "Ordinary prose." in _plain_texts(doc)
+    code_cell, empty_cell = doc.tables[0].data.table_cells
+    assert isinstance(code_cell, RichTableCell)
+    assert not isinstance(empty_cell, RichTableCell)
+
+
 def _table_with_grid_before(
     tmp_path,
     *,
@@ -2062,7 +2203,9 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     assert hyperlinks == []
 
 
-@pytest.mark.parametrize("wrapper", ["ins", "smartTag", "customXml", "fldSimple"])
+@pytest.mark.parametrize(
+    "wrapper", ["ins", "smartTag", "customXml", "fldSimple", "moveTo", "sdt"]
+)
 def test_hyperlink_keeps_runs_nested_in_a_wrapper(tmp_path, wrapper):
     """Runs inside a hyperlink can sit in the same wrappers as in a paragraph,
     e.g. a tracked insertion made inside the link text. python-docx's
@@ -2077,9 +2220,9 @@ def test_hyperlink_keeps_runs_nested_in_a_wrapper(tmp_path, wrapper):
     hyperlink.set(qn("r:id"), r_id)
     run = etree.SubElement(hyperlink, qn("w:r"))
     etree.SubElement(run, qn("w:t")).text = "the "
-    wrapped = etree.SubElement(hyperlink, qn(f"w:{wrapper}"))
-    run = etree.SubElement(wrapped, qn("w:r"))
+    run = etree.SubElement(hyperlink, qn("w:r"))
     etree.SubElement(run, qn("w:t")).text = "docs"
+    _wrap_word_runs(wrapper, Run(run, para))
 
     result = _convert_built(doc, tmp_path)
 
