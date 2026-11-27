@@ -40,6 +40,7 @@ from docling.models.stages.picture_description.picture_description_vlm_engine_mo
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
     GraniteVisionTableStructureModel,
 )
+from docling.models.utils.shared_models import load_shared_model
 
 pytestmark = pytest.mark.ml_vlm
 
@@ -177,3 +178,72 @@ def test_different_dtype_is_not_shared(artifacts_path: Path) -> None:
     assert chart_model is not table._model
     assert chart_model.dtype == torch.float32
     assert table._model.dtype == torch.bfloat16
+
+
+def _model_folder(artifacts_path: Path) -> Path:
+    return artifacts_path / GraniteVisionTableStructureModel._model_repo_folder
+
+
+def test_dtype_object_and_name_share_one_model(artifacts_path: Path) -> None:
+    folder = _model_folder(artifacts_path)
+    by_object = load_shared_model(
+        LlavaForConditionalGeneration, folder, dtype=torch.bfloat16
+    )
+    by_name = load_shared_model(
+        LlavaForConditionalGeneration, folder, torch_dtype="bfloat16"
+    )
+
+    assert by_object is by_name
+
+
+def test_kwarg_of_other_type_loads_a_separate_model(artifacts_path: Path) -> None:
+    folder = _model_folder(artifacts_path)
+    first = load_shared_model(
+        LlavaForConditionalGeneration, folder, device_map={"": "cpu"}
+    )
+    second = load_shared_model(
+        LlavaForConditionalGeneration, folder, device_map={"": "cpu"}
+    )
+
+    assert first is not second
+
+
+def test_dtype_of_other_type_loads_a_separate_model(artifacts_path: Path) -> None:
+    folder = _model_folder(artifacts_path)
+    first = load_shared_model(
+        LlavaForConditionalGeneration, folder, dtype={"": torch.float32}
+    )
+    second = load_shared_model(
+        LlavaForConditionalGeneration, folder, dtype={"": torch.float32}
+    )
+
+    assert first is not second
+    assert first.dtype == torch.float32
+
+
+def test_dtype_and_torch_dtype_with_different_values_load_separately(
+    artifacts_path: Path,
+) -> None:
+    folder = _model_folder(artifacts_path)
+    kwargs = {"dtype": torch.float32, "torch_dtype": torch.bfloat16}
+    first = load_shared_model(LlavaForConditionalGeneration, folder, **kwargs)
+    second = load_shared_model(LlavaForConditionalGeneration, folder, **kwargs)
+
+    assert first is not second
+
+
+def test_path_that_is_not_a_local_folder_skips_the_registry(tmp_path: Path) -> None:
+    class CountingModel:
+        loads = 0
+
+        @classmethod
+        def from_pretrained(cls, path: Path | str, **kwargs: object) -> object:
+            cls.loads += 1
+            return object()
+
+    missing = tmp_path / "not-a-folder"
+    first = load_shared_model(CountingModel, missing)
+    second = load_shared_model(CountingModel, missing)
+
+    assert first is not second
+    assert CountingModel.loads == 2
