@@ -1075,7 +1075,7 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_latex(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_calendar(content, obj_ext)
-        mime = mime or _DocumentConversionInput._detect_csv(content)
+        mime = mime or _DocumentConversionInput._detect_csv(content, obj_ext)
         mime = mime or "text/plain"
         if mime.lower() == "text/html" and is_ixbrl(content):
             mime = "application/xhtml+xml"
@@ -1416,16 +1416,21 @@ class _DocumentConversionInput(BaseModel):
     @staticmethod
     def _detect_csv(
         content: bytes,
+        ext: Optional[str] = None,
     ) -> Optional[Literal["text/csv"]]:
         """Guess the mime type of a CSV file from its content.
 
         Args:
             content: A short piece of a document from its beginning.
+            ext: The file extension, if any. A plain-text extension keeps its
+              Markdown fallback even when the text contains commas.
 
         Returns:
             The mime type of a CSV file, or None if the content does
               not match any of the format.
         """
+        if (ext or "").lower() in FormatToExtensions[InputFormat.MD]:
+            return None
         content_str = content.decode("ascii", errors="ignore").strip()
 
         # Ensure there's at least one newline (CSV is usually multi-line)
