@@ -5056,7 +5056,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         (``c:numCache``/``c:strCache``), so no workbook reference resolution is
         needed. Scatter charts use ``c:xVal``/``c:yVal`` in place of ``c:cat``/
         ``c:val``. ``build_chart_table`` lays the table out, so it has the same
-        size limit as the charts of the other backends.
+        size limit as the charts of the other backends. XY series with different
+        X values get a "<name> (X)" column immediately before their Y column.
 
         Args:
             chart_root: The parsed root of a ``chartN.xml`` part.
@@ -5072,22 +5073,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         max_rows = max_chart_data_rows(1 + len(series_list))
 
         categories: list[str] = []
-        for series in series_list:
-            cat = series.find("c:cat", namespaces=ns)
-            if cat is None:
-                cat = series.find("c:xVal", namespaces=ns)
-            resolved = self._read_chart_cache(cat, max_rows)
-            if resolved:
-                categories = resolved
-                break
-
         columns: list[tuple[str, list[str]]] = []
         for series in series_list:
+            name = self._chart_series_name(series)
+            cat = series.find("c:cat", namespaces=ns)
+            x_val = series.find("c:xVal", namespaces=ns)
+            if cat is None and x_val is not None:
+                resolved = self._read_chart_cache(x_val, max_rows)
+                if not categories:
+                    categories = resolved
+                elif resolved and resolved != categories:
+                    columns.append((f"{name} (X)" if name else "X", resolved))
+            elif not categories:
+                categories = self._read_chart_cache(cat, max_rows)
             val = series.find("c:val", namespaces=ns)
             if val is None:
                 val = series.find("c:yVal", namespaces=ns)
             values = self._read_chart_cache(val, max_rows)
-            columns.append((self._chart_series_name(series), values))
+            columns.append((name, values))
 
         return build_chart_table(categories, columns)
 
