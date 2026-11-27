@@ -245,6 +245,14 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
     timeout: float = Field(default=60.0, description="Request timeout in seconds")
 
     concurrency: int = Field(default=1, description="Number of concurrent requests")
+    max_retries: int = Field(
+        default=5,
+        ge=0,
+        description=(
+            "Number of times a failed request is retried, for connection errors and "
+            "HTTP 429, 500, 502, 503 and 504 responses. Set to 0 to disable retries."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod

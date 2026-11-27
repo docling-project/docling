@@ -438,6 +438,17 @@ class ApiVlmOptions(BaseVlmOptions):
             )
         ),
     ] = 1
+    max_retries: Annotated[
+        int,
+        Field(
+            ge=0,
+            description=(
+                "Number of times a failed API request is retried, for "
+                "connection errors and HTTP 429, 500, 502, 503 and 504 "
+                "responses. Set to 0 to disable retries."
+            ),
+        ),
+    ] = 5
     response_format: Annotated[
         ResponseFormat,
         Field(
