@@ -1478,6 +1478,26 @@ def test_truncated_image_keeps_the_other_images(tmp_path: Path) -> None:
     assert _cell_picture(doc, cells["function"]).image is None
 
 
+def test_non_numeric_rich_value_position_keeps_the_other_images(
+    tmp_path: Path,
+) -> None:
+    """Test that a rich value with a bad image position loses only its own image."""
+    source = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_12_image_function_and_place_in_cell"
+    )
+    with zipfile.ZipFile(source) as archive:
+        original = archive.read("xl/richData/rdrichvalue.xml")
+    broken = original.replace(b'<rv s="0"><v>0</v>', b'<rv s="0"><v>abc</v>', 1)
+    assert broken != original
+    doc = _convert_with_replaced_member(tmp_path, "xl/richData/rdrichvalue.xml", broken)
+
+    cells = _image_cells(doc)
+    assert not isinstance(cells["placed"], RichTableCell)
+    _assert_image_cell(doc, cells["function"], (0, 0, 255), "A blue square")
+
+
 def test_image_placed_in_a_singleton_cell() -> None:
     """Test that a lone image cell becomes a picture with treat_singleton_as_text."""
     path = next(
