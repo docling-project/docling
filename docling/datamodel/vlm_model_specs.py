@@ -17,7 +17,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.datamodel.vlm_prompts import DOCLANG_PAGE_PROMPT, DOCLING_BASE_PAGE_PROMPT
+from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 
 _log = logging.getLogger(__name__)
 
@@ -76,95 +76,6 @@ GRANITEDOCLING_VLLM_API = ApiVlmOptions(
 GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy(deep=True)
 GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
 GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
-
-
-# Granite Docling v2 500M (doclang). Transformers supports the architecture
-# natively from 5.23.0, so no remote code is needed.
-GRANITE_FOR_DOCLING_500M_TRANSFORMERS = InlineVlmOptions(
-    repo_id="ibm-granite/granite-docling-v2-500m",
-    prompt=DOCLANG_PAGE_PROMPT,
-    response_format=ResponseFormat.DOCLANG,
-    inference_framework=InferenceFramework.TRANSFORMERS,
-    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-    transformers_prompt_style=TransformersPromptStyle.CHAT,
-    supported_devices=[
-        AcceleratorDevice.CPU,
-        AcceleratorDevice.CUDA,
-        AcceleratorDevice.XPU,
-    ],
-    extra_generation_config=dict(skip_special_tokens=False),
-    torch_dtype="bfloat16",
-    scale=2.0,
-    temperature=0.0,
-    max_new_tokens=8192,
-    stop_strings=["</doclang>", "<|end_of_text|>"],
-)
-
-# MLX on Apple Silicon. mlx-vlm 0.8.1 or later loads the same checkpoint.
-GRANITE_FOR_DOCLING_500M_MLX = InlineVlmOptions(
-    repo_id=GRANITE_FOR_DOCLING_500M_TRANSFORMERS.repo_id,
-    prompt=DOCLANG_PAGE_PROMPT,
-    response_format=ResponseFormat.DOCLANG,
-    inference_framework=InferenceFramework.MLX,
-    supported_devices=[AcceleratorDevice.MPS],
-    scale=2.0,
-    temperature=0.0,
-    max_new_tokens=8192,
-    stop_strings=["</doclang>", "<|end_of_text|>"],
-)
-
-GRANITE_FOR_DOCLING_500M_VLLM = GRANITE_FOR_DOCLING_500M_TRANSFORMERS.model_copy(
-    deep=True
-)
-GRANITE_FOR_DOCLING_500M_VLLM.inference_framework = InferenceFramework.VLLM
-# vLLM drops a matched stop string by default; keep the closing </doclang>.
-GRANITE_FOR_DOCLING_500M_VLLM.extra_generation_config["include_stop_str_in_output"] = (
-    True
-)
-
-GRANITE_FOR_DOCLING_500M_VLLM_API = ApiVlmOptions(
-    url="http://localhost:8000/v1/chat/completions",
-    params=dict(
-        model=GRANITE_FOR_DOCLING_500M_TRANSFORMERS.repo_id,
-        max_tokens=8192,
-        skip_special_tokens=False,
-        include_stop_str_in_output=True,
-    ),
-    prompt=GRANITE_FOR_DOCLING_500M_TRANSFORMERS.prompt,
-    timeout=90,
-    scale=2.0,
-    temperature=0.0,
-    concurrency=4,
-    stop_strings=["</doclang>", "<|end_of_text|>"],
-    response_format=ResponseFormat.DOCLANG,
-)
-
-
-# Granite Docling v2 2B (doclang). Same architecture as the 500M model, without
-# the fine connector path, and with a larger reply budget for long pages.
-GRANITE_FOR_DOCLING_2B_TRANSFORMERS = GRANITE_FOR_DOCLING_500M_TRANSFORMERS.model_copy(
-    deep=True
-)
-GRANITE_FOR_DOCLING_2B_TRANSFORMERS.repo_id = "ibm-granite/granite-docling-v2-2b"
-GRANITE_FOR_DOCLING_2B_TRANSFORMERS.max_new_tokens = 16384
-
-GRANITE_FOR_DOCLING_2B_MLX = GRANITE_FOR_DOCLING_500M_MLX.model_copy(deep=True)
-GRANITE_FOR_DOCLING_2B_MLX.repo_id = GRANITE_FOR_DOCLING_2B_TRANSFORMERS.repo_id
-GRANITE_FOR_DOCLING_2B_MLX.max_new_tokens = 16384
-
-GRANITE_FOR_DOCLING_2B_VLLM = GRANITE_FOR_DOCLING_2B_TRANSFORMERS.model_copy(deep=True)
-GRANITE_FOR_DOCLING_2B_VLLM.inference_framework = InferenceFramework.VLLM
-# vLLM drops a matched stop string by default; keep the closing </doclang>.
-GRANITE_FOR_DOCLING_2B_VLLM.extra_generation_config["include_stop_str_in_output"] = True
-
-GRANITE_FOR_DOCLING_2B_VLLM_API = GRANITE_FOR_DOCLING_500M_VLLM_API.model_copy(
-    deep=True
-)
-GRANITE_FOR_DOCLING_2B_VLLM_API.params["model"] = (
-    GRANITE_FOR_DOCLING_2B_TRANSFORMERS.repo_id
-)
-GRANITE_FOR_DOCLING_2B_VLLM_API.params["max_tokens"] = 16384
-GRANITE_FOR_DOCLING_2B_VLLM_API.timeout = 180
 
 
 # Granite-Docling 2 stage
@@ -672,10 +583,6 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
-    GRANITE_FOR_DOCLING_500M = "granite_for_docling_500m"
-    GRANITE_FOR_DOCLING_500M_VLLM = "granite_for_docling_500m_vllm"
-    GRANITE_FOR_DOCLING_2B = "granite_for_docling_2b"
-    GRANITE_FOR_DOCLING_2B_VLLM = "granite_for_docling_2b_vllm"
     NANONETS_OCR2 = "nanonets_ocr2"
     NANONETS_OCR2_VLLM = "nanonets_ocr2_vllm"
     NANONETS_OCR2_LMSTUDIO = "nanonets_ocr2_lmstudio"

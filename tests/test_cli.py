@@ -700,7 +700,8 @@ def test_cli_doclang_tasks_rejects_invalid_use(
     )
 
     assert result.exit_code != 0
-    assert "--doclang-tasks" in result.output
+    # CI terminals colour the error panel; the ANSI codes split the option name.
+    assert "--doclang-tasks" in _flatten_error_box(result.output)
     assert "format_options" not in captured
 
 

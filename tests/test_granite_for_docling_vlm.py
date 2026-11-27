@@ -1,20 +1,22 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Test Granite Docling v2 500M VLM preset and legacy specs."""
+"""Test the Granite Docling v2 VLM presets."""
 
 import pytest
+from PIL import Image
 from pydantic import ValidationError
 
-from docling.datamodel import vlm_model_specs
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import ApiImageRequestResult, VlmStopReason
 from docling.datamodel.pipeline_options import DocLangOptions, VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import (
-    InferenceFramework,
     ResponseFormat,
     TransformersModelType,
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
     MlxVlmEngineOptions,
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
@@ -24,7 +26,8 @@ from docling.datamodel.vlm_prompts import (
     DocLangTask,
     doclang_prompt,
 )
-from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.models.inference_engines.vlm.base import VlmEngineInput, VlmEngineType
+from docling.models.inference_engines.vlm.factory import create_vlm_engine
 
 REPO_ID = "ibm-granite/granite-docling-v2-500m"
 PRESET_ID = "granite_for_docling_500m"
@@ -109,10 +112,60 @@ def test_granite_for_docling_500m_preset_engine_config():
     assert vllm_runtime["transformers_prompt_style"] == TransformersPromptStyle.CHAT
 
     api_params = spec.get_api_params(VlmEngineType.API_OPENAI)
-    assert api_params["model"] == REPO_ID
-    assert api_params["max_tokens"] == 8192
-    assert api_params["skip_special_tokens"] is False
-    assert api_params["include_stop_str_in_output"] is True
+    assert api_params == {"model": REPO_ID, "max_tokens": 8192}
+    # The decoding settings go with each API request, so user params keep them.
+    for engine_type in (VlmEngineType.API, VlmEngineType.API_OPENAI):
+        api_runtime = spec.get_runtime_input_extra_config(engine_type)
+        assert api_runtime["api_params"] == {
+            "skip_special_tokens": False,
+            "include_stop_str_in_output": True,
+        }
+
+
+@pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_for_docling_2b"])
+@pytest.mark.parametrize("user_params", [{}, {"model": "served-name"}])
+def test_granite_for_docling_api_request_keeps_the_closing_tag(
+    monkeypatch: pytest.MonkeyPatch, preset_id: str, user_params: dict
+) -> None:
+    """User params (e.g. a served model name) must not drop the stop-string settings."""
+    captured: dict = {}
+
+    def _fake_api_image_request(**kwargs):
+        captured.update(kwargs)
+        return ApiImageRequestResult("ok", 1, VlmStopReason.END_OF_SEQUENCE)
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.api_openai_compatible_engine.api_image_request",
+        _fake_api_image_request,
+    )
+    spec = VlmConvertOptions.get_preset(preset_id).model_spec
+    options = ApiVlmEngineOptions(
+        engine_type=VlmEngineType.API_OPENAI,
+        url="http://localhost:8000/v1/chat/completions",
+        params=user_params,
+    )
+    engine = create_vlm_engine(
+        options=options,
+        model_spec=spec,
+        enable_remote_services=True,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(),
+    )
+    engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), "white"),
+                prompt=spec.prompt,
+                stop_strings=list(spec.stop_strings),
+                extra_generation_config=spec.get_runtime_input_extra_config(
+                    VlmEngineType.API_OPENAI
+                ),
+            )
+        ]
+    )
+    assert captured["include_stop_str_in_output"] is True
+    assert captured["skip_special_tokens"] is False
+    assert captured["model"] == user_params.get("model", spec.default_repo_id)
 
 
 def test_granite_for_docling_500m_from_preset_engines():
@@ -137,49 +190,6 @@ def test_granite_for_docling_500m_from_preset_engines():
     assert vllm.engine_options.engine_type == VlmEngineType.VLLM
     assert isinstance(vllm.engine_options, VllmVlmEngineOptions)
     assert vllm.engine_options.trust_remote_code is False
-
-
-def test_granite_for_docling_500m_legacy_specs():
-    """Verify legacy InlineVlmOptions / ApiVlmOptions stay aligned with the preset."""
-    transformers_spec = vlm_model_specs.GRANITE_FOR_DOCLING_500M_TRANSFORMERS
-    assert transformers_spec.repo_id == REPO_ID
-    assert transformers_spec.prompt == DOCLANG_PAGE_PROMPT
-    assert transformers_spec.inference_framework == InferenceFramework.TRANSFORMERS
-    assert transformers_spec.response_format == ResponseFormat.DOCLANG
-    assert transformers_spec.trust_remote_code is False
-    assert transformers_spec.torch_dtype == "bfloat16"
-    assert (
-        transformers_spec.transformers_model_type
-        == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
-    )
-    assert transformers_spec.transformers_prompt_style == TransformersPromptStyle.CHAT
-    assert transformers_spec.max_new_tokens == 8192
-    assert transformers_spec.stop_strings == ["</doclang>", "<|end_of_text|>"]
-    assert transformers_spec.extra_generation_config["skip_special_tokens"] is False
-
-    vllm_spec = vlm_model_specs.GRANITE_FOR_DOCLING_500M_VLLM
-    assert vllm_spec.repo_id == REPO_ID
-    assert vllm_spec.inference_framework == InferenceFramework.VLLM
-    assert vllm_spec.response_format == ResponseFormat.DOCLANG
-    assert vllm_spec.extra_generation_config["include_stop_str_in_output"] is True
-    assert "include_stop_str_in_output" not in (
-        transformers_spec.extra_generation_config
-    )
-
-    mlx_spec = vlm_model_specs.GRANITE_FOR_DOCLING_500M_MLX
-    assert mlx_spec.repo_id == REPO_ID
-    assert mlx_spec.inference_framework == InferenceFramework.MLX
-    assert mlx_spec.prompt == DOCLANG_PAGE_PROMPT
-    assert mlx_spec.response_format == ResponseFormat.DOCLANG
-    assert mlx_spec.max_new_tokens == 8192
-    assert mlx_spec.stop_strings == ["</doclang>", "<|end_of_text|>"]
-
-    vllm_api = vlm_model_specs.GRANITE_FOR_DOCLING_500M_VLLM_API
-    assert vllm_api.params["model"] == REPO_ID
-    assert vllm_api.params["max_tokens"] == 8192
-    assert vllm_api.params["skip_special_tokens"] is False
-    assert vllm_api.params["include_stop_str_in_output"] is True
-    assert vllm_api.response_format == ResponseFormat.DOCLANG
 
 
 def test_granite_for_docling_2b_preset():
@@ -208,51 +218,18 @@ def test_granite_for_docling_2b_preset():
     assert vllm_runtime["include_stop_str_in_output"] is True
 
     for engine_type in (VlmEngineType.API, VlmEngineType.API_OPENAI):
-        api_params = spec.get_api_params(engine_type)
-        assert api_params["model"] == repo_id
-        assert api_params["max_tokens"] == 16384
-        assert api_params["include_stop_str_in_output"] is True
+        assert spec.get_api_params(engine_type) == {
+            "model": repo_id,
+            "max_tokens": 16384,
+        }
+        api_runtime = spec.get_runtime_input_extra_config(engine_type)
+        assert api_runtime["api_params"]["include_stop_str_in_output"] is True
 
     # The 500M preset keeps its own repo and budget.
     spec_500m = VlmConvertOptions.get_preset(PRESET_ID).model_spec
     assert spec_500m.default_repo_id == REPO_ID
     assert spec_500m.max_new_tokens == 8192
     assert spec_500m.get_api_params(VlmEngineType.API)["model"] == REPO_ID
-
-
-def test_granite_for_docling_2b_legacy_specs():
-    """Legacy 2B specs follow the 2B preset and leave the 500M specs unchanged."""
-    repo_id = "ibm-granite/granite-docling-v2-2b"
-    transformers_spec = vlm_model_specs.GRANITE_FOR_DOCLING_2B_TRANSFORMERS
-    assert transformers_spec.repo_id == repo_id
-    assert transformers_spec.max_new_tokens == 16384
-    assert transformers_spec.trust_remote_code is False
-    assert "include_stop_str_in_output" not in (
-        transformers_spec.extra_generation_config
-    )
-
-    mlx_spec = vlm_model_specs.GRANITE_FOR_DOCLING_2B_MLX
-    assert mlx_spec.repo_id == repo_id
-    assert mlx_spec.inference_framework == InferenceFramework.MLX
-    assert mlx_spec.max_new_tokens == 16384
-    assert vlm_model_specs.GRANITE_FOR_DOCLING_500M_MLX.repo_id == REPO_ID
-    assert vlm_model_specs.GRANITE_FOR_DOCLING_500M_MLX.max_new_tokens == 8192
-
-    vllm_spec = vlm_model_specs.GRANITE_FOR_DOCLING_2B_VLLM
-    assert vllm_spec.repo_id == repo_id
-    assert vllm_spec.inference_framework == InferenceFramework.VLLM
-    assert vllm_spec.extra_generation_config["include_stop_str_in_output"] is True
-
-    vllm_api = vlm_model_specs.GRANITE_FOR_DOCLING_2B_VLLM_API
-    assert vllm_api.params["model"] == repo_id
-    assert vllm_api.params["max_tokens"] == 16384
-    assert vllm_api.params["include_stop_str_in_output"] is True
-
-    assert vlm_model_specs.GRANITE_FOR_DOCLING_500M_TRANSFORMERS.repo_id == REPO_ID
-    assert vlm_model_specs.GRANITE_FOR_DOCLING_500M_VLLM_API.params["model"] == REPO_ID
-    assert (
-        vlm_model_specs.GRANITE_FOR_DOCLING_500M_VLLM_API.params["max_tokens"] == 8192
-    )
 
 
 def test_granite_docling_258m_default_unchanged():

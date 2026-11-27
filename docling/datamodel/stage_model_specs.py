@@ -991,16 +991,23 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 # that has the support reports a version such as 0.34.0rc1.dev1171.
 # vLLM and OpenAI-compatible servers drop a matched stop string from the reply
 # by default; include_stop_str_in_output keeps the closing </doclang> that the
-# DocLang parser needs.
+# DocLang parser needs. For the API engines these settings go with each request
+# (extra_generation_config["api_params"]), not with the model-spec API params:
+# the engine drops the latter as soon as the user sets their own params.
 def _granite_for_docling_model_spec_base(
     *, name: str, repo_id: str, max_new_tokens: int
 ) -> dict[str, Any]:
-    api_params = {
-        "model": repo_id,
-        "max_tokens": max_new_tokens,
-        "skip_special_tokens": False,
-        "include_stop_str_in_output": True,
-    }
+    api_params = {"model": repo_id, "max_tokens": max_new_tokens}
+    api_request_config = EngineModelConfig(
+        extra_config={
+            "extra_generation_config": {
+                "api_params": {
+                    "skip_special_tokens": False,
+                    "include_stop_str_in_output": True,
+                }
+            }
+        }
+    )
     return {
         "name": name,
         "default_repo_id": repo_id,
@@ -1040,6 +1047,8 @@ def _granite_for_docling_model_spec_base(
                     },
                 }
             ),
+            VlmEngineType.API: api_request_config,
+            VlmEngineType.API_OPENAI: api_request_config.model_copy(deep=True),
         },
         "api_overrides": {
             VlmEngineType.API: ApiModelConfig(params=dict(api_params)),
