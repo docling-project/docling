@@ -1090,6 +1090,23 @@ def test_ordered_list_numbers_survive_html_block():
     )
 
 
+def test_heading_in_nested_list_item_survives_html_block():
+    """A heading in a nested list item must not break the round trip through HTML.
+
+    The HTML backend raised `KeyError: -1` on the content after the list, so the
+    whole file failed to convert.
+    """
+    markdown = "- First.\n  - Nested.\n\n    # Title.\n\n<div>After.</div>\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert [item.text for item in conv_result.document.texts] == [
+        "First.",
+        "Nested.",
+        "Title.",
+        "After.",
+    ]
+
+
 def test_standard_ordered_list_still_starts_at_one():
     """Ordinary 1-based ordered lists must continue to export as 1-based."""
     markdown = "1. alpha\n2. beta\n3. gamma\n"
