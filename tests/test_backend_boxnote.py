@@ -144,7 +144,7 @@ def test_list_item_text_keeps_boundary_before_rich_paragraph():
     }
     doc = get_converter().convert(_boxnote_stream(payload)).document
 
-    assert doc.export_to_markdown() == "- Intro more **x** y"
+    assert doc.export_to_markdown() == "- Intro\n\n  more **x** y"
 
 
 def test_safe_hyperlink_is_kept():

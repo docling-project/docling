@@ -421,6 +421,7 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+docling-core = { git = "https://github.com/docling-project/docling-core", rev = "3638cd78043fb0f55c9f899de57695bc23add283" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 
 [tool.uv]
