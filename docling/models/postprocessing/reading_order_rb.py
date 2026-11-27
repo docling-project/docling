@@ -42,6 +42,11 @@ class PageElement(BoundingBox):
 
     label: DocItemLabel
 
+    # False when `cid` comes from the position on the page instead of the text
+    # order, as for clusters without text cells. Consecutive cids then do not
+    # mean that one element continues the other.
+    in_text_order: bool = True
+
     def __str__(self):
         return f"{self.cid:6.2f}\t{self.label!s:<10}\t{self.l:6.2f}, {self.b:6.2f}, {self.r:6.2f}, {self.t:6.2f}"
 
@@ -55,7 +60,12 @@ class PageElement(BoundingBox):
             return self.page_no < other.page_no
 
     def follows_maintext_order(self, rhs) -> bool:
-        return self.cid + 1 == rhs.cid
+        return (
+            self.cid + 1 == rhs.cid
+            and self.in_text_order
+            and isinstance(rhs, PageElement)
+            and rhs.in_text_order
+        )
 
 
 class SeparatorElement(BoundingBox):
