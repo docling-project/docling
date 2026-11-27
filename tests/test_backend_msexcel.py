@@ -1649,7 +1649,9 @@ def test_format_excel_value_matches_excel_display() -> None:
             "$ (1,234.50)",
         ),
         # Unsupported formats retain the value instead of dropping format semantics.
-        (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+        # Excel shows ##### for a negative duration in the 1900 date system.
+        (-timedelta(hours=1), "[h]:mm:ss", "-1 day, 23:00:00"),
+        (timedelta(seconds=5, milliseconds=250), "[mm]:ss.00", "0:00:05.250000"),
         (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
         (0.125, "[>=1]0%;0.0%", "0.125"),
         (12.5, '"$"0.##', "12.5"),
@@ -1662,6 +1664,40 @@ def test_format_excel_value_matches_excel_display() -> None:
 )
 def test_excel_number_format_tokens_and_sections(
     value, number_format, expected
+) -> None:
+    assert _format_excel_value(value, number_format) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "number_format", "expected"),
+    [
+        # The bracketed unit is the whole duration, so hours do not roll over.
+        (timedelta(hours=26, minutes=30), "[h]:mm:ss", "26:30:00"),
+        (timedelta(hours=26, minutes=30), "[hh]:mm:ss", "26:30:00"),
+        (timedelta(hours=1, minutes=5), "[hh]:mm", "01:05"),
+        (timedelta(hours=250), "[h]", "250"),
+        # Without seconds in the format, they are not shown.
+        (timedelta(minutes=90, seconds=40), "[h]:mm", "1:30"),
+        (timedelta(minutes=90), "[h]:m", "1:30"),
+        (timedelta(minutes=2, seconds=5), "[mm]:ss", "02:05"),
+        (timedelta(minutes=2, seconds=5), "[m]:s", "2:5"),
+        (timedelta(hours=1, minutes=1, seconds=1), "[ss]", "3661"),
+        (timedelta(0), "[h]:mm:ss", "0:00:00"),
+        # Rounded to whole seconds before the units are split.
+        (timedelta(minutes=59, seconds=59, milliseconds=500), "[h]:mm:ss", "1:00:00"),
+        (timedelta(seconds=59, milliseconds=499), "[m]:ss", "0:59"),
+        # Quoted and escaped literals are kept.
+        (timedelta(hours=26, minutes=30), '[h]" h "mm" min"', "26 h 30 min"),
+        (timedelta(hours=26, minutes=30), "[h]\\hmm", "26h30"),
+        # Anything else keeps str(value).
+        (timedelta(hours=1), "[h]:ss", "1:00:00"),
+        (timedelta(hours=1), "mm:[h]", "1:00:00"),
+        (timedelta(hours=1), "[h]:mm;@", "1:00:00"),
+        (timedelta(hours=1), "[Red][h]:mm", "1:00:00"),
+    ],
+)
+def test_excel_elapsed_time_formats(
+    value: timedelta, number_format: str, expected: str
 ) -> None:
     assert _format_excel_value(value, number_format) == expected
 
@@ -1682,7 +1718,8 @@ def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None
         ("Euro", 1234.5, "[$€-407] #,##0.00", "€ 1,234.50"),
         ("Rupee", 1234.5, "[$₹-4009] #,##0.00", "₹ 1,234.50"),
         ("Accounting", -1234.5, BUILTIN_FORMATS[44], "$ (1,234.50)"),
-        ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+        ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "26:07:00"),
+        ("Minutes total", timedelta(minutes=2, seconds=5), "[mm]:ss", "02:05"),
     ]
     sheet.append(["Format", "Value"])
     for row_index, (label, value, number_format, _) in enumerate(rows, start=2):
