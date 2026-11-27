@@ -795,11 +795,14 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 # Export each layer separately so furniture remains available
                 # without becoming part of the email's default body export.
                 for content_layer in (ContentLayer.BODY, ContentLayer.FURNITURE):
-                    # The outer email export escapes these text items.
+                    # The outer email export escapes these text items. For the
+                    # same reason, a picture placeholder would show up as
+                    # literal "<!-- image -->" text, so leave it out.
                     markdown = html_doc.export_to_markdown(
                         included_content_layers={content_layer},
                         escape_html=False,
                         escape_underscores=False,
+                        image_placeholder="",
                     )
                     paragraphs.extend(
                         _BodyParagraph(text=paragraph, content_layer=content_layer)
