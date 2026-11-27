@@ -111,7 +111,7 @@ def test_500m_caps_text_tiles_and_pads_at_least_4_points():
 
 def test_2b_keeps_the_processor_limits():
     options = LayoutCropVlmOptions(
-        vlm_options=VlmConvertOptions.from_preset("granite_for_docling_2b")
+        vlm_options=VlmConvertOptions.from_preset("granite_docling_v2_2b")
     )
     assert options.crop_min_padding == 0.0
     assert options.default_task.max_tiles is None

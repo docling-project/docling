@@ -1146,7 +1146,7 @@ def convert(  # noqa: C901
             "--doclang-tasks",
             help=(
                 "Comma-separated tasks for a doclang --vlm-model such as "
-                "granite_for_docling_2b, for example 'table,layout'. The model "
+                "granite_docling_v2_2b, for example 'table,layout'. The model "
                 "returns only these elements. Without layout the elements have no "
                 "bounding boxes. detailed adds picture descriptions. Valid tasks: "
                 + ", ".join(task.value for task in DocLangTask)
@@ -1801,7 +1801,7 @@ def convert(  # noqa: C901
     if parsed_doclang_tasks is not None and pipeline != ProcessingPipeline.VLM:
         raise typer.BadParameter(
             "--doclang-tasks needs a doclang --vlm-model, such as "
-            "granite_for_docling_2b.",
+            "granite_docling_v2_2b.",
             param_hint="--doclang-tasks",
         )
 
@@ -2298,7 +2298,7 @@ def convert(  # noqa: C901
                 ):
                     raise typer.BadParameter(
                         f"--vlm-model {vlm_model} does not use the doclang format. "
-                        "Use a doclang preset, such as granite_for_docling_2b.",
+                        "Use a doclang preset, such as granite_docling_v2_2b.",
                         param_hint="--doclang-tasks",
                     )
                 pipeline_options.vlm_options = VlmConvertOptions.from_preset(

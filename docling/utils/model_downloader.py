@@ -206,8 +206,8 @@ def download_models(
     with_granitedocling: bool = False,
     with_granitedocling_mlx: bool = False,
     with_granitedocling_2stage: bool = False,
-    with_granite_for_docling_500m: bool = False,
-    with_granite_for_docling_2b: bool = False,
+    with_granite_docling_v2_500m: bool = False,
+    with_granite_docling_v2_2b: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
@@ -353,8 +353,8 @@ def download_models(
         )
 
     for enabled, preset_id in (
-        (with_granite_for_docling_500m, "granite_for_docling_500m"),
-        (with_granite_for_docling_2b, "granite_for_docling_2b"),
+        (with_granite_docling_v2_500m, "granite_docling_v2_500m"),
+        (with_granite_docling_v2_2b, "granite_docling_v2_2b"),
     ):
         if enabled:
             preset = VlmConvertOptions.get_preset(preset_id)

@@ -1252,7 +1252,7 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         ):
             raise ValueError(
                 "doclang.tasks needs a model with the doclang response format, "
-                f"such as granite_for_docling_2b; {self.model_spec.name} uses "
+                f"such as granite_docling_v2_2b; {self.model_spec.name} uses "
                 f"{self.model_spec.response_format.value}"
             )
         return self
@@ -1327,10 +1327,8 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 # Register VlmConvert presets
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_SMOLDOCLING)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING)
-VlmConvertOptions.register_preset(
-    stage_model_specs.VLM_CONVERT_GRANITE_FOR_DOCLING_500M
-)
-VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_FOR_DOCLING_2B)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING_V2_500M)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING_V2_2B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DEEPSEEK_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_VISION)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)

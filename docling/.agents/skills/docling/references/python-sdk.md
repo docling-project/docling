@@ -260,7 +260,7 @@ from docling.datamodel.pipeline_options import DocLangOptions, VlmConvertOptions
 from docling.datamodel.vlm_prompts import DocLangTask
 
 vlm_options = VlmConvertOptions.from_preset(
-    "granite_for_docling_2b",
+    "granite_docling_v2_2b",
     doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]),
 )  # prompt: "<doclang> [<table>, <layout>]"
 ```

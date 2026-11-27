@@ -91,7 +91,7 @@ class LayoutCropVlmOptions(BaseModel):
 
     vlm_options: VlmConvertOptions = Field(
         default_factory=lambda: VlmConvertOptions.from_preset(
-            "granite_for_docling_500m"
+            "granite_docling_v2_500m"
         ),
         description="Model and engine that recognize the crops.",
     )

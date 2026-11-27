@@ -663,7 +663,7 @@ def test_cli_doclang_tasks_set_the_page_prompt(
         [
             source,
             "--vlm-model",
-            "granite_for_docling_2b",
+            "granite_docling_v2_2b",
             "--doclang-tasks",
             "table, layout,detailed",
             "--output",
@@ -682,9 +682,9 @@ def test_cli_doclang_tasks_set_the_page_prompt(
     "args",
     [
         # Unknown task
-        ["--vlm-model", "granite_for_docling_2b", "--doclang-tasks", "table,chart"],
+        ["--vlm-model", "granite_docling_v2_2b", "--doclang-tasks", "table,chart"],
         # Only separators
-        ["--vlm-model", "granite_for_docling_2b", "--doclang-tasks", " , "],
+        ["--vlm-model", "granite_docling_v2_2b", "--doclang-tasks", " , "],
         # Preset without the doclang format
         ["--vlm-model", "granite_docling", "--doclang-tasks", "table"],
         # No VLM pipeline

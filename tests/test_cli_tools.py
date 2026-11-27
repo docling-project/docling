@@ -109,7 +109,7 @@ def test_granite_docling_v2_download_selects_checkpoint(size, tmp_path, monkeypa
     )
     result = runner.invoke(
         app,
-        ["models", "download", f"granite_for_docling_{size}", "-o", str(tmp_path)],
+        ["models", "download", f"granite_docling_v2_{size}", "-o", str(tmp_path)],
     )
 
     assert result.exit_code == 0, result.output

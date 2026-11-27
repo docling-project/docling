@@ -2,7 +2,7 @@
 # Granite Docling v2 500M: convert a PDF with the doclang-native VLM.
 #
 # What this example does
-# - Uses the `granite_for_docling_500m` preset (Transformers, MLX or in-process vLLM).
+# - Uses the `granite_docling_v2_500m` preset (Transformers, MLX or in-process vLLM).
 # - Parses model output as doclang and prints Markdown.
 #
 # Prerequisites
@@ -14,7 +14,7 @@
 # - MLX (Apple Silicon): mlx-vlm 0.8.1 or later.
 #
 # How to run
-# - From the repository root: `python docs/examples/granite_for_docling_500m.py`.
+# - From the repository root: `python docs/examples/granite_docling_v2_500m.py`.
 
 # %%
 
@@ -28,31 +28,31 @@ source = "https://arxiv.org/pdf/2501.17887"
 # Default: AUTO_INLINE picks MLX, vLLM or Transformers from the local environment.
 # The 258M `granite_docling` preset remains the CLI/SDK default; this example
 # selects the 500M doclang model explicitly.
-vlm_options = VlmConvertOptions.from_preset("granite_for_docling_500m")
+vlm_options = VlmConvertOptions.from_preset("granite_docling_v2_500m")
 
 # Extract only tables, with their bounding boxes:
 # from docling.datamodel.pipeline_options import DocLangOptions
 # from docling.datamodel.vlm_prompts import DocLangTask
 # vlm_options = VlmConvertOptions.from_preset(
-#     "granite_for_docling_500m",
+#     "granite_docling_v2_500m",
 #     doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]),
 # )
 
 # Pin Transformers:
 # vlm_options = VlmConvertOptions.from_preset(
-#     "granite_for_docling_500m",
+#     "granite_docling_v2_500m",
 #     engine_options=TransformersVlmEngineOptions(),
 # )
 
 # Pin MLX (Apple Silicon):
 # vlm_options = VlmConvertOptions.from_preset(
-#     "granite_for_docling_500m",
+#     "granite_docling_v2_500m",
 #     engine_options=MlxVlmEngineOptions(),
 # )
 
 # Pin in-process vLLM:
 # vlm_options = VlmConvertOptions.from_preset(
-#     "granite_for_docling_500m",
+#     "granite_docling_v2_500m",
 #     engine_options=VllmVlmEngineOptions(),
 # )
 

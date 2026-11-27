@@ -994,7 +994,7 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 # DocLang parser needs. For the API engines these settings go with each request
 # (extra_generation_config["api_params"]), not with the model-spec API params:
 # the engine drops the latter as soon as the user sets their own params.
-def _granite_for_docling_model_spec_base(
+def _granite_docling_v2_model_spec_base(
     *, name: str, repo_id: str, max_new_tokens: int
 ) -> dict[str, Any]:
     api_params = {"model": repo_id, "max_tokens": max_new_tokens}
@@ -1057,7 +1057,7 @@ def _granite_for_docling_model_spec_base(
     }
 
 
-GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
+GRANITE_DOCLING_V2_500M_MODEL_SPEC_BASE = _granite_docling_v2_model_spec_base(
     name="Granite-Docling-v2-500M",
     repo_id="ibm-granite/granite-docling-v2-500m",
     max_new_tokens=8192,
@@ -1065,7 +1065,7 @@ GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
 
 # The 2B model is trained to continue long pages (newspapers, exams), so it gets
 # a larger reply budget, as its model card suggests.
-GRANITE_FOR_DOCLING_2B_MODEL_SPEC_BASE = _granite_for_docling_model_spec_base(
+GRANITE_DOCLING_V2_2B_MODEL_SPEC_BASE = _granite_docling_v2_model_spec_base(
     name="Granite-Docling-v2-2B",
     repo_id="ibm-granite/granite-docling-v2-2b",
     max_new_tokens=16384,
@@ -1241,15 +1241,15 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
-VLM_CONVERT_GRANITE_FOR_DOCLING_500M = StageModelPreset(
-    preset_id="granite_for_docling_500m",
+VLM_CONVERT_GRANITE_DOCLING_V2_500M = StageModelPreset(
+    preset_id="granite_docling_v2_500m",
     name="Granite-Docling-v2-500M",
     description=(
         "IBM Granite Docling v2 500M doclang model for document conversion "
         "(494M parameters)"
     ),
     model_spec=VlmModelSpec(
-        **GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE,
+        **GRANITE_DOCLING_V2_500M_MODEL_SPEC_BASE,
         prompt=DOCLANG_PAGE_PROMPT,
         response_format=ResponseFormat.DOCLANG,
     ),
@@ -1257,15 +1257,15 @@ VLM_CONVERT_GRANITE_FOR_DOCLING_500M = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
-VLM_CONVERT_GRANITE_FOR_DOCLING_2B = StageModelPreset(
-    preset_id="granite_for_docling_2b",
+VLM_CONVERT_GRANITE_DOCLING_V2_2B = StageModelPreset(
+    preset_id="granite_docling_v2_2b",
     name="Granite-Docling-v2-2B",
     description=(
         "IBM Granite Docling v2 2B doclang model for document conversion "
         "(2.2B parameters)"
     ),
     model_spec=VlmModelSpec(
-        **GRANITE_FOR_DOCLING_2B_MODEL_SPEC_BASE,
+        **GRANITE_DOCLING_V2_2B_MODEL_SPEC_BASE,
         prompt=DOCLANG_PAGE_PROMPT,
         response_format=ResponseFormat.DOCLANG,
     ),

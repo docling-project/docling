@@ -73,9 +73,9 @@ Audio and video files use `--asr-model` without `--pipeline`.
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --vlm-model granite_docling --output /tmp/
-docling report.pdf --vlm-model granite_for_docling_500m --output /tmp/
-docling report.pdf --vlm-model granite_for_docling_2b --output /tmp/
-docling report.pdf --vlm-model granite_for_docling_2b --doclang-tasks table,layout --output /tmp/
+docling report.pdf --vlm-model granite_docling_v2_500m --output /tmp/
+docling report.pdf --vlm-model granite_docling_v2_2b --output /tmp/
+docling report.pdf --vlm-model granite_docling_v2_2b --doclang-tasks table,layout --output /tmp/
 docling report.pdf --vlm-model smoldocling --output /tmp/
 docling report.pdf --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
@@ -91,8 +91,8 @@ If the native PDF backend ends early, Docling warns about missing requested
 pages. It writes partial results when pages were converted. Use `--fail-on partial`
 to return exit code 1 when results are partial.
 
-`--doclang-tasks` works only with the doclang presets (`granite_for_docling_500m`,
-`granite_for_docling_2b`). It takes a comma-separated list of tasks: `ocr`,
+`--doclang-tasks` works only with the doclang presets (`granite_docling_v2_500m`,
+`granite_docling_v2_2b`). It takes a comma-separated list of tasks: `ocr`,
 `layout`, `table`, `picture`, `detailed`, `formula`, `code`, `caption`,
 `section_header`, `list`, `footnote`, `page_header`, `page_footer`, `smiles`,
 `classification`, `description`. The model returns only those elements. Without

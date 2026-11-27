@@ -112,7 +112,7 @@ def test_call_uses_model_spec_generation_settings() -> None:
 def test_call_sends_the_doclang_task_prompt_with_each_page() -> None:
     model, _ = _build_model()
     model.options = VlmConvertOptions.from_preset(
-        "granite_for_docling_2b",
+        "granite_docling_v2_2b",
         engine_options=AutoInlineVlmEngineOptions(),
         doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]),
     )

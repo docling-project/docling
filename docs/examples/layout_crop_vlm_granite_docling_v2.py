@@ -13,7 +13,7 @@
 #   `vllm serve <model-dir> --served-model-name granite-docling-v2 --port 8000`
 #
 # How to run
-# - `python docs/examples/layout_crop_vlm_granite_for_docling.py INPUT [INPUT ...]`
+# - `python docs/examples/layout_crop_vlm_granite_docling_v2.py INPUT [INPUT ...]`
 # - `--url`, `--model` and `--out` select the server, the served model name and the
 #   output directory.
 #
@@ -75,7 +75,7 @@ def main() -> None:
         )
 
     vlm_options = VlmConvertOptions.from_preset(
-        "granite_for_docling_500m",
+        "granite_docling_v2_500m",
         engine_options=ApiVlmEngineOptions(
             engine_type=VlmEngineType.API,
             url=args.url,

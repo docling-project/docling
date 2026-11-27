@@ -30,10 +30,10 @@ from docling.models.inference_engines.vlm.base import VlmEngineInput, VlmEngineT
 from docling.models.inference_engines.vlm.factory import create_vlm_engine
 
 REPO_ID = "ibm-granite/granite-docling-v2-500m"
-PRESET_ID = "granite_for_docling_500m"
+PRESET_ID = "granite_docling_v2_500m"
 
 
-def test_granite_for_docling_500m_preset_exists():
+def test_granite_docling_v2_500m_preset_exists():
     """Verify the preset is registered with doclang output and its engines."""
     preset_ids = VlmConvertOptions.list_preset_ids()
     assert PRESET_ID in preset_ids
@@ -57,11 +57,11 @@ def test_granite_for_docling_500m_preset_exists():
     assert spec.has_explicit_engine_export(VlmEngineType.VLLM) is True
 
 
-def test_granite_for_docling_mlx_loads_the_same_checkpoint():
+def test_granite_docling_v2_mlx_loads_the_same_checkpoint():
     """MLX needs the mlx-vlm release with the model, and no separate weights."""
     for preset_id, repo_id in (
         (PRESET_ID, REPO_ID),
-        ("granite_for_docling_2b", "ibm-granite/granite-docling-v2-2b"),
+        ("granite_docling_v2_2b", "ibm-granite/granite-docling-v2-2b"),
     ):
         spec = VlmConvertOptions.get_preset(preset_id).model_spec
         assert VlmEngineType.MLX in spec.supported_engines
@@ -74,7 +74,7 @@ def test_granite_for_docling_mlx_loads_the_same_checkpoint():
     assert mlx.engine_options.engine_type == VlmEngineType.MLX
 
 
-def test_granite_for_docling_500m_preset_engine_config():
+def test_granite_docling_v2_500m_preset_engine_config():
     """Verify Transformers and vLLM overrides, plus API params."""
     spec = VlmConvertOptions.get_preset(PRESET_ID).model_spec
 
@@ -122,9 +122,9 @@ def test_granite_for_docling_500m_preset_engine_config():
         }
 
 
-@pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_for_docling_2b"])
+@pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_docling_v2_2b"])
 @pytest.mark.parametrize("user_params", [{}, {"model": "served-name"}])
-def test_granite_for_docling_api_request_keeps_the_closing_tag(
+def test_granite_docling_v2_api_request_keeps_the_closing_tag(
     monkeypatch: pytest.MonkeyPatch, preset_id: str, user_params: dict
 ) -> None:
     """User params (e.g. a served model name) must not drop the stop-string settings."""
@@ -168,7 +168,7 @@ def test_granite_for_docling_api_request_keeps_the_closing_tag(
     assert captured["model"] == user_params.get("model", spec.default_repo_id)
 
 
-def test_granite_for_docling_500m_from_preset_engines():
+def test_granite_docling_v2_500m_from_preset_engines():
     """Verify from_preset works for default, Transformers, and vLLM engines."""
     options = VlmConvertOptions.from_preset(PRESET_ID)
     assert options.model_spec.default_repo_id == REPO_ID
@@ -192,10 +192,10 @@ def test_granite_for_docling_500m_from_preset_engines():
     assert vllm.engine_options.trust_remote_code is False
 
 
-def test_granite_for_docling_2b_preset():
+def test_granite_docling_v2_2b_preset():
     """The 2B preset shares the 500M setup, with its own repo and reply budget."""
     repo_id = "ibm-granite/granite-docling-v2-2b"
-    preset = VlmConvertOptions.get_preset("granite_for_docling_2b")
+    preset = VlmConvertOptions.get_preset("granite_docling_v2_2b")
     assert preset.name == "Granite-Docling-v2-2B"
     assert preset.scale == 2.0
     assert preset.default_engine_type == VlmEngineType.AUTO_INLINE
@@ -249,7 +249,7 @@ def test_doclang_prompt_lists_the_requested_tasks():
     )
 
 
-@pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_for_docling_2b"])
+@pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_docling_v2_2b"])
 def test_doclang_tasks_select_the_page_prompt(preset_id):
     assert VlmConvertOptions.from_preset(preset_id).page_prompt() == "<doclang>"
 
