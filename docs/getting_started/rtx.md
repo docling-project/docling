@@ -198,7 +198,7 @@ from docling.pipeline.vlm_pipeline import VlmPipeline
 BATCH_SIZE = 64
 
 # Configure VLM options
-vlm_options = vlm_model_specs.GRANITEDOCLING_VLLM_API
+vlm_options = vlm_model_specs.GRANITEDOCLING_VLLM_API.model_copy(deep=True)
 vlm_options.concurrency = BATCH_SIZE
 
 # when running with llama.cpp (llama-server), use the different model name.
