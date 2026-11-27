@@ -585,6 +585,33 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = False
 
+    spreadsheet_gap_tolerance: Annotated[
+        Optional[int],
+        Field(
+            description=(
+                "The tolerance (in number of empty rows/columns) for merging nearby "
+                "data clusters into a single table in spreadsheet inputs (XLSX, XLS "
+                "and ODS). Integer. Optional, the backend default (0, strict) is "
+                "used when not set."
+            ),
+            ge=0,
+            examples=[0, 2],
+        ),
+    ] = None
+
+    spreadsheet_treat_singleton_as_text: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "If enabled, singleton cells (1x1 tables with empty neighboring "
+                "cells) in spreadsheet inputs (XLSX, XLS and ODS) are output as text "
+                "instead of tables. Boolean. Optional, the backend default (false) "
+                "is used when not set."
+            ),
+            examples=[False],
+        ),
+    ] = None
+
     chunking_options: Annotated[
         Optional[ChunkingOptionType],
         Field(

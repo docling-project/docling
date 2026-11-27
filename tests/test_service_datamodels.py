@@ -10,6 +10,7 @@ from docling.datamodel.base_models import (
     PageConfidenceScores,
     QualityGrade,
 )
+from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
     AzureBlobSourceRequest,
@@ -543,3 +544,10 @@ def test_confidence_report_tolerant_to_pages_none() -> None:
     restored = ConfidenceReport.model_validate(legacy_payload)
     assert restored.parse_score == 0.85
     assert restored.pages == {}
+
+
+def test_convert_options_reject_negative_spreadsheet_gap_tolerance() -> None:
+    options = ConvertDocumentsOptions(spreadsheet_gap_tolerance=0)
+    assert options.spreadsheet_gap_tolerance == 0
+    with pytest.raises(ValidationError, match="spreadsheet_gap_tolerance"):
+        ConvertDocumentsOptions(spreadsheet_gap_tolerance=-1)
