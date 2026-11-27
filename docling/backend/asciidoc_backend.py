@@ -24,9 +24,10 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
-from pydantic import AnyUrl, TypeAdapter
+from pydantic import AnyUrl
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.utils.hyperlink import parse_hyperlink
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
     MAX_COLSPAN,
@@ -89,8 +90,6 @@ _URL_START: Final = r"""(?<![^\s>()\[\];"'])"""
 # escaped, so an unclosed "[" ends the scan at the next one, not at the end of
 # the line, and a line with many of them still converts in linear time.
 _LINK_ATTRS: Final = r"(?:[^\[\]\\]|\\.)*"
-# A link target is a URL, or a relative path such as "docs/install.html".
-_LINK_TARGET: Final = TypeAdapter(AnyUrl | Path)
 
 # Links, then inline formatting marks. Links come first so that the "_" and
 # "*" in a URL are not read as formatting marks. The link forms follow
@@ -966,7 +965,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         text = "".join(run.text for run in runs).strip()
         targets = {run.hyperlink for run in runs if run.text.strip()}
         if len(targets) == 1 and (target := targets.pop()) is not None:
-            return text, _LINK_TARGET.validate_python(target)
+            return text, parse_hyperlink(target)
         return text, None
 
     @staticmethod
@@ -1029,9 +1028,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         )
         group = doc.add_inline_group(parent=parent)
         for run in trimmed:
-            hyperlink = (
-                _LINK_TARGET.validate_python(run.hyperlink) if run.hyperlink else None
-            )
+            hyperlink = parse_hyperlink(run.hyperlink) if run.hyperlink else None
             if run.code:
                 doc.add_code(text=run.text, parent=group, hyperlink=hyperlink)
             else:
@@ -1240,19 +1237,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     def _continue_table(
         cls, table_data: list[list[_TableCellSource]], line: str
     ) -> bool:
-        """Consume a line between |=== delimiters that is not a row.
+        """Consume a blank, wrapped or indented row line in a table, else return False.
 
-        A blank line only separates rows, and a line without a leading "|"
-        continues the cell above it. Returns False for any other line.
+        Wrapped text continues the cell above it, and each "|" in it opens a cell.
         """
         stripped = line.strip()
         if stripped == "|===" or cls._is_table_line(line):
             return False
-        if stripped and not table_data:
+        if cls._is_table_line(stripped):
+            table_data.append(cls._parse_table_cells(stripped))
+        elif stripped and not table_data:
             return False
-        if stripped:
-            cell = table_data[-1][-1]
-            cell.text = f"{cell.text} {stripped}".lstrip()
+        elif stripped:
+            head, *cells = cls._parse_table_cells(f"| {stripped}")
+            table_data[-1][-1].text = f"{table_data[-1][-1].text} {head.text}".strip()
+            table_data[-1].extend(cells)
         return True
 
     @staticmethod

@@ -263,10 +263,58 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (1, "I"),
 )
 
-_RUN_TEXT_XPATH: Final[str] = (
-    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+_RUN_TEXT_XPATH: Final = etree.XPath(
+    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym",
+    namespaces=_OOXML_NAMESPACES,
 )
 """Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+
+# The XPath expressions below run once per body element, paragraph or run.
+# `element.xpath(...)` compiles its expression on every call, so they are
+# compiled once here.
+_RUN_BOLD_XPATH: Final = etree.XPath(".//w:b", namespaces=_OOXML_NAMESPACES)
+"""Bold elements in a run's properties."""
+
+_PARAGRAPH_MARK_BOLD_XPATH: Final = etree.XPath(
+    "./w:pPr/w:rPr/w:b", namespaces=_OOXML_NAMESPACES
+)
+"""Bold element of a paragraph mark."""
+
+_ALL_RUNS_XPATH: Final = etree.XPath(".//w:r", namespaces=_OOXML_NAMESPACES)
+"""Every run of a paragraph, including runs nested in hyperlinks or insertions."""
+
+_TABLE_CELL_ANCESTOR_XPATH: Final = etree.XPath(
+    "ancestor::w:tc", namespaces=_OOXML_NAMESPACES
+)
+"""Table cells that hold an element."""
+
+_SDT_CONTENT_RUNS_XPATH: Final = etree.XPath(
+    ".//w:sdtContent//w:r", namespaces=_OOXML_NAMESPACES
+)
+"""Runs inside an inline content control."""
+
+_TEXTBOX_XPATH: Final = etree.XPath(
+    ".//w:txbxContent|.//v:textbox//w:p", namespaces=_OOXML_NAMESPACES
+)
+"""Modern Word text boxes."""
+
+_ALT_TEXTBOX_XPATH: Final = etree.XPath(
+    ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
+    namespaces=_OOXML_NAMESPACES,
+)
+"""Text box paragraphs in DrawingML and VML formats."""
+
+_SHAPE_TEXT_XPATH: Final = etree.XPath(
+    ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t", namespaces=_OOXML_NAMESPACES
+)
+"""Shape text that is not in a standard text box."""
+
+_ANY_TEXTBOX_XPATH: Final = etree.XPath(
+    ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//w10:wrap//w:p"
+    "|.//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
+    namespaces=_OOXML_NAMESPACES,
+)
+"""Any text box or shape text content."""
 
 _SYMBOL_FONT: Final[str] = "symbol"
 
@@ -326,7 +374,7 @@ def _get_run_text(run: Run) -> str:
     """
     symbol_font = _is_symbol_font(run.font.name)
     parts: list[str] = []
-    for child in run._r.xpath(_RUN_TEXT_XPATH):
+    for child in _RUN_TEXT_XPATH(run._r):
         if child.tag == f"{_W_NS_CLARK}sym":
             parts.append(_get_sym_text(child))
         elif symbol_font and child.tag == f"{_W_NS_CLARK}t":
@@ -1458,30 +1506,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 and element not in self.processed_textbox_elements
             ):
                 # Modern Word textboxes
-                txbx_xpath = etree.XPath(
-                    ".//w:txbxContent|.//v:textbox//w:p",
-                    namespaces=_OOXML_NAMESPACES,
-                )
-                raw_textbox_elements = txbx_xpath(element)
+                raw_textbox_elements = _TEXTBOX_XPATH(element)
 
                 # No modern textboxes found, check for alternate/legacy textbox formats
                 if not raw_textbox_elements:
                     # Additional checks for textboxes in DrawingML and VML formats
-                    alt_txbx_xpath = etree.XPath(
-                        ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
-                        namespaces=_OOXML_NAMESPACES,
-                    )
-                    raw_textbox_elements = alt_txbx_xpath(element)
+                    raw_textbox_elements = _ALT_TEXTBOX_XPATH(element)
 
                     # Check for shape text that's not in a standard textbox
                     if not raw_textbox_elements:
-                        shape_text_xpath = etree.XPath(
-                            ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-                            namespaces=_OOXML_NAMESPACES,
-                        )
                         shape_text_elements = [
                             el
-                            for el in shape_text_xpath(element)
+                            for el in _SHAPE_TEXT_XPATH(element)
                             if el not in self.processed_textbox_elements
                         ]
                         if shape_text_elements:
@@ -1554,10 +1590,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 pics = self._handle_pictures(drawing_blip, doc)
                 added_elements.extend(pics)
                 # Check for Text after the Image
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
             # Check for VML images (legacy format, e.g., embedded Visio drawings)
@@ -1565,10 +1598,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 vml_pics = self._handle_vml_pictures(vml_images, doc)
                 added_elements.extend(vml_pics)
                 # Check for Text after the VML Image
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te2 = self._handle_text_elements(element, doc)
                     added_elements.extend(te2)
             # Check for DrawingML elements
@@ -1607,10 +1637,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         self._handle_drawingml(doc=doc, drawingml_els=other_els)
 
                 # Always process text in paragraph
-                if (
-                    tag_name == "p"
-                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
-                ):
+                if tag_name == "p" and self._has_paragraph_text(element):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
                     added_elements.extend(te)
             # Check for Text
@@ -1622,6 +1649,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
 
         return doc, added_elements
+
+    @staticmethod
+    def _has_paragraph_text(element: BaseOxmlElement) -> bool:
+        """Include symbols and native equations when checking for paragraph text."""
+        if element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None:
+            return True
+        # A text box has its own paragraphs, which are walked separately.
+        return any(
+            next(node.iterancestors(qn("w:p")), None) is element
+            for node in element.iter(qn("w:sym"), f"{OMML_NS}oMath")
+        )
 
     def _walk_optional_container(
         self, container: BaseOxmlElement | None, doc: DoclingDocument
@@ -2256,7 +2294,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _is_in_table_cell(self, paragraph: Paragraph) -> bool:
         """Return True if the paragraph sits inside a table cell."""
-        return bool(paragraph._p.xpath("ancestor::w:tc"))
+        return bool(_TABLE_CELL_ANCESTOR_XPATH(paragraph._p))
 
     def _effective_style_font(self, style: ParagraphStyle | None) -> str:
         """Return the case-folded font family a style resolves to.
@@ -2308,7 +2346,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # run.text is empty and the filter drops them.
         runs = [
             run
-            for r_el in paragraph._p.xpath(".//w:r")
+            for r_el in _ALL_RUNS_XPATH(paragraph._p)
             if (run := Run(r_el, paragraph)).text.strip()
         ]
         mono_chars = 0
@@ -2541,7 +2579,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if not is_bold:
             try:
                 if run._element is not None:
-                    b_tags = run._element.xpath(".//w:b")
+                    b_tags = _RUN_BOLD_XPATH(run._element)
                     for b in b_tags:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
@@ -2549,7 +2587,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             break
 
                 if not is_bold and run._parent._element is not None:
-                    pPr_b = run._parent._element.xpath("./w:pPr/w:rPr/w:b")
+                    pPr_b = _PARAGRAPH_MARK_BOLD_XPATH(run._parent._element)
                     for b in pPr_b:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
@@ -2710,11 +2748,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 runs = [
                     run
                     for run in (
-                        Run(r_el, paragraph)
-                        for r_el in child.xpath(
-                            ".//w:sdtContent//w:r",
-                            namespaces=_OOXML_NAMESPACES,
-                        )
+                        Run(r_el, paragraph) for r_el in _SDT_CONTENT_RUNS_XPATH(child)
                     )
                     if _is_shown(run)
                 ]
@@ -3346,6 +3380,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._last_child_item(doc, self.parents[self._get_level() - 1]), CodeItem
         )
         p_style_id, p_level = self._get_label_and_level(paragraph)
+        if not text and "Heading" in p_style_id:
+            return elem_ref
+
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
         if numid == 0:
@@ -3548,14 +3585,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
         self._update_history(p_style_id, p_level, numid, ilevel)
+        self._record_paragraph_items(para_element, elem_ref, comment_ids)
+        return elem_ref
 
-        # Store mapping of paragraph element to created items for comment linking
+    def _record_paragraph_items(
+        self,
+        para_element: BaseOxmlElement,
+        elem_ref: list[RefItem],
+        comment_ids: set[str],
+    ) -> None:
+        """Record created items and comment links for a paragraph."""
         if elem_ref:
             self.paragraph_to_items[para_element] = elem_ref
             if comment_ids:
                 self.paragraph_comment_map[para_element] = list(comment_ids)
-
-        return elem_ref
 
     def _add_body_text_items(
         self,
@@ -4397,12 +4440,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _has_textbox(self, element: BaseOxmlElement) -> bool:
         """Check if a docx element holds any textbox or shape text content."""
-        txbx_xpath = etree.XPath(
-            ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//w10:wrap//w:p"
-            "|.//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-            namespaces=_OOXML_NAMESPACES,
-        )
-        return bool(txbx_xpath(element))
+        return bool(_ANY_TEXTBOX_XPATH(element))
 
     def _is_rich_table_cell(self, cell: _Cell) -> bool:
         """Determine whether a docx cell should be parsed as a Docling RichTableCell.

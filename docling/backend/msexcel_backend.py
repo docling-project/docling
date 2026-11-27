@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import bisect
 import collections
+import functools
 import logging
 import posixpath
 import re
 import shutil
+import unicodedata
 import warnings
 from collections.abc import Iterator
 from copy import deepcopy
@@ -150,6 +152,63 @@ _EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
+# A ``[$<symbol>-<locale id>]`` currency tag, e.g. ``[$€-407]`` or ``[$₹-4009]``.
+_LOCALE_CURRENCY_TAG_RE: Final[re.Pattern[str]] = re.compile(
+    r"\[\$(?P<symbol>[^\]\-]+)(?:-[0-9a-fA-F]+)?\]"
+)
+# Quoted and escaped literals pass through; ``_x`` (width of x) is dropped; a
+# ``*x`` fill becomes one space; a ``?`` digit placeholder is kept for the
+# section parser to reject unless the section is literal-only.
+_SECTION_LAYOUT_TOKEN_RE: Final[re.Pattern[str]] = re.compile(r'"[^"]*"|\\.|_.|\*.')
+_LITERAL_ONLY_SECTION_RE: Final[re.Pattern[str]] = re.compile(r'(?:"[^"]*"|\\.|[ ?])*')
+
+
+# openpyxl's table of built-in formats lost the section separators of id 44
+# (Excel's "Accounting" format), so every cell using it reports this string.
+_OPENPYXL_FORMAT_FIXES: Final[dict[str, str]] = {
+    '_("$"* #,##0.00_)_("$"* \\(#,##0.00\\)_("$"* "-"??_)_(@_)': (
+        '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)'
+    ),
+}
+
+
+@functools.cache
+def _currency_symbols() -> str:
+    """Every Unicode currency sign ($, €, £, ¥, ₹, ...), built on first use.
+
+    Scanning all code points takes a noticeable fraction of a second, so it is
+    not done at import time, where every ``DocumentConverter`` user would pay
+    for it.
+    """
+    return "".join(
+        char for char in map(chr, range(0x110000)) if unicodedata.category(char) == "Sc"
+    )
+
+
+def _strip_section_layout(section: str) -> str:
+    """Drop Excel layout codes that only pad the cell, keeping literals."""
+
+    def replace(match: re.Match[str]) -> str:
+        token = match.group(0)
+        if token.startswith("_"):
+            return ""
+        if token.startswith("*"):
+            return " "
+        return token
+
+    return _SECTION_LAYOUT_TOKEN_RE.sub(replace, section).strip()
+
+
+def _literal_section_text(section: str) -> str:
+    """Text of a section made only of quoted/escaped literals, e.g. ``"$" "-"``."""
+    text = re.sub(
+        r'"([^"]*)"|\\(.)',
+        lambda m: m.group(1) if m.group(1) is not None else m.group(2),
+        section.replace("?", ""),
+    )
+    return " ".join(text.split())
+
+
 def _displayed_cell_text(cell: Cell | MergedCell) -> str:
     """Return the cell text as Excel would display it.
 
@@ -185,6 +244,7 @@ def _format_excel_value(value: Any, number_format: str) -> str:
 
 def _format_excel_number(value: int | float, fmt: str) -> str:
     """Apply simple currency/percent sections, with Excel's rounding rule."""
+    fmt = _OPENPYXL_FORMAT_FIXES.get(fmt, fmt)
     # Conditions, unsupported locale markers, optional decimals and scaling
     # must not be silently removed and mistaken for a supported number format.
     without_colors = re.sub(
@@ -193,7 +253,9 @@ def _format_excel_number(value: int | float, fmt: str) -> str:
         fmt,
         flags=re.IGNORECASE,
     )
-    currency_format = re.sub(r"\[\$\$-[0-9a-fA-F]+\]", '"$"', without_colors)
+    currency_format = _LOCALE_CURRENCY_TAG_RE.sub(
+        lambda tag: '"' + tag.group("symbol") + '"', without_colors
+    )
     if "[" in currency_format or r"\;" in currency_format:
         return str(value)
     sections = re.split(r';(?=(?:[^"]*"[^"]*")*[^"]*$)', currency_format)
@@ -206,24 +268,28 @@ def _format_excel_number(value: int | float, fmt: str) -> str:
         if value == 0 and len(sections) > 2
         else 0
     )
-    section = sections[section_index]
+    section = _strip_section_layout(sections[section_index])
     if not section:
         return ""
-    if re.fullmatch(r'"[^"]*"', section):
-        return section[1:-1]
+    if _LITERAL_ONLY_SECTION_RE.fullmatch(section):
+        return _literal_section_text(section)
     if any(
         re.search(r"[0#.,%]", literal) for literal in re.findall(r'"([^"]*)"', section)
     ):
         return str(value)
-    normalized = re.sub(r"_.", "", section).replace('"', "")
-    normalized = re.sub(r"\\([()$ -])", r"\1", normalized)
+    currency_symbols = _currency_symbols()
+    currency_class = re.escape(currency_symbols)
+    normalized = section.replace('"', "")
+    normalized = re.sub(rf"\\([()${currency_class} -])", r"\1", normalized)
     match = re.fullmatch(
-        r"(?P<prefix>[$( -]*)(?P<number>#,##0|0)(?:\.(?P<decimals>0{1,15}))?(?P<suffix>[$% )-]*)",
+        rf"(?P<prefix>[{currency_class}( -]*)(?P<number>#,##0|0)"
+        rf"(?:\.(?P<decimals>0{{1,15}}))?(?P<suffix>[{currency_class}% )-]*)",
         normalized,
     )
-    if match is None or normalized.count("%") > 1 or normalized.count("$") > 1:
+    currency_signs = sum(normalized.count(sign) for sign in currency_symbols)
+    if match is None or normalized.count("%") > 1 or currency_signs > 1:
         return str(value)
-    if "$" not in normalized and "%" not in normalized:
+    if not currency_signs and "%" not in normalized:
         return str(value)
     amount = Decimal(str(abs(value)))
     if not amount.is_finite():

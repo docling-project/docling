@@ -81,6 +81,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
+| `document_timeout` | Set the processing time limit in seconds. Teardown can wait for PDF pages already claimed by the threaded parser. |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 
@@ -97,6 +98,20 @@ the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
 on parsed pages when needed. Backends without page-local widgets produce no
 fields; table cells need `do_table_structure=True`. Not available in the
 service client, and not supported by the DocTags export.
+
+### Keeping the original characters (docling-parse)
+
+By default, docling-parse normalizes some Unicode characters in the text it
+extracts, for example dash and minus variants become `-`. To keep the
+characters as the PDF encodes them, set the backend option:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+
+PdfFormatOption(backend_options=PdfBackendOptions(do_char_normalization=False))
+```
+
+The option applies only to the docling-parse backend.
 
 ### Choosing an OCR engine
 
@@ -214,6 +229,10 @@ result = converter.convert("report.pdf")
 ```
 
 CLI equivalent: `docling report.pdf --pipeline native --from pdf`.
+
+If the backend ends early or `document_timeout` stops the conversion, check
+`result.status` and `result.errors` for the missing requested pages. Pass
+`raises_on_error=False` to inspect the result when no pages could be converted.
 
 ## VLM pipeline (local inference)
 

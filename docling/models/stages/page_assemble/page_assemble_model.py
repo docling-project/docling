@@ -107,8 +107,10 @@ class PageAssembleModel(BasePageModel):
         hyphen-prefixed token -- so it is kept and its lines are joined like
         any other line break. An attached hyphen is also kept where no
         hyphenation rule could have placed it: after a single-character token
-        ("n-" / "octanal") or before a continuation opening on a digit
-        ("6-methyl-" / "5-hepten-2-one"). There the hyphen belongs to the word.
+        ("n-" / "octanal"), before a continuation opening on a digit
+        ("6-methyl-" / "5-hepten-2-one"), or after an uppercase abbreviation
+        when the continuation is lowercase ("DNA-" / "binding"). There the
+        hyphen belongs to the word.
 
         The joined text is then normalized: a few typographic characters are
         replaced by ASCII equivalents and ligatures are expanded.
@@ -124,6 +126,12 @@ class PageAssembleModel(BasePageModel):
                 line_words = re.findall(r"\b[\w]+\b", line)
 
                 hyphen_attached_to_word = len(prev_line) > 1 and prev_line[-2].isalnum()
+                hyphen_after_uppercase_abbrev = (
+                    len(prev_words)
+                    and len(line_words)
+                    and prev_words[-1][-1].isupper()
+                    and line_words[0][0].islower()
+                )
 
                 if (
                     hyphen_attached_to_word
@@ -133,6 +141,7 @@ class PageAssembleModel(BasePageModel):
                     and len(prev_words[-1]) > 1
                     and line_words[0].isalnum()
                     and not line_words[0][0].isdigit()
+                    and not hyphen_after_uppercase_abbrev
                 ):
                     lines[ix] = prev_line[:-1]
                 elif not hyphen_attached_to_word:

@@ -137,6 +137,50 @@ This is a second paragraph.
     assert [item.label for item in text_items[1:]] == [DocItemLabel.TEXT] * 5
 
 
+@pytest.mark.parametrize(
+    ("params", "body", "expected"),
+    [
+        (
+            "",
+            b"This line was \nsoft wrapped.\n\n> Quoted text that \n> was wrapped too.\n"
+            b">  Stuffed \nLast line\n-- \nSignature\n",
+            [
+                "This line was soft wrapped.",
+                "> Quoted text that was wrapped too.\n>  Stuffed \nLast line\n-- \nSignature",
+            ],
+        ),
+        (
+            "; delsp=yes",
+            "日本語の長い文章を \n折り返しました。\n".encode(),
+            ["日本語の長い文章を折り返しました。"],
+        ),
+        (
+            # latin-1 bytes in a part that declares utf-8
+            "",
+            b"Caf\xe9 au lait was \nsoft wrapped here.\n",
+            ["Caf\ufffd au lait was soft wrapped here."],
+        ),
+    ],
+)
+def test_email_backend_joins_soft_line_breaks_of_flowed_text(
+    params: str, body: bytes, expected: list[str]
+):
+    raw_email = (
+        b"From: alice@example.com\nSubject: Flowed\nMIME-Version: 1.0\n"
+        b'Content-Type: text/plain; charset="utf-8"; format=flowed'
+        + params.encode()
+        + b"\n\n"
+        + body
+    )
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(DocumentStream(name="flowed.eml", stream=BytesIO(raw_email)))
+        .document
+    )
+
+    assert [item.text for item in doc.texts[2:]] == expected
+
+
 def test_email_backend_keeps_cc_recipients():
     """Cc recipients are part of who the message was addressed to."""
     raw_email = b"""From: Alice Example <alice@example.com>

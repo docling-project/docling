@@ -50,6 +50,7 @@ from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOpt
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
+from docling.utils.xbrl_utils import is_ixbrl
 
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
@@ -71,6 +72,12 @@ except ImportError as e:
 _log = logging.getLogger(__name__)
 
 
+_XBRL_INSTALL_HINT: Final = (
+    "The 'arelle-release' package is required to process XBRL documents. "
+    "Please install it using `pip install 'docling-slim[format-xml-xbrl]'`"
+)
+# The same head size as the format detection in `docling.datamodel.document`.
+_IXBRL_SNIFF_BYTES: Final[int] = 8192
 _WEB_CACHE_TIMEOUT: Final[int] = 10
 _ARELLE_LOAD_LOCK: Final = threading.Lock()
 
@@ -180,6 +187,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
     - Inline XBRL (iXBRL) documents (`.htm`, `.html`, `.xhtml`) that embed
       XBRL facts in XHTML using the `ix:` namespace. This is the mandatory
       submission format for SEC EDGAR, UK Companies House, and ESEF filings.
+      The document holds the full HTML text of the report and its numeric facts.
+      When the facts cannot be read, the report converts as HTML only.
 
     In both cases, the taxonomy can be supplied via `XBRLBackendOptions.taxonomy`.
 
@@ -199,15 +208,25 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         if options is None:
             options = XBRLBackendOptions()
-        # Check if arelle is available before proceeding
-        if not _XBRL_AVAILABLE:
-            raise ImportError(
-                "The 'arelle-release' package is required to process XBRL documents. "
-                "Please install it using `pip install 'docling-slim[format-xml-xbrl]'`"
-            ) from _XBRL_IMPORT_ERROR
+        if isinstance(path_or_stream, BytesIO):
+            head = path_or_stream.getvalue()[:_IXBRL_SNIFF_BYTES]
+        else:
+            with Path(path_or_stream).open("rb") as f:
+                head = f.read(_IXBRL_SNIFF_BYTES)
+        is_inline = is_ixbrl(head)
+        # An iXBRL report is HTML, so it still converts without arelle.
+        if not _XBRL_AVAILABLE and not is_inline:
+            raise ImportError(_XBRL_INSTALL_HINT) from _XBRL_IMPORT_ERROR
 
         super().__init__(in_doc, path_or_stream)
         self.options: XBRLBackendOptions = options
+        # The HTML body of an iXBRL report holds its full text, most of which is
+        # not tagged as a fact.
+        self._html_backend: HTMLDocumentBackend | None = (
+            HTMLDocumentBackend(in_doc, path_or_stream, options=HTMLBackendOptions())
+            if is_inline
+            else None
+        )
         self.model_xbrl: ModelXbrl | None = None
         self._kv_idx: int = 0
         self._cells: list[GraphCell] = []
@@ -217,6 +236,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         self._created_links: set[tuple[int, int]] = set()
 
         try:
+            if not _XBRL_AVAILABLE:
+                raise ImportError(_XBRL_INSTALL_HINT) from _XBRL_IMPORT_ERROR
             if (
                 not self.options.enable_local_fetch
                 and not self.options.enable_remote_fetch
@@ -332,6 +353,13 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             self.model_xbrl = model
             self.valid = True
         except Exception as exc:
+            if self._html_backend is not None:
+                _log.warning(
+                    "The iXBRL report is converted as HTML, without its XBRL facts:"
+                    f" {exc}"
+                )
+                self.valid = self._html_backend.is_valid()
+                return
             raise DocumentLoadError(
                 "Could not initialize XBRL backend for file with hash"
                 f" {self.document_hash}."
@@ -350,6 +378,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
     def unload(self):
         if self.model_xbrl:
             self.model_xbrl.close()
+        if self._html_backend is not None:
+            self._html_backend.unload()
 
     @classmethod
     @override
@@ -491,31 +521,39 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         Full XBRL parsing using Arelle library can be implemented here.
         """
         _log.debug("Starting XBRL instance conversion...")
-        if not self.is_valid() or not self.model_xbrl:
+        if not self.is_valid():
             raise RuntimeError(f"Invalid document with hash {self.document_hash}")
 
-        origin = DocumentOrigin(
-            filename=self.file.name or "file",
-            mimetype="application/xml",
-            binary_hash=self.document_hash,
-        )
-        doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
-        doc_name = doc.name
+        if self._html_backend is not None:
+            # The text blocks of an iXBRL report are already in its HTML body.
+            doc = self._html_backend.convert()
+            if self.model_xbrl is None:
+                return doc
+        elif self.model_xbrl is None:
+            raise RuntimeError(f"Invalid document with hash {self.document_hash}")
+        else:
+            origin = DocumentOrigin(
+                filename=self.file.name or "file",
+                mimetype="application/xml",
+                binary_hash=self.document_hash,
+            )
+            doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
-        # Some metadata
-        doc_type: str = ""
-        doc_org: str = ""
-        doc_period: str = ""
-        for fact in self.model_xbrl.facts:
-            if fact.qname.localName == "DocumentType" and fact.value:
-                doc_type = fact.value
-            if fact.qname.localName == "EntityRegistrantName" and fact.value:
-                doc_org = fact.value
-            if fact.qname.localName == "DocumentPeriodEndDate" and fact.value:
-                doc_period = fact.value
-        title = f"{doc_type} {doc_org} {doc_period}".strip()
-        title = title if title else self.model_xbrl.modelDocument.basename
-        doc.add_title(text=title)
+            # Some metadata
+            doc_type: str = ""
+            doc_org: str = ""
+            doc_period: str = ""
+            for fact in self.model_xbrl.facts:
+                if fact.qname.localName == "DocumentType" and fact.value:
+                    doc_type = fact.value
+                if fact.qname.localName == "EntityRegistrantName" and fact.value:
+                    doc_org = fact.value
+                if fact.qname.localName == "DocumentPeriodEndDate" and fact.value:
+                    doc_period = fact.value
+            title = f"{doc_type} {doc_org} {doc_period}".strip()
+            title = title if title else self.model_xbrl.modelDocument.basename
+            doc.add_title(text=title)
+        doc_name = doc.name
 
         # Text blocks (as HTML)
 
@@ -533,7 +571,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             if fact.concept is None:
                 continue
             if (
-                fact.concept.type is not None
+                self._html_backend is None
+                and fact.concept.type is not None
                 and fact.concept.type.name == "textBlockItemType"
                 and fact.value
             ):

@@ -305,6 +305,7 @@ D: Final[str] = "\\left%(left)s%(text)s\\right%(right)s"
 D_DEFAULT: Final[dict[str, str]] = {
     "left": "(",
     "right": ")",
+    "sep": "|",
     "null": ".",
 }
 

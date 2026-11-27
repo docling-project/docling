@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "name": "redp5110_sampled",
   "origin": {
     "mimetype": "application/pdf",
@@ -285,6 +285,9 @@
         "$ref": "#/pictures/8"
       },
       {
+        "$ref": "#/texts/122"
+      },
+      {
         "$ref": "#/texts/123"
       },
       {
@@ -294,19 +297,19 @@
         "$ref": "#/texts/125"
       },
       {
-        "$ref": "#/texts/126"
-      },
-      {
         "$ref": "#/tables/4"
       },
       {
-        "$ref": "#/texts/128"
+        "$ref": "#/texts/127"
       },
       {
         "$ref": "#/groups/6"
       },
       {
         "$ref": "#/pictures/9"
+      },
+      {
+        "$ref": "#/texts/146"
       },
       {
         "$ref": "#/texts/147"
@@ -321,10 +324,10 @@
         "$ref": "#/texts/150"
       },
       {
-        "$ref": "#/texts/151"
+        "$ref": "#/tables/5"
       },
       {
-        "$ref": "#/tables/5"
+        "$ref": "#/texts/152"
       },
       {
         "$ref": "#/texts/153"
@@ -336,10 +339,10 @@
         "$ref": "#/texts/155"
       },
       {
-        "$ref": "#/texts/156"
+        "$ref": "#/groups/7"
       },
       {
-        "$ref": "#/groups/7"
+        "$ref": "#/texts/159"
       },
       {
         "$ref": "#/texts/160"
@@ -354,19 +357,16 @@
         "$ref": "#/texts/163"
       },
       {
-        "$ref": "#/texts/164"
+        "$ref": "#/groups/8"
       },
       {
-        "$ref": "#/groups/8"
+        "$ref": "#/texts/169"
       },
       {
         "$ref": "#/texts/170"
       },
       {
-        "$ref": "#/texts/171"
-      },
-      {
-        "$ref": "#/texts/173"
+        "$ref": "#/texts/172"
       },
       {
         "$ref": "#/groups/9"
@@ -375,16 +375,16 @@
         "$ref": "#/pictures/10"
       },
       {
-        "$ref": "#/texts/176"
+        "$ref": "#/texts/175"
       },
       {
-        "$ref": "#/texts/177"
+        "$ref": "#/texts/176"
       },
       {
         "$ref": "#/groups/10"
       },
       {
-        "$ref": "#/texts/179"
+        "$ref": "#/texts/178"
       },
       {
         "$ref": "#/pictures/11"
@@ -396,7 +396,7 @@
         "$ref": "#/pictures/12"
       },
       {
-        "$ref": "#/texts/188"
+        "$ref": "#/texts/187"
       },
       {
         "$ref": "#/groups/12"
@@ -406,6 +406,9 @@
       },
       {
         "$ref": "#/pictures/14"
+      },
+      {
+        "$ref": "#/texts/192"
       },
       {
         "$ref": "#/texts/193"
@@ -432,13 +435,13 @@
         "$ref": "#/texts/200"
       },
       {
-        "$ref": "#/texts/201"
-      },
-      {
         "$ref": "#/pictures/15"
       },
       {
         "$ref": "#/pictures/16"
+      },
+      {
+        "$ref": "#/texts/203"
       },
       {
         "$ref": "#/texts/204"
@@ -451,9 +454,6 @@
       },
       {
         "$ref": "#/texts/207"
-      },
-      {
-        "$ref": "#/texts/208"
       }
     ],
     "content_layer": "body",
@@ -597,6 +597,9 @@
       },
       "children": [
         {
+          "$ref": "#/texts/128"
+        },
+        {
           "$ref": "#/texts/129"
         },
         {
@@ -607,9 +610,6 @@
         },
         {
           "$ref": "#/texts/132"
-        },
-        {
-          "$ref": "#/texts/133"
         }
       ],
       "content_layer": "body",
@@ -623,13 +623,13 @@
       },
       "children": [
         {
+          "$ref": "#/texts/156"
+        },
+        {
           "$ref": "#/texts/157"
         },
         {
           "$ref": "#/texts/158"
-        },
-        {
-          "$ref": "#/texts/159"
         }
       ],
       "content_layer": "body",
@@ -643,6 +643,9 @@
       },
       "children": [
         {
+          "$ref": "#/texts/164"
+        },
+        {
           "$ref": "#/texts/165"
         },
         {
@@ -653,9 +656,6 @@
         },
         {
           "$ref": "#/texts/168"
-        },
-        {
-          "$ref": "#/texts/169"
         }
       ],
       "content_layer": "body",
@@ -669,7 +669,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/174"
+          "$ref": "#/texts/173"
         }
       ],
       "content_layer": "body",
@@ -683,7 +683,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/178"
+          "$ref": "#/texts/177"
         }
       ],
       "content_layer": "body",
@@ -697,7 +697,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/186"
+          "$ref": "#/texts/185"
         }
       ],
       "content_layer": "body",
@@ -711,10 +711,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/189"
+          "$ref": "#/texts/188"
         },
         {
-          "$ref": "#/texts/191"
+          "$ref": "#/texts/190"
         }
       ],
       "content_layer": "body",
@@ -3871,7 +3871,7 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 148.13,
+            "l": 153.72,
             "t": 458.67,
             "r": 278.75,
             "b": 449.51,
@@ -3879,12 +3879,12 @@
           },
           "charspan": [
             0,
-            23
+            22
           ]
         }
       ],
-      "orig": "ENFORCED FOR ALL ACCESS",
-      "text": "ENFORCED FOR ALL ACCESS"
+      "orig": "NFORCED FOR ALL ACCESS",
+      "text": "NFORCED FOR ALL ACCESS"
     },
     {
       "self_ref": "#/texts/115",
@@ -4034,33 +4034,6 @@
           "page_no": 10,
           "bbox": {
             "l": 148.13,
-            "t": 417.29,
-            "r": 185.17,
-            "b": 408.13,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            6
-          ]
-        }
-      ],
-      "orig": "ENABLE",
-      "text": "ENABLE"
-    },
-    {
-      "self_ref": "#/texts/121",
-      "parent": {
-        "$ref": "#/pictures/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 10,
-          "bbox": {
-            "l": 148.13,
             "t": 403.49,
             "r": 190.66,
             "b": 394.33,
@@ -4076,7 +4049,7 @@
       "text": "DISABLE;"
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/pictures/8"
       },
@@ -4087,7 +4060,7 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 311.73,
+            "l": 315.98,
             "t": 414.92,
             "r": 527.62,
             "b": 407.58,
@@ -4095,15 +4068,15 @@
           },
           "charspan": [
             0,
-            61
+            58
           ]
         }
       ],
-      "orig": "Specifies that the row permission is to be initially disabled",
-      "text": "Specifies that the row permission is to be initially disabled"
+      "orig": "pecifies that the row permission is to be initially sabled",
+      "text": "pecifies that the row permission is to be initially sabled"
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/body"
       },
@@ -4131,7 +4104,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/body"
       },
@@ -4158,7 +4131,7 @@
       "text": "A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number."
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/body"
       },
@@ -4185,7 +4158,7 @@
       "text": "Chapter 3. Row and Column Access Control 15"
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/body"
       },
@@ -4212,7 +4185,7 @@
       "text": "Table 3-1 summarizes these special registers and their values."
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -4239,7 +4212,7 @@
       "text": "Table 3-1 Special registers and their corresponding values"
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/body"
       },
@@ -4266,7 +4239,7 @@
       "text": "Figure 3-5 shows the difference in the special register values when an adopted authority is used:"
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -4295,7 +4268,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -4324,7 +4297,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -4353,7 +4326,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -4382,7 +4355,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -4411,7 +4384,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4438,7 +4411,7 @@
       "text": "Figure 3-5 Special registers and adopted authority"
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4465,7 +4438,7 @@
       "text": "Signed on as ALICE"
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4492,7 +4465,7 @@
       "text": "USER = ALICE"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4519,7 +4492,7 @@
       "text": "CURRENT USER = ALICE"
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4546,7 +4519,7 @@
       "text": "CALL proc1"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4573,7 +4546,7 @@
       "text": "P 1"
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4600,7 +4573,7 @@
       "text": "roc :"
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4627,7 +4600,7 @@
       "text": "Owner = JOE"
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4654,7 +4627,7 @@
       "text": "SET OPTION USRPRF=*OWNER"
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4681,7 +4654,7 @@
       "text": "USER = ALICE"
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4708,7 +4681,7 @@
       "text": "CURRENT USER = JOE"
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4735,7 +4708,7 @@
       "text": "USER = ALICE"
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -4762,7 +4735,7 @@
       "text": "CURRENT USER = ALICE"
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/body"
       },
@@ -4790,7 +4763,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/body"
       },
@@ -4817,7 +4790,7 @@
       "text": "Built-in global variables are provided with the database manager and are used in SQL statements to retrieve scalar values that are associated with the variables."
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/body"
       },
@@ -4844,7 +4817,7 @@
       "text": "IBM DB2 for i supports nine different built-in global variables that are read only and maintained by the system. These global variables can be used to identify attributes of the database connection and used as part of the RCAC logic."
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/body"
       },
@@ -4871,7 +4844,7 @@
       "text": "Chapter 3. Row and Column Access Control 19"
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/body"
       },
@@ -4898,7 +4871,7 @@
       "text": "Table 3-2 lists the nine built-in global variables."
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/tables/5"
       },
@@ -4925,7 +4898,7 @@
       "text": "Table 3-2 Built-in global variables"
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/body"
       },
@@ -4953,7 +4926,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/body"
       },
@@ -4980,7 +4953,7 @@
       "text": "The VERIFY_GROUP_FOR_USER function was added in IBM i 7.2. Although it is primarily intended for use with RCAC permissions and masks, it can be used in other SQL statements. The first parameter must be one of these three special registers: SESSION_USER, USER, or CURRENT_USER. The second and subsequent parameters are a list of user or group profiles. Each of these values must be 1 - 10 characters in length. These values are not validated for their existence, which means that you can specify the names of user profiles that do not exist without receiving any kind of error."
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/body"
       },
@@ -5007,7 +4980,7 @@
       "text": "If a special register value is in the list of user profiles or it is a member of a group profile included in the list, the function returns a long integer value of 1. Otherwise, it returns a value of 0. It never returns the null value."
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/body"
       },
@@ -5034,7 +5007,7 @@
       "text": "Here is an example of using the VERIFY_GROUP_FOR_USER function:"
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -5063,7 +5036,7 @@
       "marker": "1."
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -5092,7 +5065,7 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -5121,7 +5094,7 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/body"
       },
@@ -5148,7 +5121,7 @@
       "text": "VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE')"
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/body"
       },
@@ -5175,7 +5148,7 @@
       "text": "The following function invocation returns a value of 0:"
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/body"
       },
@@ -5202,7 +5175,7 @@
       "text": "VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JUDY', 'TONY')"
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/body"
       },
@@ -5229,7 +5202,7 @@
       "text": "20 Row and Column Access Control Support in IBM DB2 for i"
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/body"
       },
@@ -5260,7 +5233,7 @@
       "code_language": "unknown"
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -5289,7 +5262,7 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -5318,7 +5291,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -5347,7 +5320,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -5376,7 +5349,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -5405,7 +5378,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/body"
       },
@@ -5432,13 +5405,13 @@
       "text": "To implement this column mask, run the SQL statement that is shown in Example 3-9."
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/172"
+          "$ref": "#/texts/171"
         }
       ],
       "content_layer": "body",
@@ -5463,7 +5436,7 @@
       "text": "CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;",
       "captions": [
         {
-          "$ref": "#/texts/172"
+          "$ref": "#/texts/171"
         }
       ],
       "references": [],
@@ -5471,9 +5444,9 @@
       "code_language": "unknown"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/171",
       "parent": {
-        "$ref": "#/texts/171"
+        "$ref": "#/texts/170"
       },
       "children": [],
       "content_layer": "body",
@@ -5498,7 +5471,7 @@
       "text": "Example 3-9 Creating a mask on the TAX_ID column"
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/body"
       },
@@ -5525,7 +5498,7 @@
       "text": "Chapter 3. Row and Column Access Control 27"
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/173",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -5554,7 +5527,7 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/pictures/10"
       },
@@ -5581,7 +5554,7 @@
       "text": "Figure 3-10 Column masks shown in System i Navigator"
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/body"
       },
@@ -5609,7 +5582,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/body"
       },
@@ -5636,7 +5609,7 @@
       "text": "Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:"
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -5665,7 +5638,7 @@
       "marker": "1."
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/body"
       },
@@ -5692,7 +5665,7 @@
       "text": "Example 3-10 Activating RCAC on the EMPLOYEES table"
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -5719,7 +5692,7 @@
       "text": "/* Active Row Access Control (permissions) */"
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -5746,7 +5719,7 @@
       "text": "/* Active Column Access Control (masks)"
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -5773,7 +5746,7 @@
       "text": "*/"
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -5800,7 +5773,7 @@
       "text": "ALTER TABLE HR_SCHEMA.EMPLOYEES"
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -5827,7 +5800,7 @@
       "text": "ACTIVATE ROW ACCESS CONTROL"
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -5854,7 +5827,7 @@
       "text": "ACTIVATE COLUMN ACCESS CONTROL;"
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -5877,13 +5850,13 @@
           ]
         }
       ],
-      "orig": "2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
-      "text": "Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
+      "orig": "2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \u2192 HR_SCHEMA\u2192 Tables, right-click the EMPLOYEES table, and click Definition.",
+      "text": "Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \u2192 HR_SCHEMA\u2192 Tables, right-click the EMPLOYEES table, and click Definition.",
       "enumerated": true,
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/pictures/12"
       },
@@ -5910,7 +5883,7 @@
       "text": "Figure 3-11 Selecting the EMPLOYEES table from System i Navigator"
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/body"
       },
@@ -5937,7 +5910,7 @@
       "text": "28 Row and Column Access Control Support in IBM DB2 for i"
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -5966,7 +5939,7 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/pictures/13"
       },
@@ -5993,7 +5966,7 @@
       "text": "Figure 4-68 Visual Explain with RCAC enabled"
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -6022,7 +5995,7 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/pictures/14"
       },
@@ -6049,7 +6022,7 @@
       "text": "Figure 4-69 Index advice with no RCAC"
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/body"
       },
@@ -6076,7 +6049,7 @@
       "text": "Chapter 4. Implementing Row and Column Access Control: Banking example 77"
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/body"
       },
@@ -6107,7 +6080,7 @@
       "code_language": "unknown"
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/body"
       },
@@ -6134,7 +6107,7 @@
       "text": "124 Row and Column Access Control Support in IBM DB2 for i"
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/body"
       },
@@ -6161,7 +6134,7 @@
       "text": "Back cover"
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/body"
       },
@@ -6189,7 +6162,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/body"
       },
@@ -6216,7 +6189,7 @@
       "text": "Implement roles and separation of duties"
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/198",
       "parent": {
         "$ref": "#/body"
       },
@@ -6243,7 +6216,7 @@
       "text": "Leverage row permissions on the database"
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/199",
       "parent": {
         "$ref": "#/body"
       },
@@ -6284,7 +6257,7 @@
       "text": "Protect columns by defining column masks This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment."
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/200",
       "parent": {
         "$ref": "#/body"
       },
@@ -6311,7 +6284,7 @@
       "text": "This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed."
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/pictures/15"
       },
@@ -6338,7 +6311,7 @@
       "text": "\u00ae"
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/pictures/16"
       },
@@ -6365,7 +6338,7 @@
       "text": "Redpaper \u2122"
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/body"
       },
@@ -6393,7 +6366,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/body"
       },
@@ -6421,7 +6394,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/body"
       },
@@ -6448,7 +6421,7 @@
       "text": "IBM Redbooks are developed by the IBM International Technical Support Organization. Experts from IBM, Customers and Partners from around the world create timely technical information based on realistic scenarios. Specific recommendations are provided to help you implement IT solutions more effectively in your environment."
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/body"
       },
@@ -6475,7 +6448,7 @@
       "text": "For more information: ibm.com/redbooks"
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/body"
       },
@@ -6830,9 +6803,6 @@
         },
         {
           "$ref": "#/texts/121"
-        },
-        {
-          "$ref": "#/texts/122"
         }
       ],
       "content_layer": "body",
@@ -6869,6 +6839,9 @@
       },
       "children": [
         {
+          "$ref": "#/texts/133"
+        },
+        {
           "$ref": "#/texts/134"
         },
         {
@@ -6903,9 +6876,6 @@
         },
         {
           "$ref": "#/texts/145"
-        },
-        {
-          "$ref": "#/texts/146"
         }
       ],
       "content_layer": "body",
@@ -6928,7 +6898,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/134"
+          "$ref": "#/texts/133"
         }
       ],
       "references": [],
@@ -6942,7 +6912,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/175"
+          "$ref": "#/texts/174"
         }
       ],
       "content_layer": "body",
@@ -6965,7 +6935,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/175"
+          "$ref": "#/texts/174"
         }
       ],
       "references": [],
@@ -6978,6 +6948,9 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/179"
+        },
         {
           "$ref": "#/texts/180"
         },
@@ -6992,9 +6965,6 @@
         },
         {
           "$ref": "#/texts/184"
-        },
-        {
-          "$ref": "#/texts/185"
         }
       ],
       "content_layer": "body",
@@ -7027,7 +6997,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/187"
+          "$ref": "#/texts/186"
         }
       ],
       "content_layer": "body",
@@ -7050,7 +7020,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/187"
+          "$ref": "#/texts/186"
         }
       ],
       "references": [],
@@ -7064,7 +7034,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/190"
+          "$ref": "#/texts/189"
         }
       ],
       "content_layer": "body",
@@ -7087,7 +7057,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/190"
+          "$ref": "#/texts/189"
         }
       ],
       "references": [],
@@ -7101,7 +7071,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/192"
+          "$ref": "#/texts/191"
         }
       ],
       "content_layer": "body",
@@ -7124,7 +7094,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/192"
+          "$ref": "#/texts/191"
         }
       ],
       "references": [],
@@ -7138,7 +7108,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/202"
+          "$ref": "#/texts/201"
         }
       ],
       "content_layer": "body",
@@ -7171,7 +7141,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/203"
+          "$ref": "#/texts/202"
         }
       ],
       "content_layer": "body",
@@ -14412,7 +14382,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/127"
+          "$ref": "#/texts/126"
         }
       ],
       "content_layer": "body",
@@ -14435,7 +14405,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/127"
+          "$ref": "#/texts/126"
         }
       ],
       "references": [],
@@ -14786,7 +14756,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/152"
+          "$ref": "#/texts/151"
         }
       ],
       "content_layer": "body",
@@ -14809,7 +14779,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/152"
+          "$ref": "#/texts/151"
         }
       ],
       "references": [],

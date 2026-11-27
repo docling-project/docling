@@ -3,6 +3,7 @@
 
 import threading
 import time
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from matplotlib.figure import Figure
 
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
+    ThreadedDoclingParsePageBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.backend_options import (
@@ -18,11 +20,13 @@ from docling.datamodel.backend_options import (
     ThreadedDoclingParseBackendOptions,
 )
 from docling.datamodel.base_models import ConversionStatus, InputFormat, Page
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     ThreadedPdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.standard_pdf_pipeline import (
+    RunContext,
     StandardPdfPipeline,
     ThreadedItem,
     ThreadedPipelineStage,
@@ -193,6 +197,60 @@ def test_threaded_pipeline_drops_page_backends_when_kept_for_enrichment():
     assert result.status == ConversionStatus.SUCCESS
     assert len(result.pages) == 2
     assert all(page._backend is None for page in result.pages)
+
+
+def test_threaded_pipeline_cancels_backend_before_joining_producer() -> None:
+    producing = threading.Event()
+    cancelled = threading.Event()
+    producer_exited = threading.Event()
+
+    class BlockingBackend(ThreadedDoclingParseDocumentBackend):
+        def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
+            producing.set()
+            assert cancelled.wait(timeout=5)
+            producer_exited.set()
+            yield from ()
+
+        def cancel(self) -> None:
+            assert producing.wait(timeout=5)
+            super().cancel()
+            cancelled.set()
+
+    class PipelineWithoutModels(StandardPdfPipeline):
+        def _init_models(self) -> None:
+            pass
+
+        def _create_run_ctx(self) -> RunContext:
+            stage = ThreadedPipelineStage(
+                name="passthrough",
+                model=lambda _result, pages: pages,
+                batch_size=1,
+                batch_timeout=0.05,
+                queue_max_size=1,
+            )
+            output = ThreadedQueue(1)
+            stage.add_output_queue(output)
+            return RunContext(stages=[stage], first_stage=stage, output_queue=output)
+
+    in_doc = InputDocument(
+        path_or_stream=Path(_SINGLE_FILE),
+        format=InputFormat.PDF,
+        backend=BlockingBackend,
+    )
+    backend = in_doc._backend
+    assert isinstance(backend, BlockingBackend)
+    pipeline = PipelineWithoutModels(
+        ThreadedPdfPipelineOptions(
+            document_timeout=0.0, stage_shutdown_timeout_seconds=1.0
+        )
+    )
+    try:
+        result = pipeline._build_document(ConversionResult(input=in_doc))
+        assert result.has_timeout_errors()
+        assert producer_exited.is_set()
+    finally:
+        cancelled.set()
+        backend.unload()
 
 
 def test_threaded_pipeline_stage_shutdown_timeout():

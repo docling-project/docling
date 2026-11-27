@@ -299,6 +299,44 @@ def test_wrapped_cell_text_stays_in_its_cell() -> None:
     assert [item.text for item in doc.texts] == ["After."]
 
 
+def test_wrapped_line_with_a_pipe_opens_the_next_cell() -> None:
+    # A wrapped line continues the cell above only up to its first "|", which
+    # opens the next cell, also when the line is indented. The whole line used
+    # to go into the cell above, so every later cell moved one column left.
+    src = (
+        b"|===\n|Name |Description |Default\n"
+        b"|timeout |How long to wait\nbefore giving up |30s\n"
+        b"|retries |Number of retries\n  |3\n|===\n"
+    )
+    doc = _convert_adoc(src)
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 3)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "Name",
+        "Description",
+        "Default",
+        "timeout",
+        "How long to wait before giving up",
+        "30s",
+        "retries",
+        "Number of retries",
+        "3",
+    ]
+
+
+def test_stray_line_before_the_first_row_stays_out_of_the_table() -> None:
+    # A line without "|" right after "|===" is not a wrapped continuation:
+    # there is no cell above to extend, so _continue_table returns False and
+    # the empty table ends. Only the following row forms the table.
+    src = b"|===\nStray text\n|a |b\n|===\n"
+    doc = _convert_adoc(src)
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (1, 2)
+    assert [cell.text for cell in table.data.table_cells] == ["a", "b"]
+
+
 def test_escaped_pipe_stays_inside_its_cell() -> None:
     # A backslash-escaped pipe is cell content: Asciidoctor partitions cells on
     # unescaped pipes only and drops the backslash from the output. Splitting on
@@ -1002,6 +1040,18 @@ Not linked: word:https://example.com.
     assert "[Example site](https://example.com/)" in md
     assert "example.com[" not in md
     assert "link:" not in md
+
+
+def test_malformed_link_target_keeps_text_without_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://api.example.com:{port}/v1[API]\n"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [(item.text, item.hyperlink) for item in doc.texts] == [("API", None)]
 
 
 @pytest.mark.parametrize(

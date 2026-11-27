@@ -48,11 +48,12 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.hyperlink import parse_hyperlink
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import table_width
 from docling.datamodel.backend_options import JatsBackendOptions
@@ -892,12 +893,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _parse_ext_link_href(href: str | None) -> AnyUrl | Path | None:
-        if href is None or not (href := href.strip()):
-            return None
-        try:
-            return AnyUrl(href)
-        except ValidationError:
-            return Path(href)
+        return parse_hyperlink(href.strip()) if href else None
 
     @staticmethod
     def _trim_segment_edges(segments: list[InlineSegment]) -> list[InlineSegment]:
