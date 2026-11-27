@@ -345,6 +345,52 @@ def test_threaded_pipeline_timeout_while_waiting_for_a_page_slot():
         release.set()
 
 
+@pytest.mark.parametrize(("batch_size", "expected"), [(1, 8), (4, 8), (64, 128)])
+def test_default_max_pages_in_flight(batch_size: int, expected: int):
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+    pipeline.pipeline_options = ThreadedPdfPipelineOptions(
+        ocr_batch_size=batch_size,
+        layout_batch_size=batch_size,
+        table_batch_size=batch_size,
+    )
+
+    assert pipeline._max_pages_in_flight() == expected
+
+
+def test_threaded_pipeline_failed_pages_free_their_page_slot():
+    """Failed pages release their in-flight slot, so the next pages still run."""
+
+    class FailingLayoutPipeline(StandardPdfPipeline):
+        def _init_models(self) -> None:
+            super()._init_models()
+
+            def fail_layout(conv_res, pages):
+                raise RuntimeError("layout failed")
+
+            self.layout_model = fail_layout
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=FailingLayoutPipeline,
+                backend=ThreadedDoclingParseDocumentBackend,
+                pipeline_options=ThreadedPdfPipelineOptions(
+                    do_table_structure=False,
+                    do_ocr=False,
+                    max_pages_in_flight=1,
+                    document_timeout=20.0,
+                    stage_shutdown_timeout_seconds=1.0,
+                ),
+            )
+        }
+    )
+
+    result = converter.convert(_SINGLE_FILE, raises_on_error=False, page_range=(1, 3))
+
+    assert result.status == ConversionStatus.FAILURE
+    assert not result.has_timeout_errors()
+
+
 def test_threaded_pipeline_stage_shutdown_timeout():
     """A stage stuck in a blocking model call is abandoned after
     `shutdown_timeout`, not the hardcoded 15s the pipeline used to have."""
