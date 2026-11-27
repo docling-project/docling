@@ -38,6 +38,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.pipeline_options_asr_model import (
     ApiAsrOptions,
     InlineAsrOptions,
+    asr_options_from_dict,
 )
 
 # Import legacy types for backwards compatibility
@@ -967,7 +968,7 @@ class ConvertDocumentsOptions(BaseModel):
     ] = None
 
     asr_custom_config: Annotated[
-        Optional[SerializeAsAny[Union[InlineAsrOptions, ApiAsrOptions, dict]]],
+        Optional[SerializeAsAny[Union[InlineAsrOptions, ApiAsrOptions]]],
         Field(
             default=None,
             description=(
@@ -975,7 +976,8 @@ class ConvertDocumentsOptions(BaseModel):
                 "Only available if the admin allows it. "
                 "Accepts an InlineAsrOptions subclass, ApiAsrOptions, or an equivalent dict. "
                 "The 'kind' field selects inline or API options, and for inline options "
-                "the 'inference_framework' field selects the engine."
+                "the 'inference_framework' field selects the engine. "
+                "A dict without these fields, or with unknown fields, is rejected."
             ),
             examples=[
                 {
@@ -998,7 +1000,6 @@ class ConvertDocumentsOptions(BaseModel):
         "layout_custom_config",
         "picture_classification_custom_config",
         "chart_extraction_custom_config",
-        "asr_custom_config",
         mode="before",
     )
     @classmethod
@@ -1017,6 +1018,20 @@ class ConvertDocumentsOptions(BaseModel):
                 raise ValueError(
                     f"Invalid JSON for nested config field: {exc}"
                 ) from exc
+        return value
+
+    @field_validator("asr_custom_config", mode="before")
+    @classmethod
+    def _resolve_asr_custom_config(cls, value: Any) -> Any:
+        """Resolve a dict to its ASR options class, so the engine is never lost."""
+        value = cls._decode_json_string_config(value)
+        if isinstance(value, dict):
+            return asr_options_from_dict(value)
+        if type(value) is InlineAsrOptions:
+            raise ValueError(
+                "asr_custom_config needs an engine: use an InlineAsrOptions "
+                "subclass or set 'inference_framework'."
+            )
         return value
 
     # Field validators for deprecated fields - trigger warnings on assignment

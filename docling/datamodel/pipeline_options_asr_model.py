@@ -859,3 +859,50 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
                 f"translation capability (e.g., `large-v3`)."
             )
         return self
+
+
+_INLINE_ASR_OPTIONS_BY_FRAMEWORK: dict[
+    InferenceAsrFramework, type[InlineAsrOptions]
+] = {
+    InferenceAsrFramework.WHISPER: InlineAsrNativeWhisperOptions,
+    InferenceAsrFramework.TRANSFORMERS: InlineAsrTransformersOptions,
+    InferenceAsrFramework.MLX: InlineAsrMlxWhisperOptions,
+    InferenceAsrFramework.MLX_WHISPER: InlineAsrMlxWhisperOptions,
+    InferenceAsrFramework.MLX_AUDIO: InlineAsrMlxAudioOptions,
+    InferenceAsrFramework.WHISPER_S2T: InlineAsrWhisperS2TOptions,
+}
+
+
+def asr_options_from_dict(
+    data: dict[str, Any],
+) -> Union[InlineAsrOptions, ApiAsrOptions]:
+    """Build ASR options from a dict, picking the class from its fields.
+
+    ``kind`` selects inline or API options. For inline options,
+    ``inference_framework`` selects the engine class. Unknown fields are
+    rejected, so a typo fails instead of being dropped.
+    """
+    kind = data.get("kind")
+    if kind == "api_model_options":
+        options_cls: Union[type[InlineAsrOptions], type[ApiAsrOptions]] = ApiAsrOptions
+    elif kind == "inline_model_options":
+        framework = data.get("inference_framework")
+        try:
+            options_cls = _INLINE_ASR_OPTIONS_BY_FRAMEWORK[
+                InferenceAsrFramework(framework)
+            ]
+        except ValueError:
+            raise ValueError(
+                "Inline ASR options need 'inference_framework', one of: "
+                + ", ".join(f.value for f in _INLINE_ASR_OPTIONS_BY_FRAMEWORK)
+            ) from None
+    else:
+        raise ValueError(
+            "ASR options need 'kind': 'inline_model_options' or 'api_model_options'."
+        )
+    unknown = sorted(set(data) - set(options_cls.model_fields))
+    if unknown:
+        raise ValueError(
+            f"Unknown fields for {options_cls.__name__}: {', '.join(unknown)}"
+        )
+    return options_cls.model_validate(data)

@@ -18,6 +18,7 @@ from docling.datamodel.pipeline_options import AsrPipelineOptions
 from docling.datamodel.pipeline_options_asr_model import (
     ApiAsrOptions,
     InlineAsrMlxAudioOptions,
+    InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
     InlineAsrTransformersOptions,
 )
@@ -94,5 +95,54 @@ def test_asr_custom_config_keeps_the_engine_fields():
         asr_custom_config=json.dumps(sent["asr_custom_config"])
     )
 
-    assert received.asr_custom_config == config.model_dump(mode="json")
+    assert received.asr_custom_config == config
     assert sent["asr_custom_config"]["inference_framework"] == "transformers"
+
+
+@pytest.mark.parametrize(
+    ("config", "expected_cls"),
+    [
+        (
+            {
+                "kind": "inline_model_options",
+                "inference_framework": "whisper",
+                "repo_id": "turbo",
+            },
+            InlineAsrNativeWhisperOptions,
+        ),
+        (
+            {"kind": "api_model_options", "url": "http://x/v1", "model": "m"},
+            ApiAsrOptions,
+        ),
+        (
+            {
+                "kind": "inline_model_options",
+                "inference_framework": "mlx_audio",
+                "repo_id": "mlx-community/parakeet-tdt-0.6b-v3",
+            },
+            InlineAsrMlxAudioOptions,
+        ),
+    ],
+)
+def test_asr_custom_config_resolves_the_documented_dicts(config, expected_cls):
+    for value in (config, json.dumps(config)):
+        options = ConvertDocumentsOptions(asr_custom_config=value)
+        assert type(options.asr_custom_config) is expected_cls
+        dumped = options.asr_custom_config.model_dump(mode="json")
+        assert {key: dumped[key] for key in config} == config
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"foo": 1},
+        {"repo_id": "turbo"},
+        {"kind": "inline_model_options", "repo_id": "turbo"},
+        {"kind": "inline_model_options", "inference_framework": "x", "repo_id": "t"},
+        {"kind": "api_model_options", "urll": "http://x/v1"},
+        InlineAsrOptions(repo_id="turbo"),
+    ],
+)
+def test_asr_custom_config_rejects_unresolvable_configs(config):
+    with pytest.raises(ValidationError):
+        ConvertDocumentsOptions(asr_custom_config=config)
