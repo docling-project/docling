@@ -161,6 +161,16 @@ def test_a_missing_usage_block_leaves_the_token_count_unset(api, endpoint, image
     assert result.num_tokens is None
 
 
+def test_a_vllm_repetition_stop_is_a_cut_output(api, endpoint, image):
+    """vLLM's repetition detection cuts a looping output; it is not a finished
+    one, as for a Docling repetition stopper."""
+    api.finish_reason = "repetition"
+
+    result = api_image_request(image, "describe", endpoint, model="m")
+
+    assert result.stop_reason == VlmStopReason.STOP_SEQUENCE
+
+
 @pytest.mark.parametrize("status", [400, 401, 429, 500])
 def test_api_errors_do_not_raise_but_are_marked_as_inference_errors(
     api, endpoint, image, status
@@ -237,6 +247,7 @@ def test_streamed_logprobs_are_collected_in_order(api, endpoint, image):
         ("stop", VlmStopReason.END_OF_SEQUENCE),
         ("length", VlmStopReason.LENGTH),
         ("content_filter", VlmStopReason.CONTENT_FILTERED),
+        ("repetition", VlmStopReason.STOP_SEQUENCE),
     ],
 )
 def test_streaming_reports_the_stop_reason_from_the_final_chunk(
