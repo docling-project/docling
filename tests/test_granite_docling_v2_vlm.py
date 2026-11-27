@@ -26,6 +26,9 @@ from docling.datamodel.vlm_prompts import (
     DocLangTask,
     doclang_prompt,
 )
+from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
+    ApiVlmEngine,
+)
 from docling.models.inference_engines.vlm.base import VlmEngineInput, VlmEngineType
 from docling.models.inference_engines.vlm.factory import create_vlm_engine
 
@@ -111,15 +114,18 @@ def test_granite_docling_v2_500m_preset_engine_config():
     assert vllm_runtime["include_stop_str_in_output"] is True
     assert vllm_runtime["transformers_prompt_style"] == TransformersPromptStyle.CHAT
 
-    api_params = spec.get_api_params(VlmEngineType.API_OPENAI)
-    assert api_params == {"model": REPO_ID, "max_tokens": 8192}
+    # The API flavour is a vLLM server; OpenAI does not serve the model.
+    assert VlmEngineType.API in spec.supported_engines
+    assert VlmEngineType.API_OPENAI not in spec.supported_engines
+    api_config = spec.get_api_config(VlmEngineType.API)
+    assert api_config.params == {"model": REPO_ID}
+    assert (api_config.timeout, api_config.concurrency) == (90.0, 4)
     # The decoding settings go with each API request, so user params keep them.
-    for engine_type in (VlmEngineType.API, VlmEngineType.API_OPENAI):
-        api_runtime = spec.get_runtime_input_extra_config(engine_type)
-        assert api_runtime["api_params"] == {
-            "skip_special_tokens": False,
-            "include_stop_str_in_output": True,
-        }
+    api_runtime = spec.get_runtime_input_extra_config(VlmEngineType.API)
+    assert api_runtime["api_params"] == {
+        "skip_special_tokens": False,
+        "include_stop_str_in_output": True,
+    }
 
 
 @pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_docling_v2_2b"])
@@ -140,7 +146,7 @@ def test_granite_docling_v2_api_request_keeps_the_closing_tag(
     )
     spec = VlmConvertOptions.get_preset(preset_id).model_spec
     options = ApiVlmEngineOptions(
-        engine_type=VlmEngineType.API_OPENAI,
+        engine_type=VlmEngineType.API,
         url="http://localhost:8000/v1/chat/completions",
         params=user_params,
     )
@@ -158,14 +164,41 @@ def test_granite_docling_v2_api_request_keeps_the_closing_tag(
                 prompt=spec.prompt,
                 stop_strings=list(spec.stop_strings),
                 extra_generation_config=spec.get_runtime_input_extra_config(
-                    VlmEngineType.API_OPENAI
+                    VlmEngineType.API
                 ),
+                max_new_tokens=spec.max_new_tokens,
             )
         ]
     )
     assert captured["include_stop_str_in_output"] is True
     assert captured["skip_special_tokens"] is False
     assert captured["model"] == user_params.get("model", spec.default_repo_id)
+    assert captured["max_tokens"] == spec.max_new_tokens
+    assert captured["timeout"] == (90.0 if preset_id == PRESET_ID else 180.0)
+    assert isinstance(engine, ApiVlmEngine)
+    assert engine.concurrency == 4
+
+
+@pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_docling_v2_2b"])
+def test_granite_docling_v2_api_user_timeout_and_concurrency_win(
+    preset_id: str,
+) -> None:
+    """Values the user sets on the options override the preset's API values."""
+    spec = VlmConvertOptions.get_preset(preset_id).model_spec
+    engine = create_vlm_engine(
+        options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API,
+            url="http://localhost:8000/v1/chat/completions",
+            timeout=30.0,
+            concurrency=16,
+        ),
+        model_spec=spec,
+        enable_remote_services=True,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(),
+    )
+    assert isinstance(engine, ApiVlmEngine)
+    assert (engine.timeout, engine.concurrency) == (30.0, 16)
 
 
 def test_granite_docling_v2_500m_from_preset_engines():
@@ -217,13 +250,12 @@ def test_granite_docling_v2_2b_preset():
     vllm_runtime = spec.get_runtime_input_extra_config(VlmEngineType.VLLM)
     assert vllm_runtime["include_stop_str_in_output"] is True
 
-    for engine_type in (VlmEngineType.API, VlmEngineType.API_OPENAI):
-        assert spec.get_api_params(engine_type) == {
-            "model": repo_id,
-            "max_tokens": 16384,
-        }
-        api_runtime = spec.get_runtime_input_extra_config(engine_type)
-        assert api_runtime["api_params"]["include_stop_str_in_output"] is True
+    assert VlmEngineType.API_OPENAI not in spec.supported_engines
+    api_config = spec.get_api_config(VlmEngineType.API)
+    assert api_config.params == {"model": repo_id}
+    assert (api_config.timeout, api_config.concurrency) == (180.0, 4)
+    api_runtime = spec.get_runtime_input_extra_config(VlmEngineType.API)
+    assert api_runtime["api_params"]["include_stop_str_in_output"] is True
 
     # The 500M preset keeps its own repo and budget.
     spec_500m = VlmConvertOptions.get_preset(PRESET_ID).model_spec

@@ -121,6 +121,22 @@ class ApiModelConfig(BaseModel):
         description="API parameters (model name, max_tokens, etc.)",
     )
 
+    timeout: float | None = Field(
+        default=None,
+        description=(
+            "Request timeout in seconds for this model. Applies when the user "
+            "does not set ApiVlmEngineOptions.timeout."
+        ),
+    )
+
+    concurrency: int | None = Field(
+        default=None,
+        description=(
+            "Number of concurrent requests for this model. Applies when the user "
+            "does not set ApiVlmEngineOptions.concurrency."
+        ),
+    )
+
     def merge_with(self, base_params: Dict[str, Any]) -> ApiModelConfig:
         """Merge with base parameters.
 
@@ -131,7 +147,9 @@ class ApiModelConfig(BaseModel):
             Merged configuration with overrides applied
         """
         merged_params = {**base_params, **self.params}
-        return ApiModelConfig(params=merged_params)
+        return ApiModelConfig(
+            params=merged_params, timeout=self.timeout, concurrency=self.concurrency
+        )
 
 
 # =============================================================================
@@ -244,6 +262,18 @@ class VlmModelSpec(BaseModel):
             return override.merge_with(base_params).params
 
         return base_params
+
+    def get_api_config(self, engine_type: VlmEngineType) -> ApiModelConfig:
+        """Get the API configuration (params, timeout, concurrency) for an engine.
+
+        Args:
+            engine_type: The engine type
+
+        Returns:
+            API configuration with the params of get_api_params
+        """
+        override = self.api_overrides.get(engine_type, ApiModelConfig())
+        return override.merge_with({"model": self.default_repo_id})
 
     def is_engine_supported(self, engine_type: VlmEngineType) -> bool:
         """Check if an engine is supported by this model.
@@ -995,9 +1025,8 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 # (extra_generation_config["api_params"]), not with the model-spec API params:
 # the engine drops the latter as soon as the user sets their own params.
 def _granite_docling_v2_model_spec_base(
-    *, name: str, repo_id: str, max_new_tokens: int
+    *, name: str, repo_id: str, max_new_tokens: int, api_timeout: float
 ) -> dict[str, Any]:
-    api_params = {"model": repo_id, "max_tokens": max_new_tokens}
     api_request_config = EngineModelConfig(
         extra_config={
             "extra_generation_config": {
@@ -1020,7 +1049,6 @@ def _granite_docling_v2_model_spec_base(
             VlmEngineType.VLLM,
             VlmEngineType.AUTO_INLINE,
             VlmEngineType.API,
-            VlmEngineType.API_OPENAI,
         },
         "engine_overrides": {
             VlmEngineType.MLX: EngineModelConfig(min_engine_version="0.8.1"),
@@ -1048,11 +1076,11 @@ def _granite_docling_v2_model_spec_base(
                 }
             ),
             VlmEngineType.API: api_request_config,
-            VlmEngineType.API_OPENAI: api_request_config.model_copy(deep=True),
         },
+        # A long page takes longer than the default 60 s timeout, and one
+        # request at a time leaves the server's batching unused.
         "api_overrides": {
-            VlmEngineType.API: ApiModelConfig(params=dict(api_params)),
-            VlmEngineType.API_OPENAI: ApiModelConfig(params=dict(api_params)),
+            VlmEngineType.API: ApiModelConfig(timeout=api_timeout, concurrency=4),
         },
     }
 
@@ -1061,6 +1089,7 @@ GRANITE_DOCLING_V2_500M_MODEL_SPEC_BASE = _granite_docling_v2_model_spec_base(
     name="Granite-Docling-v2-500M",
     repo_id="ibm-granite/granite-docling-v2-500m",
     max_new_tokens=8192,
+    api_timeout=90.0,
 )
 
 # The 2B model is trained to continue long pages (newspapers, exams), so it gets
@@ -1069,6 +1098,7 @@ GRANITE_DOCLING_V2_2B_MODEL_SPEC_BASE = _granite_docling_v2_model_spec_base(
     name="Granite-Docling-v2-2B",
     repo_id="ibm-granite/granite-docling-v2-2b",
     max_new_tokens=16384,
+    api_timeout=180.0,
 )
 
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
