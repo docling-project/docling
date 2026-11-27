@@ -433,7 +433,6 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
         """
     )
 
-    assert _inline_group_items(doc) == []
     footnotes = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
     assert footnotes == ["Plain footnote."]
 

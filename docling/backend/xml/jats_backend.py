@@ -1057,14 +1057,27 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         segments: list[InlineSegment],
         content_layer: ContentLayer | None = None,
+        *,
+        always_group: bool = False,
     ) -> None:
-        """Emit inline segments under ``parent``, wrapping many in an inline group."""
+        """Emit inline segments as text items under ``parent``.
+
+        Args:
+            doc: The document to add items to.
+            parent: The node that receives the emitted items or the inline group.
+            segments: Trimmed inline runs to emit.
+            content_layer: Content layer applied to the group and all emitted items.
+            always_group: When True, wrap segments in an ``InlineGroup`` even if
+                there is only one. Set this when ``parent`` is a list item with
+                empty text, so the group is recognized as inline content by the
+                Markdown serializer rather than rendered as a continuation block.
+        """
         segments = JatsDocumentBackend._trim_segment_edges(segments)
         if not segments:
             return
         container = (
             doc.add_inline_group(parent=parent, content_layer=content_layer)
-            if len(segments) > 1
+            if len(segments) > 1 or always_group
             else parent
         )
         for segment in segments:
@@ -1559,7 +1572,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
         for segments in footnote_segments:
             list_item = doc.add_list_item(parent=footnote_group, text="")
-            JatsDocumentBackend._emit_inline(doc, list_item, segments)
+            JatsDocumentBackend._emit_inline(
+                doc, list_item, segments, always_group=True
+            )
 
     def _add_sub_article(
         self,
