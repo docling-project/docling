@@ -281,14 +281,18 @@ class InlineAsrOptions(BaseAsrOptions):
             KeyError: If preset not found
         """
         # The presets are defined from these classes, so import them here.
-        from docling.datamodel.asr_model_specs import _describe_asr_preset
+        from docling.datamodel.asr_model_specs import _ASR_PRESETS, AsrModelType
+        from docling.datamodel.asr_presets import AsrPresetInfo
 
-        if preset_id not in cls.list_preset_ids():
+        if preset_id not in _ASR_PRESETS:
             raise KeyError(
                 f"Preset '{preset_id}' not found for {cls.__name__}. "
                 f"Available presets: {cls.list_preset_ids()}"
             )
-        return _describe_asr_preset(preset_id)
+        entry = _ASR_PRESETS[AsrModelType(preset_id)]
+        return AsrPresetInfo(
+            preset_id=preset_id, name=entry.name, description=entry.description
+        )
 
     @classmethod
     def from_preset(
@@ -323,7 +327,7 @@ class InlineAsrOptions(BaseAsrOptions):
                 f"Preset '{preset_id}' not found for {cls.__name__}. "
                 f"Available presets: {cls.list_preset_ids()}"
             )
-        preset = _ASR_PRESETS[AsrModelType(preset_id)]
+        preset = _ASR_PRESETS[AsrModelType(preset_id)].options
         if isinstance(preset, AsrModelPreset):
             return preset.to_auto_options(device)
         return preset.model_copy(deep=True)
