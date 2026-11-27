@@ -431,6 +431,31 @@ def test_presentation_text_outside_page_is_ignored():
     assert backend.convert().texts == []
 
 
+def test_afp_pages_carry_a_size_doctags_can_normalize_against():
+    # -- a zero page width made the DocTags serializer divide by zero, so an AFP
+    # -- document with any text at all could not be exported to that format --
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _structured_field(BPG),
+            _structured_field(BPT),
+            _structured_field(PTX, _trn("Invoice 4711")),
+            _structured_field(EPT),
+            _structured_field(EPG),
+            _structured_field(EDT),
+        )
+    )
+
+    doc = _backend(data).convert()
+
+    assert all(
+        page.size.width > 0 and page.size.height > 0 for page in doc.pages.values()
+    )
+    assert doc.export_to_doctags() == (
+        "<doctag><text><loc_0><loc_0><loc_0><loc_0>Invoice 4711</text>\n</doctag>"
+    )
+
+
 def test_unsupported_warnings_are_aggregated_by_content_type():
     data = b"".join(
         (
