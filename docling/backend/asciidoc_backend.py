@@ -81,6 +81,26 @@ _MAX_TABLE_CELL_COPIES: Final = 100_000
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
 
+# A description-list entry: "term:: definition", with the definition on the same
+# line or on the line after a bare "term::". Asciidoctor treats it as a <dl>.
+_DESCRIPTION_ITEM_PATTERN: Final = re.compile(
+    r"^(?P<term>\S.*?)::(?:\s+(?P<definition>.*))?$"
+)
+# Block macros share the "name::target[]" shape but are not description terms.
+_DESCRIPTION_ITEM_MACROS: Final = frozenset(
+    {
+        "audio",
+        "endif",
+        "ifdef",
+        "ifeval",
+        "ifndef",
+        "image",
+        "include",
+        "toc",
+        "video",
+    }
+)
+
 # URL schemes that Asciidoctor turns into links without a macro name.
 _URL_SCHEME: Final = r"(?:https?|file|ftp|irc)://"
 # Asciidoctor only links a URL at the start of the text, after whitespace or
@@ -247,7 +267,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         self._flush_text_data(doc=doc, text_data=caption_data, parent=parent, bold=True)
         return []
 
-    def _parse(self, doc: DoclingDocument):
+    def _parse(self, doc: DoclingDocument):  # noqa: C901
         """Orchestrate parsing and populate `doc` from the source lines.
 
         Handles titles, section headers, text paragraphs, lists, tables,
@@ -276,6 +296,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         caption_data: list[str] = []
         last_list_item: ListItem | None = None
         list_continuation = False
+        # A description list ("term:: definition") stays open until a blank
+        # line or a block that is not one of its entries; a bare "term::"
+        # holds the term item that the next plain line describes.
+        in_dlist = False
+        dlist_group: GroupItem | None = None
+        dlist_pending_term: ListItem | None = None
         # The marker kind of the list group at each level ("." for ordered,
         # "*" or "-" for bullets), for the list being parsed. Reset when a new
         # list starts, so a level that holds a section header is never mistaken
@@ -326,6 +352,22 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 list_continuation=list_continuation,
                 is_continuation_block=False,
             )
+
+            # A description list stays open until a blank line or a block that
+            # is not one of its entries. The plain line after a bare "term::"
+            # is that term's definition.
+            if in_dlist:
+                consumed, in_dlist, dlist_pending_term = (
+                    self._continue_description_list(
+                        doc=doc,
+                        line=line,
+                        stripped_line=stripped_line,
+                        in_dlist=in_dlist,
+                        dlist_pending_term=dlist_pending_term,
+                    )
+                )
+                if consumed:
+                    continue
 
             # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
             # "[[some-id]]") are metadata that applies to the block that
@@ -497,6 +539,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     in_list=in_list,
                     last_list_item=last_list_item,
                     parents=parents,
+                )
+                list_continuation = False
+
+            # Description lists ("term:: definition", the AsciiDoc <dl>)
+            elif self._is_description_item(line):
+                text_data, in_dlist, dlist_group, dlist_pending_term = (
+                    self._extend_description_list(
+                        doc=doc,
+                        line=line,
+                        text_data=text_data,
+                        parents=parents,
+                        in_dlist=in_dlist,
+                        dlist_group=dlist_group,
+                        dlist_pending_term=dlist_pending_term,
+                    )
                 )
                 list_continuation = False
 
@@ -1225,6 +1282,108 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 "numbered": False,
                 "indent": 0,
             }
+
+    #   =========   Description lists
+    @staticmethod
+    def _is_description_item(line):
+        """Is `line` a "term:: definition" entry (and not a block macro)?"""
+        match = _DESCRIPTION_ITEM_PATTERN.match(line)
+        if match is None:
+            return None
+        if match.group("term").lower() in _DESCRIPTION_ITEM_MACROS:
+            return None
+        return match
+
+    @staticmethod
+    def _parse_description_item(line):
+        match = _DESCRIPTION_ITEM_PATTERN.match(line)
+        if match is None:
+            return {"type": "description_item", "term": "", "definition": ""}
+        return {
+            "type": "description_item",
+            "term": match.group("term").strip(),
+            "definition": (match.group("definition") or "").strip(),
+        }
+
+    @classmethod
+    def _is_dlist_continuation(cls, line):
+        """Is `line` the plain definition of the bare "term::" above it?"""
+        return not (
+            cls._is_title(line)
+            or cls._is_section_header(line)
+            or cls._is_list_item(line)
+            or line.strip() == "|==="
+            or cls._is_table_line(line)
+            or cls._is_picture(line)
+            or cls._is_caption(line)
+            or cls._is_description_item(line)
+        )
+
+    def _continue_description_list(
+        self,
+        *,
+        doc,
+        line,
+        stripped_line,
+        in_dlist,
+        dlist_pending_term,
+    ):
+        """Advance an open description list; return (consumed, state)."""
+        if not stripped_line:
+            return False, False, None
+        if dlist_pending_term is not None and self._is_dlist_continuation(line):
+            self._add_description(
+                doc=doc,
+                term_item=dlist_pending_term,
+                text=self._parse_text(line)["text"],
+            )
+            return True, True, None
+        if self._is_description_item(line):
+            return False, True, dlist_pending_term
+        return False, False, None
+
+    def _extend_description_list(
+        self,
+        *,
+        doc,
+        line,
+        text_data,
+        parents,
+        in_dlist,
+        dlist_group,
+        dlist_pending_term,
+    ):
+        """Add one "term:: definition" entry; return the updated parser state."""
+        item = self._parse_description_item(line)
+        text_data = self._flush_text_data(
+            doc=doc,
+            text_data=text_data,
+            parent=self._get_current_parent(parents),
+        )
+        if not in_dlist:
+            in_dlist = True
+            dlist_group = doc.add_list_group(
+                parent=self._get_current_parent(parents),
+                name="description list",
+            )
+        assert dlist_group is not None
+        term_item = doc.add_list_item(
+            item["term"],
+            parent=dlist_group,
+            formatting=Formatting(bold=True),
+        )
+        if item["definition"]:
+            self._add_description(doc, term_item, item["definition"])
+            dlist_pending_term = None
+        else:
+            dlist_pending_term = term_item
+        return text_data, in_dlist, dlist_group, dlist_pending_term
+
+    @staticmethod
+    def _add_description(doc, term_item, text):
+        """Add the definition of one term under a "descriptions" list group."""
+        descriptions = doc.add_list_group(name="descriptions", parent=term_item)
+        doc.add_list_item(text, parent=descriptions)
 
     #   =========   Tables
     @staticmethod
