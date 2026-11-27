@@ -595,6 +595,44 @@ def test_heads_in_side_by_side_columns_keep_column_order():
     assert _predicted_cids(elements) == [2, 0, 1]
 
 
+def test_lone_centred_heading_is_read_between_its_neighbours():
+    # A centred heading, alone in its row, sits between a short left-aligned
+    # line below a table and a short left-aligned label above a list. The
+    # heading overlaps neither short line, and each short line interrupts the
+    # heading's link to the wide block beyond it. Without a link above or
+    # below, the heading started a chain of its own and was read last.
+    elements = [
+        _box(0, DocItemLabel.TABLE, 520.0, 700.0, l=72.0, r=540.0),
+        _box(1, DocItemLabel.TEXT, 490.0, 500.0, l=72.0, r=130.0),
+        _box(2, DocItemLabel.SECTION_HEADER, 440.0, 455.0, l=262.0, r=350.0),
+        _box(3, DocItemLabel.SECTION_HEADER, 410.0, 420.0, l=72.0, r=150.0),
+        _box(4, DocItemLabel.LIST_ITEM, 370.0, 395.0, l=72.0, r=390.0),
+        _box(5, DocItemLabel.LIST_ITEM, 330.0, 355.0, l=72.0, r=400.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5]
+
+
+def test_lone_centred_heading_keeps_its_link_to_a_right_hand_block():
+    # A letterhead: the sender at the left, a block and a further line at the
+    # right, then a short left-aligned line and a centred heading. Spanning the
+    # whole text column, the heading would no longer reach the right-hand line
+    # past the short line. The link built from the heading's own box must stay,
+    # or the right-hand line is read after the body text.
+    elements = [
+        _box(0, DocItemLabel.TEXT, 660.0, 720.0, l=72.0, r=210.0),
+        _box(1, DocItemLabel.TEXT, 660.0, 720.0, l=380.0, r=540.0),
+        _box(2, DocItemLabel.TEXT, 600.0, 630.0, l=380.0, r=540.0),
+        _box(3, DocItemLabel.TEXT, 570.0, 585.0, l=72.0, r=130.0),
+        _box(4, DocItemLabel.SECTION_HEADER, 540.0, 555.0, l=206.0, r=406.0),
+        _box(5, DocItemLabel.TEXT, 495.0, 525.0, l=72.0, r=540.0),
+    ]
+
+    order = _predicted_cids(elements)
+
+    assert order.index(2) < order.index(4) < order.index(5)
+
+
 """
 def test_readingorder_multipage():
 
