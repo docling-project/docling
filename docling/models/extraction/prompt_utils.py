@@ -31,6 +31,7 @@ from docling.models.extraction.template_utils import (
     _vllm_constraint_schema,
     normalize_spec,
     schema_validator,
+    strip_schema_annotations,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
 
@@ -60,14 +61,26 @@ _MISSING_INSTRUCTIONS = (
 
 
 def prepare_target(
-    spec: ExtractionSpec, model_spec: ExtractionVlmModelSpec
+    spec: ExtractionSpec,
+    model_spec: ExtractionVlmModelSpec,
+    *,
+    strip_annotations: bool = False,
 ) -> _PreparedTarget:
-    """Normalize once and prepare guidance without invoking an engine or model."""
-    return _prepare_normalized_target(normalize_spec(spec), model_spec)
+    """Normalize once and prepare guidance without invoking an engine or model.
+
+    ``strip_annotations`` removes free-text annotations from the schema text in
+    a generic chat prompt. The validator always uses the full ``json_schema``.
+    """
+    return _prepare_normalized_target(
+        normalize_spec(spec), model_spec, strip_annotations=strip_annotations
+    )
 
 
 def _prepare_normalized_target(
-    owned: ExtractionSpec, model_spec: ExtractionVlmModelSpec
+    owned: ExtractionSpec,
+    model_spec: ExtractionVlmModelSpec,
+    *,
+    strip_annotations: bool = False,
 ) -> _PreparedTarget:
     schema = owned.json_schema
     if model_spec.requires_output_schema and schema is None:
@@ -108,11 +121,14 @@ def _prepare_normalized_target(
         if owned.instructions:
             guidance.append(owned.instructions)
         if schema is not None:
+            prompt_schema = (
+                strip_schema_annotations(schema) if strip_annotations else schema
+            )
             guidance.extend(
                 [
                     _MISSING_INSTRUCTIONS,
                     "Output contract (JSON Schema Draft 2020-12):\n"
-                    + json.dumps(schema, indent=2),
+                    + json.dumps(prompt_schema, indent=2),
                 ]
             )
         prompt = "\n\n".join(guidance)

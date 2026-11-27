@@ -94,7 +94,10 @@ between two object shapes has no equivalent and is rejected; add a
 
 Generic chat presets (`granite_vision_4_1`, `lift`) have no native template
 format and reject a spec with `native_template`. Use `json_schema` and
-`instructions` there. Each cached extractor prepares fresh specs per call.
+`instructions` there. They get the schema as text in the prompt;
+`VlmExtractionPipelineOptions(strip_schema_annotations=True)` removes `title`,
+`description`, `examples`, `default` and `$comment` from that text, while the
+validation still uses the full schema. Each cached extractor prepares fresh specs per call.
 
 API extraction requires `enable_remote_services=True` and an
 `ApiVlmEngineOptions` endpoint. `output_mode="prompt_only"` is the default;

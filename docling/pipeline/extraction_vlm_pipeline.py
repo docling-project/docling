@@ -95,7 +95,9 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         started_at = time.monotonic()
         prepared = (
             _prepare_normalized_target(
-                target, self.pipeline_options.vlm_options.model_spec
+                target,
+                self.pipeline_options.vlm_options.model_spec,
+                strip_annotations=self.pipeline_options.strip_schema_annotations,
             )
             if isinstance(target, ExtractionSpec)
             else self._prepare_target(target)

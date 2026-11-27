@@ -2121,6 +2121,18 @@ class VlmExtractionPipelineOptions(PipelineOptions):
         ),
     ] = None
 
+    strip_schema_annotations: Annotated[
+        bool,
+        Field(
+            description=(
+                "Remove the annotations `title`, `description`, `examples`, "
+                "`default` and `$comment` from the `json_schema` text that a "
+                "generic chat model gets in its prompt. The validation always "
+                "uses the full schema. Use it to limit caller text in the prompt."
+            )
+        ),
+    ] = False
+
     @model_validator(mode="before")
     @classmethod
     def _coerce_legacy_vlm_options(cls, data):

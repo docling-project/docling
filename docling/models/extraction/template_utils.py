@@ -83,6 +83,38 @@ def normalize_spec(spec: ExtractionSpec) -> ExtractionSpec:
     return ExtractionSpec.model_validate(deepcopy(spec.model_dump(mode="python")))
 
 
+# Annotation keywords that carry free caller text into a generic prompt.
+_PROMPT_ANNOTATIONS = {"title", "description", "examples", "default", "$comment"}
+
+
+def strip_schema_annotations(schema: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of ``schema`` without free-text annotation keywords.
+
+    Only keywords at schema positions are removed. A property that is named
+    ``title`` or ``description`` stays, because property names are keys of a
+    schema map, not schema keywords. The cost is linear in the schema size.
+    """
+
+    def strip(node: Any) -> Any:
+        if not isinstance(node, dict):
+            return deepcopy(node)
+        out: dict[str, Any] = {}
+        for key, value in node.items():
+            if key in _PROMPT_ANNOTATIONS:
+                continue
+            if key in _SCHEMA_MAPS and isinstance(value, dict):
+                out[key] = {name: strip(child) for name, child in value.items()}
+            elif key in _SCHEMA_LISTS and isinstance(value, list):
+                out[key] = [strip(child) for child in value]
+            elif key in _SCHEMA_VALUES:
+                out[key] = strip(value)
+            else:
+                out[key] = deepcopy(value)
+        return out
+
+    return strip(schema)
+
+
 def _resolve_ref(root: dict[str, Any], ref: str, path: tuple[str | int, ...]) -> Any:
     if ref == "#":
         return root
