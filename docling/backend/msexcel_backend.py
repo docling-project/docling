@@ -986,6 +986,16 @@ class _SheetRangeClipper:
 def _value_bounds(sheet: Worksheet) -> DataRegion | None:
     """Return the smallest region that holds all cells with a value."""
     coords = [coord for coord, cell in sheet._cells.items() if cell.value is not None]
+    return _coords_bounds(coords)
+
+
+def _comment_bounds(sheet: Worksheet) -> DataRegion | None:
+    """Return the smallest region that holds all cells with a comment."""
+    coords = [coord for coord, cell in sheet._cells.items() if cell.comment is not None]
+    return _coords_bounds(coords)
+
+
+def _coords_bounds(coords: list[tuple[int, int]]) -> DataRegion | None:
     if not coords:
         return None
     rows = [row for row, _ in coords]
@@ -1877,26 +1887,32 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     @staticmethod
     def _find_true_data_bounds(
-        value_bounds: DataRegion | None, merged_cell_index: _MergedCellIndex
+        value_bounds: DataRegion | None,
+        merged_cell_index: _MergedCellIndex,
+        comment_bounds: DataRegion | None = None,
     ) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in a worksheet.
 
         The boundaries are the smallest rectangle that contains all non-empty
-        cells and all merged cell ranges, as the merged-cell index clips them.
+        cells, all merged cell ranges, as the merged-cell index clips them, and
+        all cells with a comment.
 
         Args:
             value_bounds: The smallest region that holds all cells with a value,
                 or None if no cell has a value.
             merged_cell_index: Index containing merged-cell anchors, spans, and
                 bounds for the worksheet.
+            comment_bounds: The smallest region that holds all cells with a
+                comment, or None if no cell has one.
 
         Returns:
-            A data region representing the smallest rectangle that covers all data and merged cells.
+            A data region representing the smallest rectangle that covers all data, merged
+            and commented cells.
             If the sheet is empty, returns (1, 1, 1, 1) by default.
         """
         regions = [
             region
-            for region in (value_bounds, merged_cell_index.bounds)
+            for region in (value_bounds, merged_cell_index.bounds, comment_bounds)
             if region is not None
         ]
         if not regions:
@@ -1929,7 +1945,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         value_bounds = _value_bounds(sheet)
         merged_cell_index = _MergedCellIndex(sheet, value_bounds)
-        bounds = self._find_true_data_bounds(value_bounds, merged_cell_index)
+        # A comment on an empty cell still has to be reached by the scan that
+        # collects comments, which is limited to these bounds. The comments do
+        # not widen the value bounds, which also clip the merged ranges.
+        bounds = self._find_true_data_bounds(
+            value_bounds, merged_cell_index, _comment_bounds(sheet)
+        )
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
