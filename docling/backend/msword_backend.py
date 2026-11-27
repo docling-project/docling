@@ -295,11 +295,6 @@ _TABLE_CELL_ANCESTOR_XPATH: Final = etree.XPath(
 )
 """Table cells that hold an element."""
 
-_SDT_CONTENT_RUNS_XPATH: Final = etree.XPath(
-    ".//w:sdtContent//w:r", namespaces=_OOXML_NAMESPACES
-)
-"""Runs inside an inline content control."""
-
 _TEXTBOX_XPATH: Final = etree.XPath(
     ".//w:txbxContent|.//v:textbox//w:p", namespaces=_OOXML_NAMESPACES
 )
@@ -389,6 +384,20 @@ def _get_run_text(run: Run) -> str:
         else:
             parts.append(str(child))
     return "".join(parts)
+
+
+def _iter_inline_elements(element: BaseOxmlElement) -> Iterator[BaseOxmlElement]:
+    """Yield runs and hyperlinks in order through inline Word wrappers."""
+    for child in element:
+        name = etree.QName(child).localname
+        if name in {"r", "hyperlink"}:
+            yield child
+        elif name in {"smartTag", "customXml", "ins", "moveTo", "fldSimple"}:
+            yield from _iter_inline_elements(child)
+        elif name == "sdt":
+            content = child.find(f"{_W_NS_CLARK}sdtContent")
+            if content is not None:
+                yield from _iter_inline_elements(content)
 
 
 def _int_to_letter_marker(value: int) -> str:
@@ -2456,7 +2465,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if any(kw in lowered_style for kw in ("caption", "figure", "table", "label")):
             return False
 
-        raw_text = paragraph.text
+        raw_text = self._get_paragraph_text(paragraph)
         stripped_text = raw_text.strip()
         if not stripped_text or re.match(
             r"^(figure|table|listing)\s+\d", stripped_text, re.IGNORECASE
@@ -2803,48 +2812,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 run, paragraph, self._get_style_chain(paragraph.style)
             )
 
-        def _get_children_recursive(node):
-            for child in node:
-                tag_name = etree.QName(child).localname
-                if tag_name in {"smartTag", "customXml", "ins", "fldSimple"}:
-                    yield from _get_children_recursive(child)
-                else:
-                    yield child
-
-        for child in _get_children_recursive(paragraph._p):
-            tag_name = etree.QName(child).localname
-
-            if tag_name == "sdt":
-                runs = [
-                    run
-                    for run in (
-                        Run(r_el, paragraph) for r_el in _SDT_CONTENT_RUNS_XPATH(child)
-                    )
-                    if _is_shown(run)
-                ]
-                text = "".join(t for run in runs for t in run._r.xpath("./w:t/text()"))
-                if len(text) == 0:
-                    continue
-
-                content.append((text, _get_format(runs[0]) if runs else None, None))
-                continue
-
-            if tag_name not in {"r", "hyperlink"}:
-                continue
-
-            item = (
-                Run(child, paragraph)
-                if tag_name == "r"
-                else Hyperlink(child, paragraph)
-            )
-
-            if isinstance(item, Hyperlink):
+        for child in _iter_inline_elements(paragraph._p):
+            if child.tag == f"{_W_NS_CLARK}hyperlink":
+                link = Hyperlink(child, paragraph)
                 # Hyperlink.text and Hyperlink.runs only read the direct w:r
                 # children, so also read the runs nested in the same wrappers
                 # as above (e.g. a tracked insertion inside the link).
                 all_runs = [
                     Run(r_el, paragraph)
-                    for r_el in _get_children_recursive(child)
+                    for r_el in _iter_inline_elements(child)
                     if r_el.tag == f"{_W_NS_CLARK}r"
                 ]
                 runs = [run for run in all_runs if _is_shown(run)]
@@ -2854,17 +2830,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     (
                         "".join(_get_run_text(run) for run in runs),
                         _get_format(runs[0]) if runs else None,
-                        self._get_hyperlink_target(item) if with_format else None,
+                        self._get_hyperlink_target(link) if with_format else None,
                     )
                 )
-            elif _is_shown(item):
-                content.append(
-                    (
-                        _get_run_text(item),
-                        _get_format(item),
-                        None,
-                    )
-                )
+            else:
+                run = Run(child, paragraph)
+                if _is_shown(run):
+                    content.append((_get_run_text(run), _get_format(run), None))
 
         return content
 
@@ -4559,21 +4531,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._has_blip(tc) or self._has_textbox(tc):
             return True
 
-        # paragraph must contain runs with no run-properties
-        for para in paragraphs:
-            runs = list(para.iterchildren(f"{_W_NS_CLARK}r"))
-            for rn in runs:
-                item: Run = Run(rn, self.docx_obj)
-                if item is not None:
-                    fm = MsWordDocumentBackend._get_format_from_run(item)
-                    if fm != Formatting():
+        if paragraphs:
+            para = paragraphs[0]
+            for run_element in _iter_inline_elements(para):
+                if run_element.tag == f"{_W_NS_CLARK}r":
+                    run = Run(run_element, self.docx_obj)
+                    if self._get_format_from_run(run) != Formatting():
                         return True
 
-        # Walk a non-empty code-styled cell as rich content so it can emit a
-        # CodeItem; the font fallback never fires inside cells.
-        if paragraphs:
-            first_para = Paragraph(paragraphs[0], self.docx_obj)
-            if first_para.text.strip() and self._is_code_style(first_para.style):
+            # Walk a non-empty code-styled cell as rich content so it can emit
+            # a CodeItem. The font fallback never fires inside cells.
+            paragraph = Paragraph(para, self.docx_obj)
+            if (
+                self._is_code_style(paragraph.style)
+                and self._get_paragraph_text(paragraph).strip()
+            ):
                 return True
 
         # All checks passed: plain text only

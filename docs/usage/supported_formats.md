@@ -44,6 +44,10 @@ them to spaces in plain headings. Headings with formatted inline content follow
 the existing Markdown hard-break serialization. Inline HTML inside Markdown table
 cells follows separate handling.
 
+DOCX conversion includes tracked insertions and text moved to its new location.
+Inline content controls preserve text, run formatting, tabs, line breaks, and
+symbols. Text inside a content control within a hyperlink is included in the link.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
