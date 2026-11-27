@@ -101,6 +101,8 @@ from docling.utils.utils import chunkify
 _log = logging.getLogger(__name__)
 
 _MODEL_STAGE_NAMES = ("ocr", "layout", "layout_postprocess", "table", "assemble")
+# Smaller default limits slow conversion down (about 10 % at batch size 1)
+_MIN_DEFAULT_PAGES_IN_FLIGHT = 8
 
 STAGE_FAILURE_CATEGORY = {
     "ocr": FailureCategory.INFERENCE_FAILURE,
@@ -761,8 +763,9 @@ class StandardPdfPipeline(ConvertPipeline):
         opts = self.pipeline_options
         if opts.max_pages_in_flight is not None:
             return opts.max_pages_in_flight
-        return 2 * max(
-            opts.ocr_batch_size, opts.layout_batch_size, opts.table_batch_size
+        return max(
+            _MIN_DEFAULT_PAGES_IN_FLIGHT,
+            2 * max(opts.ocr_batch_size, opts.layout_batch_size, opts.table_batch_size),
         )
 
     @staticmethod

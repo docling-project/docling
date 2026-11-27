@@ -2596,7 +2596,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
                 "Maximum number of pages of one document that are inside the threaded pipeline at the same time. "
                 "Each page holds its rendered image until the last stage, so this bounds peak memory independently "
                 "of the document length. When not set, twice the largest of `ocr_batch_size`, `layout_batch_size` "
-                "and `table_batch_size` is used, so each stage can fill a batch. A value below the largest batch "
+                "and `table_batch_size` is used, at least 8, so each stage can fill a batch. A value below the largest batch "
                 "size makes stages run partial batches. Only used by `StandardPdfPipeline` (threaded mode)."
             ),
         ),
