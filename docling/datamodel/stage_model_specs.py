@@ -727,7 +727,8 @@ class StagePresetMixin:
         # output") run against the final merged state rather than the pre-override
         # state.
         preset_data: dict = dict(
-            model_spec=preset.model_spec,
+            # A copy: changes to the options must not reach the registered preset.
+            model_spec=preset.model_spec.model_copy(deep=True),
             engine_options=engine_options,
             scale=preset.scale,
             max_size=preset.max_size,
@@ -840,7 +841,8 @@ class ObjectDetectionStagePresetMixin:
                 )
 
         instance = cls(  # type: ignore[call-arg]
-            model_spec=preset.model_spec,
+            # A copy: changes to the options must not reach the registered preset.
+            model_spec=preset.model_spec.model_copy(deep=True),
             engine_options=engine_options,
             **preset.stage_options,
         )
@@ -955,7 +957,8 @@ class ImageClassificationStagePresetMixin:
                 )
 
         instance = cls(  # type: ignore[call-arg]
-            model_spec=preset.model_spec,
+            # A copy: changes to the options must not reach the registered preset.
+            model_spec=preset.model_spec.model_copy(deep=True),
             engine_options=engine_options,
             **preset.stage_options,
         )

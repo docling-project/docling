@@ -21,6 +21,7 @@ import torch
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import (
     MlxVlmEngineOptions,
@@ -361,3 +362,20 @@ def test_vllm_still_passes_a_fixed_fine_route(fine_route: bool) -> None:
     assert [item["mm_processor_kwargs"] for item in engine.llm.llm_inputs] == [
         {"fine_route": fine_route}
     ] * 2
+
+
+def test_from_preset_options_do_not_change_the_registered_preset() -> None:
+    """Choosing a connector path on the options must not change later options."""
+    preset_id = "granite_docling_v2_500m"
+    options = VlmConvertOptions.from_preset(preset_id)
+    options.model_spec.extra_generation_config["extra_processor_kwargs"] = {
+        "fine_route": "auto"
+    }
+    options.model_spec.prompt = "changed"
+
+    for spec in (
+        VlmConvertOptions.get_preset(preset_id).model_spec,
+        VlmConvertOptions.from_preset(preset_id).model_spec,
+    ):
+        assert "extra_processor_kwargs" not in spec.extra_generation_config
+        assert spec.prompt != "changed"
