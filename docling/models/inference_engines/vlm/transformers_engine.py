@@ -60,6 +60,10 @@ from docling.utils.granite_vision_utils import (
 from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 if TYPE_CHECKING:
+    from transformers.models.granite_docling.modeling_granite_docling import (
+        GraniteDoclingModel,
+    )
+
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
@@ -67,6 +71,25 @@ _log = logging.getLogger(__name__)
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
 _EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
+
+
+def _density_router_model(model: PreTrainedModel) -> "GraniteDoclingModel | None":
+    """Return the Granite Docling base model when it has a density router.
+
+    With fine_route="auto", this router chooses the connector path of each
+    page. For other models, and for Granite Docling checkpoints without a
+    router (the 2B model), the result is None and the pages use the default
+    path.
+    """
+    try:
+        from transformers import GraniteDoclingForConditionalGeneration
+    except ImportError:  # transformers < 5.23.0 has no Granite Docling
+        return None
+    if not isinstance(model, GraniteDoclingForConditionalGeneration):
+        return None
+    if model.model.density_router is None:
+        return None
+    return model.model
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -144,6 +167,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.device: str | None = None
         self.processor: Any | None = None
         self.vlm_model: PreTrainedModel | None = None
+        self.density_router_model: GraniteDoclingModel | None = None
         self.generation_config: GenerationConfig | None = None
         self.strip_stop_strings = (
             bool(
@@ -342,6 +366,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         self.vlm_model.eval()
+        # Before torch.compile, which wraps the model in another module.
+        self.density_router_model = _density_router_model(self.vlm_model)
 
         # Optionally compile model for better performance (model must be in eval mode first)
         # Works for Python < 3.14 with any torch 2.x
@@ -693,12 +719,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             One flag per sample; all False when the model has no density router
         """
         num_samples = int(inputs["input_ids"].shape[0])
-        base_model = getattr(self.vlm_model, "model", None)
-        predict = getattr(base_model, "predict_fine_route", None)
-        if predict is None or getattr(base_model, "density_router", None) is None:
+        if self.density_router_model is None:
             return [False] * num_samples
         with torch.inference_mode():
-            needs_fine = predict(
+            needs_fine = self.density_router_model.predict_fine_route(
                 inputs["pixel_values"].to(self.device),
                 inputs["pixel_attention_mask"].to(self.device),
             )
@@ -737,6 +761,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
     def cleanup(self) -> None:
         """Clean up model resources."""
+        self.density_router_model = None
         if self.vlm_model is not None:
             del self.vlm_model
             self.vlm_model = None

@@ -27,6 +27,10 @@ from docling.datamodel.vlm_engine_options import (
     MlxVlmEngineOptions,
     TransformersVlmEngineOptions,
 )
+from docling.models.inference_engines.vlm import (
+    mlx_engine,
+    transformers_engine,
+)
 from docling.models.inference_engines.vlm.base import VlmEngineInput
 from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
 from docling.models.inference_engines.vlm.transformers_engine import (
@@ -78,13 +82,10 @@ class _RoutingModel:
     """A model whose router sends the dense (green) pages to the fine path."""
 
     def __init__(self, *, has_router: bool = True) -> None:
+        self.has_router = has_router
         self.router_calls = 0
-        self.model = SimpleNamespace(
-            density_router=object() if has_router else None,
-            predict_fine_route=self._predict_fine_route,
-        )
 
-    def _predict_fine_route(self, pixel_values, pixel_attention_mask):
+    def predict_fine_route(self, pixel_values, pixel_attention_mask):
         self.router_calls += 1
         return pixel_values[:, 1] > 0
 
@@ -112,6 +113,8 @@ def _transformers_engine(model: _RoutingModel) -> TransformersVlmEngine:
     engine.device = "cpu"
     engine.processor = _RoutingProcessor()
     engine.vlm_model = model  # type: ignore[assignment]
+    # The engine finds the router at load time; the fake has the same method.
+    engine.density_router_model = model if model.has_router else None  # type: ignore[assignment]
     return engine
 
 
@@ -220,9 +223,6 @@ class _MlxRoutingModel:
         self.has_router = has_router
         self.router_calls = 0
 
-    def __contains__(self, name: str) -> bool:
-        return name == "density_router" and self.has_router
-
     def predict_fine_route(self, pixel_values, pixel_attention_mask):
         self.router_calls += 1
         assert pixel_attention_mask.shape == (1, 1)
@@ -233,6 +233,8 @@ def _mlx_engine(model: _MlxRoutingModel, captured: list[dict[str, Any]]) -> Any:
     engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
     engine._initialized = True
     engine.vlm_model = model
+    # The engine finds the router at load time; the fake has the same method.
+    engine.density_router_model = model if model.has_router else None
     engine.config = object()
     engine.apply_chat_template = lambda *args, **kwargs: "<image>prompt"
     processor_calls: list[dict[str, Any]] = []
@@ -379,3 +381,118 @@ def test_from_preset_options_do_not_change_the_registered_preset() -> None:
     ):
         assert "extra_processor_kwargs" not in spec.extra_generation_config
         assert spec.prompt != "changed"
+
+
+# The engines find the router on the real model classes at load time. Tiny
+# random checkpoints of the real classes check that contract.
+
+
+def _tiny_transformers_granite_docling(*, has_router: bool) -> Any:
+    try:
+        from transformers import (
+            GraniteDoclingConfig,
+            GraniteDoclingForConditionalGeneration,
+        )
+    except ImportError:
+        pytest.skip("transformers < 5.23.0 has no Granite Docling")
+    config = GraniteDoclingConfig(
+        text_config={
+            "vocab_size": 64,
+            "hidden_size": 16,
+            "intermediate_size": 32,
+            "num_hidden_layers": 1,
+            "num_attention_heads": 2,
+            "num_key_value_heads": 2,
+            "pad_token_id": 0,
+            "bos_token_id": 1,
+            "eos_token_id": 2,
+        },
+        vision_config={
+            "hidden_size": 16,
+            "intermediate_size": 32,
+            "num_hidden_layers": 1,
+            "num_attention_heads": 2,
+            "out_hidden_size": 16,
+            "image_size": 32,
+            "patch_size": 16,
+        },
+        image_token_id=63,
+        pad_token_id=0,
+        density_router_hidden_size=8 if has_router else None,
+    )
+    return GraniteDoclingForConditionalGeneration(config).eval()
+
+
+def test_transformers_router_is_found_on_a_granite_docling_model() -> None:
+    model = _tiny_transformers_granite_docling(has_router=True)
+    engine = _transformers_engine(_RoutingModel())
+    engine.density_router_model = transformers_engine._density_router_model(model)
+    assert engine.density_router_model is model.model
+
+    # Processor-shaped inputs: 2 pages, up to 3 tiles each.
+    pixel_values = torch.rand(2, 3, 3, 32, 32)
+    pixel_attention_mask = torch.tensor([[True, True, False], [True, False, False]])
+    needs_fine = engine._predict_fine_routes(
+        {
+            "input_ids": torch.ones((2, 1), dtype=torch.long),
+            "pixel_values": pixel_values,
+            "pixel_attention_mask": pixel_attention_mask,
+        }
+    )
+
+    with torch.inference_mode():
+        expected = model.model.predict_fine_route(pixel_values, pixel_attention_mask)
+    assert needs_fine == expected.tolist()
+
+
+def test_transformers_router_is_none_without_a_density_router() -> None:
+    # The 2B model has no density router: its pages keep the default path.
+    model = _tiny_transformers_granite_docling(has_router=False)
+    assert transformers_engine._density_router_model(model) is None
+
+
+def test_transformers_router_is_none_for_another_model() -> None:
+    from transformers import GPT2Config, GPT2LMHeadModel
+
+    model = GPT2LMHeadModel(
+        GPT2Config(vocab_size=16, n_positions=8, n_embd=8, n_layer=1, n_head=2)
+    )
+    assert transformers_engine._density_router_model(model) is None
+
+
+def _tiny_mlx_granite_docling(*, has_router: bool) -> Any:
+    granite_docling = pytest.importorskip("mlx_vlm.models.granite_docling")
+    config = granite_docling.ModelConfig(
+        text_config=granite_docling.TextConfig(
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=2,
+            num_key_value_heads=2,
+            vocab_size=64,
+        ),
+        vision_config=granite_docling.VisionConfig(
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=2,
+            image_size=32,
+            out_hidden_size=16,
+            deepstack_visual_indexes=[0],
+        ),
+        image_token_id=63,
+        density_router_hidden_size=8 if has_router else None,
+    )
+    return granite_docling.Model(config)
+
+
+@pytest.mark.parametrize("has_router", [True, False])
+def test_mlx_router_is_found_on_a_granite_docling_model(has_router: bool) -> None:
+    model = _tiny_mlx_granite_docling(has_router=has_router)
+    expected = model if has_router else None
+    assert mlx_engine._density_router_model(model) is expected
+
+
+def test_mlx_router_is_none_for_another_model() -> None:
+    pytest.importorskip("mlx_vlm.models.granite_docling")
+    assert mlx_engine._density_router_model(object()) is None
