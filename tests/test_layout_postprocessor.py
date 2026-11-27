@@ -496,3 +496,38 @@ def test_direct_child_uses_tightest_container() -> None:
     by_id = {cluster.id: cluster for cluster in result}
     assert by_id[1].children == []
     assert [child.id for child in by_id[2].children] == [3]
+
+
+@pytest.mark.parametrize(
+    "child_label",
+    [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER],
+)
+def test_key_value_region_keeps_header_or_footer_text_in_body(
+    child_label: DocItemLabel,
+) -> None:
+    # The layout model can label one line as both a key-value region and a page
+    # header. The line is content of the region, so it must not become furniture.
+    key_value_region = _cluster(
+        1, _bbox(10, 10, 300, 40), DocItemLabel.KEY_VALUE_REGION, confidence=0.72
+    )
+    line = _cluster(2, _bbox(10, 10, 300, 40), child_label, confidence=0.59)
+    running_header = _cluster(3, _bbox(10, 960, 300, 990), child_label)
+
+    result = _postprocessor(key_value_region, line, running_header).postprocess()
+
+    by_id = {cluster.id: cluster for cluster in result}
+    assert [child.id for child in by_id[1].children] == [2]
+    assert by_id[2].label == DocItemLabel.TEXT
+    assert by_id[3].label == child_label
+
+
+def test_form_keeps_header_label_of_its_children() -> None:
+    # A form can cover most of a page, including a real running header.
+    form = _cluster(1, _bbox(0, 0, 400, 400), DocItemLabel.FORM, confidence=0.8)
+    header = _cluster(2, _bbox(10, 10, 300, 40), DocItemLabel.PAGE_HEADER)
+
+    result = _postprocessor(form, header).postprocess()
+
+    by_id = {cluster.id: cluster for cluster in result}
+    assert [child.id for child in by_id[1].children] == [2]
+    assert by_id[2].label == DocItemLabel.PAGE_HEADER
