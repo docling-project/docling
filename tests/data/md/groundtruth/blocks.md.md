@@ -34,7 +34,7 @@ Empty indented code block:
 
 Fenced code block:
 
-```
+```python
 print("Hello world!")
 ```
 
