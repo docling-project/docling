@@ -6,7 +6,7 @@ from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
-from docling.datamodel.pipeline_options import LayoutOptions, LayoutPostprocessorOptions
+from docling.datamodel.pipeline_options import LayoutPostprocessorOptions
 from docling.utils.layout_postprocessor import LayoutPostprocessor
 
 
@@ -74,7 +74,7 @@ def _postprocessor(*clusters: Cluster) -> LayoutPostprocessor:
     return LayoutPostprocessor(
         page=Page(page_no=1, size=Size(width=1000, height=1000)),
         clusters=list(clusters),
-        options=LayoutOptions(skip_cell_assignment=True),
+        options=LayoutPostprocessorOptions(skip_cell_assignment=True),
     )
 
 
