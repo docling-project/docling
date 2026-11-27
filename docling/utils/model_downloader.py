@@ -17,13 +17,12 @@ from docling.datamodel.asr_model_specs import (
 )
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
+    VlmConvertOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
-    GRANITE_FOR_DOCLING_2B_TRANSFORMERS,
-    GRANITE_FOR_DOCLING_500M_TRANSFORMERS,
     GRANITEDOCLING_2STAGE_TRANSFORMERS,
     GRANITEDOCLING_MLX,
     GRANITEDOCLING_TRANSFORMERS,
@@ -353,15 +352,18 @@ def download_models(
             progress=progress,
         )
 
-    for enabled, label, vlm_spec in (
-        (with_granite_for_docling_500m, "500M", GRANITE_FOR_DOCLING_500M_TRANSFORMERS),
-        (with_granite_for_docling_2b, "2B", GRANITE_FOR_DOCLING_2B_TRANSFORMERS),
+    for enabled, preset_id in (
+        (with_granite_for_docling_500m, "granite_for_docling_500m"),
+        (with_granite_for_docling_2b, "granite_for_docling_2b"),
     ):
         if enabled:
-            _log.info("Downloading Granite Docling v2 %s model...", label)
+            preset = VlmConvertOptions.get_preset(preset_id)
+            repo_id = preset.model_spec.get_repo_id(preset.default_engine_type)
+            _log.info("Downloading %s model (%s)...", preset.name, repo_id)
             download_hf_model(
-                repo_id=vlm_spec.repo_id,
-                local_dir=output_dir / vlm_spec.repo_cache_folder,
+                repo_id=repo_id,
+                revision=preset.model_spec.get_revision(preset.default_engine_type),
+                local_dir=output_dir / repo_id.replace("/", "--"),
                 force=force,
                 progress=progress,
             )
