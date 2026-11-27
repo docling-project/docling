@@ -449,21 +449,43 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             prompts.append(formatted_prompt)
 
         # Process batch
-        if prompt_style == TransformersPromptStyle.NONE:
-            inputs = self.processor(  # type: ignore[misc]
-                images,
-                return_tensors="pt",
-                padding=True,
-                **first_input.extra_generation_config.get("extra_processor_kwargs", {}),
-            )
-        else:
-            inputs = self.processor(  # type: ignore[misc]
+        processor_kwargs = dict(
+            first_input.extra_generation_config.get("extra_processor_kwargs", {})
+        )
+        # fine_route="auto": the model's density router chooses the connector
+        # path of each page. The first processor call uses the default path.
+        auto_fine_route = processor_kwargs.get("fine_route") == "auto"
+        if auto_fine_route:
+            del processor_kwargs["fine_route"]
+
+        def _process(**extra_kwargs: Any) -> Any:
+            if prompt_style == TransformersPromptStyle.NONE:
+                return self.processor(  # type: ignore[misc]
+                    images,
+                    return_tensors="pt",
+                    padding=True,
+                    **processor_kwargs,
+                    **extra_kwargs,
+                )
+            return self.processor(  # type: ignore[misc]
                 text=[prompt for prompt in prompts if prompt is not None],
                 images=images,
                 return_tensors="pt",
                 padding=True,
-                **first_input.extra_generation_config.get("extra_processor_kwargs", {}),
+                **processor_kwargs,
+                **extra_kwargs,
             )
+
+        inputs = _process()
+        fine_route = bool(processor_kwargs.get("fine_route", False))
+        if auto_fine_route:
+            needs_fine = self._predict_fine_routes(inputs)
+            if any(needs_fine) and not all(needs_fine):
+                # A batch takes one connector path: run each path as its own batch.
+                return self._predict_batch_by_fine_route(input_batch, needs_fine)
+            if any(needs_fine):
+                inputs = _process(fine_route=True)
+                fine_route = True
 
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
@@ -645,6 +667,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         if i < len(generated_token_counts)
                         else None,
                         "batch_size": len(input_batch),
+                        **(
+                            {"fine_route": fine_route}
+                            if auto_fine_route or "fine_route" in processor_kwargs
+                            else {}
+                        ),
                     },
                 )
             )
@@ -655,6 +682,58 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         return outputs
+
+    def _predict_fine_routes(self, inputs: Any) -> List[bool]:
+        """Ask the model's density router which samples need the fine path.
+
+        Args:
+            inputs: Processor output of the batch, on the default connector path
+
+        Returns:
+            One flag per sample; all False when the model has no density router
+        """
+        num_samples = int(inputs["input_ids"].shape[0])
+        base_model = getattr(self.vlm_model, "model", None)
+        predict = getattr(base_model, "predict_fine_route", None)
+        if predict is None or getattr(base_model, "density_router", None) is None:
+            return [False] * num_samples
+        with torch.inference_mode():
+            needs_fine = predict(
+                inputs["pixel_values"].to(self.device),
+                inputs["pixel_attention_mask"].to(self.device),
+            )
+        return [bool(flag) for flag in needs_fine.flatten().tolist()]
+
+    def _predict_batch_by_fine_route(
+        self, input_batch: List[VlmEngineInput], needs_fine: List[bool]
+    ) -> List[VlmEngineOutput]:
+        """Run the fine and the coarse samples of a batch as two batches.
+
+        Args:
+            input_batch: Inputs with fine_route="auto"
+            needs_fine: The router's decision for each input
+
+        Returns:
+            Outputs in the order of input_batch
+        """
+        outputs: List[Optional[VlmEngineOutput]] = [None] * len(input_batch)
+        for fine in (False, True):
+            indices = [i for i, flag in enumerate(needs_fine) if flag == fine]
+            group = []
+            for i in indices:
+                config = dict(input_batch[i].extra_generation_config)
+                config["extra_processor_kwargs"] = {
+                    **config.get("extra_processor_kwargs", {}),
+                    "fine_route": fine,
+                }
+                group.append(
+                    input_batch[i].model_copy(
+                        update={"extra_generation_config": config}
+                    )
+                )
+            for i, output in zip(indices, self.predict_batch(group)):
+                outputs[i] = output
+        return [output for output in outputs if output is not None]
 
     def cleanup(self) -> None:
         """Clean up model resources."""

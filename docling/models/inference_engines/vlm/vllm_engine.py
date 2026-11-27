@@ -149,6 +149,8 @@ class VllmVlmEngine(BaseVlmEngine):
         "torch_dtype",
     }
 
+    _warned_auto_fine_route: bool = False
+
     def __init__(
         self,
         options: VllmVlmEngineOptions,
@@ -378,6 +380,19 @@ class VllmVlmEngine(BaseVlmEngine):
         mm_kwargs = first_input.extra_generation_config.get(
             "mm_processor_kwargs"
         ) or first_input.extra_generation_config.get("extra_processor_kwargs")
+        if mm_kwargs and mm_kwargs.get("fine_route") == "auto":
+            # vLLM builds the prompt before the model runs, so the engine
+            # cannot ask the density router. The processor would read "auto"
+            # as true and use the fine path for every page.
+            if not self._warned_auto_fine_route:
+                self._warned_auto_fine_route = True
+                _log.warning(
+                    "fine_route='auto' is not available with the vLLM engine; "
+                    "the pages use the processor's default connector path. Set "
+                    "fine_route to True or False, or use the Transformers or "
+                    "MLX engine."
+                )
+            mm_kwargs = {k: v for k, v in mm_kwargs.items() if k != "fine_route"}
         llm_inputs = [
             {
                 "prompt": p,

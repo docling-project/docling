@@ -280,9 +280,16 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 }
                 # mlx-vlm forwards these to the processor, for example
                 # fine_route for Granite Docling v2.
-                generation_kwargs.update(
+                processor_kwargs = dict(
                     input_data.extra_generation_config.get("extra_processor_kwargs", {})
                 )
+                if processor_kwargs.get("fine_route") == "auto":
+                    del processor_kwargs["fine_route"]
+                    processor_kwargs["fine_route"] = self._predict_fine_route(
+                        image, formatted_prompt, processor_kwargs
+                    )
+                fine_route = processor_kwargs.get("fine_route")
+                generation_kwargs.update(processor_kwargs)
                 for key in ("repetition_penalty", "repetition_context_size"):
                     if key in input_data.extra_generation_config:
                         generation_kwargs[key] = input_data.extra_generation_config[key]
@@ -367,6 +374,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                             "model": self.model_config.repo_id
                             if self.model_config
                             else "unknown",
+                            **(
+                                {"fine_route": bool(fine_route)}
+                                if fine_route is not None
+                                else {}
+                            ),
                         },
                     )
                 )
@@ -374,6 +386,36 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             _log.debug("MLX model: Released global lock")
 
         return outputs
+
+    def _predict_fine_route(
+        self, image: Any, formatted_prompt: str, processor_kwargs: dict[str, Any]
+    ) -> bool:
+        """Ask the model's density router whether a page needs the fine path.
+
+        Args:
+            image: The page image
+            formatted_prompt: The prompt with its image placeholder
+            processor_kwargs: Processor settings of the page, without fine_route
+
+        Returns:
+            True for the fine connector path; False when the model has no router
+        """
+        predict = getattr(self.vlm_model, "predict_fine_route", None)
+        if predict is None or "density_router" not in self.vlm_model:
+            return False
+
+        import mlx.core as mx
+        import numpy as np
+
+        # The same processor call as for generation, on the default path.
+        inputs = self.processor(
+            images=[image], text=formatted_prompt, **processor_kwargs
+        )
+        needs_fine = predict(
+            mx.array(np.asarray(inputs["pixel_values"])),
+            mx.array(np.asarray(inputs["pixel_attention_mask"])),
+        )
+        return bool(np.asarray(needs_fine).reshape(-1)[0])
 
     def cleanup(self) -> None:
         """Clean up model resources."""
