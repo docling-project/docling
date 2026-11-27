@@ -146,3 +146,29 @@ def test_asr_custom_config_resolves_the_documented_dicts(config, expected_cls):
 def test_asr_custom_config_rejects_unresolvable_configs(config):
     with pytest.raises(ValidationError):
         ConvertDocumentsOptions(asr_custom_config=config)
+
+
+@pytest.mark.parametrize("preset_id", InlineAsrOptions.list_preset_ids())
+def test_every_preset_has_a_name_and_description(preset_id: str):
+    info = InlineAsrOptions.get_preset(preset_id)
+
+    assert info.preset_id == preset_id
+    assert info.name
+    assert info.description
+
+
+def test_preset_names_say_the_engine_when_it_is_fixed():
+    assert InlineAsrOptions.get_preset("whisper_tiny").name == "Whisper tiny"
+    assert (
+        InlineAsrOptions.get_preset("whisper_large_v3_turbo_s2t").name
+        == "Whisper large-v3-turbo (WhisperS2T)"
+    )
+    assert (
+        InlineAsrOptions.get_preset("parakeet_ctc_1_1b_mlx_audio").name
+        == "Parakeet CTC 1.1B (mlx-audio)"
+    )
+
+
+def test_get_preset_rejects_unknown_ids():
+    with pytest.raises(KeyError, match="not found"):
+        InlineAsrOptions.get_preset("whisper_huge")

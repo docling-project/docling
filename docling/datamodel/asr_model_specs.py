@@ -14,6 +14,7 @@ from docling.datamodel.asr_presets import (
     AsrEngineConfig,
     AsrModelPreset,
     AsrModelSpec,
+    AsrPresetInfo,
 )
 from docling.datamodel.pipeline_options_asr_model import (
     # AsrResponseFormat,
@@ -1244,3 +1245,83 @@ _ASR_PRESETS: dict[AsrModelType, InlineAsrOptions | AsrModelPreset] = {
     AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T: WHISPER_DISTIL_LARGE_V3_5_S2T,
     AsrModelType.WHISPER_LARGE_V3_TURBO_S2T: WHISPER_LARGE_V3_TURBO_S2T,
 }
+
+
+_ASR_ENGINE_LABELS: dict[InferenceAsrFramework, str] = {
+    InferenceAsrFramework.WHISPER: "native Whisper",
+    InferenceAsrFramework.TRANSFORMERS: "Transformers",
+    InferenceAsrFramework.MLX: "MLX Whisper",
+    InferenceAsrFramework.MLX_WHISPER: "MLX Whisper",
+    InferenceAsrFramework.MLX_AUDIO: "mlx-audio",
+    InferenceAsrFramework.WHISPER_S2T: "WhisperS2T",
+}
+
+_ASR_PRESET_IDS = frozenset(model.value for model in AsrModelType)
+
+# Preset ID suffixes that force an engine, longest first.
+_ASR_ENGINE_SUFFIXES = (
+    "_mlx_whisper",
+    "_mlx_audio",
+    "_transformers",
+    "_native",
+    "_s2t",
+    "_mlx",
+)
+
+
+def _describe_asr_preset(preset_id: str) -> AsrPresetInfo:
+    """Build the name and description of a built-in ASR preset."""
+    preset = _ASR_PRESETS[AsrModelType(preset_id)]
+    if isinstance(preset, AsrModelPreset):
+        name = preset.model_spec.name
+        engine = _ASR_ENGINE_LABELS[preset.default_engine_type]
+        description = f"{name} ({preset.model_spec.default_repo_id}) with {engine}"
+        if InferenceAsrFramework.MLX_AUDIO in preset.model_spec.supported_engines:
+            description += ", or mlx-audio on Apple Silicon when it is available"
+        return AsrPresetInfo(
+            preset_id=preset_id, name=name, description=description + "."
+        )
+
+    base = next(
+        (
+            preset_id.removesuffix(suffix)
+            for suffix in _ASR_ENGINE_SUFFIXES
+            if preset_id.endswith(suffix)
+        ),
+        None,
+    )
+    if base is None and preset_id.startswith("whisper_"):
+        # Model-only Whisper presets pick their engine when docling is imported.
+        name = f"Whisper {preset_id.removeprefix('whisper_')}"
+        return AsrPresetInfo(
+            preset_id=preset_id,
+            name=name,
+            description=(
+                f"{name} with MLX Whisper on Apple Silicon and native Whisper "
+                "otherwise."
+            ),
+        )
+
+    framework = getattr(preset, "inference_framework", None)
+    engine = _ASR_ENGINE_LABELS[framework] if framework else "the default engine"
+    family = _ASR_PRESETS.get(AsrModelType(base)) if base in _ASR_PRESET_IDS else None
+    if isinstance(family, AsrModelPreset):
+        model = family.model_spec.name
+    elif preset_id.startswith("whisper_"):
+        native = framework in (
+            InferenceAsrFramework.WHISPER,
+            InferenceAsrFramework.WHISPER_S2T,
+        )
+        size = preset.repo_id if native else (base or "").removeprefix("whisper_")
+        model = f"Whisper {size}"
+    else:
+        model = preset.repo_id.rsplit("/", 1)[-1]
+    return AsrPresetInfo(
+        preset_id=preset_id,
+        name=f"{model} ({engine})",
+        description=(
+            f"{model} ({preset.repo_id}) with {engine}."
+            if "/" in preset.repo_id
+            else f"{model} with {engine}."
+        ),
+    )

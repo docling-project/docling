@@ -106,6 +106,14 @@ class AsrModelSpec(BaseModel):
         return override.merge_with(self.default_repo_id, self.revision)
 
 
+class AsrPresetInfo(BaseModel):
+    """The human-readable name and description of a built-in ASR preset."""
+
+    preset_id: str
+    name: str
+    description: str
+
+
 class AsrModelPreset(BaseModel):
     """A named ASR model and its default engine."""
 

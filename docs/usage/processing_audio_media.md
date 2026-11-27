@@ -397,13 +397,14 @@ The rest of the setup — the `DocumentConverter` from [Basic usage](#basic-usag
 
 ### Selecting a preset by name
 
-Each preset also has an ID, which is the same name as in the CLI `--asr-model` option. Use `InlineAsrOptions.list_preset_ids()` to list the IDs, and `InlineAsrOptions.from_preset()` to get a new copy of the options of a preset. A preset without a backend suffix selects its backend as described in [Automatic backend selection](#automatic-backend-selection). Pass `device` to select it for a specific accelerator. `whisper_tiny` gives the default options of `AsrPipelineOptions`.
+Each preset also has an ID, which is the same name as in the CLI `--asr-model` option. Use `InlineAsrOptions.list_preset_ids()` to list the IDs, `InlineAsrOptions.get_preset()` to get a preset's name and description, and `InlineAsrOptions.from_preset()` to get a new copy of the options of a preset. A preset without a backend suffix selects its backend as described in [Automatic backend selection](#automatic-backend-selection). Pass `device` to select it for a specific accelerator. `whisper_tiny` gives the default options of `AsrPipelineOptions`.
 
 ```python
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 
 print(InlineAsrOptions.list_preset_ids())  # ['granite_speech_5_0_2b', ..., 'whisper_turbo', ...]
+print(InlineAsrOptions.get_preset("whisper_turbo_transformers").name)  # Whisper turbo (Transformers)
 
 pipeline_options.asr_options = InlineAsrOptions.from_preset("whisper_turbo")
 pipeline_options.asr_options = InlineAsrOptions.from_preset(

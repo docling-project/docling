@@ -28,7 +28,7 @@ presets likewise force those backends).
 """
 
 from enum import Enum
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 from typing_extensions import deprecated
@@ -38,6 +38,9 @@ from docling.datamodel.pipeline_options_vlm_model import (
     # InferenceFramework,
     TransformersModelType,
 )
+
+if TYPE_CHECKING:
+    from docling.datamodel.asr_presets import AsrPresetInfo
 
 
 class BaseAsrOptions(BaseModel):
@@ -263,6 +266,29 @@ class InlineAsrOptions(BaseAsrOptions):
         from docling.datamodel.asr_model_specs import _ASR_PRESETS
 
         return [model.value for model in _ASR_PRESETS]
+
+    @classmethod
+    def get_preset(cls, preset_id: str) -> "AsrPresetInfo":
+        """Get the name and description of a built-in ASR preset.
+
+        Args:
+            preset_id: The preset identifier
+
+        Returns:
+            The preset's ID, human-readable name and description
+
+        Raises:
+            KeyError: If preset not found
+        """
+        # The presets are defined from these classes, so import them here.
+        from docling.datamodel.asr_model_specs import _describe_asr_preset
+
+        if preset_id not in cls.list_preset_ids():
+            raise KeyError(
+                f"Preset '{preset_id}' not found for {cls.__name__}. "
+                f"Available presets: {cls.list_preset_ids()}"
+            )
+        return _describe_asr_preset(preset_id)
 
     @classmethod
     def from_preset(
