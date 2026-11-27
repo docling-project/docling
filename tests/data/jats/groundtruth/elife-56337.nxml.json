@@ -40,6 +40,18 @@
       }
     ],
     "content_layer": "body",
+    "meta": {
+      "keywords": {
+        "values": [
+          "KRAB-ZFP",
+          "transposable elements",
+          "retrotransposons",
+          "evolution",
+          "chromatin",
+          "development"
+        ]
+      }
+    },
     "name": "_root_",
     "label": "unspecified"
   },
