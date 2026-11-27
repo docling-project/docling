@@ -91,6 +91,24 @@ def test_match_texts_handles_bottomleft_coordinates() -> None:
     assert model._match_texts([bbox], text_cells, 0.3) == ["A"]
 
 
+def test_match_texts_word_clipped_to_column_boundary() -> None:
+    """A word whose glyph bbox bleeds into the next column stays in its own (docling#4762)."""
+    col1 = BoundingBox(l=0, t=0, r=120, b=40)
+    col2 = BoundingBox(l=120, t=0, r=500, b=40)
+    col3 = BoundingBox(l=500, t=0, r=560, b=40)
+
+    text_cells = [
+        _text_cell(0, BoundingBox(l=5, t=5, r=400, b=35), "clipped"),
+        _text_cell(1, BoundingBox(l=125, t=5, r=495, b=35), "normal"),
+        _text_cell(2, BoundingBox(l=505, t=5, r=555, b=35), "other"),
+    ]
+
+    model = object.__new__(TableStructureModelV2)
+    result = model._match_texts([col1, col2, col3], text_cells, 0.3)
+
+    assert result == ["clipped", "normal", "other"]
+
+
 def test_build_table_cells_orders_model_bbox_coordinates() -> None:
     model = object.__new__(TableStructureModelV2)
 
