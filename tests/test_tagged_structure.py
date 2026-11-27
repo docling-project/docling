@@ -121,6 +121,111 @@ def test_structure_elements_become_clusters_with_levels_alt_and_furniture():
     assert clusters[2].bbox == BoundingBox(l=20, t=40, r=80, b=80)
 
 
+def test_tables_and_lists_nested_in_a_labeled_element_stay_elements():
+    # Patterns from real tagged PDFs: InDesign wraps each table in a /P, and a
+    # nested list sits in the /LBody of its parent item. The /P inside an /LBody
+    # is the item's own text and must stay part of it.
+    element = lambda kind, kids: PdfStructureElement(  # noqa: E731
+        id=kind, type=kind, kids=kids
+    )
+    mc = lambda mcid: PdfMarkedContentRef(page_no=1, mcid=mcid)  # noqa: E731
+    structure = PdfStructure(
+        marked=True,
+        role_map={"/_No_paragraph_style_": "/P"},
+        elements=[
+            element(
+                "/Document",
+                [
+                    element(
+                        "/_No_paragraph_style_",
+                        [
+                            element(
+                                "/P",
+                                [
+                                    element(
+                                        "/Table",
+                                        [
+                                            element(
+                                                "/TR",
+                                                [
+                                                    element(
+                                                        "/TD",
+                                                        [element("/P", [mc(0)])],
+                                                    ),
+                                                    element(
+                                                        "/TD",
+                                                        [element("/P", [mc(1)])],
+                                                    ),
+                                                ],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        ],
+                    ),
+                    element(
+                        "/L",
+                        [
+                            element(
+                                "/LI",
+                                [
+                                    element("/Lbl", [mc(2)]),
+                                    element(
+                                        "/LBody",
+                                        [
+                                            element("/P", [mc(3)]),
+                                            element(
+                                                "/L",
+                                                [
+                                                    element(
+                                                        "/LI",
+                                                        [element("/LBody", [mc(4)])],
+                                                    ),
+                                                    element(
+                                                        "/LI",
+                                                        [element("/LBody", [mc(5)])],
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            )
+                        ],
+                    ),
+                ],
+            )
+        ],
+    )
+    boxes = {
+        0: BoundingBox(l=10, t=10, r=40, b=20),
+        1: BoundingBox(l=40, t=10, r=70, b=20),
+        2: BoundingBox(l=10, t=30, r=15, b=40),
+        3: BoundingBox(l=15, t=30, r=70, b=40),
+        4: BoundingBox(l=20, t=45, r=70, b=55),
+        5: BoundingBox(l=20, t=60, r=70, b=70),
+    }
+    cells = [
+        TaggedTextCell(text=str(mcid), bbox=bbox, mcid=mcid)
+        for mcid, bbox in boxes.items()
+    ]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+
+    clusters, _ = TaggedStructureModel(mode="prefer")._clusters_from_structure(
+        structure, page, cells
+    )
+
+    assert [(c.label, c.bbox) for c in clusters] == [
+        # the table's cell paragraphs stay inside the table
+        (DocItemLabel.TABLE, BoundingBox(l=10, t=10, r=70, b=20)),
+        # the outer item keeps its label and body paragraph, not the nested list
+        (DocItemLabel.LIST_ITEM, BoundingBox(l=10, t=30, r=70, b=40)),
+        (DocItemLabel.LIST_ITEM, boxes[4]),
+        (DocItemLabel.LIST_ITEM, boxes[5]),
+    ]
+
+
 def test_prefer_keeps_model_clusters_the_tags_did_not_cover():
     tagged = [
         Cluster(id=0, label=DocItemLabel.TEXT, bbox=BoundingBox(l=0, t=0, r=50, b=50))

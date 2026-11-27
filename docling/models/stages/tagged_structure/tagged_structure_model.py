@@ -73,6 +73,17 @@ for _level in range(1, 7):
 # Every other type (/Document, /Part, /Sect, /Div, /L, /Form, ... and unknown
 # or custom types) is a grouping: no element of its own, its children are walked.
 
+# Types that are never part of the text of a labeled element above them. Tools
+# nest them inside one: InDesign wraps each table in a /P, and a nested list sits
+# in the /LBody of its parent /LI. Such a kid becomes an element of its own.
+# Text types (/P, /H1, ...) are not in the set: /LI -> /LBody -> /P is the
+# usual way to tag a list item, and its paragraph is the item's text.
+_BLOCK_KIDS = frozenset({"/L", "/Table", "/Figure", "/TOC"})
+
+# Labeled types whose whole subtree is their content: the /P cells of a table
+# and the /TOCI entries of a table of contents stay inside it.
+_ATOMIC = frozenset({"/Table", "/Figure", "/Formula", "/TOC"})
+
 # Fraction of a model cluster that must lie inside tagged clusters for it to
 # count as already covered in ``prefer`` mode.
 _COVERED_THRESHOLD = 0.5
@@ -99,6 +110,30 @@ def _mcids_on_page(element: PdfStructureElement, page_no: int) -> set[int]:
             elif kid.kind == "element":
                 stack.append(kid)
     return found
+
+
+def _own_content(
+    element: PdfStructureElement, page_no: int, role_map: dict[str, str]
+) -> tuple[set[int], list[PdfStructureElement]]:
+    """The /MCIDs of the element's own content on the page, and its block kids.
+
+    The walk goes through inline kids (/Span, /Link, /LBody, ...) and stops at
+    the first ``_BLOCK_KIDS`` element on each branch, in document order.
+    """
+    found: set[int] = set()
+    blocks: list[PdfStructureElement] = []
+    stack = list(reversed(element.kids))
+    while stack:
+        kid = stack.pop()
+        if kid.kind == "mcid":
+            if kid.page_no == page_no:
+                found.add(kid.mcid)
+        elif kid.kind == "element":
+            if kid.resolved_type(role_map) in _BLOCK_KIDS:
+                blocks.append(kid)
+            else:
+                stack.extend(reversed(kid.kids))
+    return found, blocks
 
 
 class TaggedStructureModel(BasePageModel):
@@ -155,20 +190,27 @@ class TaggedStructureModel(BasePageModel):
                     if kid.kind == "element":
                         visit(kid)
                 return
-            boxes = [
-                cell.bbox
-                for mcid in _mcids_on_page(element, page.page_no)
-                for cell in by_mcid.get(mcid, [])
-            ]
+            if kind in _ATOMIC:
+                mcids, blocks = _mcids_on_page(element, page.page_no), []
+            else:
+                mcids, blocks = _own_content(element, page.page_no, structure.role_map)
+            boxes = [cell.bbox for mcid in mcids for cell in by_mcid.get(mcid, [])]
             if boxes:
                 emit(label, BoundingBox.enclosing_bbox(boxes), element)
-                return
             # Figures and formulas are often pure graphics: no text cells, so
             # fall back to the authored Layout /BBox when the element is on this page.
             # docling-parse reports it in the frame of the page's cells (rotation
             # and crop box applied, bottom-left), so only the origin changes here.
-            if element.page_no == page.page_no and element.bbox is not None:
+            # A wrapper whose content is all in block kids (a /P around a /Table)
+            # is not placed: its box would cover the kid's.
+            elif (
+                not blocks
+                and element.page_no == page.page_no
+                and element.bbox is not None
+            ):
                 emit(label, element.bbox.to_top_left_origin(page_height), element)
+            for block in blocks:
+                visit(block)
 
         for root in structure.elements:
             visit(root)
