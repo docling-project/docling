@@ -144,6 +144,9 @@ class TestSanitizeTextHyphenation:
             (["the veri-", "fication step"], "the verification step"),
             # Uppercase hyphenation continues in uppercase, so the hyphen is a break.
             (["INFOR-", "MATION"], "INFORMATION"),
+            # A mixed-case word split before a capital is still a break.
+            (["Table-", "Former"], "TableFormer"),
+            (["Java-", "Script"], "JavaScript"),
         ],
     )
     def test_attached_hyphen_joins_split_word(self, model, lines, expected):
@@ -169,6 +172,13 @@ class TestSanitizeTextHyphenation:
             # Uppercase abbreviation + lowercase continuation is a real hyphen.
             (["the DNA-", "binding domain"], "the DNA-binding domain"),
             (["EØS-", "rettslige"], "EØS-rettslige"),
+            # Lowercase prefix + capitalized continuation is a real hyphen.
+            (
+                ["patients with non-", "Hodgkin lymphoma"],
+                "patients with non-Hodgkin lymphoma",
+            ),
+            (["the anti-", "American campaign"], "the anti-American campaign"),
+            (["before the pre-", "COVID period"], "before the pre-COVID period"),
         ],
     )
     def test_attached_hyphen_belonging_to_word_is_kept(self, model, lines, expected):
