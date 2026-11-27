@@ -1009,11 +1009,10 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 # checkpoint directly, so MLX uses the same repository. The MLX override makes
 # auto-inline select MLX on Apple Silicon. With an older mlx-vlm, auto-inline
 # uses Transformers.
-# Extra processor knobs (Transformers extra_processor_kwargs / vLLM
-# mm_processor_kwargs / mlx-vlm generation kwargs): fine_route=True uses the
-# 4x-token fine connector when the checkpoint has use_fine_route (the 500M
-# model; the 2B model has no fine path). Leave it off unless the page is dense
-# or the density router selected the fine path.
+# The presets use the coarse connector path. fine_route=True selects the
+# 4x-token fine connector path (the 500M model; the 2B model has no fine path):
+# as extra_processor_kwargs for Transformers, MLX and in-process vLLM, and as
+# mm_processor_kwargs in the request params of an API server.
 # vLLM runs GraniteDoclingForConditionalGeneration through its Transformers
 # modeling backend, so the vLLM environment also needs transformers>=5.23.0.
 # That backend supports DeepStack only in vLLM versions later than 0.34.0. The

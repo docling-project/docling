@@ -127,6 +127,26 @@ def test_granite_docling_v2_500m_preset_engine_config():
         "include_stop_str_in_output": True,
     }
 
+    # The preset uses the coarse connector path; fine is the user's choice.
+    for engine_type in (
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.MLX,
+        VlmEngineType.VLLM,
+    ):
+        engine_runtime = spec.get_runtime_input_extra_config(engine_type)
+        assert "extra_processor_kwargs" not in engine_runtime
+
+    fine_spec = spec.model_copy(deep=True)
+    fine_spec.extra_generation_config["extra_processor_kwargs"] = {"fine_route": True}
+    for engine_type in (
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.MLX,
+        VlmEngineType.VLLM,
+    ):
+        engine_runtime = fine_spec.get_runtime_input_extra_config(engine_type)
+        assert engine_runtime["extra_processor_kwargs"] == {"fine_route": True}
+        assert engine_runtime["skip_special_tokens"] is False
+
 
 @pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_docling_v2_2b"])
 @pytest.mark.parametrize("user_params", [{}, {"model": "served-name"}])
@@ -177,6 +197,49 @@ def test_granite_docling_v2_api_request_keeps_the_closing_tag(
     assert captured["timeout"] == (90.0 if preset_id == PRESET_ID else 180.0)
     assert isinstance(engine, ApiVlmEngine)
     assert engine.concurrency == 4
+    assert "mm_processor_kwargs" not in captured
+
+
+def test_granite_docling_v2_500m_api_user_can_choose_fine(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """User params select the fine connector path and keep the stop settings."""
+    captured: dict = {}
+
+    def _fake_api_image_request(**kwargs):
+        captured.update(kwargs)
+        return ApiImageRequestResult("ok", 1, VlmStopReason.END_OF_SEQUENCE)
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.api_openai_compatible_engine.api_image_request",
+        _fake_api_image_request,
+    )
+    spec = VlmConvertOptions.get_preset(PRESET_ID).model_spec
+    engine = create_vlm_engine(
+        options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API,
+            url="http://localhost:8000/v1/chat/completions",
+            params={"mm_processor_kwargs": {"fine_route": True}},
+        ),
+        model_spec=spec,
+        enable_remote_services=True,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(),
+    )
+    engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), "white"),
+                prompt=spec.prompt,
+                stop_strings=list(spec.stop_strings),
+                extra_generation_config=spec.get_runtime_input_extra_config(
+                    VlmEngineType.API
+                ),
+            )
+        ]
+    )
+    assert captured["mm_processor_kwargs"] == {"fine_route": True}
+    assert captured["include_stop_str_in_output"] is True
 
 
 @pytest.mark.parametrize("preset_id", [PRESET_ID, "granite_docling_v2_2b"])
@@ -256,6 +319,12 @@ def test_granite_docling_v2_2b_preset():
     assert (api_config.timeout, api_config.concurrency) == (180.0, 4)
     api_runtime = spec.get_runtime_input_extra_config(VlmEngineType.API)
     assert api_runtime["api_params"]["include_stop_str_in_output"] is True
+    # The 2B model has no fine connector path.
+    assert "mm_processor_kwargs" not in api_runtime["api_params"]
+    for engine_type in (VlmEngineType.TRANSFORMERS, VlmEngineType.VLLM):
+        assert "extra_processor_kwargs" not in spec.get_runtime_input_extra_config(
+            engine_type
+        )
 
     # The 500M preset keeps its own repo and budget.
     spec_500m = VlmConvertOptions.get_preset(PRESET_ID).model_spec
