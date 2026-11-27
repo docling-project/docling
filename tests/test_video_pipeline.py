@@ -559,3 +559,35 @@ def test_merge_into_sentences_splits_on_full_width_punctuation() -> None:
         (1.0, 2.0),
         (2.0, 4.0),
     ]
+
+
+def test_merge_into_sentences_flushes_unpunctuated_segments_on_pause_gap() -> None:
+    items = [
+        _ConversationItem(text="hello", start_time=0.0, end_time=0.5),
+        _ConversationItem(text="world", start_time=0.6, end_time=1.0),
+        _ConversationItem(text="next", start_time=2.0, end_time=2.5),
+        _ConversationItem(text="topic", start_time=2.6, end_time=3.1),
+    ]
+
+    merged = _merge_into_sentences(items)
+
+    assert [m.text for m in merged] == ["hello world", "next topic"]
+    assert [(m.start_time, m.end_time) for m in merged] == [
+        (0.0, 1.0),
+        (2.0, 3.1),
+    ]
+
+
+def test_merge_into_sentences_flushes_unpunctuated_segments_at_max_duration() -> None:
+    items = [
+        _ConversationItem(text="first window", start_time=0.0, end_time=33.5),
+        _ConversationItem(text="second window", start_time=33.5, end_time=60.0),
+    ]
+
+    merged = _merge_into_sentences(items)
+
+    assert [m.text for m in merged] == ["first window", "second window"]
+    assert [(m.start_time, m.end_time) for m in merged] == [
+        (0.0, 33.5),
+        (33.5, 60.0),
+    ]

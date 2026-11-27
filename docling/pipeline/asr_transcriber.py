@@ -1,10 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import json
 import logging
 import shutil
-import subprocess
 import sys
 import tempfile
 from abc import ABC, abstractmethod
@@ -59,7 +57,10 @@ from docling.exceptions import OperationNotAllowed
 from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
 from docling.pipeline.asr_conversation import _ConversationItem, _ConversationWord
 from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder, metal_is_usable
-from docling.pipeline.asr_transformers import TransformersAsrDecoder
+from docling.pipeline.asr_transformers import (
+    TransformersAsrDecoder,
+    transcribe_pipeline_windows,
+)
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -73,6 +74,9 @@ When an ASR segment has end_time <= start_time but contains non-empty text,
 this epsilon value is added to the start_time to create a valid time range.
 This prevents validation issues with Docling data models.
 """
+
+_SENTENCE_PAUSE_GAP_SECONDS: Final[float] = 0.8
+_MAX_MERGED_SEGMENT_SECONDS: Final[float] = 30.0
 
 MISSING_FFMPEG_MESSAGE: Final[str] = (
     "FFmpeg is required for audio processing but was not found on PATH. "
@@ -191,26 +195,6 @@ def _resolve_asr_artifacts(artifacts_path: Path, repo_id: str) -> Path:
         f"ASR model {repo_id} was not found in {artifacts_path}. "
         "Expected config.json in that directory or its repo cache folder."
     )
-
-
-def _audio_duration_seconds(fpath: Path) -> float:
-    """Read audio duration for ASR models that return text without timestamps."""
-    result = subprocess.run(
-        [
-            "ffprobe",
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration",
-            "-of",
-            "json",
-            str(fpath),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return float(json.loads(result.stdout)["format"]["duration"])
 
 
 class _NativeWhisperModel:
@@ -676,16 +660,7 @@ class _TransformersAsrModel(_LocalAudioTranscriber):
         if self.decoder is not None:
             return self.decoder.transcribe(fpath)
 
-        text = self.asr_pipeline(str(fpath))["text"].strip()
-        if not text:
-            return []
-        return [
-            _ConversationItem(
-                start_time=0.0,
-                end_time=_audio_duration_seconds(fpath),
-                text=text,
-            )
-        ]
+        return transcribe_pipeline_windows(fpath, self.asr_options, self.asr_pipeline)
 
 
 class _MlxAudioModel(_LocalAudioTranscriber):
@@ -1072,22 +1047,30 @@ class _ApiAsrModel:
 
 def _merge_into_sentences(
     items: list["_ConversationItem"],
+    *,
+    pause_gap_seconds: float = _SENTENCE_PAUSE_GAP_SECONDS,
+    max_duration_seconds: float = _MAX_MERGED_SEGMENT_SECONDS,
 ) -> list["_ConversationItem"]:
-    """Merge Whisper segments into complete sentences.
+    """Merge ASR segments into sentences or bounded unpunctuated turns.
 
     Consecutive segments are merged until a sentence-ending punctuation
-    mark (. ? ! or its full-width CJK form) is found. The merged item spans
-    the full time range of all contributing segments and concatenates their
-    text.
+    mark (. ? ! or its full-width CJK form) is found. For unpunctuated
+    segments, the current item is flushed before merging an item that starts
+    after an acoustic pause gap of at least ``pause_gap_seconds`` or would
+    extend the merged span beyond ``max_duration_seconds``.
 
-    This produces one block per sentence, which maps cleanly to one
-    speaker per block for diarization.
+    This produces one block per sentence or turn, which maps cleanly to
+    speaker diarization, keyframe interleaving, and subtitle cues.
 
     Args:
         items: ASR segments in chronological order.
+        pause_gap_seconds: Minimum silence gap between adjacent items that
+            starts a new segment even without terminal punctuation.
+        max_duration_seconds: Maximum duration of an unpunctuated merged
+            segment before flushing.
 
     Returns:
-        One merged item per sentence.
+        Merged items in chronological order.
     """
     if not items:
         return []
@@ -1096,6 +1079,21 @@ def _merge_into_sentences(
     current: _ConversationItem | None = None
 
     for item in items:
+        if current is not None:
+            gap_exceeded = (
+                current.end_time is not None
+                and item.start_time is not None
+                and (item.start_time - current.end_time) >= pause_gap_seconds
+            )
+            duration_exceeded = (
+                current.start_time is not None
+                and item.end_time is not None
+                and (item.end_time - current.start_time) > max_duration_seconds
+            )
+            if gap_exceeded or duration_exceeded:
+                merged.append(current)
+                current = None
+
         if current is None:
             current = _ConversationItem(
                 start_time=item.start_time,

@@ -3,6 +3,7 @@
 
 """Model-specific speech decoding through documented Transformers interfaces."""
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
@@ -16,6 +17,36 @@ if TYPE_CHECKING:
 
 _SAMPLE_RATE: Final = 16000
 _SEQ2SEQ_GRANITE_FAMILIES: Final = {"granite", "granite_plus"}
+
+
+def transcribe_pipeline_windows(
+    path: Path,
+    options: InlineAsrTransformersOptions,
+    asr_pipeline: Callable[..., dict[str, Any]],
+) -> list[_ConversationItem]:
+    """Decode audio in pause-aligned windows through a Transformers ASR pipeline."""
+    # Keep numpy and audio utilities off the slim-install import path.
+    from transformers.pipelines.audio_utils import ffmpeg_read
+
+    from docling.pipeline.asr_windows import split_on_pauses
+
+    waveform = ffmpeg_read(path.read_bytes(), sampling_rate=_SAMPLE_RATE).copy()
+    target_s = options.max_time_chunk
+    search_s = (
+        options.chunk_search_window
+        if options.chunk_search_window < target_s
+        else max(0.0, target_s * 0.5)
+    )
+    windows = split_on_pauses(waveform, _SAMPLE_RATE, target_s, search_s)
+    segments: list[_ConversationItem] = []
+    for start, end in windows:
+        first, last = (round(edge * _SAMPLE_RATE) for edge in (start, end))
+        text = asr_pipeline(waveform[first:last])["text"].strip()
+        if text:
+            segments.append(
+                _ConversationItem(start_time=start, end_time=end, text=text)
+            )
+    return segments
 
 
 def _expand_granite_queries(
