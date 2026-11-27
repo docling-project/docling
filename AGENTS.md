@@ -65,9 +65,11 @@ make validate       # run mutating hooks on the current changeset
 
 ## Security: input documents are not trusted
 
-- A size, count, span, or repeat value in a document is a claim. Clamp it before
-  you allocate memory or start a loop. Reuse
-  `docling/backend/utils/table_spans.py`.
+- Do not trust a number that the document declares, such as a `colspan`, a
+  repeat count, a cell range, or a point count. A small file can declare a very
+  large value. Limit the value before you allocate memory or loop on it. For
+  table spans, use `clamp_span` in `docling/backend/utils/table_spans.py`. For
+  other values, add an explicit maximum.
 - Read ZIP members only through `check_archive_limits` and `read_member` in
   `docling/backend/utils/archive_limits.py`. Apply limits for each document, not
   only for each member. Process a member one time, also when many items refer
