@@ -87,7 +87,7 @@ _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
-    from bs4.dammit import EncodingDetector
+    from bs4.dammit import EncodingDetector, UnicodeDammit
     from bs4.element import PreformattedString
 
     _BS4_AVAILABLE = True
@@ -170,6 +170,22 @@ def _q_quotation_marks(q: Tag) -> _QuotationMarks:
     return _Q_QUOTATION_MARKS_EN
 
 
+def _looks_like_utf16_or_utf32(markup: bytes) -> bool:
+    """Tell if bytes without a byte-order mark look like UTF-16 or UTF-32 text.
+
+    In UTF-16, an ASCII character is one NUL byte and one other byte, so HTML
+    markup is about half NUL bytes. In UTF-32, it is about three quarters. In a
+    UTF-8 page, a NUL byte is a stray byte, so the fraction is near zero. The limit
+    of one quarter is between the two cases.
+
+    UTF-16 text in which each character has two bytes below 0x80 has few NUL bytes
+    and is valid UTF-8, so it does not look like UTF-16 here.
+    """
+    if not markup:
+        return False
+    return markup.count(b"\x00") / len(markup) >= 0.25
+
+
 def _parse_html(markup: bytes) -> BeautifulSoup:
     """Parse HTML, reading bytes that declare no encoding as UTF-8 when they are UTF-8.
 
@@ -177,12 +193,16 @@ def _parse_html(markup: bytes) -> BeautifulSoup:
     a statistical detector first and tries UTF-8 last. On short text the detector
     can pick another encoding, so valid UTF-8 comes out as garbled text. UTF-8 is
     the likely encoding of such a page. Bytes that are not valid UTF-8 still go to
-    the detector. So do bytes with a NUL byte, such as UTF-16 text, which can be
-    valid UTF-8 only by accident.
+    the detector. So do bytes that look like UTF-16 or UTF-32 (see
+    `_looks_like_utf16_or_utf32`), which can be valid UTF-8 only by accident.
+
+    The decoded text keeps no U+0000 characters. A browser drops U+0000 in body
+    text. This function removes it from all of the text, because U+0000 in the
+    output cuts text short in C-string storage, and PostgreSQL rejects it in JSON.
     """
     encoding: Optional[str] = None
     if (
-        b"\x00" not in markup
+        not _looks_like_utf16_or_utf32(markup)
         and EncodingDetector.find_declared_encoding(markup, is_html=True) is None
     ):
         try:
@@ -191,7 +211,20 @@ def _parse_html(markup: bytes) -> BeautifulSoup:
             pass
         else:
             encoding = "utf-8"
-    return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
+    # Decode as BeautifulSoup does for bytes, then parse the text.
+    dammit = UnicodeDammit(
+        markup, known_definite_encodings=[encoding] if encoding else [], is_html=True
+    )
+    text = dammit.unicode_markup
+    if text is None:
+        # BeautifulSoup 4.12 gives None for empty bytes.
+        if markup:
+            raise DocumentLoadError("Could not decode the HTML bytes.")
+        text = ""
+    soup = BeautifulSoup(text.replace("\x00", ""), "html.parser")
+    # The browser render decodes the bytes again with this encoding.
+    soup.original_encoding = dammit.original_encoding
+    return soup
 
 
 def _resolve_line_breaks(text: str) -> str:
