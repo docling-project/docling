@@ -427,6 +427,22 @@ def test_preset_keeps_table_tokens_on_both_api_engine_types(
     assert params["model"] == "Unlimited-OCR-2"
 
 
+@pytest.mark.parametrize(
+    ("preset_id", "model"),
+    [("unlimited_ocr", "unlimited-ocr"), ("unlimited_ocr2", "Unlimited-OCR-2")],
+)
+def test_api_presets_default_to_a_local_server(preset_id: str, model: str) -> None:
+    # These models run only on a self-hosted server, so the preset must not
+    # fall back to the address of a hosted provider.
+    options = VlmConvertOptions.from_preset(preset_id)
+
+    assert options.engine_options.engine_type == VlmEngineType.API
+    assert options.engine_options.url.host == "localhost"
+    params = options.model_spec.get_api_params(VlmEngineType.API)
+    assert params["model"] == model
+    assert params["skip_special_tokens"] is False
+
+
 def test_mlx_preset_is_pinned_and_needs_a_recent_mlx_vlm() -> None:
     options = VlmConvertOptions.from_preset("unlimited_ocr2_mlx")
     spec = options.model_spec

@@ -138,3 +138,23 @@ def test_whitespace_between_inline_equations_is_kept(listed: bool) -> None:
     ]
     assert runs == ["Let ", "a", " ", "b", " hold."]
     assert ("- " if listed else "") + "Let $a$ $b$ hold." in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize(
+    ("omml_text", "expected_formula"),
+    [
+        ("x\u2208\u211d", r"x \in  \mathbb{R}"),
+        ("\U0001d42f", r"\mathbf{v}"),
+        ("\u221a2", r"\sqrt{} 2"),
+        ("\u2102", r"\mathbb{C}"),
+        ("\u2112", r"\mathscr{L}"),
+    ],
+)
+def test_omml_unicode_macros_preserve_balanced_braces(
+    omml_text: str, expected_formula: str
+) -> None:
+    doc = _convert_paragraph(_equation(omml_text))
+    formulas = [item.text for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert len(formulas) == 1
+    assert formulas[0].strip() == expected_formula
+    assert formulas[0].count("{") == formulas[0].count("}")

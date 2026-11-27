@@ -905,6 +905,25 @@ converter = DocumentConverter(
 )
 ```
 
+Docling also applies default limits to the expansion of a generic ZIP archive.
+A member larger than 256 MiB (`max_zip_member_size`) fails, and a member that
+takes the total above 1 GiB (`max_zip_expanded_size`) fails. The other members
+still convert. An archive with more than 10,000 members (`max_zip_member_count`)
+fails as a whole, and Docling reads none of its members. A lower
+`max_file_size` replaces the two size limits. Pass the limits as keyword
+arguments to `convert()` or `convert_all()`:
+
+```python
+results = list(
+    converter.convert_all(
+        ["documents.zip"],
+        max_zip_member_size=512 * 1024 * 1024,
+        max_zip_expanded_size=4 * 1024 * 1024 * 1024,
+        max_zip_member_count=50_000,
+    )
+)
+```
+
 ### Limits on the decompressed size of DOCX, XLSX, PPTX and EPUB files
 
 DOCX, XLSX, PPTX and EPUB files are ZIP archives, so a small file can decompress to a

@@ -362,6 +362,24 @@ tag where one exists, and the bare file name for everything else.
 An empty `lang` list runs Tesseract's per-page orientation and script detection. That requires
 the `osd` traineddata; without it, `lang=[]` raises with an install hint.
 
+### Tesseract CLI render resolution
+
+By default, Docling supplies the render resolution (`72 * scale` DPI) to Tesseract
+CLI for orientation detection and text recognition. If this hint causes
+missing or misread text on a scan, set `embed_render_dpi=False` to let Tesseract
+determine the resolution as it did with Docling 2.143.0. The rendered image
+dimensions stay the same.
+
+```python
+from docling.datamodel.pipeline_options import TesseractCliOcrOptions
+
+options = TesseractCliOcrOptions(lang=["eng"], embed_render_dpi=False)
+```
+
+```sh
+docling convert --ocr-engine tesseract --ocr-lang eng --ocr-option embed_render_dpi=false scan.pdf
+```
+
 ## OcrMac
 
 The engine's own vocabulary, in its own codes, is listed in

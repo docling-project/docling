@@ -27,6 +27,7 @@ import zipfile
 from collections.abc import Iterator
 from typing import NamedTuple
 
+from docling.backend.utils.archive_limits import ArchiveLimitError
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
@@ -207,8 +208,23 @@ def decompress_snappy_block(block: bytes, limit: int = _MAX_STREAM_BYTES) -> byt
     return bytes(out)
 
 
-def decompress(data: bytes) -> bytes:
-    """Concatenate the decompressed chunks of one ``.iwa`` member."""
+def decompress(data: bytes, budget: int | None = None) -> bytes:
+    """Concatenate the decompressed chunks of one ``.iwa`` member.
+
+    Args:
+        data: The stored bytes of the member.
+        budget: The most bytes the caller can still accept, when the stream is
+            one of several that share a limit. The per-stream ceiling applies
+            either way.
+
+    Returns:
+        The decompressed stream.
+
+    Raises:
+        ArchiveLimitError: If the stream would decompress past ``budget``.
+        DocumentLoadError: If the stream is malformed or passes the per-stream
+            ceiling.
+    """
     out = bytearray()
     pos = 0
     while pos < len(data):
@@ -225,6 +241,15 @@ def decompress(data: bytes) -> bytes:
         if len(block) != length:
             raise DocumentLoadError("Truncated IWA chunk payload.")
         pos += length
+        if budget is not None:
+            # A block never emits more than it declares, so checking the
+            # declared size refuses the block before any work happens.
+            expected, _ = read_varint(block, 0)
+            if len(out) + expected > budget:
+                raise ArchiveLimitError(
+                    f"IWA stream decompresses past the {budget} bytes left "
+                    "in its budget."
+                )
         # Raw Snappy: the chunk carries no stream framing or checksum. Passing the
         # remaining budget makes _MAX_STREAM_BYTES a true ceiling for the stream,
         # rather than the ceiling plus one whole block.
@@ -233,8 +258,12 @@ def decompress(data: bytes) -> bytes:
 
 
 def iter_objects(data: bytes) -> Iterator[IWAObject]:
+    """Yield every archived object in one stored ``.iwa`` member."""
+    yield from iter_stream_objects(decompress(data))
+
+
+def iter_stream_objects(stream: bytes) -> Iterator[IWAObject]:
     """Yield every archived object in one decompressed ``.iwa`` stream."""
-    stream = decompress(data)
     pos = 0
     while pos < len(stream):
         info_len, pos = read_varint(stream, pos)

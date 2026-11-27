@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options import (
+    OcrMode,
     PdfPipelineOptions,
     TesseractCliOcrOptions,
 )
@@ -27,8 +28,19 @@ pytestmark = [
 
 @pytest.mark.parametrize("scale", [3.0, 4.0])
 @pytest.mark.parametrize("orientation", [0, 90])
-def test_rendered_images_include_dpi(
-    tmp_path: Path, scale: float, orientation: int
+@pytest.mark.parametrize(
+    ("ocr_overrides", "expected_embed_dpi"),
+    [
+        pytest.param({}, True, id="default-dpi"),
+        pytest.param({"embed_render_dpi": False}, False, id="estimate-dpi"),
+    ],
+)
+def test_rendered_images_use_configured_dpi(
+    tmp_path: Path,
+    scale: float,
+    orientation: int,
+    ocr_overrides: dict[str, bool],
+    expected_embed_dpi: bool,
 ) -> None:
     image = Image.new("RGB", (600, 300), "white")
     ImageDraw.Draw(image).multiline_text(
@@ -40,7 +52,9 @@ def test_rendered_images_include_dpi(
     image.save(source)
 
     options = PdfPipelineOptions(do_ocr=True, do_table_structure=False)
-    options.ocr_options = TesseractCliOcrOptions(lang=["eng"], scale=scale)
+    options.ocr_options = TesseractCliOcrOptions.model_validate(
+        {"lang": ["eng"], "mode": OcrMode.FULL_PAGE, "scale": scale, **ocr_overrides}
+    )
     converter = DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
     )
@@ -48,8 +62,15 @@ def test_rendered_images_include_dpi(
     run_tesseract = TesseractOcrCliModel._run_tesseract
     seen_dpi: list[tuple[float, float] | None] = []
 
+    def perform_osd(model: TesseractOcrCliModel, filename: str) -> pd.DataFrame:
+        with Image.open(filename) as rendered:
+            seen_dpi.append(rendered.info.get("dpi"))
+        return pd.DataFrame(
+            {"key": ["Orientation in degrees"], "value": [str(orientation)]}
+        )
+
     def run_ocr(
-        model: TesseractOcrCliModel, filename: str, osd: pd.DataFrame
+        model: TesseractOcrCliModel, filename: str, osd: pd.DataFrame | None
     ) -> pd.DataFrame:
         with Image.open(filename) as rendered:
             seen_dpi.append(rendered.info.get("dpi"))
@@ -58,11 +79,7 @@ def test_rendered_images_include_dpi(
     # Select the rotation path without depending on OSD accuracy.
     with (
         patch.object(
-            TesseractOcrCliModel,
-            "_perform_osd",
-            return_value=pd.DataFrame(
-                {"key": ["Orientation in degrees"], "value": [str(orientation)]}
-            ),
+            TesseractOcrCliModel, "_perform_osd", autospec=True, side_effect=perform_osd
         ),
         patch.object(
             TesseractOcrCliModel, "_run_tesseract", autospec=True, side_effect=run_ocr
@@ -71,4 +88,9 @@ def test_rendered_images_include_dpi(
         result = converter.convert(source)
 
     assert result.status == ConversionStatus.SUCCESS
-    assert seen_dpi == [pytest.approx((72 * scale, 72 * scale), abs=0.02)]
+    expected_dpi = (
+        pytest.approx((72 * scale, 72 * scale), abs=0.02)
+        if expected_embed_dpi
+        else None
+    )
+    assert seen_dpi == [expected_dpi, expected_dpi]

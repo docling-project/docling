@@ -15,10 +15,11 @@ client dependencies needed by this command.
 
 import logging
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 from docling_core.types.doc import ImageRefMode
+from rich.markup import escape
 
 from docling.cli.export_utils import (
     _export_flags_from_formats,
@@ -37,6 +38,9 @@ from docling.service_client import (
     StatusWatcherKind,
 )
 from docling.utils.ocr_language import OcrLanguageResolver
+
+if TYPE_CHECKING:
+    from rich.console import Console
 
 _log = logging.getLogger(__name__)
 
@@ -73,20 +77,26 @@ do not apply to remote conversion and are intentionally absent.
 """
 
 _REMOTE_EPILOG = """\
-Authentication (precedence: flag > environment variable > .env file):
+Authentication (precedence: flag > environment variable > env file):
   --service-url      or  DOCLING_SERVICE_URL     (required)
   --api-key          or  DOCLING_SERVICE_API_KEY (optional; omit if unauthenticated)
-  A .env file in the working directory is loaded automatically when present.
+  A .env file is read only on request: --env-file PATH reads that file, and
+  --dotenv reads .env in the working directory. Only the two variables above
+  are taken from it, without ${VAR} expansion. The service address and its
+  source are printed before any document is sent.
 
 Exit codes:
   0  success; partially converted documents are written too (see --fail-on)
   1  runtime or connection failure (service unreachable, conversion error)
      or a failed document (see --fail-on)
-  2  usage/config error (no service URL resolved from flag, env, or .env)
+  2  usage/config error (no service URL resolved from flag, env, or env file)
 
 Examples:
-  # Single file, credentials from environment / .env
+  # Single file, credentials from the environment
   docling convert-remote report.pdf
+
+  # Single file, credentials from ./.env
+  docling convert-remote --dotenv report.pdf
 
   # Explicit endpoint + key, Markdown and JSON output to ./out
   docling convert-remote --service-url https://docling.example.com \\
@@ -133,6 +143,7 @@ def _collect_sources(
 
 
 def convert_remote(
+    ctx: typer.Context,
     source: Annotated[
         list[str],
         typer.Argument(
@@ -147,7 +158,7 @@ def convert_remote(
             "--service-url",
             envvar="DOCLING_SERVICE_URL",
             help="Base URL of the docling-serve service (required; falls back to "
-            "DOCLING_SERVICE_URL or a .env file).",
+            "DOCLING_SERVICE_URL, then to --env-file or --dotenv).",
         ),
     ] = None,
     api_key: Annotated[
@@ -156,9 +167,29 @@ def convert_remote(
             "--api-key",
             envvar="DOCLING_SERVICE_API_KEY",
             help="API key for the service (optional; falls back to "
-            "DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated).",
+            "DOCLING_SERVICE_API_KEY, then to --env-file or --dotenv; omit if "
+            "unauthenticated).",
         ),
     ] = None,
+    env_file: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--env-file",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Read DOCLING_SERVICE_URL and DOCLING_SERVICE_API_KEY from this "
+            "file when they are not set by flag or environment variable.",
+        ),
+    ] = None,
+    dotenv: Annotated[
+        bool,
+        typer.Option(
+            "--dotenv",
+            help="Same as --env-file .env: read the .env file in the working "
+            "directory (not in parent directories).",
+        ),
+    ] = False,
     from_formats: Annotated[
         Optional[list[InputFormat]],
         typer.Option(
@@ -333,13 +364,38 @@ def convert_remote(
 
     from docling.cli.main import err_console, export_documents
 
-    # 1. Validate credentials (flag/env/.env already merged by Typer + callback).
+    # 1. Resolve credentials: flag > environment variable (both by Typer) >
+    # the env file that the user names.
+    url_source = _service_url_source(ctx)
+    if dotenv:
+        if env_file is not None:
+            err_console.print("[red]Use --env-file or --dotenv, not both.[/red]")
+            raise typer.Exit(2)
+        env_file = Path(".env")
+        if not env_file.is_file():
+            err_console.print("[red]--dotenv: no .env file in this directory.[/red]")
+            raise typer.Exit(2)
+    if env_file is not None:
+        env_values = _read_env_file(env_file, err_console)
+        if not service_url and env_values.get(_SERVICE_URL_VAR):
+            service_url = env_values[_SERVICE_URL_VAR]
+            url_source = str(env_file.resolve())
+        if not api_key and env_values.get(_SERVICE_API_KEY_VAR):
+            api_key = env_values[_SERVICE_API_KEY_VAR]
+
     if not service_url:
         err_console.print(
             "[red]No service URL. Pass --service-url, set DOCLING_SERVICE_URL, "
-            "or add it to a .env file.[/red]"
+            "or read it from a file with --env-file or --dotenv.[/red]"
         )
         raise typer.Exit(2)
+    # Show where the documents go before anything is sent.
+    # soft_wrap keeps the line whole, and escape() keeps "[...]" in the URL or
+    # path from being read as Rich markup.
+    err_console.print(
+        f"Docling service: {escape(service_url)} (from {escape(url_source)})",
+        soft_wrap=True,
+    )
 
     # Forward --from only when set: the default list can contain formats an
     # older service rejects.
@@ -422,26 +478,49 @@ def convert_remote(
             raise typer.Exit(1)
 
 
-def _load_dotenv() -> None:
-    """Load a working-directory ``.env`` before command params resolve.
+_SERVICE_URL_VAR = "DOCLING_SERVICE_URL"
+_SERVICE_API_KEY_VAR = "DOCLING_SERVICE_API_KEY"
 
-    ``override=False`` keeps the intended precedence: a real environment variable
-    beats ``.env``, and Typer's flag-beats-envvar handling stays on top. ``.env``
-    support is best-effort — flags and environment variables still work without it.
+
+def _service_url_source(ctx: typer.Context) -> str:
+    """Name where Typer took ``--service-url`` from, for the address line."""
+    source = ctx.get_parameter_source("service_url")
+    # Compare by name: Typer >= 0.26 vendors click, so the ParameterSource enum
+    # class depends on the Typer version.
+    if source is not None and source.name == "ENVIRONMENT":
+        return _SERVICE_URL_VAR
+    return "--service-url"
+
+
+def _read_env_file(path: Path, err_console: "Console") -> dict[str, str]:
+    """Read the service settings from an env file that the user names.
+
+    Only ``DOCLING_SERVICE_URL`` and ``DOCLING_SERVICE_API_KEY`` are returned,
+    and ``os.environ`` is not changed. ``${VAR}`` references are kept as text,
+    so a value in the file cannot copy other environment variables.
     """
     try:
-        from dotenv import find_dotenv, load_dotenv
-
-        # usecwd=True searches from the user's working directory; the default
-        # (usecwd=False) searches up from this installed package dir and never
-        # finds the user's .env.
-        load_dotenv(find_dotenv(usecwd=True), override=False)
+        from dotenv import dotenv_values
     except ImportError:
-        pass
+        err_console.print(
+            "[red]Reading an env file needs python-dotenv. Install the `cli` "
+            "extra, or pass --service-url and --api-key.[/red]"
+        )
+        raise typer.Exit(2)
+    values = dotenv_values(path, interpolate=False)
+    return {
+        key: value
+        for key in (_SERVICE_URL_VAR, _SERVICE_API_KEY_VAR)
+        if (value := values.get(key))
+    }
+
+
+def _app_callback() -> None:
+    """Group callback, so that the app help text shows."""
 
 
 def register(app: "typer.Typer") -> None:
-    """Attach the ``convert-remote`` command and the ``.env`` loader to ``app``.
+    """Attach the ``convert-remote`` command and the app help to ``app``.
 
     Called from ``docling.cli.main`` after the app and shared helpers are defined
     and before the click command is built, so registration order is deterministic
@@ -452,7 +531,7 @@ def register(app: "typer.Typer") -> None:
             "Convert documents to a unified representation, locally with "
             "`convert` or through a docling-serve service with `convert-remote`."
         ),
-    )(_load_dotenv)
+    )(_app_callback)
     app.command(
         "convert-remote",
         no_args_is_help=True,

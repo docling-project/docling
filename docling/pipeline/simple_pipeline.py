@@ -204,6 +204,22 @@ class SimplePipeline(ConvertPipeline):
             reasons = "; ".join(error.error_message for error in result.errors)
             self._add_media_error(conv_res, location, f"cannot be converted: {reasons}")
             return None
+        if result.status == ConversionStatus.PARTIAL_SUCCESS:
+            if result.errors:
+                conv_res.errors.extend(
+                    error.model_copy(
+                        update={
+                            "error_message": (
+                                f"Media file {location}: {error.error_message}"
+                            ),
+                        }
+                    )
+                    for error in result.errors
+                )
+            else:
+                self._add_media_error(
+                    conv_res, location, "was only partially converted"
+                )
         media_doc = result.document
         _unwrap_track(media_doc)
         return media_doc

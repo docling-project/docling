@@ -9,10 +9,15 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from email.header import decode_header, make_header
 from email.message import EmailMessage, Message
-from email.utils import format_datetime, formataddr
+from email.utils import (
+    collapse_rfc2231_value,
+    format_datetime,
+    formataddr,
+    getaddresses,
+    unquote,
+)
 from io import BytesIO
 from pathlib import Path
-from typing import cast
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -75,6 +80,12 @@ _RECIPIENT_TYPE_PROP_ID = 0x0C15
 _RECIPIENT_TYPE_CC = 2
 _RECIPIENT_TYPE_BCC = 3
 
+# MAPI PidTagSender* properties on the .msg root properties, used to tell an
+# internal Exchange sender (address type "EX", no SMTP address) from a
+# regular one. python-oxmsg exposes them through Message.properties.
+_SENDER_NAME_PROP_ID = 0x0C1A
+_SENDER_SMTP_ADDRESS_PROP_ID = 0x5D01
+
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
     "Install it with `pip install 'docling-slim[format-email]'`."
@@ -100,44 +111,122 @@ class _BodyParagraph:
     content_layer: ContentLayer
 
 
-def _decode_text_part(part: Message) -> str:
-    """Decode a text part the way mailparser decodes it into `text_plain`.
+def _get_param(part: Message, name: str) -> str:
+    """Return a lowercase content-type parameter, also when RFC 2231 encoded.
 
-    The declared charset is tried first, then UTF-8 with replacement characters, so
-    the result matches mailparser's text also when the charset is wrong.
+    Args:
+        part: The message part.
+        name: The parameter name.
+
+    Returns:
+        The lowercase parameter value, or an empty string if it is not set.
     """
-    # a non-multipart part, like every text/plain part, decodes to bytes
-    payload = cast(bytes, part.get_payload(decode=True))
-    try:
-        return payload.decode(part.get_content_charset("utf-8"))
-    except (LookupError, UnicodeError):
-        return payload.decode("utf-8", "replace")
+    return collapse_rfc2231_value(part.get_param(name, "")).lower()
+
+
+def _is_plain_text_body(part: Message, inside_attachment: bool) -> bool:
+    """Tell whether mailparser adds a ``text/plain`` part to ``text_plain``.
+
+    Args:
+        part: The ``text/plain`` part.
+        inside_attachment: Whether an enclosing part is an attachment.
+
+    Returns:
+        True if the part is a body part, False if it is an attachment.
+    """
+    disposition = part.get_content_disposition()
+    if part.get_filename():
+        return disposition == "inline" and not inside_attachment
+    return disposition != "attachment"
+
+
+def _get_plain_text_flows(message: Message) -> list[bool | None]:
+    """Describe the flow of each plain-text body part, in the order of ``text_plain``.
+
+    A part is a body part when it has content and mailparser adds it to
+    ``text_plain``: it is not an attachment and it is not a named part inside an
+    attachment container.
+
+    Args:
+        message: The parsed message.
+
+    Returns:
+        One value per part: ``None`` for fixed text, otherwise whether the part
+        has ``delsp=yes``.
+    """
+    flows: list[bool | None] = []
+    attachment_descendants: set[Message] = set()
+    for part in message.walk():
+        inside_attachment = part in attachment_descendants
+        children = part.get_payload()
+        if isinstance(children, list):
+            disposition = part.get_content_disposition()
+            if (
+                inside_attachment
+                or disposition not in (None, "inline")
+                or (disposition != "inline" and part.get_filename())
+            ):
+                attachment_descendants.update(
+                    child for child in children if isinstance(child, Message)
+                )
+            continue
+        if (
+            part.get_content_type() != "text/plain"
+            or not _is_plain_text_body(part, inside_attachment)
+            or not part.get_payload(decode=True)
+        ):
+            continue
+        if _get_param(part, "format") == "flowed":
+            flows.append(_get_param(part, "delsp") == "yes")
+        else:
+            flows.append(None)
+    return flows
 
 
 def _unflow(text: str, delsp: bool) -> str:
-    """Join the soft line breaks of a `format=flowed` text (RFC 3676, 4.2).
+    """Join the soft line breaks of a ``format=flowed`` text (RFC 3676, 4.2).
 
     A line ending in a space continues on the next line with the same quote
-    depth. With `delsp=yes`, used for languages written without spaces, that
-    space is not part of the text. The signature separator `-- ` is never
-    flowed.
+    depth. An empty line and the signature separator ``-- `` end a paragraph.
+    The quote marks of a quoted line are normalized to ``>`` followed by one
+    space.
+
+    Args:
+        text: The decoded text of the part.
+        delsp: Whether the part has ``delsp=yes``, so that the space before a
+            soft line break is not part of the text.
+
+    Returns:
+        The text with the soft line breaks joined.
     """
-    lines: list[tuple[str, int]] = []
-    flowing = False
+    lines: list[str] = []
+    pending: list[str] = []
+    pending_depth = 0
     for line in re.sub(r"\r\n|\r", "\n", text).split("\n"):
         stripped = line.lstrip(">")
         depth = len(line) - len(stripped)
         if stripped.startswith(" "):
             stripped = stripped[1:]
-        prefix = ">" * depth + " " if depth else ""
-        if flowing and lines and lines[-1][1] == depth:
-            lines[-1] = (lines[-1][0] + stripped, depth)
-        else:
-            lines.append((prefix + stripped, depth))
+        joins = (
+            bool(pending)
+            and depth == pending_depth
+            and stripped != ""
+            and stripped != "-- "
+        )
+        if pending and not joins:
+            lines.append("".join(pending))
+            pending = []
+        piece = stripped if joins else ">" * depth + (" " if depth else "") + stripped
         flowing = stripped.endswith(" ") and stripped != "-- "
-        if flowing and delsp:
-            lines[-1] = (lines[-1][0][:-1], depth)
-    return "\n".join(line for line, _ in lines)
+        if flowing:
+            pending.append(piece[:-1] if delsp else piece)
+            pending_depth = depth
+        else:
+            lines.append("".join([*pending, piece]))
+            pending = []
+    if pending:
+        lines.append("".join(pending))
+    return "\n".join(lines)
 
 
 def _is_calendar_part(part: Message) -> bool:
@@ -272,12 +361,15 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         self.valid = False
         self.is_msg = False
         self.mail: mailparser.MailParser | None = None
+        # Sender display name for a .msg whose sender has no SMTP address
+        # (see _msg_sender_header); "" for .eml input and SMTP senders.
+        self._msg_sender_fallback = ""
 
         try:
             raw = self._read_bytes()
             self.is_msg = raw.startswith(_MSG_MAGIC)
             if self.is_msg:
-                raw = self._msg_to_rfc822_bytes(raw)
+                raw, self._msg_sender_fallback = self._msg_to_rfc822_bytes(raw)
             self.mail = mailparser.parse_from_bytes(raw)
 
             self.valid = self.mail is not None
@@ -318,6 +410,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         encoded-word must not stand up a forged header in the rendered document.
         `str.split()` covers every character `str.splitlines()` breaks on, and
         collapsing runs also unfolds a folded header to one space.
+        Null bytes are stripped so non-Unicode .msg headers parse cleanly.
 
         Args:
             value: Header string to sanitize.
@@ -325,7 +418,71 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             Single-line, single-spaced string.
         """
-        return " ".join(value.split())
+        return " ".join(value.replace("\x00", "").split())
+
+    @staticmethod
+    def _msg_sender_header(
+        sender: str, sender_name: str | None, smtp_address: str | None
+    ) -> tuple[str | None, str]:
+        """Split an oxmsg sender into a From header value and a name fallback.
+
+        Returns the value to write into the projected ``From`` header (``None``
+        to omit it) and the display name to show when the header does not
+        survive parsing ("" when the sender has an SMTP address).
+
+        A sender inside an Exchange organisation has no SMTP address:
+        python-oxmsg returns the display name with the legacy Exchange DN in
+        the angle brackets, e.g. ``Display Name </O=ORG/OU=.../CN=...>``.
+        That is not a valid addr-spec, so mailparser drops the whole mailbox
+        and the converted document loses its ``From:`` line. A bare display
+        name fares no better: mailparser only keeps mailboxes with an
+        address. For such a sender the header carries the display name alone
+        (quoted when it holds specials) and the fallback lets ``convert()``
+        render the name from the oxmsg properties instead of dropping it.
+        """
+        if "<" not in sender and "@" not in sender:
+            # oxmsg falls back to the sent-representing name when no address
+            # is recorded: a bare display name, which can hold a comma
+            # ("Doe, Jonathan") that getaddresses() would split on.
+            name = unquote(sender)
+        else:
+            parsed = getaddresses([sender])
+            if len(parsed) != 1:
+                # Ambiguous input (e.g. several addresses in the From header):
+                # keep the sender exactly as oxmsg gave it.
+                return sender, ""
+            name, address = parsed[0]
+            if "@" in address:
+                # A real SMTP address: keep the sender exactly as oxmsg gave it.
+                return sender, ""
+            # oxmsg built this string from PidTagSenderName. getaddresses()
+            # reads the "(FYDIBOHF23SPDLT)" group of a real legacy DN as a
+            # comment and appends it to the name, so prefer the property.
+            name = sender_name or name
+        if not name:
+            name = sender_name or ""
+        name = EmailDocumentBackend._header_safe(name)
+
+        if smtp_address and "@" in smtp_address:
+            # An SMTP address is recorded even though oxmsg's sender string
+            # shows the legacy DN (it prefers PidTagSenderEmailAddress over
+            # PidTagSenderSmtpAddress). Use it; it parses back as a mailbox.
+            smtp_address = EmailDocumentBackend._header_safe(smtp_address)
+            if name:
+                return (
+                    f"{EmailDocumentBackend._quote_display_name(name)}"
+                    f" <{smtp_address}>",
+                    "",
+                )
+            return smtp_address, ""
+        if not name:
+            return None, ""
+
+        # A bare name does not parse back as a mailbox, so it is returned as
+        # the fallback as well: convert() shows it when mailparser yields no
+        # sender for the projected message.
+        quoted = EmailDocumentBackend._quote_display_name(name)
+        return quoted, quoted
 
     @staticmethod
     def _recover_msg_body(data: bytes, message: OxMsgMessage) -> str | None:
@@ -350,18 +507,23 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 if not ole.exists(stream_name):
                     return None
                 raw = ole.openstream(stream_name).read()
-            return raw.decode(encoding, errors="replace")
+            return raw.decode(encoding, errors="replace").rstrip("\x00")
         except Exception:
             return None
 
     @staticmethod
-    def _msg_to_rfc822_bytes(data: bytes) -> bytes:
+    def _msg_to_rfc822_bytes(data: bytes) -> tuple[bytes, str]:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
         python-oxmsg reads the MAPI message; we assemble a standard
         ``email.message.EmailMessage`` from it so the ``.msg`` path shares the
         exact body, HTML, address, and attachment handling used for ``.eml``
         input.
+
+        Returns the RFC 822 bytes and the sender display name to show when
+        the projected ``From`` header does not survive parsing ("" when the
+        sender has an SMTP address or there is no sender). See
+        :meth:`_msg_sender_header`.
 
         Every string property access is guarded against
         ``UnicodeDecodeError`` (wrong codec) and ``LookupError`` (unknown
@@ -378,9 +540,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         message = OxMsgMessage.load(data)
         email_message = EmailMessage()
+        sender_fallback = ""
 
         try:
-            subject = message.subject or ""
+            subject = (message.subject or "").rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             subject = ""
             _log.warning("Could not decode .msg subject")
@@ -388,21 +551,33 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             email_message["Subject"] = EmailDocumentBackend._header_safe(subject)
 
         try:
-            sender = message.sender or ""
+            sender = (message.sender or "").rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             sender = ""
             _log.warning("Could not decode .msg sender")
         if sender:
-            email_message["From"] = EmailDocumentBackend._header_safe(sender)
+            try:
+                sender_name = message.properties.str_prop_value(_SENDER_NAME_PROP_ID)
+                smtp_address = message.properties.str_prop_value(
+                    _SENDER_SMTP_ADDRESS_PROP_ID
+                )
+            except (UnicodeDecodeError, LookupError):
+                sender_name = smtp_address = None
+                _log.warning("Could not decode .msg sender properties")
+            from_value, sender_fallback = EmailDocumentBackend._msg_sender_header(
+                sender, sender_name=sender_name, smtp_address=smtp_address
+            )
+            if from_value:
+                email_message["From"] = EmailDocumentBackend._header_safe(from_value)
 
         # Preserve the To/Cc/Bcc split from the recipient rows so downstream
         # rendering (which shows "To" and "Cc") matches the .eml behavior.
         grouped: dict[str, list[str]] = {}
         for recipient in message.recipients:
             try:
-                formatted = formataddr(
-                    (recipient.name or "", recipient.email_address or "")
-                )
+                r_name = (recipient.name or "").rstrip("\x00")
+                r_email = (recipient.email_address or "").rstrip("\x00")
+                formatted = formataddr((r_name, r_email))
             except (UnicodeDecodeError, LookupError):
                 _log.warning("Could not decode .msg recipient; skipping")
                 continue
@@ -427,6 +602,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             plain_body = message.body
+            if plain_body:
+                plain_body = plain_body.rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             # Recover via OLE stream with the message code page.
             plain_body = EmailDocumentBackend._recover_msg_body(data, message)
@@ -439,6 +616,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 _log.warning("Could not decode .msg plain-text body")
         try:
             html_body = message.html_body
+            if html_body:
+                html_body = html_body.rstrip("\x00")
         except (UnicodeDecodeError, LookupError):
             html_body = None
             _log.warning("Could not decode .msg HTML body")
@@ -452,10 +631,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             email_message.set_content("")
 
         for attachment in message.attachments:
-            mime_type = attachment.mime_type or "application/octet-stream"
+            mime_type = (attachment.mime_type or "application/octet-stream").rstrip(
+                "\x00"
+            )
             maintype, _, subtype = mime_type.partition("/")
+            maintype = maintype.rstrip("\x00")
+            subtype = subtype.rstrip("\x00")
             try:
                 filename = attachment.file_name
+                if filename:
+                    filename = filename.rstrip("\x00")
             except (UnicodeDecodeError, LookupError):
                 filename = None
                 _log.warning("Could not decode .msg attachment filename")
@@ -466,7 +651,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 filename=filename,
             )
 
-        return email_message.as_bytes()
+        return email_message.as_bytes(), sender_fallback
 
     def is_valid(self) -> bool:
         return self.valid
@@ -588,22 +773,17 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         # produced text, or the fallbacks below never run and the message
         # renders with no body at all.
         if self.mail.text_plain:
-            # mailparser keeps only the decoded text of a part, so the flowed
-            # parts are found again by their text.
-            flowed = {
-                _decode_text_part(part): str(part.get_param("delsp", "")).lower()
-                == "yes"
-                for part in self.mail.message.walk()
-                if part.get_content_type() == "text/plain"
-                and str(part.get_param("format", "")).lower() == "flowed"
-            }
+            # mailparser keeps only the decoded text of each part, so the flow of a
+            # part is found by its position. Without a match, the text is kept as is.
+            flows = _get_plain_text_flows(self.mail.message)
+            if len(flows) != len(self.mail.text_plain):
+                flows = [None] * len(self.mail.text_plain)
             paragraphs: list[_BodyParagraph] = []
-            for part in self.mail.text_plain:
-                if part in flowed:
-                    part = _unflow(part, flowed[part])
+            for raw_text, delsp in zip(self.mail.text_plain, flows):
+                text = raw_text if delsp is None else _unflow(raw_text, delsp)
                 paragraphs.extend(
                     _BodyParagraph(text=paragraph, content_layer=ContentLayer.BODY)
-                    for paragraph in self._split_paragraphs(part)
+                    for paragraph in self._split_paragraphs(text)
                 )
             if paragraphs:
                 return paragraphs
@@ -683,7 +863,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(self.mail.subject, str)
             else ""
         )
-        from_text = self._format_addresses(self.mail.from_, fallback="")
+        from_text = self._format_addresses(
+            self.mail.from_, fallback=self._msg_sender_fallback
+        )
         to_text = self._format_addresses(self.mail.to, fallback="")
         cc_text = self._format_addresses(self.mail.cc, fallback="")
         date_text = self._get_date_text()

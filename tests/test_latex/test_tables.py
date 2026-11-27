@@ -405,6 +405,30 @@ def test_latex_table_without_empty_last_row(rows_end: bytes):
 
 
 @pytest.mark.parametrize(
+    "row_end",
+    [rb"\tabularnewline", rb"\tabularnewline[2pt]", rb"\tabularnewline*"],
+    ids=["tabularnewline", "with-length", "starred"],
+)
+def test_latex_table_tabularnewline_row_end(row_end: bytes) -> None:
+    doc = _convert_latex_table(
+        rb"\documentclass{article}\begin{document}"
+        rb"\begin{tabular}{cc}"
+        rb"Model & Score "
+        + row_end
+        + rb" Base & 1.0 "
+        + row_end
+        + rb"\end{tabular}\end{document}"
+    )
+
+    table = doc.tables[0].data
+    assert table.num_rows == 2
+    assert [[cell.text for cell in row] for row in table.grid] == [
+        ["Model", "Score"],
+        ["Base", "1.0"],
+    ]
+
+
+@pytest.mark.parametrize(
     "latex_content",
     [
         rb"\begin{tabular}{c}\multicolumn{1000000}{c}{x}\end{tabular}",

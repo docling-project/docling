@@ -9,9 +9,16 @@ here and read into that model by :mod:`docling.backend.iwork.archives` and
 :mod:`docling.backend.iwork.legacy`. Turning the result into a
 :class:`~docling_core.types.doc.DoclingDocument` is the backend's job, which is
 what keeps the two readers from having to agree on anything else.
+
+A table cell holds a typed value rather than a string, and every iWork app stores
+it as one. Rendering happens here too, so that the readers agree on what, say,
+``4650`` looks like even though one gets it as an IEEE double and the other as
+an XML attribute.
 """
 
 import re
+from datetime import datetime, timedelta, timezone
+from decimal import MAX_EMAX, MAX_PREC, MIN_EMIN, Context, Decimal, InvalidOperation
 from enum import Enum
 from typing import NamedTuple, TypeVar
 
@@ -455,3 +462,81 @@ def build_formatting(active: set[str], script: Script | None) -> Formatting | No
         strikethrough="strikethrough" in active,
         script=script or Script.BASELINE,
     )
+
+
+APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
+"""Instant iWork counts its dates and times from."""
+
+_EXACT_CONTEXT = Context(prec=MAX_PREC, Emax=MAX_EMAX, Emin=MIN_EMIN)
+"""Context wide enough to hold every decimal128 digit unchanged.
+
+``Decimal.normalize`` rounds to the caller's context, which keeps 28 digits by
+default, and a decimal128 holds 34.
+"""
+
+
+def format_number(value: Decimal | float) -> str:
+    """Render a numeric cell the way the document shows it, near enough.
+
+    iWork keeps a cell's number format beside the value rather than in it, so a
+    currency or percentage cell is rendered as the plain number it holds. What
+    this does guarantee is that a whole number reads as one — ``4650`` rather
+    than ``4650.0`` — and that a fraction does not pick up binary floating point
+    noise on the way out.
+
+    Args:
+        value: The cell's value, exact when it came from a decimal128.
+
+    Returns:
+        The value as text, without an exponent.
+    """
+    if not isinstance(value, Decimal):
+        # repr() of a float is its shortest round-tripping form, so this is the
+        # decimal the document meant rather than the full binary expansion.
+        try:
+            value = Decimal(repr(value))
+        except InvalidOperation:  # nan and the infinities
+            return repr(value)
+    return f"{value.normalize(_EXACT_CONTEXT):f}"
+
+
+def format_date(seconds: Decimal | float) -> str | None:
+    """Render a date cell, which iWork stores as seconds from its epoch.
+
+    Returns None when the span lands outside what a datetime can hold, which
+    only a corrupt or hostile document records.
+    """
+    instant = moment(seconds)
+    return None if instant is None else instant.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def format_duration(seconds: Decimal | float) -> str | None:
+    """Render a duration cell, which iWork stores as a span in seconds.
+
+    Returns None when the span lands outside what a timedelta can hold, which
+    only a corrupt or hostile document records.
+    """
+    try:
+        return str(timedelta(seconds=float(seconds)))
+    except (OverflowError, ValueError):
+        return None
+
+
+def format_bool(value: Decimal | float) -> str:
+    """Render a boolean cell, which iWork stores as a number."""
+    return "True" if value > 0 else "False"
+
+
+def moment(seconds: Decimal | float) -> datetime | None:
+    """Turn a span of seconds from the Apple epoch into an instant.
+
+    Args:
+        seconds: The span the document recorded.
+
+    Returns:
+        The instant, or None when it lands outside what a datetime can hold.
+    """
+    try:
+        return APPLE_EPOCH + timedelta(seconds=float(seconds))
+    except (OverflowError, OSError, ValueError):
+        return None

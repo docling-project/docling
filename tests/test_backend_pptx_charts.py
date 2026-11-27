@@ -451,3 +451,26 @@ def test_sparse_points_stay_aligned_with_the_categories(tmp_path: Path):
         ["", ""],
         ["", "60"],
     ]
+
+
+@pytest.mark.parametrize("name", ["Revenue", "001"])
+def test_chart_keeps_literal_series_name(tmp_path: Path, name: str):
+    """A series name stored in c:tx/c:v heads its value column, as in Excel."""
+    from lxml import etree
+    from pptx.oxml.ns import qn
+
+    prs, plot = _single_plot_deck("barChart")
+    tx = plot.find(f"{qn('c:ser')}/{qn('c:tx')}")
+    tx.clear()
+    etree.SubElement(tx, qn("c:v")).text = name
+    path = tmp_path / "literal_series_name.pptx"
+    prs.save(path)
+
+    doc = get_converter().convert(path).document
+    assert len(doc.pictures) == 1
+    assert _grid(doc.pictures[0]) == [
+        ["", name],
+        ["Q1", "10"],
+        ["Q2", "20"],
+        ["Q3", "30"],
+    ]

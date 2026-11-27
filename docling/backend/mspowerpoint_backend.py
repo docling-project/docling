@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import math
+import posixpath
 import re
 import shutil
 import warnings
@@ -25,7 +26,7 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -71,6 +72,8 @@ from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
     ArchiveLimits,
     check_archive_limits,
+    check_referenced_total,
+    read_member,
 )
 from docling.backend.utils.chartex import CHARTEX_NAMESPACE, read_chartex
 from docling.backend.utils.charts import (
@@ -82,6 +85,7 @@ from docling.backend.utils.charts import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.media import MediaKind, load_linked_media, media_ref
+from docling.backend.utils.table_spans import MAX_COLSPAN, MAX_ROWSPAN, clamp_span
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -280,6 +284,8 @@ def _trim_fragment_edges(
     )
 
 
+_NS_PACKAGE_RELS: Final = "http://schemas.openxmlformats.org/package/2006/relationships"
+
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
     load_dtd=False,
@@ -287,6 +293,74 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     dtd_validation=False,
 )
 """Safe XML parser to prevent XXE, DTD-over-network and entity-expansion attacks."""
+
+
+def _relationship_targets(
+    zip_file: ZipFile, source: str, max_bytes: int
+) -> dict[str, tuple[str, str]]:
+    """Return the internal relationships of a part, as id to (type, member).
+
+    Args:
+        zip_file: The open archive.
+        source: The member name of the source part, or "" for the package.
+        max_bytes: The largest decompressed size accepted for the rels part.
+    """
+    folder, name = posixpath.split(source)
+    rels_path = posixpath.join(folder, "_rels", f"{name}.rels")
+    if rels_path not in zip_file.NameToInfo:
+        return {}
+    root = etree.fromstring(
+        read_member(zip_file, rels_path, max_bytes), parser=_SAFE_XML_PARSER
+    )
+    targets: dict[str, tuple[str, str]] = {}
+    for rel in root.iterfind(f"{{{_NS_PACKAGE_RELS}}}Relationship"):
+        rel_id = rel.get("Id")
+        target = rel.get("Target")
+        if rel_id is None or target is None or rel.get("TargetMode") == "External":
+            continue
+        member = (
+            target.lstrip("/")
+            if target.startswith("/")
+            else posixpath.normpath(posixpath.join(folder, target))
+        )
+        targets[rel_id] = (rel.get("Type", ""), member)
+    return targets
+
+
+def _slide_references(zip_file: ZipFile, max_bytes: int) -> list[ZipInfo]:
+    """Return the archive member of each entry of the slide list, in order.
+
+    Several entries of ``p:sldIdLst`` can refer to the same slide part.
+
+    Args:
+        zip_file: The open archive.
+        max_bytes: The largest decompressed size accepted for each XML part.
+    """
+    main_parts = [
+        member
+        for rel_type, member in _relationship_targets(zip_file, "", max_bytes).values()
+        if rel_type.endswith("/officeDocument") and member in zip_file.NameToInfo
+    ]
+    if not main_parts:
+        return []
+    main_part = main_parts[0]
+    targets = _relationship_targets(zip_file, main_part, max_bytes)
+    root = etree.fromstring(
+        read_member(zip_file, main_part, max_bytes), parser=_SAFE_XML_PARSER
+    )
+    references: list[ZipInfo] = []
+    for slide_id in root.iterfind(".//{*}sldIdLst/{*}sldId"):
+        # The relationship namespace of r:id differs between Transitional and
+        # Strict files, so any namespaced "id" attribute is taken.
+        rel_ids = [
+            value
+            for key, value in slide_id.attrib.items()
+            if (name := etree.QName(key)).namespace and name.localname == "id"
+        ]
+        target = targets.get(rel_ids[0]) if rel_ids else None
+        if target is not None and (info := zip_file.NameToInfo.get(target[1])):
+            references.append(info)
+    return references
 
 
 @dataclass
@@ -371,6 +445,28 @@ _MAX_AUTO_NUMBER_START: Final = 32767
 """The largest ``a:buAutoNum/@startAt`` value that ``ST_TextBulletStartAtNum``
 allows. A larger value is invalid and would build very long letter or Roman
 markers."""
+
+
+def _declared_span(value: str | None, limit: int) -> int:
+    """Return a cell's ``gridSpan`` or ``rowSpan`` value, clamped to ``[1, limit]``.
+
+    Args:
+        value: The raw attribute value, or ``None`` when the cell has none.
+        limit: The largest span the cell can have at its place in the table.
+
+    Returns:
+        The span. A missing or non-integer value gives 1.
+    """
+    if value is None:
+        return 1
+    digits = value.strip()
+    if not (digits.isascii() and digits.isdigit()):
+        return 1
+    # Any value this long is above the limit; skip converting very long digit
+    # strings to int.
+    if len(digits.lstrip("0")) > len(str(limit)):
+        return max(limit, 1)
+    return clamp_span(int(digits), limit)
 
 
 def _auto_number_marker(value: int, scheme: Optional[str]) -> str:
@@ -543,6 +639,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         with ZipFile(self.path_or_stream, "r") as zip_file:
             check_archive_limits(zip_file, self._archive_limits)
+            # python-pptx returns a slide part once for each entry of the slide
+            # list, and the conversion emits the slide content each time.
+            check_referenced_total(
+                self._archive_limits,
+                _slide_references(zip_file, self._archive_limits.max_file_bytes),
+                zip_file.infolist(),
+            )
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
 
@@ -1525,41 +1628,26 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Handling tables, images, charts
         if shape.has_table:
             table = shape.table
-            table_xml = shape._element
 
             prov = self._generate_prov(shape, slide_ind, "", slide_size)
 
-            num_cols = 0
-            num_rows = len(table.rows)
+            rows = [list(row.cells) for row in table.rows]
+            num_rows = len(rows)
+            num_cols = max((len(cells) for cells in rows), default=0)
             tcells = []
-            # Access the XML element for the shape that contains the table
-            table_xml = shape._element
 
-            for row_idx, row in enumerate(table.rows):
-                if len(row.cells) > num_cols:
-                    num_cols = len(row.cells)
-                for col_idx, cell in enumerate(row.cells):
-                    # Access the XML of the cell (this is the 'tc' element in table XML)
-                    cell_xml = table_xml.xpath(
-                        f".//a:tbl/a:tr[{row_idx + 1}]/a:tc[{col_idx + 1}]"
+            for row_idx, cells in enumerate(rows):
+                for col_idx, cell in enumerate(cells):
+                    # The cell's own a:tc element: the col_idx-th a:tc child of
+                    # the row_idx-th a:tr. Looking it up with an XPath per cell
+                    # scans the table each time.
+                    cell_xml = cell._tc
+                    row_span = _declared_span(
+                        cell_xml.get("rowSpan"), min(MAX_ROWSPAN, num_rows - row_idx)
                     )
-
-                    if not cell_xml:
-                        continue  # If no cell XML is found, skip
-
-                    cell_xml = cell_xml[0]  # Get the first matching XML node
-                    row_span = cell_xml.get("rowSpan")  # Vertical span
-                    col_span = cell_xml.get("gridSpan")  # Horizontal span
-
-                    if row_span is None:
-                        row_span = 1
-                    else:
-                        row_span = int(row_span)
-
-                    if col_span is None:
-                        col_span = 1
-                    else:
-                        col_span = int(col_span)
+                    col_span = _declared_span(
+                        cell_xml.get("gridSpan"), min(MAX_COLSPAN, num_cols - col_idx)
+                    )
 
                     icell = TableCell(
                         text=cell.text.strip(),
@@ -1855,8 +1943,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 axis = self._category_axis(chart, x_chart)
                 categories = self._category_labels(chart, axis, x_chart, max_rows)
                 corner = self._axis_title_text(axis) if axis is not None else ""
-            for ser, series in self._plot_series(x_chart):
-                name = self._cell_text(series.name) if series.name is not None else ""
+            for ser, _ in self._plot_series(x_chart):
+                # python-pptx's series.name reads cached references only, not c:tx/c:v.
+                names = ser.xpath("./c:tx/c:v/text() | ./c:tx/c:strRef//c:v/text()")
+                name = names[0] if names else ""
                 values = self._series_values(ser, x_chart, max_rows)
                 columns.append((name, values))
 

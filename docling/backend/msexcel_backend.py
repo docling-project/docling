@@ -68,6 +68,7 @@ from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
     ArchiveLimits,
     check_archive_limits,
+    check_referenced_total,
     read_member,
 )
 from docling.backend.utils.charts import (
@@ -1033,19 +1034,48 @@ def _read_worksheets_with_clipped_ranges(
         )
 
 
-def _load_workbook(filename: str | BytesIO) -> ExcelReader:
+def _check_sheet_references(reader: ExcelReader, limits: ArchiveLimits) -> None:
+    """Count each sheet reference of the workbook part against ``max_total_bytes``.
+
+    openpyxl reads a sheet part once for each ``<sheet>`` entry of the workbook
+    part, also when several entries refer to the same part.
+
+    Args:
+        reader: The reader, after it has parsed the workbook part.
+        limits: The limits to apply.
+
+    Raises:
+        ArchiveLimitError: If the archive is larger than ``max_total_bytes``
+            when each sheet part counts once for each reference.
+    """
+    archive = reader.archive
+    references = [
+        info
+        for sheet in reader.parser.sheets
+        if sheet.id is not None
+        and (rel := reader.parser.rels.get(sheet.id)) is not None
+        and (info := archive.NameToInfo.get(rel.target)) is not None
+    ]
+    check_referenced_total(limits, references, archive.infolist())
+
+
+def _load_workbook(filename: str | BytesIO, limits: ArchiveLimits) -> ExcelReader:
     """Load a workbook like ``load_workbook(filename, data_only=True)``.
 
     Merged cell and hyperlink ranges are clipped so that they cover a bounded
-    number of cells.
+    number of cells. Before the worksheets are read, each sheet reference
+    counts against ``max_total_bytes``.
     """
     reader = ExcelReader(filename, data_only=True)
     read_worksheets = reader.read_worksheets
-    # ``reader.wb`` exists once ``read`` has read the workbook part, which openpyxl
-    # does before it reads the worksheets.
-    reader.read_worksheets = lambda: _read_worksheets_with_clipped_ranges(  # type: ignore[method-assign]
-        reader.wb, read_worksheets
-    )
+
+    def read_bounded_worksheets() -> None:
+        _check_sheet_references(reader, limits)
+        _read_worksheets_with_clipped_ranges(reader.wb, read_worksheets)
+
+    # ``reader.wb`` and ``reader.parser`` exist once ``read`` has read the
+    # workbook part, which openpyxl does before it reads the worksheets.
+    reader.read_worksheets = read_bounded_worksheets  # type: ignore[method-assign]
     reader.read()
     return reader
 
@@ -1300,9 +1330,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 )
                 reader: ExcelReader | None = None
                 if isinstance(self.path_or_stream, BytesIO):
-                    reader = _load_workbook(self.path_or_stream)
+                    reader = _load_workbook(self.path_or_stream, self._archive_limits)
                 elif isinstance(self.path_or_stream, Path):
-                    reader = _load_workbook(str(self.path_or_stream))
+                    reader = _load_workbook(
+                        str(self.path_or_stream), self._archive_limits
+                    )
             if reader is not None:
                 self.workbook = reader.wb
                 self._read_rich_value_images(reader)

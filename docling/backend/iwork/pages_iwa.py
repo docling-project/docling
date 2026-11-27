@@ -82,6 +82,7 @@ def read_content(
     archive: zipfile.ZipFile,
     infos: list[zipfile.ZipInfo],
     max_file_bytes: int,
+    max_total_bytes: int,
     document_hash: str,
 ) -> Content:
     """Read the content of a Pages 5+ document out of its IWA object graph.
@@ -90,6 +91,8 @@ def read_content(
         archive: The open ``.pages`` container.
         infos: Its members.
         max_file_bytes: The largest member this is willing to decompress.
+        max_total_bytes: The most bytes all ``.iwa`` streams together may
+            decompress to.
         document_hash: The document's hash, for error messages.
 
     Returns:
@@ -99,7 +102,7 @@ def read_content(
         DocumentLoadError: If a member is too large, or the object graph has no
             document archive or no body text storage.
     """
-    objects = read_objects(archive, infos, max_file_bytes, PAGES_KIND)
+    objects = read_objects(archive, infos, max_file_bytes, max_total_bytes, PAGES_KIND)
 
     document = next(
         (o for o in objects.values() if o.message_type == TP_DOCUMENT_ARCHIVE),

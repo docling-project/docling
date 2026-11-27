@@ -14,6 +14,7 @@ from docling_core.types.doc.document import Formatting, InlineGroup
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.constants import MACROS_IGNORED
+from docling.backend.latex.context import MacroExpansionBudget
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
 from docling.backend.latex.handlers.macros import MacroHandlerMixin
 from docling.backend.latex.handlers.math import InlineFormula, MathHandlerMixin
@@ -97,7 +98,16 @@ class LatexDocumentBackend(
         self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
         self._tikz_futures: list[concurrent.futures.Future] = []
         self._tikz_untrusted_warned = False
+        self._expansion_budget = self._new_expansion_budget()
         self.latex_text = decode_latex_content(self.path_or_stream)
+
+    def _new_expansion_budget(self) -> MacroExpansionBudget:
+        opts = cast(LatexBackendOptions, self.options)
+        return MacroExpansionBudget(
+            max_chars=opts.max_macro_expansion_chars,
+            max_expansions=opts.max_macro_expansions,
+            stop_event=threading.Event(),
+        )
 
     def is_valid(self) -> bool:
         text = self.latex_text.strip()
@@ -219,6 +229,7 @@ class LatexDocumentBackend(
         doc = DoclingDocument(name=self.file.stem)
         opts = cast(LatexBackendOptions, self.options)
         timeout = opts.parse_timeout
+        self._expansion_budget = self._new_expansion_budget()
 
         if timeout is None:
             return self._normalize_document_text(self._do_parse_and_process(doc))
@@ -238,6 +249,9 @@ class LatexDocumentBackend(
         thread.join(timeout=timeout)
 
         if thread.is_alive():
+            # Ask the worker to stop at its next checkpoint, so that it does
+            # not keep running after convert() returns.
+            self._expansion_budget.stop_event.set()
             _log.warning(
                 f"LaTeX parsing timed out after {timeout}s for "
                 f"'{self.file.name}'. "
@@ -366,6 +380,8 @@ class LatexDocumentBackend(
 
         idx = 0
         while idx < len(nodes):
+            if self._expansion_budget.is_stopped():
+                break
             node = nodes[idx]
             consumed_following = 0
             try:
@@ -404,7 +420,8 @@ class LatexDocumentBackend(
                             text_label,
                             text_buffer,
                             flush_text_buffer,
-                            nodes[idx + 1 :],
+                            nodes,
+                            idx + 1,
                         )
 
                 elif isinstance(node, LatexEnvironmentNode):

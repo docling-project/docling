@@ -58,6 +58,12 @@ def _build_context_db() -> Any:
         macros=[MacroSpec("href", "[{{")],
         prepend=True,
     )
+    # Consume \tabularnewline's optional star and length so they do not enter cells.
+    db.add_context_category(
+        "docling-tabularnewline",
+        macros=[MacroSpec("tabularnewline", "*[")],
+        prepend=True,
+    )
     return db
 
 

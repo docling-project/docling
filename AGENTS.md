@@ -63,6 +63,34 @@ make validate       # run mutating hooks on the current changeset
 - Avoid `hasattr(...)`, broad `getattr(...)`, and similar attribute-probing patterns. These usually hide interface uncertainty. If such a check is genuinely required for compatibility with a documented third-party API, keep it narrowly scoped and explain in a comment.
 - Do not add trivial or self-validating tests. Tests should verify meaningful application behavior, regressions, or integration boundaries, not restate assumptions about well-established library functionality or implementation details introduced only to validate the agent’s own code changes. Avoid mock-heavy tests unless mocking is the clearest way to exercise a real contract or failure mode.
 
+## Security: input documents are not trusted
+
+- Do not trust a number that the document declares, such as a `colspan`, a
+  repeat count, a cell range, or a point count. A small file can declare a very
+  large value. Limit the value before you allocate memory or loop on it. For
+  table spans, use `clamp_span` in `docling/backend/utils/table_spans.py`. For
+  other values, add an explicit maximum.
+- Read ZIP members only through `check_archive_limits` and `read_member` in
+  `docling/backend/utils/archive_limits.py`. Apply limits for each document, not
+  only for each member. Process a member one time, also when many items refer
+  to it.
+- Apply `max_image_pixels` before you decode or resize an image. Decode pages
+  on demand. Permit only the expected Pillow formats.
+- Parse XML with `resolve_entities=False, load_dtd=False, no_network=True`.
+- Keep the work linear in the input size. Do not use nested quantifiers on
+  document text. Do not query the full tree for each cell or item.
+- Send each URL or path from a document through `ImageResourceLoader`. Each new
+  code path must obey `enable_remote_fetch`, `enable_local_fetch`,
+  `enable_remote_services`, and `allow_external_plugins`.
+- Do not send configured headers or credentials to a host that a document names.
+- An external program (LibreOffice, ffmpeg, Tectonic, a browser) must be opt-in.
+  Set a timeout, use no shell, and restrict file and network access. A deny-list
+  of commands is not sufficient.
+- A new option must default to the safe value. Do not read configuration from
+  the working directory. Do not set a remote endpoint as a default.
+- Add a test with a small hostile input for each guard. The test must fail
+  without the guard.
+
 ## When making changes
 
 1. Keep edits scoped and consistent with the surrounding module.

@@ -950,7 +950,9 @@ def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
 
 def test_invisible_text_cells_report_rendering_mode():
     """docling-parse must surface `rendering_mode` so invisible text can be told apart."""
-    doc_backend = _get_backend(Path("./tests/data/pdf/invisible_text_layer.pdf"))
+    doc_backend = _get_backend(
+        Path("./tests/data/pdf/fixtures/invisible_text_layer.pdf")
+    )
 
     try:
         page_backend = next(doc_backend.iter_pages())
@@ -977,7 +979,7 @@ def test_invisible_text_cells_report_rendering_mode():
 def test_threaded_backend_filters_invisible_text_cells():
     """The threaded backend must answer `get_visible_text_cells()` like the paged one."""
     in_doc = InputDocument(
-        path_or_stream=Path("./tests/data/pdf/invisible_text_layer.pdf"),
+        path_or_stream=Path("./tests/data/pdf/fixtures/invisible_text_layer.pdf"),
         format=InputFormat.PDF,
         backend=ThreadedDoclingParseDocumentBackend,
     )
