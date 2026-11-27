@@ -14,7 +14,7 @@ import unicodedata
 import warnings
 from collections.abc import Iterator
 from copy import deepcopy
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal, localcontext
 from io import BytesIO
 from pathlib import Path
@@ -151,6 +151,14 @@ _EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
     r'"[^"]*"|\\.|am/pm|yyyy|yy|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s|[ :/.,-]',
     re.IGNORECASE,
 )
+# An elapsed-time format such as ``[h]:mm:ss``: a bracketed total, then the
+# remaining minutes and seconds, with separators and quoted or escaped literals.
+_EXCEL_ELAPSED_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
+    r'"[^"]*"|\\.|\[(?:h+|m+|s+)\]|mm?|ss?|[ :/.,-]',
+    re.IGNORECASE,
+)
+_ELAPSED_UNIT_ORDER: Final[str] = "hms"
+_ELAPSED_UNIT_SECONDS: Final[dict[str, int]] = {"h": 3600, "m": 60, "s": 1}
 
 
 # A ``[$<symbol>-<locale id>]`` currency tag, e.g. ``[$€-407]`` or ``[$₹-4009]``.
@@ -232,6 +240,8 @@ def _format_excel_value(value: Any, number_format: str) -> str:
 
     if number_format.lower() in _GENERAL_NUMBER_FORMATS:
         return str(value)
+    if isinstance(value, timedelta):
+        return _format_excel_elapsed(value, number_format)
     if isinstance(value, (datetime, date, time)):
         return _format_excel_date(value, number_format)
     if isinstance(value, (int, float)):
@@ -382,6 +392,48 @@ def _format_excel_date(value: Any, fmt: str) -> str:
                     "dddd": "%A",
                 }[token]
                 rendered.append(dt.strftime(directive))
+    return "".join(rendered)
+
+
+def _format_excel_elapsed(value: timedelta, fmt: str) -> str:
+    """Render an elapsed-time format such as ``[h]:mm:ss`` as Excel displays it.
+
+    openpyxl loads a cell with an elapsed-time format as a ``timedelta``, whose
+    ``str()`` (``1 day, 2:30:00``) is neither the workbook text nor its value.
+    The bracketed unit shows the whole duration in that unit, so 26.5 hours
+    under ``[h]:mm`` is ``26:30``. Each following ``m`` or ``s`` shows what
+    remains of the larger unit, and the number of letters sets the minimum
+    number of digits. As in Excel without a fractional-second code, the
+    duration is rounded to whole seconds first.
+
+    Negative durations keep ``str(value)``: Excel shows ``#####`` for them in
+    the default 1900 date system. So do formats with any other code, such as
+    fractional seconds, several sections, colors or a unit out of order.
+    """
+    parts = _EXCEL_ELAPSED_TOKEN_RE.findall(fmt)
+    if "".join(parts) != fmt or value < timedelta(0):
+        return str(value)
+    units = [part.lower() for part in parts if part[0] == "[" or part[0].isalpha()]
+    if not units or not units[0].startswith("["):
+        return str(value)
+    smaller_units = _ELAPSED_UNIT_ORDER[_ELAPSED_UNIT_ORDER.index(units[0][1]) + 1 :]
+    following = "".join(unit[0] for unit in units[1:])
+    if following != smaller_units[: len(following)]:
+        return str(value)
+
+    remaining = (value // timedelta(microseconds=1) + 500_000) // 1_000_000
+    rendered: list[str] = []
+    for part in parts:
+        if part.startswith('"'):
+            rendered.append(part[1:-1])
+        elif part.startswith("\\"):
+            rendered.append(part[1:])
+        elif part[0] == "[" or part[0].isalpha():
+            token = part.strip("[]").lower()
+            amount, remaining = divmod(remaining, _ELAPSED_UNIT_SECONDS[token[0]])
+            rendered.append(str(amount).zfill(len(token)))
+        else:
+            rendered.append(part)
     return "".join(rendered)
 
 
