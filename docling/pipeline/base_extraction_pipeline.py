@@ -16,7 +16,7 @@ from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
     DocumentExtractionResult,
     ExtractionResult,
-    ExtractionTarget,
+    ExtractionSpec,
     ExtractionTemplateType,
     _legacy_result,
 )
@@ -49,27 +49,27 @@ class BaseExtractionPipeline(ABC):
         raises_on_error: bool,
         template: Optional[ExtractionTemplateType] = None,
         *,
-        target: ExtractionTarget | None = None,
+        spec: ExtractionSpec | None = None,
     ) -> ExtractionResult | DocumentExtractionResult:
         try:
             # Main also permits pipeline execution with its default prompt.
             owned = (
-                normalize_extraction_call(template, target)
-                if template is not None or target is not None
+                normalize_extraction_call(template, spec)
+                if template is not None or spec is not None
                 else None
             )
         except Exception:
             in_doc._backend.unload()
             raise
         result = self._execute(in_doc, raises_on_error, target=owned)
-        return _legacy_result(result) if target is None else result
+        return _legacy_result(result) if spec is None else result
 
     def _execute(
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
         *,
-        target: ExtractionTarget | str | None,
+        target: ExtractionSpec | str | None,
     ) -> DocumentExtractionResult:
         """Execute an already normalized SDK or pipeline call."""
         ext_res = DocumentExtractionResult(input=in_doc)
@@ -97,7 +97,7 @@ class BaseExtractionPipeline(ABC):
     def _extract_data(
         self,
         ext_res: DocumentExtractionResult,
-        target: ExtractionTarget | str | None = None,
+        target: ExtractionSpec | str | None = None,
     ) -> DocumentExtractionResult:
         """Subclass must populate ext_res.items/errors and return the result."""
         raise NotImplementedError

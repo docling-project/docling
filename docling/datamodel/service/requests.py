@@ -17,7 +17,7 @@ from pydantic import (
 )
 from typing_extensions import Self, TypeVar
 
-from docling.datamodel.extraction import ExtractionTarget
+from docling.datamodel.extraction import ExtractionSpec
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import BaseChunkerOptions
 from docling.datamodel.service.options import (
@@ -270,8 +270,8 @@ ExtractTargetRequest = Annotated[
 class ExtractSourcesRequest(BaseModel):
     """Batch-capable request for asynchronous source extraction.
 
-    ``extraction_target`` is the contract (what to extract: output schema and/or
-    guidance). ``sources`` accepts both individual and expandable connector
+    ``extraction_spec`` is the contract (what to extract: ``json_schema``
+    and/or ``native_template``, plus ``instructions``). ``sources`` accepts both individual and expandable connector
     sources. ``options`` is purely operational (model selection, decode mode,
     input channel, page range) and defaults to server defaults. ``target``
     selects one in-body or storage destination.
@@ -279,7 +279,7 @@ class ExtractSourcesRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    extraction_target: ExtractionTarget
+    extraction_spec: ExtractionSpec
     sources: list[ExtractSourceRequestItem] = Field(min_length=1)
     options: ExtractDocumentsOptions = ExtractDocumentsOptions()
     target: ExtractTargetRequest = InBodyTarget()
@@ -291,12 +291,12 @@ class ExtractSourcesRequest(BaseModel):
         # worker. The engine check (vLLM API only) needs the resolved preset and
         # stays server-side.
         if (
-            self.options.output_mode == "schema_constrained"
-            and self.extraction_target.output_schema is None
+            self.options.extraction_output_mode == "schema_constrained"
+            and self.extraction_spec.json_schema is None
         ):
             raise ValueError(
-                "output_mode='schema_constrained' requires "
-                "extraction_target.output_schema."
+                "extraction_output_mode='schema_constrained' requires "
+                "extraction_spec.json_schema."
             )
         return self
 

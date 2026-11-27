@@ -11,7 +11,6 @@ from pydantic import (
     ConfigDict,
     Field,
     JsonValue,
-    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -44,74 +43,49 @@ class ImageContentItem(BaseModel):
 ContentItem = TextContentItem | ImageContentItem
 
 
-class ExtractionTemplate(BaseModel):
-    """Explicitly tagged model guidance, distinct from an output schema.
+class ExtractionSpec(BaseModel):
+    """What to extract: a validation contract and an optional model-input override.
 
-    Docling handles three non-interchangeable representations of what to
-    extract. Only the last two are an ``ExtractionTemplate``; the first is
-    ``ExtractionTarget.output_schema``:
+    Each field has one role:
 
-    | Representation                | Example                  | Meaning |
-    |-------------------------------|--------------------------|---------|
-    | ``output_schema`` (JSON Schema) | ``{"total": {"type": "number"}}`` | A validation constraint, checked by a JSON Schema validator. |
-    | ``format="nuextract"``        | ``{"total": "number"}``  | NuExtract's native typed template: leaf values name output *types* (``verbatim-string`` vs ``string``, ``date-time``, enum-as-array). Interpreted by NuExtract's chat template; shape-identical to the output, carries no schema/validation meaning. |
-    | ``format="example_json"``     | ``{"total": 123.45}``    | A concrete illustrative output, injected into a generic model's prompt as an example. Explicitly *not* a constraint. |
+    - ``json_schema`` is the contract. It is a JSON Schema (Draft 2020-12) and
+      it always defines the validation of the output. When no
+      ``native_template`` is given, Docling also derives the model input from
+      it with a best-effort conversion (a NuExtract native template, or the
+      schema text in the prompt of a generic chat model). A schema that has no
+      equivalent in the model input is rejected; add a ``native_template``.
+    - ``native_template`` overrides the model input only. It is in the native
+      template format of the model of the selected preset (today: NuExtract,
+      for example ``{"total": "number", "id": "verbatim-string"}``). It goes to
+      the model as is, is not checked, and never has an effect on validation.
+      A preset whose model has no native template format rejects it.
+    - ``instructions`` is free-text guidance added to the prompt in all cases.
 
-    ``nuextract`` can express semantics ``output_schema`` cannot (e.g.
-    ``verbatim-string`` — extract text exactly, scored differently from a
-    generic string); ``example_json`` cannot express requiredness,
-    nullability, enums, or item types and must never be read as a schema.
+    At least one of ``json_schema`` and ``native_template`` is required. The
+    three combinations:
+
+    | Request has                         | Model gets                  | Output validation |
+    |-------------------------------------|-----------------------------|-------------------|
+    | ``json_schema``                     | The converted schema        | ``json_schema``   |
+    | ``json_schema`` + ``native_template`` | ``native_template``, as is | ``json_schema``   |
+    | ``native_template``                 | ``native_template``, as is  | None (``not_requested``) |
+
+    Docling does not check that the two fields agree. If they do not agree,
+    the items get ``validation_status="failed"``.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
 
-    # See the class docstring for the three representations and what each means.
-    format: Literal["example_json", "nuextract"]
-    value: dict[str, JsonValue]
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def _example_values(cls, value: Any, info: ValidationInfo) -> Any:
-        if isinstance(value, BaseModel):
-            if info.data.get("format") != "example_json":
-                raise ValueError("Pydantic instances are example_json guidance only")
-            return value.model_dump(mode="json")
-        return value
-
-
-class ExtractionTarget(BaseModel):
-    """Portable output contract and explicitly tagged extraction guidance.
-
-    ``output_schema`` and ``template`` carry non-overlapping meaning, so both
-    are kept. ``output_schema`` is always the validation contract; ``template``
-    is model guidance that can express what a schema cannot (a NuExtract native
-    type such as ``verbatim-string``) or a plain example. At least one is
-    required. The three supported combinations:
-
-    - **schema only** — the preparation helper derives its own guidance (a
-      NuExtract native template, or a prose "Output contract" block for generic
-      chat). Most callers need only this.
-    - **template only** — parsed as JSON, no validation; ``validation_status``
-      stays ``not_requested``.
-    - **both** — ``template`` guides inference, ``output_schema`` validates the
-      answer. Required whenever a native semantic type (``verbatim-string``)
-      matters, since the schema alone cannot express it.
-
-    The caller keeps the two descriptions consistent; Docling does not build an
-    equivalence checker. For a generic model an example alongside a schema is
-    unproven guidance — A/B it before relying on it.
-    """
-
-    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
-
-    output_schema: dict[str, JsonValue] | None = None
-    template: ExtractionTemplate | None = None
+    json_schema: dict[str, JsonValue] | None = None
+    native_template: dict[str, JsonValue] | None = None
     instructions: str | None = None
 
     @model_validator(mode="after")
-    def _require_contract_or_guidance(self) -> "ExtractionTarget":
-        if self.output_schema is None and self.template is None:
-            raise ValueError("An extraction target requires output_schema or template")
+    def _require_contract_or_template(self) -> "ExtractionSpec":
+        if self.json_schema is None and self.native_template is None:
+            raise ValueError(
+                "An extraction spec requires json_schema or native_template"
+            )
         return self
 
     @classmethod
@@ -119,13 +93,13 @@ class ExtractionTarget(BaseModel):
         cls,
         model: type[BaseModel],
         *,
-        template: ExtractionTemplate | None = None,
+        native_template: dict[str, JsonValue] | None = None,
         instructions: str | None = None,
-    ) -> "ExtractionTarget":
+    ) -> "ExtractionSpec":
         """Use the model's JSON Schema; Python validators are not transferred."""
         return cls(
-            output_schema=model.model_json_schema(),
-            template=template,
+            json_schema=model.model_json_schema(),
+            native_template=native_template,
             instructions=instructions,
         )
 
@@ -145,8 +119,8 @@ class PageScope(BaseModel):
 
 ExtractionScope = Annotated[DocumentScope | PageScope, Field(discriminator="kind")]
 
-# Outcome of validating one item against the target's output_schema:
-#   not_requested - no output_schema was supplied; validation was never in scope.
+# Outcome of validating one item against the spec's json_schema:
+#   not_requested - no json_schema was supplied; validation was never in scope.
 #   not_run       - a schema was supplied, but inference or JSON parsing failed
 #                   first, so no parsed object ever existed to check.
 #   passed/failed - schema supplied, parsing succeeded, object did/didn't validate.

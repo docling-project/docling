@@ -34,7 +34,7 @@ from docling.datamodel.document import (
 from docling.datamodel.extraction import (
     DocumentExtractionResult,
     ExtractionResult,
-    ExtractionTarget,
+    ExtractionSpec,
     ExtractionTemplateType,
     PageScope,
     _legacy_result,
@@ -159,7 +159,7 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
         *,
-        target: None = None,
+        spec: None = None,
     ) -> ExtractionResult: ...
 
     @overload
@@ -173,7 +173,7 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
         *,
-        target: ExtractionTarget,
+        spec: ExtractionSpec,
     ) -> DocumentExtractionResult: ...
 
     @validate_call(config=ConfigDict(strict=True))
@@ -187,9 +187,9 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
         *,
-        target: ExtractionTarget | None = None,
+        spec: ExtractionSpec | None = None,
     ) -> ExtractionResult | DocumentExtractionResult:
-        owned = normalize_extraction_call(template, target)
+        owned = normalize_extraction_call(template, spec)
         results = self._extract_all(
             source=[source],
             headers=headers,
@@ -212,7 +212,7 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
         *,
-        target: None = None,
+        spec: None = None,
     ) -> Iterator[ExtractionResult]: ...
 
     @overload
@@ -226,7 +226,7 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
         *,
-        target: ExtractionTarget,
+        spec: ExtractionSpec,
     ) -> Iterator[DocumentExtractionResult]: ...
 
     @validate_call(config=ConfigDict(strict=True))
@@ -240,9 +240,9 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
         *,
-        target: ExtractionTarget | None = None,
+        spec: ExtractionSpec | None = None,
     ) -> Iterator[ExtractionResult | DocumentExtractionResult]:
-        owned = normalize_extraction_call(template, target)
+        owned = normalize_extraction_call(template, spec)
         results = self._extract_all(
             source=source,
             headers=headers,
@@ -263,7 +263,7 @@ class DocumentExtractor:
         max_file_size: int,
         page_range: PageRange,
         *,
-        target: ExtractionTarget | str,
+        target: ExtractionSpec | str,
     ) -> Iterator[ExtractionResult | DocumentExtractionResult]:
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
@@ -313,7 +313,7 @@ class DocumentExtractor:
         self,
         conv_input: _DocumentConversionInput,
         raises_on_error: bool,
-        target: ExtractionTarget | str,
+        target: ExtractionSpec | str,
     ) -> Iterator[DocumentExtractionResult]:
         start_time = time.monotonic()
 
@@ -356,7 +356,7 @@ class DocumentExtractor:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        target: ExtractionTarget | str,
+        target: ExtractionSpec | str,
     ) -> DocumentExtractionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
@@ -382,7 +382,7 @@ class DocumentExtractor:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        target: ExtractionTarget | str,
+        target: ExtractionSpec | str,
     ) -> DocumentExtractionResult:
         if not in_doc.valid:
             self._unload_unexecuted_input(in_doc)

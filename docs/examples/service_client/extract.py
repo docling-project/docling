@@ -2,9 +2,16 @@
 
 Mirrors the local `DocumentExtractor` API: `extract()` for a single source and
 `extract_all()` for many, both returning `DocumentExtractionResult`s, and both
-taking the contract as `target=` (an `ExtractionTarget`: what to extract).
+taking the contract as `spec=` (an `ExtractionSpec`: what to extract).
 `options` (`ExtractDocumentsOptions`) is purely operational — model preset,
 decode mode, input channel, page range — and defaults to the server's defaults.
+
+An `ExtractionSpec` has two fields with one role each:
+
+- `json_schema` is the contract. The server validates each answer against it
+  and, by default, converts it into the model input.
+- `native_template` overrides the model input only. It is in the native
+  template format of the model (NuExtract) and goes to the model as is.
 
 Run from the repository root:
 
@@ -18,7 +25,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+from docling.datamodel.extraction import ExtractionSpec
 from docling.service_client import (
     DoclingServiceClient,
     ExtractDocumentsOptions,
@@ -33,12 +40,29 @@ MANY = [
     Path("tests/data/pdf/sources/code_and_formula.pdf"),
 ]
 
-# What to extract. A schema, a template, or both — here a NuExtract-native template.
-TARGET = ExtractionTarget(
-    template=ExtractionTemplate(
-        format="nuextract",
-        value={"title": "verbatim-string", "authors": ["string"]},
-    )
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "authors": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["title"],
+}
+
+# 1. Schema only: the server derives the model input and validates the answer.
+SCHEMA_ONLY = ExtractionSpec(json_schema=SCHEMA)
+
+# 2. Schema and template: the template guides a NuExtract model with a native
+#    type (`verbatim-string`) that a JSON Schema cannot express; the schema
+#    still validates the answer.
+SCHEMA_AND_TEMPLATE = ExtractionSpec(
+    json_schema=SCHEMA,
+    native_template={"title": "verbatim-string", "authors": ["string"]},
+)
+
+# 3. Template only: no validation (`validation_status` is `not_requested`).
+TEMPLATE_ONLY = ExtractionSpec(
+    native_template={"title": "verbatim-string", "authors": ["string"]}
 )
 
 
@@ -47,20 +71,26 @@ def main() -> None:
         url=os.environ["DOCLING_SERVICE_URL"],
         api_key=os.environ.get("DOCLING_SERVICE_API_KEY", ""),
     ) as client:
-        # One document.
-        try:
-            document = client.extract(SINGLE, target=TARGET)
-        except ExtractionError as exc:
-            print("extract() failed:", exc)
-        else:
-            print("extract():", document.input.file.name, document.status.value)
+        # One document, for each of the three combinations.
+        for name, spec in [
+            ("schema only", SCHEMA_ONLY),
+            ("schema and template", SCHEMA_AND_TEMPLATE),
+            ("template only", TEMPLATE_ONLY),
+        ]:
+            try:
+                document = client.extract(SINGLE, spec=spec)
+            except ExtractionError as exc:
+                print(f"extract() [{name}] failed:", exc)
+                continue
+            print(f"extract() [{name}]:", document.status.value)
             for item in document.items:
-                print(" ", item.scope, item.extracted_data, item.errors)
+                print(" ", item.scope, item.extracted_data, item.validation_status)
 
-        # Operational overrides live on `options`, never on the contract.
+        # Operational overrides live on `options`, never on the contract. A
+        # generic chat preset has no native template format, so use a schema.
         document = client.extract(
             SINGLE,
-            target=TARGET,
+            spec=SCHEMA_ONLY,
             options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"),
             page_range=(1, 2),
         )
@@ -69,7 +99,7 @@ def main() -> None:
         # Many sources: one job per source, at most `max_concurrency` at a time,
         # yielded as each job completes (not in input order).
         print("\nextract_all():")
-        for document in client.extract_all(MANY, target=TARGET, max_concurrency=4):
+        for document in client.extract_all(MANY, spec=SCHEMA_ONLY, max_concurrency=4):
             print(" ", document.input.file.name, document.status.value)
 
 

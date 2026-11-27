@@ -383,7 +383,7 @@ def test_random_page_load_failure_does_not_hide_selected_pages() -> None:
 def test_owned_resources_and_raw_metadata_survive_parse_schema_and_lazy_failures(
     answer, lazy_failure, state
 ) -> None:
-    from docling.datamodel.extraction import ExtractionTarget
+    from docling.datamodel.extraction import ExtractionSpec
 
     class Model:
         def process(self, requests, target):
@@ -400,8 +400,8 @@ def test_owned_resources_and_raw_metadata_survive_parse_schema_and_lazy_failures
             if lazy_failure:
                 raise RuntimeError("lazy inference failed")
 
-    target = ExtractionTarget(
-        output_schema={
+    target = ExtractionSpec(
+        json_schema={
             "type": "object",
             "properties": {"total": {"type": "number"}},
             "required": ["total"],

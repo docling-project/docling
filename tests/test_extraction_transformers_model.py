@@ -159,8 +159,7 @@ def test_ordered_local_content_routes_chat_and_processor_options(
     from PIL import Image
 
     from docling.datamodel.extraction import (
-        ExtractionTarget,
-        ExtractionTemplate,
+        ExtractionSpec,
         ImageContentItem,
         TextContentItem,
     )
@@ -217,14 +216,11 @@ def test_ordered_local_content_routes_chat_and_processor_options(
     with Image.new("RGB", (3, 2)) as image:
         for field in ("total", "date"):
             target = prepare_target(
-                ExtractionTarget(
-                    template=ExtractionTemplate(
-                        format="nuextract"
-                        if preparation in {"nuextract", "nuextract_3"}
-                        else "example_json",
-                        value={field: "verbatim-string"},
-                    ),
-                    output_schema={
+                ExtractionSpec(
+                    native_template={field: "verbatim-string"}
+                    if preparation in {"nuextract", "nuextract_3"}
+                    else None,
+                    json_schema={
                         "type": "object",
                         "properties": {field: {"type": "string"}},
                     },
@@ -258,10 +254,7 @@ def test_ordered_local_content_routes_chat_and_processor_options(
                 assert len(messages) == 3
             else:
                 assert messages[3]["text"] == target.prompt and "template" not in kwargs
-                example = messages[3]["text"].split(
-                    "Example output (illustration only, not a schema or source facts):\n"
-                )[1]
-                assert json.loads(example) == {field: "verbatim-string"}
+                assert f'"{field}"' in messages[3]["text"]
                 assert f"Extract {field}" in messages[3]["text"]
                 assert (
                     f"Extract {'date' if field == 'total' else 'total'}"
@@ -428,6 +421,6 @@ def test_lift_image_wrapper_cannot_bypass_schema_requirement(engine, monkeypatch
         model, "process" if engine == "api" else "_process_prepared", inference
     )
     with Image.new("RGB", (3, 2)) as image:
-        with pytest.raises(ValueError, match="requires target= with an output schema"):
+        with pytest.raises(ValueError, match="requires spec= with a json_schema"):
             list(model.process_images([image], '{"total": 42}'))
     inference.assert_not_called()

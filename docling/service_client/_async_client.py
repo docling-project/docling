@@ -36,7 +36,7 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
-from docling.datamodel.extraction import DocumentExtractionResult, ExtractionTarget
+from docling.datamodel.extraction import DocumentExtractionResult, ExtractionSpec
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import (
     HierarchicalChunkerOptions,
@@ -416,7 +416,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     async def extract(
         self,
         source: SingleExtractSource,
-        target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
@@ -435,7 +435,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         if document is None:
             job = await self.submit_extract(
                 source=source,
-                extraction_target=target,
+                spec=spec,
                 options=options,
                 target=InBodyTarget(),
                 headers=headers,
@@ -451,7 +451,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     async def extract_all(
         self,
         source: Iterable[SourceType | ExtractSourceRequestInput],
-        target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
@@ -478,7 +478,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 return [skipped]
             job = await self.submit_extract(
                 source=item,
-                extraction_target=target,
+                spec=spec,
                 options=options,
                 target=InBodyTarget(),
                 headers=headers,
@@ -516,7 +516,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType
         | ExtractSourceRequestInput
         | Iterable[SourceType | ExtractSourceRequestInput],
-        extraction_target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None = None,
         target: ExtractTargetRequest | None = None,
         headers: dict[str, str] | None = None,
@@ -530,7 +530,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         request = await asyncio.to_thread(
             self._build_extract_request,
             source,
-            extraction_target,
+            spec,
             options,
             target,
             callbacks,

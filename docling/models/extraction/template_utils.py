@@ -8,7 +8,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import unquote
 
-from docling.datamodel.extraction import ExtractionTarget
+from docling.datamodel.extraction import ExtractionSpec
 
 if TYPE_CHECKING:
     from jsonschema.protocols import Validator
@@ -78,9 +78,9 @@ def _fail(path: tuple[str | int, ...], reason: str) -> NoReturn:
     raise ValueError(f"{_pointer(path)}: {reason}")
 
 
-def normalize_target(target: ExtractionTarget) -> ExtractionTarget:
+def normalize_spec(spec: ExtractionSpec) -> ExtractionSpec:
     """Own and revalidate all mappings, including model_copy/update inputs."""
-    return ExtractionTarget.model_validate(deepcopy(target.model_dump(mode="python")))
+    return ExtractionSpec.model_validate(deepcopy(spec.model_dump(mode="python")))
 
 
 def _resolve_ref(root: dict[str, Any], ref: str, path: tuple[str | int, ...]) -> Any:
@@ -200,18 +200,105 @@ def schema_validator(schema: dict[str, Any]) -> "Validator":
 
     visit(schema, (), set())
     if not _object_contract(schema, schema):
-        _fail((), "the output schema must require a top-level object")
+        _fail((), "the json_schema must require a top-level object")
     # An empty registry fails closed even if a future schema keyword uses retrieval.
     return Draft202012Validator(schema, registry=Registry())
 
 
+_NUEXTRACT_HINT = (
+    " The json_schema has no equivalent NuExtract template. Add a native_template "
+    "for the model input; the json_schema stays the validation contract."
+)
+
+_SCALAR_TYPES: tuple[tuple[type, str], ...] = (
+    (bool, "boolean"),
+    (int, "integer"),
+    (float, "number"),
+    (str, "string"),
+)
+
+
+def _is_null_branch(branch: Any) -> bool:
+    return (
+        isinstance(branch, dict)
+        and branch.get("type") == "null"
+        and branch.keys() <= _ANNOTATIONS | {"type"}
+    )
+
+
+def _scalar_type(value: Any) -> str | None:
+    # bool is a subclass of int, so it is checked first.
+    for py_type, name in _SCALAR_TYPES:
+        if isinstance(value, py_type):
+            return name
+    return None
+
+
+def _nullable_branch(
+    node: dict[str, Any], path: tuple[str | int, ...]
+) -> tuple[Any, tuple[str | int, ...]]:
+    """Return the one non-null branch of a nullable ``anyOf``/``oneOf``."""
+    unions = [key for key in ("anyOf", "oneOf") if key in node]
+    if len(unions) > 1:
+        _fail((*path, "oneOf"), "anyOf and oneOf together cannot be converted")
+    union = unions[0]
+    branches = node[union]
+    non_null = [b for b in branches if not _is_null_branch(b)]
+    if len(branches) != 2 or len(non_null) != 1:
+        _fail((*path, union), "only a single type plus null is convertible")
+    for key in node.keys() - _ANNOTATIONS - {union}:
+        _fail((*path, key), f"assertion siblings of {union} cannot be converted")
+    return non_null[0], (*path, union, branches.index(non_null[0]))
+
+
+def _enum_template(
+    node: dict[str, Any], kind: Any, path: tuple[str | int, ...]
+) -> str | list[str]:
+    """Convert ``enum``/``const`` to a NuExtract enum or a scalar type name."""
+    for key in ("properties", "items", "additionalProperties"):
+        if key in node:
+            _fail((*path, key), "structural keyword on an enum cannot be converted")
+    if "const" in node and "enum" in node:
+        _fail((*path, "const"), "const and enum together cannot be converted")
+    keyword = "const" if "const" in node else "enum"
+    values = [node["const"]] if keyword == "const" else node["enum"]
+    choices = [v for v in values if v is not None]
+    if len(choices) == 1:
+        # A one-value enum is a fixed scalar. NuExtract has no one-value enum,
+        # so the guidance is the scalar type; the validator keeps the value.
+        scalar = _scalar_type(choices[0])
+        if scalar is None or kind not in (None, scalar):
+            _fail((*path, keyword), "only a scalar const is convertible")
+        return scalar
+    if (
+        len(choices) < 2
+        or not all(isinstance(v, str) for v in choices)
+        or kind not in (None, "string")
+    ):
+        _fail((*path, "enum"), "NuExtract enums require string choices")
+    return choices
+
+
 def _schema_to_nuextract(schema: dict[str, Any]) -> dict[str, Any]:
-    """Convert only fixed objects, homogeneous arrays, string enums and nullable types.
+    """Best-effort conversion of a JSON Schema to a NuExtract native template.
 
-    Schema-only annotations never select native semantic types such as verbatim-string.
-    Requiredness, nullability and scalar bounds remain authoritative in the validator.
+    Converts fixed objects, homogeneous arrays, scalar types, string enums,
+    ``const`` and one-value enums (as their scalar type), and nullable unions
+    (``type: [T, "null"]``, or ``anyOf``/``oneOf`` with one branch plus null).
+    Annotations and constraints are dropped from the guidance; they stay
+    authoritative in the validator. Schema-only annotations never select native
+    semantic types such as ``verbatim-string``.
+
+    A structure with no equivalent raises ``ValueError``. The message tells the
+    caller to add a ``native_template``.
     """
+    try:
+        return _convert_to_nuextract(schema)
+    except ValueError as exc:
+        raise ValueError(f"{exc}.{_NUEXTRACT_HINT}") from exc
 
+
+def _convert_to_nuextract(schema: dict[str, Any]) -> dict[str, Any]:
     def convert(node: Any, path: tuple[str | int, ...]) -> Any:
         if not isinstance(node, dict):
             _fail(path, "boolean schemas have no NuExtract template representation")
@@ -223,7 +310,9 @@ def _schema_to_nuextract(schema: dict[str, Any]) -> dict[str, Any]:
                 "properties",
                 "items",
                 "enum",
+                "const",
                 "anyOf",
+                "oneOf",
                 "$ref",
                 "additionalProperties",
             }
@@ -237,46 +326,16 @@ def _schema_to_nuextract(schema: dict[str, Any]) -> dict[str, Any]:
                 _fail((*path, key), "assertion siblings of $ref cannot be converted")
             referenced = _resolve_ref(schema, node["$ref"], (*path, "$ref"))
             return convert(referenced, path)
-        if "anyOf" in node:
-            branches = node["anyOf"]
-            non_null = [
-                b
-                for b in branches
-                if not (
-                    isinstance(b, dict)
-                    and b.get("type") == "null"
-                    and b.keys() <= _ANNOTATIONS | {"type"}
-                )
-            ]
-            if len(branches) != 2 or len(non_null) != 1:
-                _fail((*path, "anyOf"), "only a single type plus null is convertible")
-            for key in node.keys() - _ANNOTATIONS - {"anyOf"}:
-                _fail((*path, key), "assertion siblings of anyOf cannot be converted")
-            return convert(non_null[0], (*path, "anyOf", branches.index(non_null[0])))
+        if "anyOf" in node or "oneOf" in node:
+            return convert(*_nullable_branch(node, path))
         kind = node.get("type")
         if isinstance(kind, list):
             non_null_types = [t for t in kind if t != "null"]
             if len(non_null_types) != 1 or len(kind) > 2:
                 _fail((*path, "type"), "only a single type plus null is convertible")
             kind = non_null_types[0]
-        if "enum" in node:
-            for key in ("properties", "items", "additionalProperties"):
-                if key in node:
-                    _fail(
-                        (*path, key),
-                        "structural keyword on an enum cannot be converted",
-                    )
-            choices = [v for v in node["enum"] if v is not None]
-            if (
-                len(choices) < 2
-                or not all(isinstance(v, str) for v in choices)
-                or kind not in (None, "string")
-            ):
-                _fail(
-                    (*path, "enum"),
-                    "NuExtract enums require at least two string choices",
-                )
-            return choices
+        if "const" in node or "enum" in node:
+            return _enum_template(node, kind, path)
         if kind == "object":
             if "items" in node:
                 _fail(

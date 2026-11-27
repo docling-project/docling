@@ -24,8 +24,7 @@ from docling.datamodel.base_models import (
 from docling.datamodel.extraction import (
     DocumentExtractionResult,
     ExtractionItem,
-    ExtractionTarget,
-    ExtractionTemplate,
+    ExtractionSpec,
     PageScope,
     VlmInferenceMetadata,
 )
@@ -55,16 +54,13 @@ class Invoice(BaseModel):
 
 def request(*, storage=False):
     return ExtractSourcesRequest(
-        extraction_target=ExtractionTarget.from_pydantic(
+        extraction_spec=ExtractionSpec.from_pydantic(
             Invoice,
-            template=ExtractionTemplate(
-                format="example_json", value={"invoice": "INV-42", "total": 4.2}
-            ),
             instructions="Copy the invoice identifier exactly",
         ),
         options=ExtractDocumentsOptions(
             extraction_preset="granite_vision_4_1",
-            input_channels="image",
+            extraction_input_channels="image",
             page_range=(2, 3),
         ),
         sources=[
@@ -142,17 +138,17 @@ def response():
     ],
 )
 def test_sdk_and_wire_validate_original_schema(answer):
-    sdk = request().extraction_target
+    sdk = request().extraction_spec
     wire = ExtractSourcesRequest.model_validate_json(
         request().model_dump_json()
-    ).extraction_target
+    ).extraction_spec
     before = deepcopy(wire.model_dump())
     outcomes = []
     for target in (sdk, wire):
         prepared = prepare_target(target, GRANITE_VISION_4_1_SPEC)
-        assert prepared.validator.schema == target.output_schema
+        assert prepared.validator.schema == target.json_schema
         assert (
-            "INV-42" in prepared.prompt
+            '"invoice"' in prepared.prompt
             and "Copy the invoice identifier exactly" in prepared.prompt
         )
         outcomes.append(
@@ -172,22 +168,11 @@ def test_sdk_and_wire_validate_original_schema(answer):
         {"template": {"invoice": "string"}},
         {"target": {}},
         {"target": {"instructions": "extract"}},
-        {"target": {"template": {"format": "unknown", "value": {}}}},
-        {"target": {"template": {"format": "example_json", "value": "{}"}}},
-        {
-            "target": {
-                "template": {"format": "example_json", "value": {}},
-                "validator": "python",
-            }
-        },
-        {
-            "target": {"template": {"format": "example_json", "value": {}}},
-            "grouping": "whole_document",
-        },
-        {
-            "target": {"template": {"format": "example_json", "value": {}}},
-            "output_mode": "unknown",
-        },
+        {"output_mode": "schema_constrained"},
+        {"input_channels": "image"},
+        {"extraction_output_mode": "unknown"},
+        {"extraction_raw_text": "never"},
+        {"grouping": "whole_document"},
     ],
 )
 def test_old_unknown_and_empty_options_rejected(options):
@@ -271,7 +256,7 @@ def _submit(client, req):
     # Unpack a prebuilt request into the friendly submit_extract signature.
     return client.submit_extract(
         source=list(req.sources),
-        extraction_target=req.extraction_target,
+        spec=req.extraction_spec,
         options=req.options,
         target=req.target,
         callbacks=req.callbacks,
@@ -281,7 +266,7 @@ def _submit(client, req):
 def _asubmit(client, req):
     return client.submit_extract(
         source=list(req.sources),
-        extraction_target=req.extraction_target,
+        spec=req.extraction_spec,
         options=req.options,
         target=req.target,
         callbacks=req.callbacks,
@@ -291,7 +276,7 @@ def _asubmit(client, req):
 def assert_client(calls, value, original, storage):
     assert calls[0].url.path == "/v1/extract/source/async"
     received = json.loads(calls[0].content)
-    assert received["extraction_target"] == original.extraction_target.model_dump(
+    assert received["extraction_spec"] == original.extraction_spec.model_dump(
         mode="json", exclude_none=True
     )
     assert received["target"]["kind"] == ("presigned_url" if storage else "inbody")
@@ -314,21 +299,21 @@ def test_sync_extraction_payload_and_result(storage):
         client._http_client = httpx.Client(transport=tr)
         value = _submit(client, original).result()
         changed = original.model_copy(deep=True)
-        changed.options.output_mode = "schema_constrained"
-        changed.extraction_target = ExtractionTarget(
-            output_schema={
+        changed.options.extraction_output_mode = "schema_constrained"
+        changed.extraction_spec = ExtractionSpec(
+            json_schema={
                 "type": "object",
                 "properties": {"account": {"type": "integer"}},
             },
-            template=ExtractionTemplate(format="example_json", value={"account": 17}),
+            native_template={"account": "integer"},
             instructions="Copy account only",
         )
         _submit(client, changed)
         assert json.loads(calls[-1].content)[
-            "extraction_target"
-        ] == changed.extraction_target.model_dump(mode="json", exclude_none=True)
+            "extraction_spec"
+        ] == changed.extraction_spec.model_dump(mode="json", exclude_none=True)
         assert (
-            json.loads(calls[-1].content)["options"]["output_mode"]
+            json.loads(calls[-1].content)["options"]["extraction_output_mode"]
             == "schema_constrained"
         )
         assert "INV-42" not in calls[-1].content.decode()
@@ -348,21 +333,21 @@ async def test_async_extraction_payload_and_result(storage):
         client._async_client = httpx.AsyncClient(transport=tr)
         value = await (await _asubmit(client, original)).result()
         changed = original.model_copy(deep=True)
-        changed.options.output_mode = "schema_constrained"
-        changed.extraction_target = ExtractionTarget(
-            output_schema={
+        changed.options.extraction_output_mode = "schema_constrained"
+        changed.extraction_spec = ExtractionSpec(
+            json_schema={
                 "type": "object",
                 "properties": {"account": {"type": "integer"}},
             },
-            template=ExtractionTemplate(format="example_json", value={"account": 17}),
+            native_template={"account": "integer"},
             instructions="Copy account only",
         )
         await _asubmit(client, changed)
         assert json.loads(calls[-1].content)[
-            "extraction_target"
-        ] == changed.extraction_target.model_dump(mode="json", exclude_none=True)
+            "extraction_spec"
+        ] == changed.extraction_spec.model_dump(mode="json", exclude_none=True)
         assert (
-            json.loads(calls[-1].content)["options"]["output_mode"]
+            json.loads(calls[-1].content)["options"]["extraction_output_mode"]
             == "schema_constrained"
         )
         assert "INV-42" not in calls[-1].content.decode()
@@ -396,8 +381,8 @@ sys.meta_path.insert(0, Block())
 from docling.datamodel.service import ExtractDocumentsOptions, ExtractSourcesRequest, ExtractionDocumentResult, ExtractionTaskResult
 from docling.service_client import DoclingServiceClient, AsyncDoclingServiceClient
 from docling.datamodel.extraction import ExtractionItem
-req = ExtractSourcesRequest(extraction_target={'template': {'format': 'example_json', 'value': {'invoice': 'INV-42'}}}, sources=[{'kind': 'http', 'url': 'https://example.com/r.pdf'}])
-assert req.extraction_target.template.value['invoice'] == 'INV-42'
+req = ExtractSourcesRequest(extraction_spec={'native_template': {'invoice': 'verbatim-string'}}, sources=[{'kind': 'http', 'url': 'https://example.com/r.pdf'}])
+assert req.extraction_spec.native_template['invoice'] == 'verbatim-string'
 assert req.options == ExtractDocumentsOptions()
 assert ExtractionDocumentResult.model_fields['items'].annotation == list[ExtractionItem]
 """
@@ -487,9 +472,7 @@ def _extract_client(documents):
     return client, calls
 
 
-TARGET = ExtractionTarget(
-    template=ExtractionTemplate(format="example_json", value={"invoice": "INV-1"})
-)
+SPEC = ExtractionSpec(native_template={"invoice": "verbatim-string"})
 
 
 def test_extract_returns_single_document_and_uploads_file_inline(tmp_path):
@@ -497,7 +480,7 @@ def test_extract_returns_single_document_and_uploads_file_inline(tmp_path):
     pdf.write_bytes(b"%PDF-1.4 fake")
     client, calls = _extract_client([_doc()])
     with client:
-        document = client.extract(pdf, target=TARGET, page_range=(2, 3))
+        document = client.extract(pdf, spec=SPEC, page_range=(2, 3))
     # Same result type as the local DocumentExtractor.
     assert isinstance(document, DocumentExtractionResult)
     assert document.input.file.name == "report.pdf"
@@ -513,7 +496,7 @@ def test_extract_returns_single_document_and_uploads_file_inline(tmp_path):
 def test_extract_raises_when_source_expands_server_side():
     client, _ = _extract_client([_doc(source_index=0), _doc(source_index=1)])
     with client, pytest.raises(ExtractionError, match="expanded to 2"):
-        client.extract("https://example.com/report.pdf", TARGET)
+        client.extract("https://example.com/report.pdf", SPEC)
 
 
 @pytest.mark.parametrize(
@@ -531,7 +514,7 @@ def test_extract_raises_when_source_expands_server_side():
 def test_extract_rejects_expandable_sources_before_submission(source):
     client, calls = _extract_client([_doc()])
     with client, pytest.raises(TypeError, match="extract_all"):
-        client.extract(source, TARGET)
+        client.extract(source, SPEC)
     assert calls == []
 
 
@@ -548,7 +531,7 @@ S3_DICT = {
 def test_submit_extract_accepts_dict_sources_like_submit_batch(dict_sources):
     client, calls = _extract_client([_doc()])
     with client:
-        client.submit_extract(dict_sources, TARGET)
+        client.submit_extract(dict_sources, SPEC)
     sent = json.loads(calls[0].content)["sources"]
     expected = dict_sources if isinstance(dict_sources, list) else [dict_sources]
     assert [(item["kind"], item["bucket"]) for item in sent] == [
@@ -564,7 +547,7 @@ def test_zip_sources_are_rejected_before_submission(tmp_path):
     with client:
         for source in ("https://example.com/bundle.zip", archive):
             with pytest.raises(ValidationError, match="ZIP archives"):
-                client.submit_extract(source, TARGET)
+                client.submit_extract(source, SPEC)
         # convert() shares the URL path; it used to fail as a missing local file.
         with pytest.raises(ValidationError, match="ZIP archives"):
             client.convert("https://example.com/bundle.zip")
@@ -575,11 +558,11 @@ def test_extract_failure_status_respects_raises_on_error():
     client, _ = _extract_client([_doc(status=ConversionStatus.FAILURE)])
     with client:
         with pytest.raises(ExtractionError):
-            client.extract("https://example.com/report.pdf", TARGET)
+            client.extract("https://example.com/report.pdf", SPEC)
     client, _ = _extract_client([_doc(status=ConversionStatus.FAILURE)])
     with client:
         document = client.extract(
-            "https://example.com/report.pdf", TARGET, raises_on_error=False
+            "https://example.com/report.pdf", SPEC, raises_on_error=False
         )
     assert document.status == ConversionStatus.FAILURE
 
@@ -604,7 +587,7 @@ def test_extract_exception_includes_item_errors():
         client,
         pytest.raises(ExtractionError, match="page 3: Model API request timed out"),
     ):
-        client.extract("https://example.com/report.pdf", TARGET)
+        client.extract("https://example.com/report.pdf", SPEC)
 
 
 def test_extract_all_runs_one_job_per_source(monkeypatch):
@@ -649,7 +632,7 @@ def test_extract_all_runs_one_job_per_source(monkeypatch):
         results = list(
             client.extract_all(
                 [f"https://example.com/{name}" for name in names],
-                TARGET,
+                SPEC,
                 max_concurrency=2,
             )
         )
@@ -669,10 +652,10 @@ async def test_async_extract_and_extract_all():
     async with AsyncDoclingServiceClient(url="https://service.example") as client:
         await client._async_client.aclose()
         client._async_client = httpx.AsyncClient(transport=tr)
-        document = await client.extract("https://example.com/b.pdf", TARGET)
+        document = await client.extract("https://example.com/b.pdf", SPEC)
         assert document.input.file.name == "b.pdf"
         results = [
-            d async for d in client.extract_all(["https://example.com/b.pdf"], TARGET)
+            d async for d in client.extract_all(["https://example.com/b.pdf"], SPEC)
         ]
     assert [d.input.file.name for d in results] == ["b.pdf"]
 
@@ -686,11 +669,11 @@ async def test_oversized_local_file_is_skipped_before_upload(tmp_path):
         await client._async_client.aclose()
         client._async_client = httpx.AsyncClient(transport=tr)
         with pytest.raises(ExtractionError, match="max_file_size"):
-            await client.extract(big, TARGET, max_file_size=10)
+            await client.extract(big, SPEC, max_file_size=10)
         results = [
             d
             async for d in client.extract_all(
-                [big, "https://example.com/b.pdf"], TARGET, max_file_size=10
+                [big, "https://example.com/b.pdf"], SPEC, max_file_size=10
             )
         ]
     assert {d.input.file.name: d.status for d in results} == {

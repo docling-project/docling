@@ -65,7 +65,7 @@ from docling.datamodel.document import AssembledUnit, ConversionResult, InputDoc
 from docling.datamodel.extraction import (
     DocumentExtractionResult,
     ExtractionItem,
-    ExtractionTarget,
+    ExtractionSpec,
     PageScope,
 )
 from docling.datamodel.service.callbacks import CallbackSpec
@@ -460,13 +460,13 @@ class _BaseDoclingServiceClient:
         source: SourceType
         | ExtractSourceRequestInput
         | Iterable[SourceType | ExtractSourceRequestInput],
-        extraction_target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None,
         target: ExtractTargetRequest | None,
         callbacks: list[CallbackSpec] | None,
     ) -> ExtractSourcesRequest:
         return ExtractSourcesRequest(
-            extraction_target=extraction_target,
+            extraction_spec=spec,
             sources=self._coerce_extract_sources(source),
             options=options if options is not None else ExtractDocumentsOptions(),
             target=InBodyTarget() if target is None else target,
@@ -1506,7 +1506,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def extract(
         self,
         source: SingleExtractSource,
-        target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
@@ -1515,8 +1515,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     ) -> DocumentExtractionResult:
         """Extract structured data from a single source, in-body.
 
-        ``target`` is the contract (output schema and/or guidance), as in
-        ``DocumentExtractor.extract``; ``options`` is operational (model preset,
+        ``spec`` is the contract (``json_schema`` and/or ``native_template``),
+        as in ``DocumentExtractor.extract``; ``options`` is operational (model preset,
         decode mode, channel, page range). ``page_range`` overrides
         ``options.page_range``. A local file over ``max_file_size`` bytes is
         ``SKIPPED`` without being read or submitted. Returns the local
@@ -1531,7 +1531,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         if document is None:
             job = self.submit_extract(
                 source=source,
-                extraction_target=target,
+                spec=spec,
                 options=options,
                 target=InBodyTarget(),
                 headers=headers,
@@ -1547,7 +1547,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def extract_all(
         self,
         source: Iterable[SourceType | ExtractSourceRequestInput],
-        target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
@@ -1570,7 +1570,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             async with self._build_async_service_client() as async_client:
                 async for document in async_client.extract_all(
                     source=source,
-                    target=target,
+                    spec=spec,
                     options=options,
                     headers=headers,
                     page_range=page_range,
@@ -1586,7 +1586,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType
         | ExtractSourceRequestInput
         | Iterable[SourceType | ExtractSourceRequestInput],
-        extraction_target: ExtractionTarget,
+        spec: ExtractionSpec,
         options: ExtractDocumentsOptions | None = None,
         target: ExtractTargetRequest | None = None,
         headers: dict[str, str] | None = None,
@@ -1596,14 +1596,13 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
         Mirrors ``submit``/``submit_batch``: friendly unpacked arguments rather
         than a prebuilt request. ``source`` accepts one item or an iterable of
-        files, URLs, streams, or prebuilt connector source items. ``target``
+        files, URLs, streams, or prebuilt connector source items. ``spec`` is
+        the extraction contract. ``target`` is the output destination and
         defaults to ``InBodyTarget`` (``ExtractDocumentResponse``);
         ``PresignedUrlTarget`` yields ``PresignedUrlConvertResponse`` and
         storage targets yield ``PresignedUrlConvertDocumentResponse``.
         """
-        request = self._build_extract_request(
-            source, extraction_target, options, target, callbacks
-        )
+        request = self._build_extract_request(source, spec, options, target, callbacks)
         response = self._request_with_retry(
             method="POST",
             path="/v1/extract/source/async",

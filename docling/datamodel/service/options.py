@@ -1219,15 +1219,25 @@ class ExtractDocumentsOptions(BaseModel):
     """Operator-gated model configuration for extraction.
 
     Purely operational: model selection, decode mode, input channel, and page
-    range. The extraction contract (what to extract) lives on
-    ``ExtractSourcesRequest.extraction_target``, and the request's top-level
+    range, and the ``raw_text`` policy of the result. The extraction contract
+    (what to extract) lives on ``ExtractSourcesRequest.extraction_spec``, and the request's top-level
     ``target`` selects the destination for the resulting artifacts. Every field
     defaults, so ``ExtractDocumentsOptions()`` is a valid "use server defaults".
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    output_mode: Literal["prompt_only", "schema_constrained"] = "prompt_only"
+    extraction_output_mode: Annotated[
+        Literal["prompt_only", "schema_constrained"],
+        Field(
+            description=(
+                "prompt_only guides the model with the prompt only. "
+                "schema_constrained also constrains the decoder with "
+                "extraction_spec.json_schema; it requires json_schema and the "
+                "vLLM API engine."
+            ),
+        ),
+    ] = "prompt_only"
 
     extraction_preset: Annotated[
         Optional[str],
@@ -1255,7 +1265,7 @@ class ExtractDocumentsOptions(BaseModel):
         ),
     ] = None
 
-    input_channels: Annotated[
+    extraction_input_channels: Annotated[
         Optional[ChannelSelection],
         Field(
             default=None,
@@ -1273,6 +1283,17 @@ class ExtractDocumentsOptions(BaseModel):
             examples=[DEFAULT_PAGE_RANGE, (1, 4)],
         ),
     ] = DEFAULT_PAGE_RANGE
+
+    extraction_raw_text: Annotated[
+        Literal["on_failure", "always"],
+        Field(
+            description=(
+                "When to return the raw model answer in raw_text. on_failure "
+                "returns it only for items that failed (no extracted_data, an "
+                "error, or a failed validation). always returns it for all items."
+            ),
+        ),
+    ] = "on_failure"
 
     @model_validator(mode="after")
     def validate_model_selection(self) -> Self:

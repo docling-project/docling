@@ -4,6 +4,28 @@
 
 The API implementation is complete and deployed on AWS stg-1 system. Granite and NuExtract3's API routes were verified locally. The extraction branches, smoke assets and refreshed downstream locks are published; base conflicts and Docling DCO are resolved. Remaining work is package publication, the complex-schema SaaS rerun at 60 seconds, #253 integration and separately scoped billing/metrics.
 
+## Interface update — 2026-11-27
+
+The request and result contract changed before release. These names replace the
+names in the rest of this file and in the older extraction plans and evidence,
+which stay as history.
+
+| Before | After |
+|---|---|
+| `ExtractionTarget` | `ExtractionSpec` |
+| `ExtractSourcesRequest.extraction_target` | `extraction_spec` |
+| `output_schema` | `json_schema` (the validation contract) |
+| `template: ExtractionTemplate(format=..., value=...)` | `native_template: dict` (model-input override, NuExtract format only) |
+| `format: "example_json"` dialect for generic chat models | Removed. Generic chat presets reject `native_template`; use `instructions`. |
+| `ExtractDocumentsOptions.output_mode`, `input_channels` | `extraction_output_mode`, `extraction_input_channels` |
+| `raw_text` on every item | `extraction_raw_text`: `on_failure` (default) or `always` |
+| Artifact type `json` for `<stem>.extraction.json` | `extraction` |
+| `DocumentExtractor.extract(target=...)`, client `extract(target=...)`, `submit_extract(extraction_target=...)` | `spec=` everywhere; `target` is only the output destination |
+
+The NuExtract schema conversion also accepts `const`, one-value enums and
+nullable `oneOf`. A schema with no equivalent gives an error that points to
+`native_template`.
+
 ## What a finalizer must do
 
 | Priority / owner | Concrete next action / completion evidence |

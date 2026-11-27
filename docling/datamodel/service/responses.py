@@ -147,6 +147,7 @@ class ArtifactRef(BaseModel):
         "dclx",
         "resource_bundle",
         "chunks",
+        "extraction",
     ]
     mime_type: str
     uri: AnyUrl

@@ -230,8 +230,7 @@ def test_ordered_api_payload_and_cached_call_isolation(extraction_http, preparat
     from PIL import Image
 
     from docling.datamodel.extraction import (
-        ExtractionTarget,
-        ExtractionTemplate,
+        ExtractionSpec,
         ImageContentItem,
         TextContentItem,
     )
@@ -261,14 +260,19 @@ def test_ordered_api_payload_and_cached_call_isolation(extraction_http, preparat
             TextContentItem(text="after"),
         ]
         for field in ("total", "date"):
-            target = ExtractionTarget(
-                template=ExtractionTemplate(
-                    format="nuextract"
-                    if preparation == "nuextract"
-                    else "example_json",
-                    value={field: "string"},
-                ),
-                instructions=f"Extract {field}",
+            target = (
+                ExtractionSpec(
+                    native_template={field: "string"},
+                    instructions=f"Extract {field}",
+                )
+                if preparation == "nuextract"
+                else ExtractionSpec(
+                    json_schema={
+                        "type": "object",
+                        "properties": {field: {"type": "string"}},
+                    },
+                    instructions=f"Extract {field}",
+                )
             )
             prepared = prepare_target(target, model.model_spec)
             prediction = next(iter(model.process([contents], prepared)))
@@ -321,7 +325,7 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
 
     import requests
 
-    from docling.datamodel.extraction import ExtractionTarget, TextContentItem
+    from docling.datamodel.extraction import ExtractionSpec, TextContentItem
     from docling.models.extraction.prompt_utils import prepare_target
 
     post, response = extraction_http
@@ -345,7 +349,7 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
         "required": ["entries"],
     }
     original = deepcopy(schema)
-    prepared = prepare_target(ExtractionTarget(output_schema=schema), model.model_spec)
+    prepared = prepare_target(ExtractionSpec(json_schema=schema), model.model_spec)
     next(iter(model.process([[TextContentItem(text="invoice")]], prepared)))
     constraint = post.call_args.kwargs["json"]["response_format"]
     assert constraint["type"] == "json_schema"
@@ -360,8 +364,8 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
         "400 schema compilation rejected"
     )
     other = prepare_target(
-        ExtractionTarget(
-            output_schema={"type": "object", "properties": {"date": {"type": "string"}}}
+        ExtractionSpec(
+            json_schema={"type": "object", "properties": {"date": {"type": "string"}}}
         ),
         model.model_spec,
     )
@@ -371,8 +375,27 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
     assert post.call_count == 2
     assert (
         post.call_args.kwargs["json"]["response_format"]["json_schema"]["schema"]
-        == other.target.output_schema
+        == other.target.json_schema
     )
+
+
+def test_constrained_native_template_prompt_and_schema_constraint(extraction_http):
+    from docling.datamodel.extraction import ExtractionSpec, TextContentItem
+    from docling.models.extraction.prompt_utils import prepare_target
+
+    post, _ = extraction_http
+    model = _api_model(output_mode="schema_constrained", preparation="nuextract")
+    schema = {"type": "object", "properties": {"note": {"type": "string"}}}
+    prepared = prepare_target(
+        ExtractionSpec(json_schema=schema, native_template={"note": "verbatim-string"}),
+        model.model_spec,
+    )
+    next(iter(model.process([[TextContentItem(text="invoice")]], prepared)))
+    payload = post.call_args.kwargs["json"]
+    assert json.loads(payload["chat_template_kwargs"]["template"]) == {
+        "note": "verbatim-string"
+    }
+    assert payload["response_format"]["json_schema"]["schema"] == schema
 
 
 @pytest.mark.parametrize(
@@ -388,14 +411,14 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
 )
 @pytest.mark.parametrize("preset", [None, "lift"])
 def test_constrained_subset_fails_before_http(extraction_http, keyword, value, preset):
-    from docling.datamodel.extraction import ExtractionTarget, TextContentItem
+    from docling.datamodel.extraction import ExtractionSpec, TextContentItem
     from docling.models.extraction.prompt_utils import prepare_target
 
     post, _ = extraction_http
     model = _api_model(output_mode="schema_constrained", preset=preset)
     prepared = prepare_target(
-        ExtractionTarget(
-            output_schema={"type": "object", "properties": {"value": {keyword: value}}}
+        ExtractionSpec(
+            json_schema={"type": "object", "properties": {"value": {keyword: value}}}
         ),
         model.model_spec,
     )
@@ -406,8 +429,7 @@ def test_constrained_subset_fails_before_http(extraction_http, keyword, value, p
 
 def test_constrained_requires_schema_and_prompt_only_is_explicit(extraction_http):
     from docling.datamodel.extraction import (
-        ExtractionTarget,
-        ExtractionTemplate,
+        ExtractionSpec,
         TextContentItem,
     )
     from docling.models.extraction.prompt_utils import (
@@ -416,23 +438,21 @@ def test_constrained_requires_schema_and_prompt_only_is_explicit(extraction_http
     )
 
     post, _ = extraction_http
-    model = _api_model(output_mode="schema_constrained")
+    model = _api_model(output_mode="schema_constrained", preparation="nuextract")
     targets = [
         prepare_legacy_target("{}", model.model_spec),
         prepare_target(
-            ExtractionTarget(
-                template=ExtractionTemplate(format="example_json", value={})
-            ),
+            ExtractionSpec(native_template={"total": "number"}),
             model.model_spec,
         ),
     ]
     for target in targets:
-        with pytest.raises(ValueError, match="requires an output schema"):
+        with pytest.raises(ValueError, match="requires a json_schema"):
             list(model.process([[TextContentItem(text="text")]], target))
     post.assert_not_called()
     model = _api_model()
     schema = {"type": "object", "properties": {"x": {"type": "number", "minimum": 1}}}
-    target = prepare_target(ExtractionTarget(output_schema=schema), model.model_spec)
+    target = prepare_target(ExtractionSpec(json_schema=schema), model.model_spec)
     next(iter(model.process([[TextContentItem(text="text")]], target)))
     assert "response_format" not in post.call_args.kwargs["json"]
     assert target.validator.schema == schema
@@ -577,7 +597,7 @@ def test_extraction_retains_empty_and_filtered_remote_behavior(
 
 @pytest.mark.parametrize("output_mode", ["prompt_only", "schema_constrained"])
 def test_lift_schema_and_template_preflight_before_http(extraction_http, output_mode):
-    from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+    from docling.datamodel.extraction import ExtractionSpec
     from docling.models.extraction.prompt_utils import (
         prepare_legacy_target,
         prepare_target,
@@ -587,27 +607,21 @@ def test_lift_schema_and_template_preflight_before_http(extraction_http, output_
     options = ExtractionVlmOptions.from_preset(
         "lift", engine_options=ApiVlmEngineOptions(), output_mode=output_mode
     )
-    with pytest.raises(ValueError, match="requires an output schema"):
+    with pytest.raises(ValueError, match="requires a json_schema"):
         prepare_target(
-            ExtractionTarget(
-                template=ExtractionTemplate(format="example_json", value={"total": 42})
-            ),
+            ExtractionSpec(native_template={"total": "number"}),
             options.model_spec,
         )
-    with pytest.raises(ValueError, match="requires target="):
+    with pytest.raises(ValueError, match="requires spec="):
         prepare_legacy_target('{"total": 42}', options.model_spec)
-    with pytest.raises(
-        ValueError, match="does not support the nuextract native dialect"
-    ):
+    with pytest.raises(ValueError, match="native_template is not supported"):
         prepare_target(
-            ExtractionTarget(
-                output_schema={
+            ExtractionSpec(
+                json_schema={
                     "type": "object",
                     "properties": {"total": {"type": "number"}},
                 },
-                template=ExtractionTemplate(
-                    format="nuextract", value={"total": "number"}
-                ),
+                native_template={"total": "number"},
             ),
             options.model_spec,
         )
@@ -617,7 +631,7 @@ def test_lift_schema_and_template_preflight_before_http(extraction_http, output_
 def test_api_preflight_matches_adapter_and_owns_per_call_options():
     from copy import deepcopy
 
-    from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+    from docling.datamodel.extraction import ExtractionSpec
     from docling.models.extraction.prompt_utils import (
         prepare_api_request_options,
         prepare_target,
@@ -628,8 +642,8 @@ def test_api_preflight_matches_adapter_and_owns_per_call_options():
         params={"chat_template_kwargs": {"nested": {"engine": True}}},
     )
     prepared = prepare_target(
-        ExtractionTarget(
-            template=ExtractionTemplate(format="nuextract", value={"total": "number"}),
+        ExtractionSpec(
+            native_template={"total": "number"},
             instructions="Extract only total.",
         ),
         model.model_spec,

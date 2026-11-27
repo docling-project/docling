@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from docling.datamodel.extraction import (
     ContentItem,
-    ExtractionTarget,
+    ExtractionSpec,
     ExtractionTemplateType,
     ImageContentItem,
     TextContentItem,
@@ -29,7 +29,7 @@ from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.extraction.template_utils import (
     _schema_to_nuextract,
     _vllm_constraint_schema,
-    normalize_target,
+    normalize_spec,
     schema_validator,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 class _PreparedTarget:
     """Call-owned guidance and validator, ready for either inference adapter."""
 
-    target: ExtractionTarget | None
+    target: ExtractionSpec | None
     validator: "Validator | None"
     prompt: str
     chat_template_kwargs: dict[str, Any]
@@ -60,34 +60,31 @@ _MISSING_INSTRUCTIONS = (
 
 
 def prepare_target(
-    target: ExtractionTarget, model_spec: ExtractionVlmModelSpec
+    spec: ExtractionSpec, model_spec: ExtractionVlmModelSpec
 ) -> _PreparedTarget:
     """Normalize once and prepare guidance without invoking an engine or model."""
-    return _prepare_normalized_target(normalize_target(target), model_spec)
+    return _prepare_normalized_target(normalize_spec(spec), model_spec)
 
 
 def _prepare_normalized_target(
-    owned: ExtractionTarget, model_spec: ExtractionVlmModelSpec
+    owned: ExtractionSpec, model_spec: ExtractionVlmModelSpec
 ) -> _PreparedTarget:
-    schema = owned.output_schema
+    schema = owned.json_schema
     if model_spec.requires_output_schema and schema is None:
-        raise ValueError(f"{model_spec.name} extraction requires an output schema")
+        raise ValueError(f"{model_spec.name} extraction requires a json_schema")
     validator = schema_validator(schema) if schema is not None else None
     chat_kwargs = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     processor_kwargs = deepcopy(model_spec.extra_processor_kwargs)
 
-    template = owned.template
+    template = owned.native_template
     if model_spec.preparation == "nuextract":
         if chat_kwargs.get("mode", "structured") != "structured":
             raise ValueError("NuExtract extraction requires structured mode")
         if template is not None:
-            if template.format != "nuextract":
-                raise ValueError(
-                    "NuExtract requires a nuextract native template, not example_json"
-                )
-            native = template.value
+            # The override goes to the model as is; json_schema only validates.
+            native = template
         else:
-            assert schema is not None  # ExtractionTarget requires schema or template.
+            assert schema is not None  # ExtractionSpec requires schema or template.
             native = _schema_to_nuextract(schema)
         chat_kwargs["template"] = json.dumps(native, indent=2)
         # NuExtract is fine-tuned to emit the template shape; structure and types
@@ -98,6 +95,13 @@ def _prepare_normalized_target(
         chat_kwargs["instructions"] = "\n\n".join(directions)
         prompt = ""
     else:
+        if template is not None:
+            # Only one native template format exists (NuExtract). A model with no
+            # native format must not get a template in a foreign dialect.
+            raise ValueError(
+                f"native_template is not supported by {model_spec.name}: the model "
+                "has no native template format. Use json_schema and instructions."
+            )
         guidance = [_OBJECT_INSTRUCTIONS]
         if model_spec.prompt:
             guidance.append(model_spec.prompt)
@@ -111,29 +115,20 @@ def _prepare_normalized_target(
                     + json.dumps(schema, indent=2),
                 ]
             )
-        if template is not None:
-            if template.format != "example_json":
-                raise ValueError(
-                    "generic chat does not support the nuextract native dialect"
-                )
-            guidance.append(
-                "Example output (illustration only, not a schema or source facts):\n"
-                + json.dumps(template.value, indent=2)
-            )
         prompt = "\n\n".join(guidance)
 
     return _PreparedTarget(owned, validator, prompt, chat_kwargs, processor_kwargs)
 
 
 def normalize_extraction_call(
-    template: ExtractionTemplateType | None, target: ExtractionTarget | None
-) -> ExtractionTarget | str:
-    if (template is None) == (target is None):
-        raise ValueError("Provide exactly one of target= or template=")
-    if target is not None:
-        return normalize_target(target)
+    template: ExtractionTemplateType | None, spec: ExtractionSpec | None
+) -> ExtractionSpec | str:
+    if (template is None) == (spec is None):
+        raise ValueError("Provide exactly one of spec= or template=")
+    if spec is not None:
+        return normalize_spec(spec)
     warnings.warn(
-        "template= extraction is deprecated; use an explicit ExtractionTarget with target=",
+        "template= extraction is deprecated; use an explicit ExtractionSpec with spec=",
         DeprecationWarning,
         stacklevel=3,
     )
@@ -148,7 +143,7 @@ def prepare_legacy_target(
 ) -> _PreparedTarget:
     """Keep main's sample serialization and prompts separate from explicit targets."""
     if model_spec.requires_output_schema:
-        raise ValueError(f"{model_spec.name} requires target= with an output schema")
+        raise ValueError(f"{model_spec.name} requires spec= with a json_schema")
     prompt = model_spec.build_extraction_prompt(template)
     chat_kwargs = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     if model_spec.prompt_style is ExtractionPromptStyle.NUEXTRACT:
@@ -169,10 +164,12 @@ def prepare_output_target(
         raise ValueError(
             "schema_constrained requires the explicitly configured vLLM API engine"
         )
-    if target.target is None or target.target.output_schema is None:
-        raise ValueError("schema_constrained requires an output schema")
+    if target.target is None or target.target.json_schema is None:
+        raise ValueError("schema_constrained requires a json_schema")
+    # The decoder constraint always comes from json_schema, also when a
+    # native_template overrides the prompt.
     return replace(
-        target, constraint_schema=_vllm_constraint_schema(target.target.output_schema)
+        target, constraint_schema=_vllm_constraint_schema(target.target.json_schema)
     )
 
 
@@ -247,7 +244,7 @@ def prepared_image_prompt(
 ) -> _PreparedTarget:
     """Main's image wrapper receives final prompts; never render the schema wrapper twice."""
     if model_spec.requires_output_schema:
-        raise ValueError(f"{model_spec.name} requires target= with an output schema")
+        raise ValueError(f"{model_spec.name} requires spec= with a json_schema")
     chat = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     if model_spec.preparation == "nuextract":
         chat["template"] = prompt

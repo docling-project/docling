@@ -5,8 +5,7 @@
 
 from docling.datamodel.extraction import (
     DocumentExtractionResult,
-    ExtractionTarget,
-    ExtractionTemplate,
+    ExtractionSpec,
 )
 from docling.datamodel.service.options import ExtractDocumentsOptions
 from docling.datamodel.service.requests import (
@@ -82,8 +81,7 @@ __all__ = [
     "ExtractTargetRequest",
     "ExtractionDocumentResult",
     "ExtractionError",
-    "ExtractionTarget",
-    "ExtractionTemplate",
+    "ExtractionSpec",
     "FileSourceRequest",
     "GenericSourceRequest",
     "GenericTargetRequest",

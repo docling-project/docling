@@ -212,8 +212,7 @@ def test_unpaginated_text_extraction_maps_to_document_scope() -> None:
     from docling.datamodel.base_models import VlmPrediction, VlmStopReason
     from docling.datamodel.extraction import (
         DocumentExtractionResult,
-        ExtractionTarget,
-        ExtractionTemplate,
+        ExtractionSpec,
     )
 
     pipeline = _pipeline_shell(NU_EXTRACT_2B_TRANSFORMERS)
@@ -236,9 +235,7 @@ def test_unpaginated_text_extraction_maps_to_document_scope() -> None:
 
     pipeline._extract_data(
         ext_res,
-        target=ExtractionTarget(
-            template=ExtractionTemplate(format="nuextract", value={"title": "string"})
-        ),
+        target=ExtractionSpec(native_template={"title": "string"}),
     )
 
     assert len(ext_res.items) == 1
@@ -258,8 +255,7 @@ def test_api_failure_makes_text_extraction_fail(
 ) -> None:
     from docling.datamodel.extraction import (
         DocumentExtractionResult,
-        ExtractionTarget,
-        ExtractionTemplate,
+        ExtractionSpec,
     )
     from docling.models.extraction import api_extraction_model as mod
 
@@ -279,9 +275,7 @@ def test_api_failure_makes_text_extraction_fail(
 
     pipeline._extract_data(
         result,
-        target=ExtractionTarget(
-            template=ExtractionTemplate(format="nuextract", value={})
-        ),
+        target=ExtractionSpec(native_template={}),
     )
 
     assert [error.error_message for error in result.items[0].errors] == [

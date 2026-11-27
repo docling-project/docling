@@ -416,12 +416,12 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
 
 
 def test_extract_request_separates_guidance_from_storage() -> None:
-    target = {"template": {"format": "example_json", "value": {"invoice": "INV-42"}}}
+    spec = {"native_template": {"invoice": "verbatim-string"}}
     request = ExtractSourcesRequest(
-        extraction_target=target,
+        extraction_spec=spec,
         sources=[{"kind": "http", "url": "https://example.com/report.pdf"}],
     )
-    assert request.extraction_target.template.value == {"invoice": "INV-42"}
+    assert request.extraction_spec.native_template == {"invoice": "verbatim-string"}
     assert request.options == ExtractDocumentsOptions()
     assert request.target.kind == "inbody"
     assert (
@@ -437,9 +437,7 @@ def test_extract_request_accepts_inline_file_sources() -> None:
     # Extraction accepts ad-hoc file uploads that batch convert rejects.
     request = ExtractSourcesRequest.model_validate(
         {
-            "extraction_target": {
-                "template": {"format": "example_json", "value": {"a": 1}}
-            },
+            "extraction_spec": {"native_template": {"a": "string"}},
             "sources": [
                 {"kind": "file", "base64_string": "ZmFrZQ==", "filename": "report.pdf"}
             ],
@@ -450,23 +448,19 @@ def test_extract_request_accepts_inline_file_sources() -> None:
 
 def test_extract_request_schema_constrained_requires_output_schema() -> None:
     sources = [{"kind": "http", "url": "https://example.com/report.pdf"}]
-    options = {"output_mode": "schema_constrained"}
-    with pytest.raises(
-        ValidationError, match=r"requires extraction_target\.output_schema"
-    ):
+    options = {"extraction_output_mode": "schema_constrained"}
+    with pytest.raises(ValidationError, match=r"requires extraction_spec\.json_schema"):
         ExtractSourcesRequest(
-            extraction_target={
-                "template": {"format": "example_json", "value": {"a": 1}}
-            },
+            extraction_spec={"native_template": {"a": "string"}},
             sources=sources,
             options=options,
         )
     request = ExtractSourcesRequest(
-        extraction_target={"output_schema": {"type": "object"}},
+        extraction_spec={"json_schema": {"type": "object"}},
         sources=sources,
         options=options,
     )
-    assert request.options.output_mode == "schema_constrained"
+    assert request.options.extraction_output_mode == "schema_constrained"
 
 
 def test_artifact_ref_accepts_chunks_artifact_type() -> None:

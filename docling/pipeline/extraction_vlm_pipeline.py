@@ -28,7 +28,7 @@ from docling.datamodel.extraction import (
     DocumentScope,
     ExtractionItem,
     ExtractionScope,
-    ExtractionTarget,
+    ExtractionSpec,
     ExtractionTemplateType,
     ImageContentItem,
     PageScope,
@@ -90,14 +90,14 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
     def _extract_data(
         self,
         ext_res: DocumentExtractionResult,
-        target: ExtractionTarget | str | None = None,
+        target: ExtractionSpec | str | None = None,
     ) -> DocumentExtractionResult:
         started_at = time.monotonic()
         prepared = (
             _prepare_normalized_target(
                 target, self.pipeline_options.vlm_options.model_spec
             )
-            if isinstance(target, ExtractionTarget)
+            if isinstance(target, ExtractionSpec)
             else self._prepare_target(target)
         )
         prepared = prepare_output_target(
@@ -243,7 +243,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         if not paginated:
             if target.target is None:
                 raise ValueError(
-                    "Legacy template= requires page-representable input; use target= for unpaginated sources"
+                    "Legacy template= requires page-representable input; use spec= for unpaginated sources"
                 )
             if input_doc.limits.page_range != DEFAULT_PAGE_RANGE:
                 raise ValueError(

@@ -28,8 +28,7 @@ from docling.datamodel.extraction import (
     ExtractedPageData,
     ExtractionItem,
     ExtractionResult,
-    ExtractionTarget,
-    ExtractionTemplate,
+    ExtractionSpec,
     PageScope,
     VlmInferenceMetadata,
 )
@@ -47,7 +46,7 @@ _FIXTURES = json.loads(
 @pytest.mark.parametrize("case", _FIXTURES["supported"], ids=lambda c: c["name"])
 def test_supported_conversion_preserves_schema_and_caller(case: dict) -> None:
     schema = deepcopy(case["schema"])
-    target = ExtractionTarget(output_schema=schema)
+    target = ExtractionSpec(json_schema=schema)
     before = target.model_dump()
     prepared = prepare_target(target, NUEXTRACT_2B_SPEC)
     again = prepare_target(target, NUEXTRACT_2B_SPEC)
@@ -55,38 +54,34 @@ def test_supported_conversion_preserves_schema_and_caller(case: dict) -> None:
     assert json.loads(prepared.chat_template_kwargs["template"]) == case["template"]
     assert prepared.chat_template_kwargs == again.chat_template_kwargs
     assert prepared.validator.schema == schema
-    assert prepared.target.output_schema == schema
+    assert prepared.target.json_schema == schema
     assert target.model_dump() == before and schema == case["schema"]
     assert prepared.validator is not again.validator
-    prepared.target.output_schema.clear()
+    prepared.target.json_schema.clear()
     assert target.model_dump() == before
 
 
 @pytest.mark.parametrize("case", _FIXTURES["unsupported"], ids=lambda c: c["name"])
 def test_conversion_loss_fails_with_path(case: dict) -> None:
-    target = ExtractionTarget(
-        output_schema={
+    target = ExtractionSpec(
+        json_schema={
             "type": "object",
             "properties": {"value": case["node"]},
         }
     )
-    with pytest.raises(ValueError, match=re.escape(case["path"])):
+    with pytest.raises(ValueError, match=re.escape(case["path"])) as excinfo:
         prepare_target(target, NUEXTRACT_2B_SPEC)
+    # The error tells the caller how to proceed without loss of validation.
+    assert "native_template" in str(excinfo.value)
     # Validation supports the full draft; an explicit native template bypasses conversion.
-    explicit = target.model_copy(
-        update={
-            "template": ExtractionTemplate(
-                format="nuextract", value={"value": "string"}
-            ),
-        }
-    )
+    explicit = target.model_copy(update={"native_template": {"value": "string"}})
     assert (
         prepare_target(explicit, NUEXTRACT_2B_SPEC).validator.schema
-        == target.output_schema
+        == target.json_schema
     )
     assert (
         prepare_target(target, GRANITE_VISION_4_1_SPEC).validator.schema
-        == target.output_schema
+        == target.json_schema
     )
 
 
@@ -108,8 +103,8 @@ class Invoice(BaseModel):
 
 
 def test_pydantic_shorthand_is_schema_and_matches_wire_validation() -> None:
-    target = ExtractionTarget.from_pydantic(Invoice)
-    wire = ExtractionTarget.model_validate_json(target.model_dump_json())
+    target = ExtractionSpec.from_pydantic(Invoice)
+    wire = ExtractionSpec.model_validate_json(target.model_dump_json())
     sdk = prepare_target(target, NUEXTRACT_2B_SPEC)
     remote = prepare_target(wire, NUEXTRACT_2B_SPEC)
     assert sdk.chat_template_kwargs == remote.chat_template_kwargs
@@ -133,37 +128,14 @@ def test_pydantic_shorthand_is_schema_and_matches_wire_validation() -> None:
     assert not sdk.validator.is_valid({"address": {"city": None}})
 
 
-def test_examples_are_values_without_inferred_contract() -> None:
-    example = Invoice(address=Address(city="Example city"))
-    target = ExtractionTarget(
-        template=ExtractionTemplate(format="example_json", value=example)
-    )
-    prepared = prepare_target(target, GRANITE_VISION_4_1_SPEC)
-    assert prepared.validator is None
-    assert prepared.constraint_schema is None
-    assert '"tags": []' in prepared.prompt
-    assert "illustration only" in prepared.prompt
-    assert "Output contract" not in prepared.prompt
-    assert "use null" not in prepared.prompt
-    with pytest.raises(ValidationError, match="example_json"):
-        ExtractionTemplate(format="nuextract", value=example)
-    with pytest.raises(ValidationError):
-        ExtractionTemplate(format="example_json", value=Invoice)
-
-
-def test_schema_and_example_remain_distinct_in_generic_prompt() -> None:
+def test_generic_chat_prompt_has_schema_and_instructions() -> None:
     schema = {
         "type": "object",
         "properties": {"total": {"type": "number"}},
         "required": ["total"],
     }
-    target = ExtractionTarget(
-        output_schema=schema,
-        template=ExtractionTemplate(
-            format="example_json",
-            value={"total": 12.3, "items": []},
-        ),
-        instructions="Extract the tax-inclusive total.",
+    target = ExtractionSpec(
+        json_schema=schema, instructions="Extract the tax-inclusive total."
     )
     prepared = prepare_target(
         target,
@@ -177,7 +149,7 @@ def test_schema_and_example_remain_distinct_in_generic_prompt() -> None:
         "schema permits null" in prepared.prompt
         and "Optional properties may be omitted" in prepared.prompt
     )
-    assert '"total": 12.3' in prepared.prompt
+    assert "Output contract" in prepared.prompt
     assert not prepared.validator.is_valid({"total": None})
     assert not prepared.validator.is_valid({})
     assert not prepared.validator.is_valid({"total": "12.3"})
@@ -186,20 +158,48 @@ def test_schema_and_example_remain_distinct_in_generic_prompt() -> None:
 
 def test_native_template_preserves_semantics_without_schema_conversion() -> None:
     native = {"text": "verbatim-string", "date": "date", "choices": [["yes", "no"]]}
-    target = ExtractionTarget(
-        template=ExtractionTemplate(format="nuextract", value=native)
-    )
+    target = ExtractionSpec(native_template=native)
     prepared = prepare_target(target, NUEXTRACT_2B_SPEC)
     assert json.loads(prepared.chat_template_kwargs["template"]) == native
     assert prepared.validator is None
-    with pytest.raises(ValueError, match="native dialect"):
+
+
+@pytest.mark.parametrize("with_schema", [False, True])
+def test_generic_chat_rejects_native_template(with_schema: bool) -> None:
+    # Only NuExtract has a native template format; a generic chat model must not
+    # silently get a template in a foreign dialect.
+    target = ExtractionSpec(
+        json_schema={"type": "object", "properties": {"total": {"type": "number"}}}
+        if with_schema
+        else None,
+        native_template={"total": "number"},
+    )
+    with pytest.raises(ValueError, match="native_template is not supported"):
         prepare_target(target, GRANITE_VISION_4_1_SPEC)
-    with pytest.raises(ValueError, match="not example_json"):
-        prepare_target(
-            ExtractionTarget(
-                template=ExtractionTemplate(format="example_json", value={})
-            ),
-            NUEXTRACT_2B_SPEC,
+
+
+def test_native_template_guides_and_json_schema_validates() -> None:
+    schema = {
+        "type": "object",
+        "properties": {"note": {"type": "string", "maxLength": 5}},
+        "required": ["note"],
+    }
+    native = {"note": "verbatim-string"}
+    prepared = prepare_target(
+        ExtractionSpec(json_schema=schema, native_template=native), NUEXTRACT_2B_SPEC
+    )
+    assert json.loads(prepared.chat_template_kwargs["template"]) == native
+    assert prepared.validator.schema == schema
+    assert prepared.validator.is_valid({"note": "short"})
+    assert not prepared.validator.is_valid({"note": "far too long"})
+
+
+def test_spec_requires_json_schema_or_native_template() -> None:
+    with pytest.raises(ValidationError, match="json_schema or native_template"):
+        ExtractionSpec(instructions="Extract everything.")
+    with pytest.raises(ValidationError):
+        ExtractionSpec.model_validate(
+            {"template": {"format": "nuextract", "value": {"a": "string"}}}
         )
 
 
@@ -255,7 +255,7 @@ def test_native_template_preserves_semantics_without_schema_conversion() -> None
     ],
 )
 def test_schema_preflight_fails_before_guidance(schema: dict, path: str) -> None:
-    target = ExtractionTarget(output_schema=schema)
+    target = ExtractionSpec(json_schema=schema)
     with pytest.raises(ValueError, match=re.escape(path)):
         prepare_target(target, GRANITE_VISION_4_1_SPEC)
 
@@ -273,7 +273,7 @@ def test_local_pointer_escaping_and_annotations_are_not_schemas() -> None:
             },
         },
     }
-    prepared = prepare_target(ExtractionTarget(output_schema=schema), NUEXTRACT_2B_SPEC)
+    prepared = prepare_target(ExtractionSpec(json_schema=schema), NUEXTRACT_2B_SPEC)
     assert json.loads(prepared.chat_template_kwargs["template"]) == {
         "value": "string",
         "text": "string",
@@ -289,7 +289,7 @@ def test_ref_assertions_are_validated_and_not_silently_overwritten() -> None:
             "value": {"$ref": "#/$defs/Value", "type": "string"},
         },
     }
-    target = ExtractionTarget(output_schema=schema)
+    target = ExtractionSpec(json_schema=schema)
     with pytest.raises(ValueError, match=r"#/properties/value/type"):
         prepare_target(target, NUEXTRACT_2B_SPEC)
     validator = prepare_target(target, GRANITE_VISION_4_1_SPEC).validator
@@ -308,7 +308,7 @@ def test_standard_validation_without_coercion_defaults_or_format_assertions() ->
         "required": ["count"],
         "additionalProperties": False,
     }
-    prepared = prepare_target(ExtractionTarget(output_schema=schema), NUEXTRACT_2B_SPEC)
+    prepared = prepare_target(ExtractionSpec(json_schema=schema), NUEXTRACT_2B_SPEC)
     assert prepared.validator.is_valid({"count": 2, "email": "not-an-email"})
     assert not prepared.validator.is_valid({"count": "2"})
     assert not prepared.validator.is_valid({"count": 1})
@@ -330,15 +330,15 @@ def test_prepared_options_and_dynamic_values_are_call_owned() -> None:
         }
     )
     first = prepare_target(
-        ExtractionTarget(
-            template=ExtractionTemplate(format="nuextract", value={"a": "integer"}),
+        ExtractionSpec(
+            native_template={"a": "integer"},
             instructions="First",
         ),
         spec,
     )
     second = prepare_target(
-        ExtractionTarget(
-            template=ExtractionTemplate(format="nuextract", value={"b": "number"}),
+        ExtractionSpec(
+            native_template={"b": "number"},
             instructions="Second",
         ),
         spec,
@@ -365,7 +365,7 @@ def test_prepared_options_and_dynamic_values_are_call_owned() -> None:
 def test_request_owned_or_non_extraction_chat_options_fail(options: dict) -> None:
     spec = NUEXTRACT_2B_SPEC.model_copy(update={"extra_chat_template_kwargs": options})
     with pytest.raises(ValueError):
-        prepare_target(ExtractionTarget(output_schema={"type": "object"}), spec)
+        prepare_target(ExtractionSpec(json_schema={"type": "object"}), spec)
 
 
 @pytest.mark.parametrize(
@@ -373,14 +373,15 @@ def test_request_owned_or_non_extraction_chat_options_fail(options: dict) -> Non
     [
         {},
         {"instructions": "only"},
-        {"template": {"format": "unknown", "value": {}}},
-        {"template": {"format": "example_json", "value": "{}"}},
-        {"grouping": "page", "output_schema": {"type": "object"}},
+        {"template": {"format": "nuextract", "value": {}}},
+        {"native_template": "{}"},
+        {"native_template": {"a": "string"}, "format": "nuextract"},
+        {"grouping": "page", "json_schema": {"type": "object"}},
     ],
 )
 def test_malformed_targets_fail(target: dict) -> None:
     with pytest.raises(ValidationError):
-        ExtractionTarget.model_validate(target)
+        ExtractionSpec.model_validate(target)
 
 
 @pytest.mark.parametrize(
@@ -462,7 +463,7 @@ def test_legacy_sample_class_path_remains_separate() -> None:
         count: int = Field(default=4, examples=[4])
 
     legacy = prepare_legacy_target(Legacy, NUEXTRACT_2B_SPEC)
-    modern = prepare_target(ExtractionTarget.from_pydantic(Legacy), NUEXTRACT_2B_SPEC)
+    modern = prepare_target(ExtractionSpec.from_pydantic(Legacy), NUEXTRACT_2B_SPEC)
     assert json.loads(legacy.chat_template_kwargs["template"]) == {"count": 4}
     assert json.loads(modern.chat_template_kwargs["template"]) == {"count": "integer"}
     assert legacy.validator is None and legacy.target is None
@@ -479,10 +480,10 @@ def test_preparation_import_does_not_require_optional_validator() -> None:
     script = """
 import sys
 sys.modules['jsonschema'] = None
-from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
-from docling.datamodel.extraction_options import GRANITE_VISION_4_1_SPEC
+from docling.datamodel.extraction import ExtractionSpec
+from docling.datamodel.extraction_options import NUEXTRACT_2B_SPEC
 from docling.models.extraction.prompt_utils import prepare_target
-prepared = prepare_target(ExtractionTarget(template=ExtractionTemplate(format='example_json', value={'items':[]})), GRANITE_VISION_4_1_SPEC)
+prepared = prepare_target(ExtractionSpec(native_template={'items': ['string']}), NUEXTRACT_2B_SPEC)
 assert prepared.validator is None
 """
     result = subprocess.run(
@@ -499,7 +500,7 @@ def test_root_local_reference_and_identifier_stay_in_supplied_document() -> None
         },
         "$ref": "#/$defs/Contract",
     }
-    prepared = prepare_target(ExtractionTarget(output_schema=schema), NUEXTRACT_2B_SPEC)
+    prepared = prepare_target(ExtractionSpec(json_schema=schema), NUEXTRACT_2B_SPEC)
     assert json.loads(prepared.chat_template_kwargs["template"]) == {"name": "string"}
     assert prepared.validator.is_valid({"name": "ok"})
     assert not prepared.validator.is_valid({"name": 1})
@@ -514,23 +515,19 @@ def test_referenced_annotation_is_checked_as_a_schema() -> None:
         },
     }
     with pytest.raises(ValueError, match=r"#/properties/value/\$ref/type"):
-        prepare_target(ExtractionTarget(output_schema=schema), GRANITE_VISION_4_1_SPEC)
+        prepare_target(ExtractionSpec(json_schema=schema), GRANITE_VISION_4_1_SPEC)
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 def test_non_json_values_fail_at_target_and_item_boundaries(value: float) -> None:
     with pytest.raises(ValidationError):
-        ExtractionTarget(
-            template=ExtractionTemplate(
-                format="example_json", value={"nested": [value]}
-            )
-        )
+        ExtractionSpec(native_template={"nested": [value]})
     with pytest.raises(ValidationError):
         ExtractionItem(scope=DocumentScope(), extracted_data={"nested": [value]})
 
 
 def test_required_field_without_type_cannot_disappear_from_template() -> None:
-    target = ExtractionTarget(output_schema={"type": "object", "required": ["missing"]})
+    target = ExtractionSpec(json_schema={"type": "object", "required": ["missing"]})
     with pytest.raises(ValueError, match=r"#/required/0"):
         prepare_target(target, NUEXTRACT_2B_SPEC)
     assert prepare_target(target, GRANITE_VISION_4_1_SPEC).validator.is_valid(
@@ -539,8 +536,8 @@ def test_required_field_without_type_cannot_disappear_from_template() -> None:
 
 
 def test_nullable_branch_annotations_keep_native_type_and_validation() -> None:
-    target = ExtractionTarget(
-        output_schema={
+    target = ExtractionSpec(
+        json_schema={
             "type": "object",
             "properties": {
                 "value": {

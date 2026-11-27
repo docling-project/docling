@@ -40,13 +40,29 @@
         "properties": {"address": {"anyOf": [{"$ref": "#/$defs/Address"}, {"type": "null"}]}}
       },
       "template": {"address": {"city": "string"}}
+    },
+    {
+      "name": "const_singleton_enum_and_nullable_oneof",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "kind": {"const": "invoice"},
+          "version": {"const": 2},
+          "currency": {"type": "string", "enum": ["EUR"]},
+          "note": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+          "status": {"oneOf": [{"type": "string", "enum": ["open", "closed"]}, {"type": "null"}]}
+        }
+      },
+      "template": {"kind": "string", "version": "integer", "currency": "string", "note": "string", "status": ["open", "closed"]}
     }
   ],
   "unsupported": [
     {"name": "union", "node": {"anyOf": [{"type": "string"}, {"type": "integer"}]}, "path": "#/properties/value/anyOf"},
     {"name": "tuple", "node": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "number"}]}, "path": "#/properties/value/prefixItems"},
     {"name": "dynamic_keys", "node": {"type": "object", "additionalProperties": {"type": "string"}}, "path": "#/properties/value/additionalProperties"},
-    {"name": "singleton_enum", "node": {"type": "string", "enum": ["only"]}, "path": "#/properties/value/enum"},
+    {"name": "object_oneof", "node": {"oneOf": [{"type": "object", "properties": {"iban": {"type": "string"}}}, {"type": "object", "properties": {"card": {"type": "string"}}}]}, "path": "#/properties/value/oneOf"},
+    {"name": "object_const", "node": {"const": {"a": 1}}, "path": "#/properties/value/const"},
+    {"name": "const_type_mismatch", "node": {"type": "string", "const": 3}, "path": "#/properties/value/const"},
     {"name": "numeric_enum", "node": {"type": "integer", "enum": [1, 2]}, "path": "#/properties/value/enum"},
     {"name": "composition", "node": {"allOf": [{"type": "string"}, {"minLength": 3}]}, "path": "#/properties/value/allOf"}
   ]
