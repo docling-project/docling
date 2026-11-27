@@ -1012,7 +1012,9 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 # The presets use the coarse connector path. fine_route=True selects the
 # 4x-token fine connector path (the 500M model; the 2B model has no fine path):
 # as extra_processor_kwargs for Transformers, MLX and in-process vLLM, and as
-# mm_processor_kwargs in the request params of an API server.
+# mm_processor_kwargs in the request params of an API server. With
+# fine_route="auto", the Transformers and MLX engines let the model's density
+# router choose the path of each page.
 # vLLM runs GraniteDoclingForConditionalGeneration through its Transformers
 # modeling backend, so the vLLM environment also needs transformers>=5.23.0.
 # That backend supports DeepStack only in vLLM versions later than 0.34.0. The
