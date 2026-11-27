@@ -746,6 +746,44 @@ def test_jats_list_item_label_becomes_marker():
     assert "(a) first" in doc.export_to_markdown()
 
 
+def test_jats_paragraph_after_subsection_stays_in_its_section():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Introduction</title>
+          <p>Opening text.</p>
+          <sec><title>Background</title><p>Background text.</p></sec>
+          <p>Closing text.</p>
+        </sec>
+        """
+    )
+
+    closing = next(t for t in doc.texts if t.text == "Closing text.")
+    parent = closing.parent.resolve(doc)
+    assert isinstance(parent, TextItem)
+    assert parent.text == "Introduction"
+
+
+def test_jats_content_after_reference_list_stays_out_of_the_list():
+    xml = JATS_WRAPPER.format(
+        content=(
+            "<front><article-meta><title-group><article-title>Back Matter Test"
+            "</article-title></title-group></article-meta></front>"
+            "<body><p>Body text.</p></body>"
+            "<back><ref-list><title>References</title>"
+            "<ref><mixed-citation>Smith J. A paper. 2020.</mixed-citation></ref>"
+            "</ref-list>"
+            "<app-group><app><p>Appendix text.</p></app></app-group></back>"
+        )
+    )
+    stream = DocumentStream(name="back-app-test.nxml", stream=BytesIO(xml.encode()))
+    doc = get_converter().convert(stream).document
+
+    appendix = next(t for t in doc.texts if t.text == "Appendix text.")
+    assert appendix.parent.resolve(doc).label != GroupLabel.LIST
+    assert "2020.\nAppendix text." not in doc.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     ("paragraph", "expected"),
     [

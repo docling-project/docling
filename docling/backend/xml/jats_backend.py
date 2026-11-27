@@ -1613,7 +1613,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             "preformat",
             "code",
         ]
-        new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         current_hyperlink = hyperlink
         if node.tag == "ext-link":
@@ -1628,6 +1627,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         for child in list(node):
             stop_walk: bool = False
+            # The heading or group made for a child only holds that child's
+            # content, not the siblings after it.
+            new_parent: NodeItem = parent
 
             # flush pending inline content before a block child in a paragraph
             if node.tag == "p" and child.tag in flush_tags:

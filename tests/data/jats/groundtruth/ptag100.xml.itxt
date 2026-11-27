@@ -549,86 +549,86 @@ N_{nl}=\sqrt{\d ... rime }) \Bigg ]^{-1/2},
         item-444 at level 4: text: Open Access funding: SCOAP
         item-445 at level 4: text: 3
         item-446 at level 4: text: .
-      item-447 at level 3: text: Although normalization is formal ... n associated with Eq. (47) is given by
-      item-448 at level 3: formula: \begin{eqnarray}
+    item-447 at level 2: text: Although normalization is formal ... n associated with Eq. (47) is given by
+    item-448 at level 2: formula: \begin{eqnarray}
 \int _0^{2\pi } ... dr d\theta d\varphi =1.
 \end{eqnarray}
-      item-449 at level 3: inline: group group
-        item-450 at level 4: text: Because the angular part 
-        item-451 at level 4: formula: Y_{lm} (\theta ,\varphi )
-        item-452 at level 4: text: , defined in Eq. (21), is alread ... q. (47), Eq. (A.1) can be rewritten as
-      item-453 at level 3: formula: \begin{eqnarray}
+    item-449 at level 2: inline: group group
+      item-450 at level 3: text: Because the angular part 
+      item-451 at level 3: formula: Y_{lm} (\theta ,\varphi )
+      item-452 at level 3: text: , defined in Eq. (21), is alread ... q. (47), Eq. (A.1) can be rewritten as
+    item-453 at level 2: formula: \begin{eqnarray}
 \frac{\left|N_{ ... t)}})\right] ^{2}dr =1.
 \end{eqnarray}
-      item-454 at level 3: text: To simplify the integral, we introduce the substitution
-      item-455 at level 3: formula: \begin{eqnarray}
+    item-454 at level 2: text: To simplify the integral, we introduce the substitution
+    item-455 at level 2: formula: \begin{eqnarray}
 z=e^{-\delta \frac{r}{\rho (t)}},
 \end{eqnarray}
-      item-456 at level 3: inline: group group
-        item-457 at level 4: text: and consider the fact that 
-        item-458 at level 4: formula: \bar{a}
-        item-459 at level 4: text:  and 
-        item-460 at level 4: formula: \bar{b}
-        item-461 at level 4: text:  in this case can be expressed in terms of 
-        item-462 at level 4: text: n
-        item-463 at level 4: text:  as
-      item-464 at level 3: formula: \begin{eqnarray}
+    item-456 at level 2: inline: group group
+      item-457 at level 3: text: and consider the fact that 
+      item-458 at level 3: formula: \bar{a}
+      item-459 at level 3: text:  and 
+      item-460 at level 3: formula: \bar{b}
+      item-461 at level 3: text:  in this case can be expressed in terms of 
+      item-462 at level 3: text: n
+      item-463 at level 3: text:  as
+    item-464 at level 2: formula: \begin{eqnarray}
 \bar{a}=-n,~~~~ ... (\upsilon +\lambda )+n,
 \end{eqnarray}
-      item-465 at level 3: inline: group group
-        item-466 at level 4: text: along with Eq. (44) as the formula of 
-        item-467 at level 4: formula: \bar{c}
-        item-468 at level 4: text: . Then, Eq. (A.2) becomes
-      item-469 at level 3: formula: \begin{eqnarray}
+    item-465 at level 2: inline: group group
+      item-466 at level 3: text: along with Eq. (44) as the formula of 
+      item-467 at level 3: formula: \bar{c}
+      item-468 at level 3: text: . Then, Eq. (A.2) becomes
+    item-469 at level 2: formula: \begin{eqnarray}
 \frac{\left|N_{ ... {\delta }g_{\rm int}=1,
 \end{eqnarray}
-      item-470 at level 3: inline: group group
-        item-471 at level 4: text: where 
-        item-472 at level 4: formula: g_{\rm int}
-        item-473 at level 4: text:  is the integral part:
-      item-474 at level 3: formula: \begin{eqnarray}
+    item-470 at level 2: inline: group group
+      item-471 at level 3: text: where 
+      item-472 at level 3: formula: g_{\rm int}
+      item-473 at level 3: text:  is the integral part:
+    item-474 at level 2: formula: \begin{eqnarray}
 g_{\rm int}=\in ... a +1;z)\right] ^{2}dz .
 \end{eqnarray}
-      item-475 at level 3: inline: group group
-        item-476 at level 4: text: To evaluate the integration 
-        item-477 at level 4: formula: g_{\rm int}
-        item-478 at level 4: text: , we use the expansion formula f ... ion (see formula 15.2.4 of Ref. [45]):
-      item-479 at level 3: formula: \begin{eqnarray}
+    item-475 at level 2: inline: group group
+      item-476 at level 3: text: To evaluate the integration 
+      item-477 at level 3: formula: g_{\rm int}
+      item-478 at level 3: text: , we use the expansion formula f ... ion (see formula 15.2.4 of Ref. [45]):
+    item-479 at level 2: formula: \begin{eqnarray}
 {_{2}F_{1}}(-n, ... \frac{(b)_k}{(c)_k}s^k,
 \end{eqnarray}
-      item-480 at level 3: inline: group group
-        item-481 at level 4: text: which holds when 
-        item-482 at level 4: formula: n=0,1,2,\cdots
-        item-483 at level 4: text:  and 
-        item-484 at level 4: formula: c \ne 0,-1,-2,\cdots
-        item-485 at level 4: text: . This relation also holds when 
-        item-486 at level 4: formula: c=-n-j
-        item-487 at level 4: text: , where 
-        item-488 at level 4: formula: j=0,1,2,\cdots
-        item-489 at level 4: text: . Substituting this series expansion into Eq. (A.6), we obtain
-      item-490 at level 3: formula: \begin{eqnarray}
+    item-480 at level 2: inline: group group
+      item-481 at level 3: text: which holds when 
+      item-482 at level 3: formula: n=0,1,2,\cdots
+      item-483 at level 3: text:  and 
+      item-484 at level 3: formula: c \ne 0,-1,-2,\cdots
+      item-485 at level 3: text: . This relation also holds when 
+      item-486 at level 3: formula: c=-n-j
+      item-487 at level 3: text: , where 
+      item-488 at level 3: formula: j=0,1,2,\cdots
+      item-489 at level 3: text: . Substituting this series expansion into Eq. (A.6), we obtain
+    item-490 at level 2: formula: \begin{eqnarray}
 g_{\rm int}&=&\ ... ight) ^{2\upsilon }dz .
 \end{eqnarray}
-      item-491 at level 3: text: The integral in the above equati ... eta function, which is defined as [48]
-      item-492 at level 3: formula: \begin{eqnarray}
+    item-491 at level 2: text: The integral in the above equati ... eta function, which is defined as [48]
+    item-492 at level 2: formula: \begin{eqnarray}
 \mathrm{B}(a_1, ... _1-1} (1-s)^{a_2-1} ds,
 \end{eqnarray}
-      item-493 at level 3: inline: group group
-        item-494 at level 4: text: under the conditions 
-        item-495 at level 4: formula: {\rm Re}a_1\gt 0
-        item-496 at level 4: text:  and 
-        item-497 at level 4: formula: {\rm Re}a_2\gt 0
-        item-498 at level 4: text: . The two shape parameters of this function, in our case, are 
-        item-499 at level 4: formula: a_1=k+k^{\prime }+2\lambda
-        item-500 at level 4: text:  and 
-        item-501 at level 4: formula: a_2=2\upsilon +1
-        item-502 at level 4: text: . Thus, considering that the Pochhammer number is given by 
-        item-503 at level 4: formula: (a)_k=\Gamma (a+k)/\Gamma (a)
-        item-504 at level 4: text: , where 
-        item-505 at level 4: formula: a \ne 0,-1,-2,\cdots
-        item-506 at level 4: text: , a rearrangement of Eq. (A.5) w ... ssion for the normalization constants 
-        item-507 at level 4: formula: N_{nl}
-        item-508 at level 4: text: , as presented in Eq. (48) of the text.
+    item-493 at level 2: inline: group group
+      item-494 at level 3: text: under the conditions 
+      item-495 at level 3: formula: {\rm Re}a_1\gt 0
+      item-496 at level 3: text:  and 
+      item-497 at level 3: formula: {\rm Re}a_2\gt 0
+      item-498 at level 3: text: . The two shape parameters of this function, in our case, are 
+      item-499 at level 3: formula: a_1=k+k^{\prime }+2\lambda
+      item-500 at level 3: text:  and 
+      item-501 at level 3: formula: a_2=2\upsilon +1
+      item-502 at level 3: text: . Thus, considering that the Pochhammer number is given by 
+      item-503 at level 3: formula: (a)_k=\Gamma (a+k)/\Gamma (a)
+      item-504 at level 3: text: , where 
+      item-505 at level 3: formula: a \ne 0,-1,-2,\cdots
+      item-506 at level 3: text: , a rearrangement of Eq. (A.5) w ... ssion for the normalization constants 
+      item-507 at level 3: formula: N_{nl}
+      item-508 at level 3: text: , as presented in Eq. (48) of the text.
     item-509 at level 2: section_header: References
       item-510 at level 3: list: group list
         item-511 at level 4: list_item: H.-T. Ding, O. Kaczmarek, A.-L.  ... (2019).10.1016/j.nuclphysa.2018.09.075
