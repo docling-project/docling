@@ -418,6 +418,39 @@ class TestApiImageRequest:
         assert response.error.startswith("HTTP 400: ")
         assert "Unsupported parameter: temperature" in response.error
 
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_http_error_redacts_credentials_echoed_by_the_server(
+        self, mock_session_factory, sample_image, caplog
+    ):
+        """A 401 body that echoes the request's API key must not leak it into the
+        log or the page error (docling#5486)."""
+        key = "sk-test-0123456789abcdef"
+        mock_resp = MagicMock()
+        mock_resp.ok = False
+        mock_resp.status_code = 401
+        mock_resp.text = (
+            f'{{"error": {{"message": "Incorrect API key provided: {key}"}}}}'
+        )
+        mock_resp.headers = {"content-type": "application/json"}
+        session = mock_session_factory.return_value.__enter__.return_value
+        session.post.return_value = mock_resp
+        mock_resp.__enter__.return_value = mock_resp  # streaming uses `with post(...)`
+
+        for request in (api_image_request, api_image_request_streaming):
+            response = request(
+                image=sample_image,
+                prompt="Test prompt",
+                url="http://test.api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {key}"},
+            )
+
+            assert response.error is not None
+            assert response.error.startswith("HTTP 401: ")
+            assert "Incorrect API key provided" in response.error
+            assert key not in response.error
+        assert "Incorrect API key provided" in caplog.text
+        assert key not in caplog.text
+
     def test_retry_session_retries_transient_api_errors(self):
         """Test that remote API calls retry common transient failures."""
         with _make_retry_session() as session:
