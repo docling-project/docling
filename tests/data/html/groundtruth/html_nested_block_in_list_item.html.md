@@ -1,11 +1,17 @@
 ## Ordered list with inline elements
 
 1. Step 1 text
-<!-- image -->
-    - Note text
+
+   <!-- image -->
+
+   - Note text
+
 2. Step 2 text
-<!-- image -->
-    - Note text
+
+   <!-- image -->
+
+   - Note text
+
 3. Step 3 text
 4. Step 4 text
 
@@ -34,8 +40,10 @@ After.
 ## List items without text
 
 1. 
-| A | B |
-| - | - |
+   | A | B |
+   | - | - |
+
 2. 
-<!-- image -->
+   <!-- image -->
+
 3. Third item

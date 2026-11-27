@@ -6,9 +6,9 @@
     - UK
     - Germany
     - Switzerland
-            - Bern
-            - Aargau
+        - Bern
+        - Aargau
     - Italy
-            - Piedmont
-            - Liguria
+        - Piedmont
+        - Liguria
 - Africa

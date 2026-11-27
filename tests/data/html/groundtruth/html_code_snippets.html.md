@@ -6,7 +6,7 @@ To use Docling, simply install `docling`from your package manager, e.g. pip: `pi
 
 To convert individual documents with python, use `convert()`, for example:
 
-```
+```python
 from docling.document_converter import DocumentConverter
 
 source = "https://arxiv.org/pdf/2408.09869"

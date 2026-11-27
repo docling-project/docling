@@ -396,7 +396,8 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_%28film%29), st
 ## See also
 
 - [Birds portal](/wiki/Portal:Birds)
-<!-- image -->
+
+  <!-- image -->
 
 - [Domestic duck](/wiki/Domestic_duck)
 - [Duck as food](/wiki/Duck_as_food)
@@ -493,17 +494,28 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_%28film%29), st
 **Duck** at Wikipedia's [sister projects](/wiki/Wikipedia:Wikimedia_sister_projects)
 
 - [Definitions](https://en.wiktionary.org/wiki/duck) from Wiktionary
-<!-- image -->
+
+  <!-- image -->
+
 - [Media](https://commons.wikimedia.org/wiki/Anatidae) from Commons
-<!-- image -->
+
+  <!-- image -->
+
 - [Quotations](https://en.wikiquote.org/wiki/Birds) from Wikiquote
-<!-- image -->
+
+  <!-- image -->
+
 - [Recipes](https://en.wikibooks.org/wiki/Cookbook:Duck) from Wikibooks
-<!-- image -->
+
+  <!-- image -->
+
 - [Taxa](https://species.wikimedia.org/wiki/Anatidae) from Wikispecies
-<!-- image -->
+
+  <!-- image -->
+
 - [Data](https://www.wikidata.org/wiki/Q3736439) from Wikidata
-<!-- image -->
+
+  <!-- image -->
 
 - [list of books](https://web.archive.org/web/20060613210555/http://seaducks.org/subjects/MIGRATION%20AND%20FLIGHT.htm) (useful looking abstracts)
 - [Ducks on postage stamps](http://www.stampsbook.org/subject/Duck.html) [Archived](https://web.archive.org/web/20130513022903/http://www.stampsbook.org/subject/Duck.html) 2013-05-13 at the [Wayback Machine](/wiki/Wayback_Machine)
