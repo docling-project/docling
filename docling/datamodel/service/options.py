@@ -35,6 +35,11 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
     VlmConvertOptions,
 )
+from docling.datamodel.pipeline_options_asr_model import (
+    ApiAsrOptions,
+    InlineAsrOptions,
+    asr_options_from_dict,
+)
 
 # Import legacy types for backwards compatibility
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -948,6 +953,47 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = None
 
+    # ASR Configuration (audio and video inputs)
+    asr_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                "Preset ID for automatic speech recognition (ASR) of audio and video inputs. "
+                'Use "default" for the admin-controlled default, or a specific preset '
+                'such as "whisper_tiny" or "whisper_turbo".'
+            ),
+            examples=["default", "whisper_tiny", "whisper_turbo"],
+        ),
+    ] = None
+
+    asr_custom_config: Annotated[
+        Optional[SerializeAsAny[Union[InlineAsrOptions, ApiAsrOptions]]],
+        Field(
+            default=None,
+            description=(
+                "Custom ASR configuration for audio and video inputs. "
+                "Only available if the admin allows it. "
+                "Accepts an InlineAsrOptions subclass, ApiAsrOptions, or an equivalent dict. "
+                "The 'kind' field selects inline or API options, and for inline options "
+                "the 'inference_framework' field selects the engine. "
+                "A dict without these fields, or with unknown fields, is rejected."
+            ),
+            examples=[
+                {
+                    "kind": "inline_model_options",
+                    "inference_framework": "whisper",
+                    "repo_id": "turbo",
+                },
+                {
+                    "kind": "api_model_options",
+                    "url": "http://whisper:8000/v1/audio/transcriptions",
+                    "model": "whisper-1",
+                },
+            ],
+        ),
+    ] = None
+
     @field_validator(
         "ocr_custom_config",
         "table_structure_custom_config",
@@ -972,6 +1018,20 @@ class ConvertDocumentsOptions(BaseModel):
                 raise ValueError(
                     f"Invalid JSON for nested config field: {exc}"
                 ) from exc
+        return value
+
+    @field_validator("asr_custom_config", mode="before")
+    @classmethod
+    def _resolve_asr_custom_config(cls, value: Any) -> Any:
+        """Resolve a dict to its ASR options class, so the engine is never lost."""
+        value = cls._decode_json_string_config(value)
+        if isinstance(value, dict):
+            return asr_options_from_dict(value)
+        if type(value) is InlineAsrOptions:
+            raise ValueError(
+                "asr_custom_config needs an engine: use an InlineAsrOptions "
+                "subclass or set 'inference_framework'."
+            )
         return value
 
     # Field validators for deprecated fields - trigger warnings on assignment
@@ -1175,6 +1235,13 @@ class ConvertDocumentsOptions(BaseModel):
                 "Cannot specify both picture_classification_preset and "
                 "picture_classification_custom_config."
             )
+        return self
+
+    @model_validator(mode="after")
+    def validate_asr_options(self) -> Self:
+        """Ensure preset and custom config are mutually exclusive for ASR."""
+        if self.asr_preset and self.asr_custom_config:
+            raise ValueError("Cannot specify both asr_preset and asr_custom_config.")
         return self
 
     @model_validator(mode="after")

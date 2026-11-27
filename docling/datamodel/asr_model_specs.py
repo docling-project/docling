@@ -4,6 +4,7 @@
 import logging
 from enum import Enum
 from importlib.util import find_spec
+from typing import NamedTuple
 
 from pydantic import (
     AnyUrl,
@@ -21,6 +22,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InferenceAsrFramework,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
+    InlineAsrOptions,
     InlineAsrWhisperS2TOptions,
     TransformersModelType,
 )
@@ -1163,3 +1165,387 @@ class AsrModelType(str, Enum):
     WHISPER_DISTIL_LARGE_V3_S2T = "whisper_distil_large_v3_s2t"
     WHISPER_DISTIL_LARGE_V3_5_S2T = "whisper_distil_large_v3_5_s2t"
     WHISPER_LARGE_V3_TURBO_S2T = "whisper_large_v3_turbo_s2t"
+
+
+class _AsrPresetEntry(NamedTuple):
+    """A built-in ASR preset with its human-readable name and description."""
+
+    options: InlineAsrOptions | AsrModelPreset
+    name: str
+    description: str
+
+
+# The built-in ASR presets, by ID. `InlineAsrOptions.from_preset()` resolves them.
+# An `AsrModelPreset` selects its engine for the device when it is resolved.
+_ASR_PRESETS: dict[AsrModelType, _AsrPresetEntry] = {
+    AsrModelType.GRANITE_SPEECH_5_0_2B: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_2B_PRESET,
+        "Granite Speech 5.0 2B",
+        "Granite Speech 5.0 2B (ibm-granite/granite-speech-5.0-2b) with Transformers, or mlx-audio on Apple Silicon when it is available.",
+    ),
+    AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_470M_TURBOCTC_PRESET,
+        "Granite Speech 5.0 470M TurboCTC",
+        "Granite Speech 5.0 470M TurboCTC (ibm-granite/granite-speech-5.0-470m-turboctc) with Transformers, or mlx-audio on Apple Silicon when it is available.",
+    ),
+    AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_NC: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_470M_TURBOCTC_NC_PRESET,
+        "Granite Speech 5.0 470M TurboCTC NC",
+        "Granite Speech 5.0 470M TurboCTC NC (ibm-granite/granite-speech-5.0-470m-turboctc-nc) with Transformers.",
+    ),
+    AsrModelType.GRANITE_SPEECH_4_1_2B: _AsrPresetEntry(
+        GRANITE_SPEECH_4_1_2B_PRESET,
+        "Granite Speech 4.1 2B",
+        "Granite Speech 4.1 2B (ibm-granite/granite-speech-4.1-2b) with Transformers.",
+    ),
+    AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS: _AsrPresetEntry(
+        GRANITE_SPEECH_4_1_2B_PLUS_PRESET,
+        "Granite Speech 4.1 2B Plus",
+        "Granite Speech 4.1 2B Plus (ibm-granite/granite-speech-4.1-2b-plus) with Transformers, or mlx-audio on Apple Silicon when it is available.",
+    ),
+    AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B: _AsrPresetEntry(
+        NEMOTRON_SPEECH_STREAMING_EN_0_6B_PRESET,
+        "Nemotron Speech Streaming English 0.6B",
+        "Nemotron Speech Streaming English 0.6B (nvidia/nemotron-speech-streaming-en-0.6b) with Transformers, or mlx-audio on Apple Silicon when it is available.",
+    ),
+    AsrModelType.PARAKEET_CTC_1_1B: _AsrPresetEntry(
+        PARAKEET_CTC_1_1B_PRESET,
+        "Parakeet CTC 1.1B",
+        "Parakeet CTC 1.1B (nvidia/parakeet-ctc-1.1b) with Transformers, or mlx-audio on Apple Silicon when it is available.",
+    ),
+    AsrModelType.GRANITE_4_0_1B_SPEECH: _AsrPresetEntry(
+        GRANITE_4_0_1B_SPEECH,
+        "Granite 4.0 1B Speech",
+        "Granite 4.0 1B Speech (ibm-granite/granite-4.0-1b-speech) with Transformers.",
+    ),
+    AsrModelType.NEMOTRON_3_5_ASR_STREAMING: _AsrPresetEntry(
+        NEMOTRON_3_5_ASR_STREAMING_PRESET,
+        "Nemotron 3.5 ASR Streaming 0.6B",
+        "Nemotron 3.5 ASR Streaming 0.6B (nvidia/nemotron-3.5-asr-streaming-0.6b) with Transformers, or mlx-audio on Apple Silicon when it is available.",
+    ),
+    AsrModelType.WHISPER_TINY: _AsrPresetEntry(
+        WHISPER_TINY,
+        "Whisper tiny",
+        "Whisper tiny with MLX Whisper on Apple Silicon and native Whisper otherwise.",
+    ),
+    AsrModelType.WHISPER_BASE: _AsrPresetEntry(
+        WHISPER_BASE,
+        "Whisper base",
+        "Whisper base with MLX Whisper on Apple Silicon and native Whisper otherwise.",
+    ),
+    AsrModelType.WHISPER_SMALL: _AsrPresetEntry(
+        WHISPER_SMALL,
+        "Whisper small",
+        "Whisper small with MLX Whisper on Apple Silicon and native Whisper otherwise.",
+    ),
+    AsrModelType.WHISPER_MEDIUM: _AsrPresetEntry(
+        WHISPER_MEDIUM,
+        "Whisper medium",
+        "Whisper medium with MLX Whisper on Apple Silicon and native Whisper otherwise.",
+    ),
+    AsrModelType.WHISPER_LARGE: _AsrPresetEntry(
+        WHISPER_LARGE,
+        "Whisper large",
+        "Whisper large with MLX Whisper on Apple Silicon and native Whisper otherwise.",
+    ),
+    AsrModelType.WHISPER_TURBO: _AsrPresetEntry(
+        WHISPER_TURBO,
+        "Whisper turbo",
+        "Whisper turbo with MLX Whisper on Apple Silicon and native Whisper otherwise.",
+    ),
+    AsrModelType.WHISPER_TINY_TRANSFORMERS: _AsrPresetEntry(
+        WHISPER_TINY_TRANSFORMERS,
+        "Whisper tiny (Transformers)",
+        "Whisper tiny (openai/whisper-tiny) with Transformers.",
+    ),
+    AsrModelType.WHISPER_BASE_TRANSFORMERS: _AsrPresetEntry(
+        WHISPER_BASE_TRANSFORMERS,
+        "Whisper base (Transformers)",
+        "Whisper base (openai/whisper-base) with Transformers.",
+    ),
+    AsrModelType.WHISPER_SMALL_TRANSFORMERS: _AsrPresetEntry(
+        WHISPER_SMALL_TRANSFORMERS,
+        "Whisper small (Transformers)",
+        "Whisper small (openai/whisper-small) with Transformers.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_TRANSFORMERS: _AsrPresetEntry(
+        WHISPER_MEDIUM_TRANSFORMERS,
+        "Whisper medium (Transformers)",
+        "Whisper medium (openai/whisper-medium) with Transformers.",
+    ),
+    AsrModelType.WHISPER_LARGE_TRANSFORMERS: _AsrPresetEntry(
+        WHISPER_LARGE_TRANSFORMERS,
+        "Whisper large (Transformers)",
+        "Whisper large (openai/whisper-large) with Transformers.",
+    ),
+    AsrModelType.WHISPER_TURBO_TRANSFORMERS: _AsrPresetEntry(
+        WHISPER_TURBO_TRANSFORMERS,
+        "Whisper turbo (Transformers)",
+        "Whisper turbo (openai/whisper-large-v3-turbo) with Transformers.",
+    ),
+    AsrModelType.WHISPER_TINY_MLX: _AsrPresetEntry(
+        WHISPER_TINY_MLX,
+        "Whisper tiny (MLX Whisper)",
+        "Whisper tiny (mlx-community/whisper-tiny-mlx) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_SMALL_MLX: _AsrPresetEntry(
+        WHISPER_SMALL_MLX,
+        "Whisper small (MLX Whisper)",
+        "Whisper small (mlx-community/whisper-small-mlx) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_MLX: _AsrPresetEntry(
+        WHISPER_MEDIUM_MLX,
+        "Whisper medium (MLX Whisper)",
+        "Whisper medium (mlx-community/whisper-medium-mlx-8bit) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_BASE_MLX: _AsrPresetEntry(
+        WHISPER_BASE_MLX,
+        "Whisper base (MLX Whisper)",
+        "Whisper base (mlx-community/whisper-base-mlx) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_LARGE_MLX: _AsrPresetEntry(
+        WHISPER_LARGE_MLX,
+        "Whisper large (MLX Whisper)",
+        "Whisper large (mlx-community/whisper-large-mlx-8bit) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_TURBO_MLX: _AsrPresetEntry(
+        WHISPER_TURBO_MLX,
+        "Whisper turbo (MLX Whisper)",
+        "Whisper turbo (mlx-community/whisper-turbo) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_TINY_MLX_WHISPER: _AsrPresetEntry(
+        WHISPER_TINY_MLX_WHISPER,
+        "Whisper tiny (MLX Whisper)",
+        "Whisper tiny (mlx-community/whisper-tiny-mlx) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_SMALL_MLX_WHISPER: _AsrPresetEntry(
+        WHISPER_SMALL_MLX_WHISPER,
+        "Whisper small (MLX Whisper)",
+        "Whisper small (mlx-community/whisper-small-mlx) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_MLX_WHISPER: _AsrPresetEntry(
+        WHISPER_MEDIUM_MLX_WHISPER,
+        "Whisper medium (MLX Whisper)",
+        "Whisper medium (mlx-community/whisper-medium-mlx-8bit) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_BASE_MLX_WHISPER: _AsrPresetEntry(
+        WHISPER_BASE_MLX_WHISPER,
+        "Whisper base (MLX Whisper)",
+        "Whisper base (mlx-community/whisper-base-mlx) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_LARGE_MLX_WHISPER: _AsrPresetEntry(
+        WHISPER_LARGE_MLX_WHISPER,
+        "Whisper large (MLX Whisper)",
+        "Whisper large (mlx-community/whisper-large-mlx-8bit) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_TURBO_MLX_WHISPER: _AsrPresetEntry(
+        WHISPER_TURBO_MLX_WHISPER,
+        "Whisper turbo (MLX Whisper)",
+        "Whisper turbo (mlx-community/whisper-turbo) with MLX Whisper.",
+    ),
+    AsrModelType.WHISPER_TINY_MLX_AUDIO: _AsrPresetEntry(
+        WHISPER_TINY_MLX_AUDIO,
+        "Whisper tiny (mlx-audio)",
+        "Whisper tiny (mlx-community/whisper-tiny-asr-fp16) with mlx-audio.",
+    ),
+    AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO: _AsrPresetEntry(
+        GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+        "Granite Speech 4.1 2B Plus (mlx-audio)",
+        "Granite Speech 4.1 2B Plus (ibm-granite/granite-speech-4.1-2b-plus) with mlx-audio.",
+    ),
+    AsrModelType.GRANITE_SPEECH_5_0_2B_MLX_AUDIO: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+        "Granite Speech 5.0 2B (mlx-audio)",
+        "Granite Speech 5.0 2B (ibm-granite/granite-speech-5.0-2b) with mlx-audio.",
+    ),
+    AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
+        "Granite Speech 5.0 470M TurboCTC (mlx-audio)",
+        "Granite Speech 5.0 470M TurboCTC (ibm-granite/granite-speech-5.0-470m-turboctc) with mlx-audio.",
+    ),
+    AsrModelType.NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO: _AsrPresetEntry(
+        NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+        "Nemotron 3.5 ASR Streaming 0.6B (mlx-audio)",
+        "Nemotron 3.5 ASR Streaming 0.6B (mlx-community/nemotron-3.5-asr-streaming-0.6b) with mlx-audio.",
+    ),
+    AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO: _AsrPresetEntry(
+        NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+        "Nemotron Speech Streaming English 0.6B (mlx-audio)",
+        "Nemotron Speech Streaming English 0.6B (nvidia/nemotron-speech-streaming-en-0.6b) with mlx-audio.",
+    ),
+    AsrModelType.PARAKEET_CTC_1_1B_MLX_AUDIO: _AsrPresetEntry(
+        PARAKEET_CTC_1_1B_MLX_AUDIO,
+        "Parakeet CTC 1.1B (mlx-audio)",
+        "Parakeet CTC 1.1B (mlx-community/parakeet-ctc-1.1b) with mlx-audio.",
+    ),
+    AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS: _AsrPresetEntry(
+        GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
+        "Granite Speech 4.1 2B Plus (Transformers)",
+        "Granite Speech 4.1 2B Plus (ibm-granite/granite-speech-4.1-2b-plus) with Transformers.",
+    ),
+    AsrModelType.GRANITE_SPEECH_5_0_2B_TRANSFORMERS: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
+        "Granite Speech 5.0 2B (Transformers)",
+        "Granite Speech 5.0 2B (ibm-granite/granite-speech-5.0-2b) with Transformers.",
+    ),
+    AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS: _AsrPresetEntry(
+        GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
+        "Granite Speech 5.0 470M TurboCTC (Transformers)",
+        "Granite Speech 5.0 470M TurboCTC (ibm-granite/granite-speech-5.0-470m-turboctc) with Transformers.",
+    ),
+    AsrModelType.NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS: _AsrPresetEntry(
+        NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+        "Nemotron 3.5 ASR Streaming 0.6B (Transformers)",
+        "Nemotron 3.5 ASR Streaming 0.6B (nvidia/nemotron-3.5-asr-streaming-0.6b) with Transformers.",
+    ),
+    AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS: _AsrPresetEntry(
+        NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
+        "Nemotron Speech Streaming English 0.6B (Transformers)",
+        "Nemotron Speech Streaming English 0.6B (nvidia/nemotron-speech-streaming-en-0.6b) with Transformers.",
+    ),
+    AsrModelType.PARAKEET_CTC_1_1B_TRANSFORMERS: _AsrPresetEntry(
+        PARAKEET_CTC_1_1B_TRANSFORMERS,
+        "Parakeet CTC 1.1B (Transformers)",
+        "Parakeet CTC 1.1B (nvidia/parakeet-ctc-1.1b) with Transformers.",
+    ),
+    AsrModelType.WHISPER_TINY_NATIVE: _AsrPresetEntry(
+        WHISPER_TINY_NATIVE,
+        "Whisper tiny (native Whisper)",
+        "Whisper tiny with native Whisper.",
+    ),
+    AsrModelType.WHISPER_SMALL_NATIVE: _AsrPresetEntry(
+        WHISPER_SMALL_NATIVE,
+        "Whisper small (native Whisper)",
+        "Whisper small with native Whisper.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_NATIVE: _AsrPresetEntry(
+        WHISPER_MEDIUM_NATIVE,
+        "Whisper medium (native Whisper)",
+        "Whisper medium with native Whisper.",
+    ),
+    AsrModelType.WHISPER_BASE_NATIVE: _AsrPresetEntry(
+        WHISPER_BASE_NATIVE,
+        "Whisper base (native Whisper)",
+        "Whisper base with native Whisper.",
+    ),
+    AsrModelType.WHISPER_LARGE_NATIVE: _AsrPresetEntry(
+        WHISPER_LARGE_NATIVE,
+        "Whisper large (native Whisper)",
+        "Whisper large with native Whisper.",
+    ),
+    AsrModelType.WHISPER_TURBO_NATIVE: _AsrPresetEntry(
+        WHISPER_TURBO_NATIVE,
+        "Whisper turbo (native Whisper)",
+        "Whisper turbo with native Whisper.",
+    ),
+    AsrModelType.WHISPER_TINY_EN_NATIVE: _AsrPresetEntry(
+        WHISPER_TINY_EN_NATIVE,
+        "Whisper tiny.en (native Whisper)",
+        "Whisper tiny.en with native Whisper.",
+    ),
+    AsrModelType.WHISPER_BASE_EN_NATIVE: _AsrPresetEntry(
+        WHISPER_BASE_EN_NATIVE,
+        "Whisper base.en (native Whisper)",
+        "Whisper base.en with native Whisper.",
+    ),
+    AsrModelType.WHISPER_SMALL_EN_NATIVE: _AsrPresetEntry(
+        WHISPER_SMALL_EN_NATIVE,
+        "Whisper small.en (native Whisper)",
+        "Whisper small.en with native Whisper.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_EN_NATIVE: _AsrPresetEntry(
+        WHISPER_MEDIUM_EN_NATIVE,
+        "Whisper medium.en (native Whisper)",
+        "Whisper medium.en with native Whisper.",
+    ),
+    AsrModelType.WHISPER_DISTIL_SMALL_EN_NATIVE: _AsrPresetEntry(
+        WHISPER_DISTIL_SMALL_EN_NATIVE,
+        "Whisper distil-small.en (native Whisper)",
+        "Whisper distil-small.en with native Whisper.",
+    ),
+    AsrModelType.WHISPER_DISTIL_MEDIUM_EN_NATIVE: _AsrPresetEntry(
+        WHISPER_DISTIL_MEDIUM_EN_NATIVE,
+        "Whisper distil-medium.en (native Whisper)",
+        "Whisper distil-medium.en with native Whisper.",
+    ),
+    AsrModelType.WHISPER_DISTIL_LARGE_V3_NATIVE: _AsrPresetEntry(
+        WHISPER_DISTIL_LARGE_V3_NATIVE,
+        "Whisper distil-large-v3 (native Whisper)",
+        "Whisper distil-large-v3 with native Whisper.",
+    ),
+    AsrModelType.WHISPER_DISTIL_LARGE_V3_5_NATIVE: _AsrPresetEntry(
+        WHISPER_DISTIL_LARGE_V3_5_NATIVE,
+        "Whisper distil-large-v3.5 (native Whisper)",
+        "Whisper distil-large-v3.5 with native Whisper.",
+    ),
+    AsrModelType.WHISPER_TINY_S2T: _AsrPresetEntry(
+        WHISPER_TINY_S2T,
+        "Whisper tiny (WhisperS2T)",
+        "Whisper tiny with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_TINY_EN_S2T: _AsrPresetEntry(
+        WHISPER_TINY_EN_S2T,
+        "Whisper tiny.en (WhisperS2T)",
+        "Whisper tiny.en with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_BASE_S2T: _AsrPresetEntry(
+        WHISPER_BASE_S2T,
+        "Whisper base (WhisperS2T)",
+        "Whisper base with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_BASE_EN_S2T: _AsrPresetEntry(
+        WHISPER_BASE_EN_S2T,
+        "Whisper base.en (WhisperS2T)",
+        "Whisper base.en with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_SMALL_S2T: _AsrPresetEntry(
+        WHISPER_SMALL_S2T,
+        "Whisper small (WhisperS2T)",
+        "Whisper small with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_SMALL_EN_S2T: _AsrPresetEntry(
+        WHISPER_SMALL_EN_S2T,
+        "Whisper small.en (WhisperS2T)",
+        "Whisper small.en with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T: _AsrPresetEntry(
+        WHISPER_DISTIL_SMALL_EN_S2T,
+        "Whisper distil-small.en (WhisperS2T)",
+        "Whisper distil-small.en with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_S2T: _AsrPresetEntry(
+        WHISPER_MEDIUM_S2T,
+        "Whisper medium (WhisperS2T)",
+        "Whisper medium with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_MEDIUM_EN_S2T: _AsrPresetEntry(
+        WHISPER_MEDIUM_EN_S2T,
+        "Whisper medium.en (WhisperS2T)",
+        "Whisper medium.en with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T: _AsrPresetEntry(
+        WHISPER_DISTIL_MEDIUM_EN_S2T,
+        "Whisper distil-medium.en (WhisperS2T)",
+        "Whisper distil-medium.en with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_LARGE_V3_S2T: _AsrPresetEntry(
+        WHISPER_LARGE_V3_S2T,
+        "Whisper large-v3 (WhisperS2T)",
+        "Whisper large-v3 with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T: _AsrPresetEntry(
+        WHISPER_DISTIL_LARGE_V3_S2T,
+        "Whisper distil-large-v3 (WhisperS2T)",
+        "Whisper distil-large-v3 with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T: _AsrPresetEntry(
+        WHISPER_DISTIL_LARGE_V3_5_S2T,
+        "Whisper distil-large-v3.5 (WhisperS2T)",
+        "Whisper distil-large-v3.5 with WhisperS2T.",
+    ),
+    AsrModelType.WHISPER_LARGE_V3_TURBO_S2T: _AsrPresetEntry(
+        WHISPER_LARGE_V3_TURBO_S2T,
+        "Whisper large-v3-turbo (WhisperS2T)",
+        "Whisper large-v3-turbo with WhisperS2T.",
+    ),
+}

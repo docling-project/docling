@@ -28,7 +28,7 @@ presets likewise force those backends).
 """
 
 from enum import Enum
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 from typing_extensions import deprecated
@@ -38,6 +38,9 @@ from docling.datamodel.pipeline_options_vlm_model import (
     # InferenceFramework,
     TransformersModelType,
 )
+
+if TYPE_CHECKING:
+    from docling.datamodel.asr_presets import AsrPresetInfo
 
 
 class BaseAsrOptions(BaseModel):
@@ -248,6 +251,86 @@ class InlineAsrOptions(BaseAsrOptions):
     @property
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")
+
+    @classmethod
+    def list_preset_ids(cls) -> list[str]:
+        """List the IDs of the built-in ASR presets.
+
+        The IDs are the values of ``AsrModelType``, the same names that the CLI
+        accepts in ``--asr-model``.
+
+        Returns:
+            List of preset IDs
+        """
+        # The presets are defined from these classes, so import them here.
+        from docling.datamodel.asr_model_specs import _ASR_PRESETS
+
+        return [model.value for model in _ASR_PRESETS]
+
+    @classmethod
+    def get_preset(cls, preset_id: str) -> "AsrPresetInfo":
+        """Get the name and description of a built-in ASR preset.
+
+        Args:
+            preset_id: The preset identifier
+
+        Returns:
+            The preset's ID, human-readable name and description
+
+        Raises:
+            KeyError: If preset not found
+        """
+        # The presets are defined from these classes, so import them here.
+        from docling.datamodel.asr_model_specs import _ASR_PRESETS, AsrModelType
+        from docling.datamodel.asr_presets import AsrPresetInfo
+
+        if preset_id not in _ASR_PRESETS:
+            raise KeyError(
+                f"Preset '{preset_id}' not found for {cls.__name__}. "
+                f"Available presets: {cls.list_preset_ids()}"
+            )
+        entry = _ASR_PRESETS[AsrModelType(preset_id)]
+        return AsrPresetInfo(
+            preset_id=preset_id, name=entry.name, description=entry.description
+        )
+
+    @classmethod
+    def from_preset(
+        cls,
+        preset_id: str,
+        device: AcceleratorDevice | str = AcceleratorDevice.AUTO,
+    ) -> "InlineAsrOptions":
+        """Create ASR options from a built-in preset.
+
+        A preset without an engine suffix (e.g. ``whisper_tiny``) selects the
+        engine for this machine, like the ``WHISPER_*`` constants in
+        ``asr_model_specs``. ``whisper_tiny`` gives the default ASR options of
+        ``AsrPipelineOptions``.
+
+        Args:
+            preset_id: The preset identifier
+            device: The accelerator device, used to select the engine of the
+                model-family presets
+
+        Returns:
+            A new instance of the ``InlineAsrOptions`` subclass for the engine
+
+        Raises:
+            KeyError: If preset not found
+        """
+        # The presets are defined from these classes, so import them here.
+        from docling.datamodel.asr_model_specs import _ASR_PRESETS, AsrModelType
+        from docling.datamodel.asr_presets import AsrModelPreset
+
+        if preset_id not in _ASR_PRESETS:
+            raise KeyError(
+                f"Preset '{preset_id}' not found for {cls.__name__}. "
+                f"Available presets: {cls.list_preset_ids()}"
+            )
+        preset = _ASR_PRESETS[AsrModelType(preset_id)].options
+        if isinstance(preset, AsrModelPreset):
+            return preset.to_auto_options(device)
+        return preset.model_copy(deep=True)
 
 
 class InlineAsrNativeWhisperOptions(InlineAsrOptions):
@@ -806,3 +889,50 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
                 f"translation capability (e.g., `large-v3`)."
             )
         return self
+
+
+_INLINE_ASR_OPTIONS_BY_FRAMEWORK: dict[
+    InferenceAsrFramework, type[InlineAsrOptions]
+] = {
+    InferenceAsrFramework.WHISPER: InlineAsrNativeWhisperOptions,
+    InferenceAsrFramework.TRANSFORMERS: InlineAsrTransformersOptions,
+    InferenceAsrFramework.MLX: InlineAsrMlxWhisperOptions,
+    InferenceAsrFramework.MLX_WHISPER: InlineAsrMlxWhisperOptions,
+    InferenceAsrFramework.MLX_AUDIO: InlineAsrMlxAudioOptions,
+    InferenceAsrFramework.WHISPER_S2T: InlineAsrWhisperS2TOptions,
+}
+
+
+def asr_options_from_dict(
+    data: dict[str, Any],
+) -> Union[InlineAsrOptions, ApiAsrOptions]:
+    """Build ASR options from a dict, picking the class from its fields.
+
+    ``kind`` selects inline or API options. For inline options,
+    ``inference_framework`` selects the engine class. Unknown fields are
+    rejected, so a typo fails instead of being dropped.
+    """
+    kind = data.get("kind")
+    if kind == "api_model_options":
+        options_cls: Union[type[InlineAsrOptions], type[ApiAsrOptions]] = ApiAsrOptions
+    elif kind == "inline_model_options":
+        framework = data.get("inference_framework")
+        try:
+            options_cls = _INLINE_ASR_OPTIONS_BY_FRAMEWORK[
+                InferenceAsrFramework(framework)
+            ]
+        except ValueError:
+            raise ValueError(
+                "Inline ASR options need 'inference_framework', one of: "
+                + ", ".join(f.value for f in _INLINE_ASR_OPTIONS_BY_FRAMEWORK)
+            ) from None
+    else:
+        raise ValueError(
+            "ASR options need 'kind': 'inline_model_options' or 'api_model_options'."
+        )
+    unknown = sorted(set(data) - set(options_cls.model_fields))
+    if unknown:
+        raise ValueError(
+            f"Unknown fields for {options_cls.__name__}: {', '.join(unknown)}"
+        )
+    return options_cls.model_validate(data)
