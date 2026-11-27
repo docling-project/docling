@@ -52,6 +52,7 @@ from docling.models.utils.generation_utils import (
 )
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
+from docling.models.utils.shared_models import load_shared_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.granite_vision_utils import (
     GRANITE_VISION_4_REPO_ID,
@@ -331,7 +332,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loading model {repo_id} into memory (device: {self.device})...")
         load_start_time = time.monotonic()
-        self.vlm_model = model_cls.from_pretrained(
+        self.vlm_model = load_shared_model(
+            model_cls,
             artifacts_path,
             device_map=self.device,
             **{dtype_arg_name: torch_dtype},
