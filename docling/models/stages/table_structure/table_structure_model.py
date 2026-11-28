@@ -81,6 +81,29 @@ def _words_and_ocr_cells(
     return native_cells + ocr_words + _uncovered(ocr_lines, ocr_words)
 
 
+# `TFPredictor.multi_table_predict` resizes every page image to this height.
+_TF_PAGE_HEIGHT = 1024
+
+
+def _pad_to_tf_page_height(image: numpy.ndarray) -> numpy.ndarray:
+    """Pad an image shorter than `_TF_PAGE_HEIGHT` with white rows at the bottom.
+
+    `TFPredictor.multi_table_predict` resizes its page image to a height of
+    1024 px, also when the image is smaller. A table crop is not a page: a
+    158 px crop is scaled up 6.5 times before the 448 px preprocessing of
+    TableFormer, and the predicted structure degrades. With the padding the
+    resize factor is exactly 1 and the crop reaches the model unscaled. The
+    crop stays at the top-left, so its coordinates do not change.
+    """
+    height = image.shape[0]
+    if height >= _TF_PAGE_HEIGHT:
+        return image
+    padding = numpy.full(
+        (_TF_PAGE_HEIGHT - height, *image.shape[1:]), 255, dtype=image.dtype
+    )
+    return numpy.concatenate([image, padding], axis=0)
+
+
 class TableStructureModel(BaseTableStructureModel):
     _model_repo_folder = "docling-project--docling-models"
     _model_path = "model_artifacts/tableformer"
@@ -463,7 +486,7 @@ class TableStructureModel(BaseTableStructureModel):
         page_input = {
             "width": img_width,
             "height": img_height,
-            "image": numpy.asarray(table_image),
+            "image": _pad_to_tf_page_height(numpy.asarray(table_image)),
             "tokens": tokens,
         }
 
