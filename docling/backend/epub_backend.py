@@ -29,6 +29,7 @@ from docling.backend.utils.archive_limits import (
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.datamodel.document_metadata import DocumentMetadata, normalize_string_list
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
@@ -79,6 +80,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         self.epub_zip: ZipFile | None = None
         self.content_files: list[str] = []
         self.metadata: dict[str, str] = {}
+        self._document_metadata: DocumentMetadata = DocumentMetadata()
         self.temp_dir: Path | None = None
 
         try:
@@ -284,6 +286,25 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             if element is not None and element.text:
                 self.metadata[field] = element.text
 
+        def _dc_texts(tag: str) -> list[str]:
+            values: list[str] = []
+            for el in metadata.findall(f"dc:{tag}", ns_dc):
+                if el.text and el.text.strip():
+                    values.append(el.text.strip())
+            return values
+
+        descriptions = _dc_texts("description")
+        self._document_metadata = DocumentMetadata(
+            title=self.metadata.get("title", "").strip() or None,
+            authors=normalize_string_list(_dc_texts("creator")),
+            date=self.metadata.get("date", "").strip() or None,
+            language=self.metadata.get("language", "").strip() or None,
+            description=descriptions[0] if descriptions else None,
+            keywords=normalize_string_list(_dc_texts("subject")),
+            publisher=self.metadata.get("publisher", "").strip() or None,
+            identifier=self.metadata.get("identifier", "").strip() or None,
+        )
+
         _log.debug(f"Extracted metadata: {self.metadata}")
 
     def _fix_image_paths(self, html_content: str, content_file_path: str) -> str:
@@ -468,7 +489,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             '<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body>'
         ]
 
-        # TODO: leverage `self.metadata` once DoclingDocument supports file metadata
+        # `self._document_metadata` is attached after HTML conversion below when enabled.
 
         # Process each content file in reading order
         for content_file in self.content_files:
@@ -553,6 +574,8 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             binary_hash=self.document_hash,
         )
         doc.name = self.file.stem or "file"
+        if self.options.extract_metadata:
+            self._document_metadata.attach_to_document(doc)
 
         html_stream.close()
 
