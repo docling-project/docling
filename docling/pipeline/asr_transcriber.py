@@ -993,6 +993,33 @@ class _ApiAsrModel:
     def _to_conversation(answer: dict) -> list[_ConversationItem]:
         segments = answer.get("segments")
         if not isinstance(segments, list):
+            # Fonada Kapture V3 uses the same genuine timed-segment contract
+            # under provider-specific names. Keep this mapping narrow: do not
+            # infer timings from text or from the upload duration.
+            chunks = answer.get("transcript_chunks")
+            if isinstance(chunks, list):
+                segments = []
+                previous_end = 0.0
+                for chunk in chunks:
+                    if not isinstance(chunk, dict):
+                        raise RuntimeError(
+                            "The transcription service returned an invalid timed segment"
+                        )
+                    start, end = chunk.get("start_s"), chunk.get("end_s")
+                    text = chunk.get("text")
+                    if (
+                        not isinstance(start, (int, float))
+                        or not isinstance(end, (int, float))
+                        or start < previous_end
+                        or end <= start
+                        or not isinstance(text, str)
+                    ):
+                        raise RuntimeError(
+                            "The transcription service returned invalid timed segment bounds"
+                        )
+                    previous_end = end
+                    segments.append({"start": start, "end": end, "text": text})
+        if not isinstance(segments, list):
             raise RuntimeError(
                 "The transcription service gave no timed segments; it must "
                 "support response_format=verbose_json"
