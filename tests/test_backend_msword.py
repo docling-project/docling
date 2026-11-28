@@ -3699,15 +3699,18 @@ _ALT_MAIN_CONTENT_TYPES = [
 def _retag_main_part(source: Path, content_type: str) -> BytesIO:
     """Return the package at *source* with its main-part content type rewritten."""
     buffer = BytesIO()
-    with zipfile.ZipFile(source) as zin, zipfile.ZipFile(
-        buffer, "w", zipfile.ZIP_DEFLATED
-    ) as zout:
+    with (
+        zipfile.ZipFile(source) as zin,
+        zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zout,
+    ):
         for info in zin.infolist():
             data = zin.read(info.filename)
             if info.filename == "[Content_Types].xml":
                 text = data.decode("utf-8")
                 assert _DOCX_MAIN_CONTENT_TYPE in text
-                data = text.replace(_DOCX_MAIN_CONTENT_TYPE, content_type).encode("utf-8")
+                data = text.replace(_DOCX_MAIN_CONTENT_TYPE, content_type).encode(
+                    "utf-8"
+                )
             zout.writestr(info, data)
     buffer.seek(0)
     return buffer
@@ -3750,7 +3753,9 @@ def test_alt_main_part_detection_leaves_plain_docx_alone():
             is False
         )
 
-    with zipfile.ZipFile(_retag_main_part(source, _ALT_MAIN_CONTENT_TYPES[0][1])) as archive:
+    with zipfile.ZipFile(
+        _retag_main_part(source, _ALT_MAIN_CONTENT_TYPES[0][1])
+    ) as archive:
         assert (
             msword_backend_module._has_alt_main_part(
                 archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS

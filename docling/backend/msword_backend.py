@@ -801,7 +801,9 @@ def _has_alt_main_part(archive: zipfile.ZipFile, limits: ArchiveLimits) -> bool:
     return False
 
 
-def _normalize_alt_main_part(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
+def _normalize_alt_main_part(
+    archive: zipfile.ZipFile, limits: ArchiveLimits
+) -> BytesIO:
     """Rewrite a macro-enabled or template package as a plain document package.
 
     Only the ``[Content_Types].xml`` declaration of the main document part is
