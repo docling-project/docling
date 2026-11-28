@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import tarfile
 from io import BytesIO
 from pathlib import Path
 
+import filetype
 import pytest
 from requests import ConnectionError, Response, Session
 
@@ -12,7 +14,11 @@ from docling.backend.abstract_backend import (
     PaginatedDocumentBackend,
 )
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
-from docling.datamodel.document import ConversionResult, InputDocument
+from docling.datamodel.document import (
+    ConversionResult,
+    InputDocument,
+    _DocumentConversionInput,
+)
 from docling.datamodel.pipeline_options import PipelineOptions
 from docling.document_converter import ConversionError, DocumentConverter, FormatOption
 from docling.pipeline.base_pipeline import BasePipeline
@@ -46,6 +52,60 @@ def test_convert_unsupported_doc_format_with_exception(converter: DocumentConver
             DocumentStream(name="input.xyz", stream=BytesIO(b"xyz")),
             raises_on_error=True,
         )
+
+
+def _text_with_tar_marker() -> bytes:
+    """Return text whose bytes 257-261 read ``ustar``, as the tar marker does."""
+    payload = b"# Notizen\n\n" + b"x" * (257 - 11) + b"ustart der Anwendung\n"
+    assert payload[257:262] == b"ustar"
+    return payload
+
+
+def test_markdown_with_tar_marker_is_detected_from_the_extension(tmp_path: Path):
+    """A text file that happens to carry the tar marker is not an archive."""
+    path = tmp_path / "Neustart.md"
+    path.write_bytes(_text_with_tar_marker())
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # The premise of the test: the sniff alone calls this file a tar archive.
+    assert filetype.guess_mime(str(path)) == "application/x-tar"
+    assert dci._guess_format(path) == InputFormat.MD
+    assert (
+        dci._guess_format(
+            DocumentStream(name="Neustart.md", stream=BytesIO(path.read_bytes()))
+        )
+        == InputFormat.MD
+    )
+
+
+def test_tar_archive_named_markdown_is_not_detected_as_markdown(tmp_path: Path):
+    """The marker alone is not enough, but a real archive is still rejected."""
+    path = tmp_path / "note.md"
+    with tarfile.open(path, mode="w") as archive:
+        payload = b"hello\n"
+        entry = tarfile.TarInfo("note.md")
+        entry.size = len(payload)
+        archive.addfile(entry, BytesIO(payload))
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(path) is None
+    assert (
+        dci._guess_format(
+            DocumentStream(name="note.md", stream=BytesIO(path.read_bytes()))
+        )
+        is None
+    )
+
+
+def test_convert_markdown_with_tar_marker(converter: DocumentConverter, tmp_path: Path):
+    """The document converts instead of failing with ``format None``."""
+    path = tmp_path / "Neustart.md"
+    path.write_bytes(_text_with_tar_marker())
+
+    result = converter.convert(path, raises_on_error=False)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert "ustart der Anwendung" in result.document.export_to_markdown()
 
 
 def test_convert_too_small_filesize_limit_wout_exception(converter: DocumentConverter):
