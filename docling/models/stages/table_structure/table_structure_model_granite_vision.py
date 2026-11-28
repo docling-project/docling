@@ -22,6 +22,7 @@ from docling.utils.accelerator_utils import decide_device
 from docling.utils.granite_vision_utils import granite_vision_4_needs_remote_code
 from docling.utils.otsl import parse_otsl_output
 from docling.utils.profiling import TimeRecorder
+from docling.utils.transformers_utils import transformers_dtype_kwargs
 
 _log = logging.getLogger(__name__)
 
@@ -87,9 +88,8 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
         )
 
     def _load_model(self, artifacts_path: Path) -> None:
-        trust_remote_code = granite_vision_4_needs_remote_code(
-            importlib.metadata.version("transformers")
-        )
+        transformers_version = importlib.metadata.version("transformers")
+        trust_remote_code = granite_vision_4_needs_remote_code(transformers_version)
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -109,7 +109,6 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             self._model = AutoModelForImageTextToText.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                dtype=torch.bfloat16,
                 # The native granite4_vision Q-Former rejects an explicit sdpa
                 # request before transformers 5.13; the transformers default
                 # selects sdpa where the model supports it.
@@ -120,6 +119,10 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                     else None
                 ),
                 trust_remote_code=trust_remote_code,
+                **transformers_dtype_kwargs(
+                    torch.bfloat16,
+                    transformers_version=transformers_version,
+                ),
             )
         self._model.eval()
 

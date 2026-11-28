@@ -36,6 +36,7 @@ from docling.models.utils.hf_model_download import (
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.transformers_utils import transformers_dtype_kwargs
 from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 _log = logging.getLogger(__name__)
@@ -177,10 +178,13 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                dtype=self.vlm_options.torch_dtype,
                 _attn_implementation=attn_implementation,
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
+                **transformers_dtype_kwargs(
+                    self.vlm_options.torch_dtype,
+                    transformers_version=transformers_version,
+                ),
             )
             if sys.version_info < (3, 14):
                 self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
