@@ -25,6 +25,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
+    DOCLANG_PAGE_PROMPT,
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
     SURYA_OCR_PROMPT,
@@ -120,6 +121,22 @@ class ApiModelConfig(BaseModel):
         description="API parameters (model name, max_tokens, etc.)",
     )
 
+    timeout: float | None = Field(
+        default=None,
+        description=(
+            "Request timeout in seconds for this model. Applies when the user "
+            "does not set ApiVlmEngineOptions.timeout."
+        ),
+    )
+
+    concurrency: int | None = Field(
+        default=None,
+        description=(
+            "Number of concurrent requests for this model. Applies when the user "
+            "does not set ApiVlmEngineOptions.concurrency."
+        ),
+    )
+
     def merge_with(self, base_params: Dict[str, Any]) -> ApiModelConfig:
         """Merge with base parameters.
 
@@ -130,7 +147,9 @@ class ApiModelConfig(BaseModel):
             Merged configuration with overrides applied
         """
         merged_params = {**base_params, **self.params}
-        return ApiModelConfig(params=merged_params)
+        return ApiModelConfig(
+            params=merged_params, timeout=self.timeout, concurrency=self.concurrency
+        )
 
 
 # =============================================================================
@@ -243,6 +262,18 @@ class VlmModelSpec(BaseModel):
             return override.merge_with(base_params).params
 
         return base_params
+
+    def get_api_config(self, engine_type: VlmEngineType) -> ApiModelConfig:
+        """Get the API configuration (params, timeout, concurrency) for an engine.
+
+        Args:
+            engine_type: The engine type
+
+        Returns:
+            API configuration with the params of get_api_params
+        """
+        override = self.api_overrides.get(engine_type, ApiModelConfig())
+        return override.merge_with({"model": self.default_repo_id})
 
     def is_engine_supported(self, engine_type: VlmEngineType) -> bool:
         """Check if an engine is supported by this model.
@@ -696,7 +727,8 @@ class StagePresetMixin:
         # output") run against the final merged state rather than the pre-override
         # state.
         preset_data: dict = dict(
-            model_spec=preset.model_spec,
+            # A copy: changes to the options must not reach the registered preset.
+            model_spec=preset.model_spec.model_copy(deep=True),
             engine_options=engine_options,
             scale=preset.scale,
             max_size=preset.max_size,
@@ -809,7 +841,8 @@ class ObjectDetectionStagePresetMixin:
                 )
 
         instance = cls(  # type: ignore[call-arg]
-            model_spec=preset.model_spec,
+            # A copy: changes to the options must not reach the registered preset.
+            model_spec=preset.model_spec.model_copy(deep=True),
             engine_options=engine_options,
             **preset.stage_options,
         )
@@ -924,7 +957,8 @@ class ImageClassificationStagePresetMixin:
                 )
 
         instance = cls(  # type: ignore[call-arg]
-            model_spec=preset.model_spec,
+            # A copy: changes to the options must not reach the registered preset.
+            model_spec=preset.model_spec.model_copy(deep=True),
             engine_options=engine_options,
             **preset.stage_options,
         )
@@ -967,6 +1001,109 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
         ),
     },
 }
+
+
+# Shared Granite Docling v2 specs (doclang-native architecture).
+# Transformers ships the architecture natively as ``granite_docling``
+# (GraniteDoclingForConditionalGeneration) from 5.23.0, so no remote code
+# runs on load.
+# Hub IDs match the Transformers model card.
+# mlx-vlm supports the architecture from 0.8.1 and loads the Transformers
+# checkpoint directly, so MLX uses the same repository. The MLX override makes
+# auto-inline select MLX on Apple Silicon. With an older mlx-vlm, auto-inline
+# uses Transformers.
+# The presets use the coarse connector path. fine_route=True selects the
+# 4x-token fine connector path (the 500M model; the 2B model has no fine path):
+# as extra_processor_kwargs for Transformers, MLX and in-process vLLM, and as
+# mm_processor_kwargs in the request params of an API server. With
+# fine_route="auto", the Transformers and MLX engines let the model's density
+# router choose the path of each page.
+# vLLM runs GraniteDoclingForConditionalGeneration through its Transformers
+# modeling backend, so the vLLM environment also needs transformers>=5.23.0.
+# That backend supports DeepStack only in vLLM versions later than 0.34.0. The
+# override has no min_engine_version, because a build from the vLLM main branch
+# that has the support reports a version such as 0.34.0rc1.dev1171.
+# vLLM and OpenAI-compatible servers drop a matched stop string from the reply
+# by default; include_stop_str_in_output keeps the closing </doclang> that the
+# DocLang parser needs. For the API engines these settings go with each request
+# (extra_generation_config["api_params"]), not with the model-spec API params:
+# the engine drops the latter as soon as the user sets their own params.
+def _granite_docling_v2_model_spec_base(
+    *, name: str, repo_id: str, max_new_tokens: int, api_timeout: float
+) -> dict[str, Any]:
+    api_request_config = EngineModelConfig(
+        extra_config={
+            "extra_generation_config": {
+                "api_params": {
+                    "skip_special_tokens": False,
+                    "include_stop_str_in_output": True,
+                }
+            }
+        }
+    )
+    return {
+        "name": name,
+        "default_repo_id": repo_id,
+        "stop_strings": ["</doclang>", "<|end_of_text|>"],
+        "max_new_tokens": max_new_tokens,
+        "extra_generation_config": {"skip_special_tokens": False},
+        "supported_engines": {
+            VlmEngineType.MLX,
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.VLLM,
+            VlmEngineType.AUTO_INLINE,
+            VlmEngineType.API,
+        },
+        "engine_overrides": {
+            VlmEngineType.MLX: EngineModelConfig(min_engine_version="0.8.1"),
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.23.0",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "torch_dtype": "bfloat16",
+                    "extra_generation_config": {"skip_special_tokens": False},
+                },
+            ),
+            # 32768 tokens hold the largest page (a 55-tile spread is about
+            # 14.2k prompt tokens on the 2B model) plus the reply.
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "dtype": "bfloat16",
+                    "max_model_len": 32768,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "extra_generation_config": {
+                        "skip_special_tokens": False,
+                        "include_stop_str_in_output": True,
+                    },
+                }
+            ),
+            VlmEngineType.API: api_request_config,
+        },
+        # A long page takes longer than the default 60 s timeout, and one
+        # request at a time leaves the server's batching unused.
+        "api_overrides": {
+            VlmEngineType.API: ApiModelConfig(timeout=api_timeout, concurrency=4),
+        },
+    }
+
+
+GRANITE_DOCLING_V2_500M_MODEL_SPEC_BASE = _granite_docling_v2_model_spec_base(
+    name="Granite-Docling-v2-500M",
+    repo_id="ibm-granite/granite-docling-v2-500m",
+    max_new_tokens=8192,
+    api_timeout=90.0,
+)
+
+# The 2B model is trained to continue long pages (newspapers, exams), so it gets
+# a larger reply budget, as its model card suggests.
+GRANITE_DOCLING_V2_2B_MODEL_SPEC_BASE = _granite_docling_v2_model_spec_base(
+    name="Granite-Docling-v2-2B",
+    repo_id="ibm-granite/granite-docling-v2-2b",
+    max_new_tokens=16384,
+    api_timeout=180.0,
+)
 
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
 PIXTRAL_MODEL_SPEC_BASE = {
@@ -1133,6 +1270,38 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
         **GRANITE_DOCLING_MODEL_SPEC_BASE,
         prompt=DOCLING_BASE_PAGE_PROMPT,
         response_format=ResponseFormat.DOCTAGS,
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_GRANITE_DOCLING_V2_500M = StageModelPreset(
+    preset_id="granite_docling_v2_500m",
+    name="Granite-Docling-v2-500M",
+    description=(
+        "IBM Granite Docling v2 500M doclang model for document conversion "
+        "(494M parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        **GRANITE_DOCLING_V2_500M_MODEL_SPEC_BASE,
+        prompt=DOCLANG_PAGE_PROMPT,
+        response_format=ResponseFormat.DOCLANG,
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_GRANITE_DOCLING_V2_2B = StageModelPreset(
+    preset_id="granite_docling_v2_2b",
+    name="Granite-Docling-v2-2B",
+    description=(
+        "IBM Granite Docling v2 2B doclang model for document conversion "
+        "(2.2B parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        **GRANITE_DOCLING_V2_2B_MODEL_SPEC_BASE,
+        prompt=DOCLANG_PAGE_PROMPT,
+        response_format=ResponseFormat.DOCLANG,
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,

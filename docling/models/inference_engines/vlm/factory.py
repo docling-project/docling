@@ -58,8 +58,12 @@ def create_vlm_engine(
 
         # For API engines, add API params to extra_config
         if VlmEngineType.is_api_variant(engine_type):
-            api_params = model_spec.get_api_params(engine_type)
-            model_config.extra_config["api_params"] = api_params
+            api_config = model_spec.get_api_config(engine_type)
+            model_config.extra_config["api_params"] = api_config.params
+            if api_config.timeout is not None:
+                model_config.extra_config["api_timeout"] = api_config.timeout
+            if api_config.concurrency is not None:
+                model_config.extra_config["api_concurrency"] = api_config.concurrency
 
     if engine_type == VlmEngineType.AUTO_INLINE:
         from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions

@@ -80,6 +80,7 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
 )
+from docling.datamodel.vlm_prompts import DocLangTask, doclang_prompt
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineOptionsMixin,
 )
@@ -1177,6 +1178,33 @@ class NemotronParseOptions(BaseModel):
     )
 
 
+class DocLangOptions(BaseModel):
+    """What a Granite Docling v2 model extracts from each page."""
+
+    tasks: list[DocLangTask] | None = Field(
+        default=None,
+        description=(
+            "Tasks to do on each page, for example [table, layout]. The model "
+            "returns only the requested elements. Without layout the elements have "
+            "no bounding boxes. detailed adds picture descriptions. The order has "
+            "no effect. None converts the full page."
+        ),
+    )
+
+    @field_validator("tasks", mode="after")
+    @classmethod
+    def _unique_non_empty(
+        cls, tasks: list[DocLangTask] | None
+    ) -> list[DocLangTask] | None:
+        if tasks is None:
+            return None
+        if not tasks:
+            raise ValueError(
+                "tasks must name at least one task; use None to convert the full page"
+            )
+        return list(dict.fromkeys(tasks))
+
+
 class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based document conversion.
 
@@ -1217,9 +1245,33 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         description="Multi-pass options for the nemotron_parse_v3_5 response format",
     )
 
+    doclang: DocLangOptions = Field(
+        default_factory=DocLangOptions,
+        description="Page tasks for presets with the doclang response format",
+    )
+
     force_backend_text: bool = Field(
         default=False, description="Force use of backend text extraction instead of VLM"
     )
+
+    @model_validator(mode="after")
+    def _doclang_tasks_need_doclang_model(self) -> "VlmConvertOptions":
+        if (
+            self.doclang.tasks is not None
+            and self.model_spec.response_format != ResponseFormat.DOCLANG
+        ):
+            raise ValueError(
+                "doclang.tasks needs a model with the doclang response format, "
+                f"such as granite_docling_v2_2b; {self.model_spec.name} uses "
+                f"{self.model_spec.response_format.value}"
+            )
+        return self
+
+    def page_prompt(self) -> str:
+        """The prompt sent with each page image."""
+        if self.doclang.tasks is not None:
+            return doclang_prompt(self.doclang.tasks)
+        return self.model_spec.prompt
 
 
 class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
@@ -1285,6 +1337,8 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 # Register VlmConvert presets
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_SMOLDOCLING)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING_V2_500M)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING_V2_2B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DEEPSEEK_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_VISION)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)

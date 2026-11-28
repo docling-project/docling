@@ -6,6 +6,7 @@ The `VlmPipeline` in Docling allows you to convert documents end-to-end using a 
 Docling supports vision-language models which output:
 
 - DocTags (e.g. [SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview)), the preferred choice
+- DocLang (e.g. [Granite Docling v2 500M](https://huggingface.co/ibm-granite/granite-docling-v2-500m))
 - Markdown
 - HTML
 

@@ -31,9 +31,30 @@ from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
 
 if TYPE_CHECKING:
+    from mlx_vlm.models.granite_docling import Model as GraniteDoclingModel
+
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
+
+
+def _density_router_model(model: Any) -> GraniteDoclingModel | None:
+    """Return the model when it is a Granite Docling model with a density router.
+
+    With fine_route="auto", this router chooses the connector path of each
+    page. For other models, and for Granite Docling checkpoints without a
+    router (the 2B model), the result is None and the pages use the default
+    path.
+    """
+    try:
+        from mlx_vlm.models.granite_docling import Model as GraniteDoclingModel
+    except ImportError:  # mlx-vlm < 0.8.1 has no Granite Docling
+        return None
+    if not isinstance(model, GraniteDoclingModel):
+        return None
+    if model.config.density_router_hidden_size is None:
+        return None
+    return model
 
 
 # mlx-vlm injects enable_thinking=False into processor.apply_chat_template for any
@@ -93,6 +114,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # These will be set during initialization
         # MLX types are complex and external, using Any with type: ignore
         self.vlm_model: Any = None
+        self.density_router_model: GraniteDoclingModel | None = None
         self.processor: Any = None
         self.config: Any = None
         self.apply_chat_template: Any = None
@@ -196,6 +218,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             language_model.args.tie_word_embeddings = True
             del language_model.lm_head
         self.config = load_config(artifacts_path)
+        self.density_router_model = _density_router_model(self.vlm_model)
         load_time = time.monotonic() - start_time
 
         _log.info(
@@ -256,6 +279,10 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         self.processor, self.config, input_data.prompt, num_images=1
                     )
 
+                # Prefill the reply: the model continues from the prefix.
+                response_prefix = input_data.response_prefix or ""
+                formatted_prompt += response_prefix
+
                 # Extract custom stopping criteria
                 custom_stoppers = extract_generation_stoppers(
                     input_data.extra_generation_config
@@ -265,7 +292,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 start_time = time.time()
                 _log.debug("Starting MLX generation...")
 
-                output_text = ""
+                output_text = response_prefix
                 num_tokens = 0
                 stop_reason = "unspecified"
 
@@ -274,6 +301,18 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     "verbose": False,
                     "temperature": input_data.temperature,
                 }
+                # mlx-vlm forwards these to the processor, for example
+                # fine_route for Granite Docling v2.
+                processor_kwargs = dict(
+                    input_data.extra_generation_config.get("extra_processor_kwargs", {})
+                )
+                if processor_kwargs.get("fine_route") == "auto":
+                    del processor_kwargs["fine_route"]
+                    processor_kwargs["fine_route"] = self._predict_fine_route(
+                        image, formatted_prompt, processor_kwargs
+                    )
+                fine_route = processor_kwargs.get("fine_route")
+                generation_kwargs.update(processor_kwargs)
                 for key in ("repetition_penalty", "repetition_context_size"):
                     if key in input_data.extra_generation_config:
                         generation_kwargs[key] = input_data.extra_generation_config[key]
@@ -358,6 +397,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                             "model": self.model_config.repo_id
                             if self.model_config
                             else "unknown",
+                            **(
+                                {"fine_route": bool(fine_route)}
+                                if fine_route is not None
+                                else {}
+                            ),
                         },
                     )
                 )
@@ -366,8 +410,38 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         return outputs
 
+    def _predict_fine_route(
+        self, image: Any, formatted_prompt: str, processor_kwargs: dict[str, Any]
+    ) -> bool:
+        """Ask the model's density router whether a page needs the fine path.
+
+        Args:
+            image: The page image
+            formatted_prompt: The prompt with its image placeholder
+            processor_kwargs: Processor settings of the page, without fine_route
+
+        Returns:
+            True for the fine connector path; False when the model has no router
+        """
+        if self.density_router_model is None:
+            return False
+
+        import mlx.core as mx
+        import numpy as np
+
+        # The same processor call as for generation, on the default path.
+        inputs = self.processor(
+            images=[image], text=formatted_prompt, **processor_kwargs
+        )
+        needs_fine = self.density_router_model.predict_fine_route(
+            mx.array(np.asarray(inputs["pixel_values"])),
+            mx.array(np.asarray(inputs["pixel_attention_mask"])),
+        )
+        return bool(np.asarray(needs_fine).reshape(-1)[0])
+
     def cleanup(self) -> None:
         """Clean up model resources."""
+        self.density_router_model = None
         if self.vlm_model is not None:
             del self.vlm_model
             self.vlm_model = None

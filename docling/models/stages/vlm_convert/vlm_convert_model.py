@@ -452,7 +452,7 @@ class VlmConvertModel(BasePageModel):
                     continue
 
                 images.append(image)
-                prompts.append(self.options.model_spec.prompt)
+                prompts.append(self.options.page_prompt())
                 valid_pages.append(page)
 
             if not images:

@@ -81,6 +81,18 @@ class ApiVlmEngine(BaseVlmEngine):
         # not mixed in (prevents conflicts for vendor-specific keys like model_id).
         self.user_params: dict = self.options.params.copy()
 
+        # The model spec may set a timeout and a concurrency; the values the user
+        # sets on the options win.
+        extra_config = model_config.extra_config if model_config else {}
+        self.timeout: float = self.options.timeout
+        if "timeout" not in self.options.model_fields_set:
+            self.timeout = extra_config.get("api_timeout", self.options.timeout)
+        self.concurrency: int = self.options.concurrency
+        if "concurrency" not in self.options.model_fields_set:
+            self.concurrency = extra_config.get(
+                "api_concurrency", self.options.concurrency
+            )
+
     def initialize(self) -> None:
         """Initialize the API engine.
 
@@ -169,7 +181,8 @@ class ApiVlmEngine(BaseVlmEngine):
                     prompt=input_data.prompt,
                     headers=self.options.headers,
                     generation_stoppers=custom_stoppers,
-                    timeout=self.options.timeout,
+                    timeout=self.timeout,
+                    response_prefix=input_data.response_prefix,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -183,7 +196,8 @@ class ApiVlmEngine(BaseVlmEngine):
                     image=image,
                     prompt=input_data.prompt,
                     headers=self.options.headers,
-                    timeout=self.options.timeout,
+                    timeout=self.timeout,
+                    response_prefix=input_data.response_prefix,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -192,6 +206,13 @@ class ApiVlmEngine(BaseVlmEngine):
                 error = api_response.error
 
             generation_time = time.time() - request_start_time
+
+            # The server returns only the continuation of a prefilled reply. A
+            # failed request has no stop reason and stays empty, so callers can
+            # tell it from a reply the model ended right after the prefix.
+            request_completed = bool(generated_text) or stop_reason != "unspecified"
+            if input_data.response_prefix and request_completed:
+                generated_text = input_data.response_prefix + generated_text
 
             return VlmEngineOutput(
                 text=generated_text,
@@ -206,7 +227,7 @@ class ApiVlmEngine(BaseVlmEngine):
             )
 
         # Use ThreadPoolExecutor for concurrent API requests
-        max_workers = min(self.options.concurrency, len(input_batch))
+        max_workers = min(self.concurrency, len(input_batch))
 
         _log.info(
             f"Processing batch of {len(input_batch)} images with "

@@ -235,7 +235,12 @@ class ReadingOrderModel:
             charspan=(0, len(element.text)),
             bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
         )
-        return out_doc.add_code(text=element.text, prov=prov, parent=parent)
+        return out_doc.add_code(
+            text=element.text,
+            code_language=element.cluster.code_language,
+            prov=prov,
+            parent=parent,
+        )
 
     def _add_related_text_items(
         self,

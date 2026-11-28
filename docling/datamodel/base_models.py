@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Type, Union
 import numpy as np
 from docling_core.types.doc import (
     BoundingBox,
+    CodeLanguageLabel,
     DocItemLabel,
     NodeItem,
     PictureDataType,
@@ -372,6 +373,7 @@ class Cluster(BaseModel):
     bbox: BoundingBox
     confidence: float = 1.0
     cells: list[TextCell] = []
+    code_language: CodeLanguageLabel | None = None
     children: list["Cluster"] = []  # Add child cluster support
 
     @field_serializer("confidence")

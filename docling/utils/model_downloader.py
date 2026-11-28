@@ -17,6 +17,7 @@ from docling.datamodel.asr_model_specs import (
 )
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
+    VlmConvertOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
@@ -205,6 +206,8 @@ def download_models(
     with_granitedocling: bool = False,
     with_granitedocling_mlx: bool = False,
     with_granitedocling_2stage: bool = False,
+    with_granite_docling_v2_500m: bool = False,
+    with_granite_docling_v2_2b: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
@@ -348,6 +351,22 @@ def download_models(
             force=force,
             progress=progress,
         )
+
+    for enabled, preset_id in (
+        (with_granite_docling_v2_500m, "granite_docling_v2_500m"),
+        (with_granite_docling_v2_2b, "granite_docling_v2_2b"),
+    ):
+        if enabled:
+            preset = VlmConvertOptions.get_preset(preset_id)
+            repo_id = preset.model_spec.get_repo_id(preset.default_engine_type)
+            _log.info("Downloading %s model (%s)...", preset.name, repo_id)
+            download_hf_model(
+                repo_id=repo_id,
+                revision=preset.model_spec.get_revision(preset.default_engine_type),
+                local_dir=output_dir / repo_id.replace("/", "--"),
+                force=force,
+                progress=progress,
+            )
 
     if with_smoldocling:
         _log.info("Downloading SmolDocling model...")

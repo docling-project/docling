@@ -86,6 +86,44 @@ def test_mlx_engine_forwards_optional_repetition_settings(
     } == expected_repetition_kwargs
 
 
+def test_mlx_engine_prefills_the_reply_and_forwards_processor_kwargs() -> None:
+    captured: dict[str, Any] = {}
+    engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
+    engine._initialized = True
+    engine.vlm_model = object()
+    engine.processor = object()
+    engine.config = object()
+    engine.apply_chat_template = lambda *args, **kwargs: "prompt"
+
+    def stream_generate(model, processor, prompt, images, **kwargs):
+        captured["prompt"] = prompt
+        captured.update(kwargs)
+        yield SimpleNamespace(text="<fcel/>cell")
+        yield SimpleNamespace(text="</table></doclang>")
+        yield SimpleNamespace(text="not read")
+
+    engine.stream_generate = stream_generate
+
+    (output,) = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), "white"),
+                prompt="<doclang> [<table>]",
+                response_prefix="<doclang><table>",
+                stop_strings=["</doclang>"],
+                extra_generation_config={
+                    "extra_processor_kwargs": {"fine_route": True}
+                },
+            )
+        ]
+    )
+
+    # The model continues from the prefix, and the returned text includes it.
+    assert captured["prompt"] == "prompt<doclang><table>"
+    assert output.text == "<doclang><table><fcel/>cell</table></doclang>"
+    assert captured["fine_route"] is True
+
+
 class _ClosingTagStopper(GenerationStopper):
     """Stops when the model closes the document: a valid end of the output."""
 

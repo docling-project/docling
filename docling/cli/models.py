@@ -72,6 +72,8 @@ class _AvailableModels(str, Enum):
     SMOLVLM = "smolvlm"
     GRANITEDOCLING = "granitedocling"
     GRANITEDOCLING_MLX = "granitedocling_mlx"
+    GRANITE_DOCLING_V2_500M = "granite_docling_v2_500m"
+    GRANITE_DOCLING_V2_2B = "granite_docling_v2_2b"
     SMOLDOCLING = "smoldocling"
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
@@ -328,6 +330,10 @@ def download(
         with_smolvlm=_AvailableModels.SMOLVLM in to_download,
         with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
         with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
+        with_granite_docling_v2_500m=_AvailableModels.GRANITE_DOCLING_V2_500M
+        in to_download,
+        with_granite_docling_v2_2b=_AvailableModels.GRANITE_DOCLING_V2_2B
+        in to_download,
         with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
         with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,

@@ -40,6 +40,7 @@ def _engine_output_from_vllm_request(
     generation_time: float,
     model_id: str,
     batch_size: int,
+    response_prefix: str | None = None,
 ) -> VlmEngineOutput:
     """Turn one vLLM request result into an engine output.
 
@@ -67,7 +68,7 @@ def _engine_output_from_vllm_request(
     # generation, and stays None when the sequence reached its own end, so the
     # finish reason is the field that tells a complete page from a truncated one.
     return VlmEngineOutput(
-        text=completion.text,
+        text=(response_prefix or "") + completion.text,
         stop_reason=normalize_stop_reason(completion.finish_reason).value,
         metadata={
             "generation_time": generation_time,
@@ -133,9 +134,22 @@ class VllmVlmEngine(BaseVlmEngine):
         "quantization",
         # Multimodal limits
         "limit_mm_per_prompt",
+        "mm_processor_kwargs",
         # Execution toggles
         "enforce_eager",
     }
+
+    # Docling-only extra_config keys that must not be forwarded to LLM().
+    _VLLM_DOCLING_EXTRA_KEYS = {
+        "transformers_model_type",
+        "transformers_prompt_style",
+        "transformers_strip_stop_strings",
+        "extra_generation_config",
+        "extra_processor_kwargs",
+        "torch_dtype",
+    }
+
+    _warned_auto_fine_route: bool = False
 
     def __init__(
         self,
@@ -251,7 +265,9 @@ class VllmVlmEngine(BaseVlmEngine):
             unknown = sorted(
                 k
                 for k in extra_cfg.keys()
-                if k not in self._VLLM_ENGINE_KEYS and k not in self._VLLM_SAMPLING_KEYS
+                if k not in self._VLLM_ENGINE_KEYS
+                and k not in self._VLLM_SAMPLING_KEYS
+                and k not in self._VLLM_DOCLING_EXTRA_KEYS
             )
             if unknown:
                 _log.warning("Ignoring unknown extra_config keys for vLLM: %s", unknown)
@@ -354,11 +370,35 @@ class VllmVlmEngine(BaseVlmEngine):
                 prompt_style=prompt_style,
                 repo_id=self.model_config.repo_id if self.model_config else None,
             )
+            # Prefill the reply: the model continues from the prefix.
+            if formatted_prompt is not None and input_data.response_prefix:
+                formatted_prompt += input_data.response_prefix
             prompts.append(formatted_prompt)
 
-        # Build vLLM inputs
+        # Build vLLM inputs. extra_processor_kwargs maps to vLLM's
+        # mm_processor_kwargs (e.g. fine_route for GraniteDocling).
+        mm_kwargs = first_input.extra_generation_config.get(
+            "mm_processor_kwargs"
+        ) or first_input.extra_generation_config.get("extra_processor_kwargs")
+        if mm_kwargs and mm_kwargs.get("fine_route") == "auto":
+            # vLLM builds the prompt before the model runs, so the engine
+            # cannot ask the density router. The processor would read "auto"
+            # as true and use the fine path for every page.
+            if not self._warned_auto_fine_route:
+                self._warned_auto_fine_route = True
+                _log.warning(
+                    "fine_route='auto' is not available with the vLLM engine; "
+                    "the pages use the processor's default connector path. Set "
+                    "fine_route to True or False, or use the Transformers or "
+                    "MLX engine."
+                )
+            mm_kwargs = {k: v for k, v in mm_kwargs.items() if k != "fine_route"}
         llm_inputs = [
-            {"prompt": p, "multi_modal_data": {"image": im}}
+            {
+                "prompt": p,
+                "multi_modal_data": {"image": im},
+                **({"mm_processor_kwargs": mm_kwargs} if mm_kwargs else {}),
+            }
             for p, im in zip(prompts, images)
         ]
 
@@ -404,11 +444,14 @@ class VllmVlmEngine(BaseVlmEngine):
         return [
             _engine_output_from_vllm_request(
                 output,
+                response_prefix=(
+                    input_data.response_prefix if prompt is not None else None
+                ),
                 generation_time=generation_time / len(input_batch),
                 model_id=model_id,
                 batch_size=len(input_batch),
             )
-            for output in outputs
+            for output, prompt, input_data in zip(outputs, prompts, input_batch)
         ]
 
     def cleanup(self) -> None:

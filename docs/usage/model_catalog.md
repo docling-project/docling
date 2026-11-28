@@ -244,6 +244,8 @@ Languages are given as BCP-47 tags for every engine; see
 | Preset ID | Model | Parameters | Transformers | MLX | API (OpenAI-compatible) | vLLM | Output Format |
 |-----------|-------|------------|--------------|-----|-------------------------|------|---------------|
 | `granite_docling` | Granite-Docling-258M | 258M | ✅ | ✅ | Ollama | ❌ | DocTags |
+| `granite_docling_v2_500m` | Granite-Docling-v2-500M | 494M | ✅ | ✅ | vLLM server | ✅ | DocLang |
+| `granite_docling_v2_2b` | Granite-Docling-v2-2B | 2.2B | ✅ | ✅ | vLLM server | ✅ | DocLang |
 | `smoldocling` | SmolDocling-256M | 256M | ✅ | ✅ | ❌ | ❌ | DocTags |
 | `deepseek_ocr` | DeepSeek-OCR-3B | 3B | ❌ | ❌ | Ollama<br/>LM Studio | ❌ | Markdown |
 | `granite_vision` | Granite-Vision-3.3-2B | 2B | ✅ | ❌ | Ollama<br/>LM Studio | ✅ | Markdown |
@@ -265,6 +267,20 @@ Languages are given as BCP-47 tags for every engine; see
 | `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 | `surya_ocr2_5` | Surya-OCR-2.5 | 689M | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout blocks with HTML tables and math |
 | `minicpm_ocr` | MiniCPM-OCR 1.0 | 1.3B | ✅ | ❌ | OpenAI-compatible | ❌ | Markdown |
+
+`granite_docling_v2_500m` and `granite_docling_v2_2b` emit [doclang](https://doclang.ai/) from [`ibm-granite/granite-docling-v2-500m`](https://huggingface.co/ibm-granite/granite-docling-v2-500m) and [`ibm-granite/granite-docling-v2-2b`](https://huggingface.co/ibm-granite/granite-docling-v2-2b). The Transformers engine needs Python 3.11 or later and Transformers 5.23.0 or later, which includes the native `GraniteDoclingForConditionalGeneration` architecture. In-process vLLM and `vllm serve` run the model on vLLM's Transformers modeling backend. They need a vLLM version with DeepStack support in that backend (later than 0.34.0), and Transformers 5.23.0 or later in the same environment. The MLX engine needs mlx-vlm 0.8.1 or later and loads the same repositories; no separate MLX weights are necessary. On Apple Silicon, the automatic engine selection uses MLX when that mlx-vlm version is installed, and Transformers if not. The preset does not run remote code. Decode with `skip_special_tokens=False`. The 500M model has two connector paths: coarse (the default, 64 image tokens per tile) and fine (256 image tokens per tile, for dense pages such as small print, newspapers and large tables). The 2B model has one path, with 256 image tokens per tile. You choose the path with `fine_route` on `options = VlmConvertOptions.from_preset("granite_docling_v2_500m")`:
+
+- **Coarse** (default): set nothing, or `fine_route` to `False`.
+- **Fine**: `options.model_spec.extra_generation_config["extra_processor_kwargs"] = {"fine_route": True}` uses the fine path for every page (Transformers, MLX and in-process vLLM).
+- **Automatic**: `{"fine_route": "auto"}` in the same place lets the model's density router choose the path of each page. The Transformers and MLX engines support it. The in-process vLLM engine cannot ask the router: it logs a warning and uses the processor's default path.
+
+The API engine does not read `extra_processor_kwargs`. For a vLLM server, pass `params={"mm_processor_kwargs": {"fine_route": True}}` to `ApiVlmEngineOptions`; the server accepts that only when it was started with `--trust-request-mm-kwargs`, and answers HTTP 400 if not. To use the fine path for every request, start the server with `vllm serve ibm-granite/granite-docling-v2-500m --mm-processor-kwargs '{"fine_route": true}'`. Docling does not run the router for a server; vLLM's [`granite_docling_density_router_online.py`](https://github.com/vllm-project/vllm/blob/main/examples/generate/multimodal/granite_docling_density_router_online.py) example shows how a client can run the router and choose the path for each request.
+
+The 2B preset allows 16384 new tokens for long pages.
+
+To use a vLLM server, start it with `vllm serve ibm-granite/granite-docling-v2-500m` (or the 2B repository) and pass `engine_options=ApiVlmEngineOptions(engine_type=VlmEngineType.API, url="http://localhost:8000/v1/chat/completions")`; without `url`, the API engine uses the Ollama port 11434. The preset sends `skip_special_tokens=False` and `include_stop_str_in_output=True` with each request, so the reply keeps the closing `</doclang>`. It sends 4 requests at a time, with a timeout of 90 s (500M) or 180 s (2B); `timeout` and `concurrency` on `ApiVlmEngineOptions` override these values. If the server uses `--served-model-name`, pass that name in `params={"model": ...}`.
+
+To extract only some elements, select DocLang tasks: `--doclang-tasks table,layout` on the CLI, or `VlmConvertOptions.from_preset("granite_docling_v2_2b", doclang=DocLangOptions(tasks=[DocLangTask.TABLE, DocLangTask.LAYOUT]))` in Python. The prompt becomes `<doclang> [<table>, <layout>]`. The tasks are `ocr`, `layout`, `table`, `picture`, `detailed`, `formula`, `code`, `caption`, `section_header`, `list`, `footnote`, `page_header`, `page_footer`, `smiles`, `classification` and `description`. Without `layout` the elements have no bounding boxes. `detailed` adds picture descriptions. The order has no effect.
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 

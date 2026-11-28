@@ -100,6 +100,24 @@ def test_models_without_arguments_shows_help():
     assert "download" in result.output
 
 
+@pytest.mark.parametrize("size", ["500m", "2b"])
+def test_granite_docling_v2_download_selects_checkpoint(size, tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "docling.utils.model_downloader.download_hf_model",
+        lambda **kwargs: calls.append(kwargs),
+    )
+    result = runner.invoke(
+        app,
+        ["models", "download", f"granite_docling_v2_{size}", "-o", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert len(calls) == 1
+    assert calls[0]["repo_id"] == f"ibm-granite/granite-docling-v2-{size}"
+    assert calls[0]["local_dir"] == tmp_path / f"ibm-granite--granite-docling-v2-{size}"
+
+
 def test_download_defaults_to_the_predefined_model_set(tmp_path, recorded_download):
     result = runner.invoke(app, ["models", "download", "-o", str(tmp_path)])
 

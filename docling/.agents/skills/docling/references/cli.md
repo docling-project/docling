@@ -73,6 +73,9 @@ Audio and video files use `--asr-model` without `--pipeline`.
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --vlm-model granite_docling --output /tmp/
+docling report.pdf --vlm-model granite_docling_v2_500m --output /tmp/
+docling report.pdf --vlm-model granite_docling_v2_2b --output /tmp/
+docling report.pdf --vlm-model granite_docling_v2_2b --doclang-tasks table,layout --output /tmp/
 docling report.pdf --vlm-model smoldocling --output /tmp/
 docling report.pdf --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
@@ -87,6 +90,15 @@ docling report.pdf --pipeline native --from pdf --output /tmp/
 If the native PDF backend ends early, Docling warns about missing requested
 pages. It writes partial results when pages were converted. Use `--fail-on partial`
 to return exit code 1 when results are partial.
+
+`--doclang-tasks` works only with the doclang presets (`granite_docling_v2_500m`,
+`granite_docling_v2_2b`). It takes a comma-separated list of tasks: `ocr`,
+`layout`, `table`, `picture`, `detailed`, `formula`, `code`, `caption`,
+`section_header`, `list`, `footnote`, `page_header`, `page_footer`, `smiles`,
+`classification`, `description`. The model returns only those elements. Without
+`layout` the elements have no bounding boxes. `detailed` adds picture
+descriptions. The order has no effect. Without the option the model converts the
+full page.
 
 `nemotron_parse_v3_5` selects the native MLX port on Apple Silicon when
 `mlx-vlm` 0.7.11 or later is installed. That release includes the port. With
