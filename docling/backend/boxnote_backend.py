@@ -52,6 +52,14 @@ def _declared_span(cell: dict[str, Any], key: str, limit: int) -> int:
     return clamp_span(value, limit) if isinstance(value, int) else 1
 
 
+def _list_start(attrs: dict[str, Any]) -> int:
+    """Read the first number of an ordered list, 1 when it is absent or invalid."""
+    order = attrs.get("order")
+    if isinstance(order, int) and not isinstance(order, bool) and order >= 0:
+        return order
+    return 1
+
+
 class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     """Declarative backend for Box Notes (.boxnote files).
 
@@ -155,7 +163,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         elif node_type == "paragraph":
             self._add_paragraph(content, doc, parent)
         elif node_type in ("bullet_list", "ordered_list", "check_list"):
-            self._add_list(node_type, content, doc, parent)
+            self._add_list(node_type, node.get("attrs") or {}, content, doc, parent)
         elif node_type == "code_block":
             code = self._plain_text(content)
             if code:
@@ -198,6 +206,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     def _add_list(
         self,
         list_type: str,
+        attrs: dict[str, Any],
         items: list[dict],
         doc: DoclingDocument,
         parent: NodeItem | None,
@@ -208,11 +217,17 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
             name="list",
             parent=parent,
         )
+        # An ordered list stores its first number in the "order" attribute, as
+        # in the ProseMirror list schema. A list that continues after a break,
+        # or that the user started at another number, does not start at 1.
+        number = _list_start(attrs)
         for item in items:
             if item.get("type") == "check_list_item":
                 self._add_check_item(item, doc, group)
             else:
-                self._add_list_item(item, doc, group, enumerated)
+                marker = f"{number}." if enumerated else None
+                self._add_list_item(item, doc, group, enumerated, marker)
+                number += 1
 
     def _add_list_item(
         self,
@@ -220,11 +235,13 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         group: NodeItem,
         enumerated: bool,
+        marker: str | None,
     ) -> None:
         text, formatting, hyperlink, nested = self._split_item(item)
         list_item = doc.add_list_item(
             text=text,
             enumerated=enumerated,
+            marker=marker,
             parent=group,
             formatting=formatting,
             hyperlink=hyperlink,
