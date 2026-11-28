@@ -53,6 +53,7 @@ def download_url_with_progress(url: str, progress: bool = False) -> BytesIO:
     with requests.get(
         url, stream=True, allow_redirects=True, timeout=(5, 30)
     ) as response:
+        response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
         progress_bar = tqdm(
             total=total_size,
