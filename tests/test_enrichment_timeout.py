@@ -3,9 +3,12 @@
 
 from collections.abc import Iterable
 from io import BytesIO
+from types import SimpleNamespace
 
+import pytest
 from docling_core.types.doc import DoclingDocument, NodeItem
 
+import docling.pipeline.base_pipeline as base_pipeline
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -17,6 +20,11 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.progress import (
+    ConversionProgressEvent,
+    EnrichmentProgress,
+    ProgressReporter,
+)
 from docling.models.base_model import GenericEnrichmentModel
 from docling.pipeline.base_pipeline import BasePipeline
 
@@ -99,3 +107,74 @@ def test_enrichment_still_runs_without_document_timeout():
 
     assert result.status == ConversionStatus.SUCCESS
     assert pipeline.model.calls == 1
+
+
+def test_enrichment_stops_between_batches_at_the_document_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class TwoItemPipeline(_TimeoutPipeline):
+        def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+            conv_res = super()._build_document(conv_res)
+            conv_res.document.add_text(label=DocItemLabel.TEXT, text="next item")
+            return conv_res
+
+    now = 0.0
+    completed_counts: list[int] = []
+
+    def report_progress(event: ConversionProgressEvent) -> None:
+        nonlocal now
+        if isinstance(event, EnrichmentProgress):
+            completed_counts.append(event.completed_items)
+            if event.completed_items == 1:
+                now = 1.0
+
+    monkeypatch.setattr(base_pipeline, "time", SimpleNamespace(monotonic=lambda: now))
+    pipeline = TwoItemPipeline(timed_out=False)
+    pipeline.pipeline_options.document_timeout = 1.0
+    pipeline.model.elements_batch_size = 1
+    later_model = _RecordingEnrichmentModel()
+    pipeline.enrichment_pipe.append(later_model)
+
+    result = pipeline.execute(
+        _input_document(),
+        raises_on_error=True,
+        progress=ProgressReporter([report_progress]),
+    )
+
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS
+    assert [error.category for error in result.errors] == [FailureCategory.TIMEOUT]
+    assert pipeline.model.calls == 1
+    assert later_model.calls == 0
+    assert completed_counts == [0, 1]
+
+
+def test_disabled_enrichment_models_do_not_report_a_document_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class DisabledEnrichmentModel(_RecordingEnrichmentModel):
+        # Mirrors `DocumentPictureClassifier` and the picture description
+        # models, which sit in `enrichment_pipe` even when disabled.
+        def __init__(self) -> None:
+            super().__init__()
+            self.enabled = False
+
+    now = 0.0
+
+    class ExhaustedBudgetPipeline(_TimeoutPipeline):
+        def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+            # The parse used the whole budget before enrichment starts.
+            nonlocal now
+            now = 10.0
+            return super()._build_document(conv_res)
+
+    monkeypatch.setattr(base_pipeline, "time", SimpleNamespace(monotonic=lambda: now))
+    pipeline = ExhaustedBudgetPipeline(timed_out=False)
+    pipeline.enrichment_pipe = [DisabledEnrichmentModel()]
+    pipeline.pipeline_options.document_timeout = 1.0
+
+    result = pipeline.execute(_input_document(), raises_on_error=True)
+
+    # A complete document is not a timeout: the only models in the pipe are
+    # disabled, so the spent deadline has no enabled work to blame.
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []

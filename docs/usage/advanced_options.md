@@ -348,6 +348,11 @@ and VLM pipelines stop consuming pages and cancel pending work during teardown.
 Teardown waits for already-claimed parser pages to finish, so conversion can
 return after the configured timeout.
 
+Enrichment stops starting batches when the document budget expires. A local
+enrichment batch can finish before the pipeline checks the deadline again. API
+picture description also limits how long conversion waits for the batch and
+cancels queued requests. Completed descriptions stay in the partial result.
+
 ### Extract the native content of a PDF
 
 `NativePdfPipeline` uses docling-parse alone: one text item per native text cell

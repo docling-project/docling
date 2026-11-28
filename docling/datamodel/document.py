@@ -626,8 +626,7 @@ class ConversionResult(ConversionAssets):
     _page_sizes_by_no: dict[int, Size] = PrivateAttr(default_factory=dict)
     # Absolute (monotonic-clock) deadline for the whole conversion, derived from
     # `document_timeout` when set. Private transient plumbing, same rationale as
-    # above: the assembly stage reads it to bound work that runs after the page
-    # stages (e.g. reading-order separator extraction).
+    # above: assembly and enrichment read it to bound work after the page stages.
     _conversion_deadline: Optional[float] = PrivateAttr(default=None)
 
 

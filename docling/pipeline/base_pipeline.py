@@ -43,7 +43,7 @@ from docling.datamodel.progress import (
     ProgressReporter,
 )
 from docling.datamodel.settings import settings
-from docling.models.base_model import GenericEnrichmentModel
+from docling.models.base_model import EnrichmentTimeoutError, GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.stages.picture_classifier.document_picture_classifier import (
@@ -92,6 +92,9 @@ class BasePipeline(ABC):
         progress: Optional[ProgressReporter] = None,
     ) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
+        timeout = self.pipeline_options.document_timeout
+        if timeout is not None:
+            conv_res._conversion_deadline = time.monotonic() + timeout
         if progress is not None:
             conv_res._progress = progress
 
@@ -188,10 +191,23 @@ class BasePipeline(ABC):
         ):
             return conv_res
 
-        def _prepare_elements(
-            conv_res: ConversionResult, model: GenericEnrichmentModel[Any]
-        ) -> Iterable[NodeItem]:
-            for doc_element, _level in conv_res.document.iterate_items():
+        deadline = (
+            conv_res._conversion_deadline
+            if self.pipeline_options.document_timeout is not None
+            else None
+        )
+
+        def check_deadline() -> None:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise EnrichmentTimeoutError
+
+        def iter_items() -> Iterable[NodeItem]:
+            for element, _level in conv_res.document.iterate_items():
+                check_deadline()
+                yield element
+
+        def prepare_elements(model: GenericEnrichmentModel[Any]) -> Iterable[NodeItem]:
+            for doc_element in iter_items():
                 prepared_element = model.prepare_element(
                     conv_res=conv_res, element=doc_element
                 )
@@ -200,47 +216,76 @@ class BasePipeline(ABC):
 
         progress = conv_res._progress
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
-            for model in self.enrichment_pipe:
-                step = model.progress_step
-                label = ENRICHMENT_STEP_LABELS.get(step, type(model).__name__)
-                # Counted right before the step runs: a step may depend on the
-                # output of an earlier one (chart extraction on classification).
-                total_items = (
-                    self._count_processable(conv_res, model) if progress.enabled else 0
-                )
-                completed_items = 0
-                if total_items:
-                    progress.enrichment_progress(step, label, 0, total_items)
-                for element_batch in chunkify(
-                    _prepare_elements(conv_res, model),
-                    model.elements_batch_size,
-                ):
-                    for element in model(
-                        doc=conv_res.document, element_batch=element_batch
-                    ):  # Must exhaust!
-                        pass
+            try:
+                for model in self.enrichment_pipe:
+                    # `enabled` is a convention of the built-in enrichment models, not part
+                    # of the `GenericEnrichmentModel` interface; a model that does not
+                    # declare it counts as enabled. A disabled model never runs, so it
+                    # must not spend the deadline or report a timeout for work nobody
+                    # needed.
+                    if not getattr(model, "enabled", True):
+                        continue
+                    check_deadline()
+                    step = model.progress_step
+                    label = ENRICHMENT_STEP_LABELS.get(step, type(model).__name__)
+                    # Counted right before the step runs: a step may depend on the
+                    # output of an earlier one (chart extraction on classification).
+                    total_items = 0
+                    if progress.enabled:
+                        total_items = sum(
+                            1
+                            for element in iter_items()
+                            if model.is_processable(
+                                doc=conv_res.document, element=element
+                            )
+                        )
+                    completed_items = 0
                     if total_items:
-                        completed_items = min(
-                            completed_items + len(element_batch), total_items
-                        )
+                        progress.enrichment_progress(step, label, 0, total_items)
+                    for element_batch in chunkify(
+                        prepare_elements(model), model.elements_batch_size
+                    ):
+                        check_deadline()
+                        # Custom enrichment models can use the callable interface.
+                        if deadline is not None and isinstance(
+                            model, GenericEnrichmentModel
+                        ):
+                            output = model.enrich_batch(
+                                conv_res.document, element_batch, deadline=deadline
+                            )
+                        else:
+                            output = model(
+                                doc=conv_res.document, element_batch=element_batch
+                            )
+                        for _ in output:  # Must exhaust!
+                            pass
+                        check_deadline()
+                        if total_items:
+                            completed_items = min(
+                                completed_items + len(element_batch), total_items
+                            )
+                            progress.enrichment_progress(
+                                step, label, completed_items, total_items
+                            )
+                    check_deadline()
+                    # Items the model could not prepare (e.g. no image) are skipped.
+                    if completed_items < total_items:
                         progress.enrichment_progress(
-                            step, label, completed_items, total_items
+                            step, label, total_items, total_items
                         )
-                # Items the model could not prepare (e.g. no image) are skipped.
-                if completed_items < total_items:
-                    progress.enrichment_progress(step, label, total_items, total_items)
+            except EnrichmentTimeoutError:
+                message = "Document processing timeout during enrichment."
+                _log.warning(message)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=message,
+                        category=FailureCategory.TIMEOUT,
+                    )
+                )
 
         return conv_res
-
-    @staticmethod
-    def _count_processable(
-        conv_res: ConversionResult, model: GenericEnrichmentModel[Any]
-    ) -> int:
-        return sum(
-            1
-            for element, _level in conv_res.document.iterate_items()
-            if model.is_processable(doc=conv_res.document, element=element)
-        )
 
     @abstractmethod
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:

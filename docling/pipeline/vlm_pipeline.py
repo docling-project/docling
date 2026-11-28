@@ -423,6 +423,11 @@ class VlmPipeline(PaginatedPipeline):
                 conv_res._progress.page_completed(
                     page.page_no, total_pages=total_pages, success=True
                 )
+                if any(
+                    error.category == FailureCategory.TIMEOUT
+                    for error in conv_res.errors
+                ):
+                    break
         finally:
             for page in page_batch:
                 self._release_page_resources(page)
@@ -435,6 +440,8 @@ class VlmPipeline(PaginatedPipeline):
         processed_pages: int,
         total_pages: int,
     ) -> bool:
+        if any(error.category == FailureCategory.TIMEOUT for error in conv_res.errors):
+            return True
         timeout = self.pipeline_options.document_timeout
         if timeout is None or elapsed <= timeout:
             return False
