@@ -303,6 +303,73 @@ def test_ods_nested_table_in_cell_obeys_repeat_budget(
     ) in caplog.text
 
 
+def test_odp_non_text_table_does_not_block_slide_title(tmp_path: Path):
+    image_path = tmp_path / "cell.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+
+    source = OdfDocument("presentation")
+    source.body.clear()
+    page = DrawPage("slide", name="Slide")
+    source.body.append(page)
+
+    table = Table("non_text")
+    row = Row()
+    row.append(Element.from_tag("table:covered-table-cell"))
+    img_cell = Cell()
+    image_ref = source.add_file(str(image_path))
+    img_cell.append(Frame.image_frame(image_ref, size=("1cm", "1cm")))
+    row.append_cell(img_cell)
+    table.append_row(row)
+    table_frame = Frame()
+    table_frame.append(table)
+    page.append(table_frame)
+
+    shape = Element.from_tag("draw:custom-shape")
+    shape.append(Paragraph("Slide Heading"))
+    page.append(shape)
+
+    path = tmp_path / "odp_title_after_table.odp"
+    source.save(str(path))
+    doc = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+
+    headings = [t for t in doc.texts if t.text == "Slide Heading"]
+    assert len(headings) == 1
+    assert headings[0].label == DocItemLabel.TITLE
+
+
+def test_odp_nested_table_is_not_double_charged_in_repeat_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(opendocument_backend, "DEFAULT_ODF_MAX_REPEATED_CELLS", 2)
+    source = OdfDocument("presentation")
+    source.body.clear()
+    page = DrawPage("slide", name="Slide")
+    source.body.append(page)
+
+    outer = Table("outer")
+    outer_row = Row()
+    outer_cell = Cell()
+    inner = Table("inner")
+    inner_row = Row()
+    inner_row.append_cell(Cell("inner", repeated=10_000_000))
+    inner.append_row(inner_row)
+    outer_cell.append(inner)
+    outer_row.append_cell(outer_cell)
+    outer.append_row(outer_row)
+
+    frame = Frame()
+    frame.append(outer)
+    page.append(frame)
+
+    path = tmp_path / "odp_nested.odp"
+    source.save(str(path))
+    doc = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+
+    assert len(doc.tables) == 3
+    assert [cell.text for cell in doc.tables[1].data.table_cells] == ["inner"] * 3
+    assert [cell.text for cell in doc.tables[2].data.table_cells] == ["inner"] * 3
+
+
 @pytest.fixture(scope="module")
 def odt_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return _build_odt(tmp_path_factory.mktemp("odf") / "demo.odt")

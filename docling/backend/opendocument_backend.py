@@ -22,7 +22,7 @@ from __future__ import annotations
 import functools
 import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -1113,19 +1113,29 @@ def _odf_list_marker(
     return f"{counter}{suffix}"
 
 
-def _odf_table_has_content(table: OdfTable) -> bool:
-    # A content check needs only the cells written in the XML.
+def _iter_odf_table_xml_cells(table: OdfTable) -> Iterator[Any]:
+    # Inspect written XML cells without expanding ODF repeat attributes.
     for row in table.get_elements(_ODF_TABLE_ROWS_XPATH):
         if int(row.get_attribute(_ODF_ROWS_REPEATED) or 1) <= 0:
             continue
         for cell in row.get_elements(_ODF_ROW_CELLS_XPATH):
             if int(cell.get_attribute(_ODF_COLUMNS_REPEATED) or 1) <= 0:
                 continue
-            if cell.tag == "table:covered-table-cell":
-                return True
-            if _odf_cell_has_content(cell):
-                return True
-    return False
+            yield cell
+
+
+def _odf_table_has_content(table: OdfTable) -> bool:
+    return any(
+        cell.tag == "table:covered-table-cell" or _odf_cell_has_content(cell)
+        for cell in _iter_odf_table_xml_cells(table)
+    )
+
+
+def _odf_table_has_text(table: OdfTable) -> bool:
+    return any(
+        cell.tag != "table:covered-table-cell" and _odf_cell_text(cell) != ""
+        for cell in _iter_odf_table_xml_cells(table)
+    )
 
 
 def _odf_cell_has_rich_content(cell: Any) -> bool:
@@ -2512,7 +2522,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     def _element_has_text(element: Element) -> bool:
         """Return True if a slide element has text without expanding table repeats."""
         if isinstance(element, OdfTable):
-            return _odf_table_has_content(element)
+            return _odf_table_has_text(element)
         if element.get_elements("descendant::table:table"):
             return any(
                 OdpDocumentBackend._element_has_text(child)
@@ -2562,6 +2572,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         )
 
         for tbl in frame.get_elements("descendant::table:table"):
+            nested_in_table = tbl.get_element("ancestor::table:table") is not None
             _add_table_from_odf(
                 doc,
                 tbl,
@@ -2569,6 +2580,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 odf_obj=self.odf_obj,
                 image_loader=self._image_loader,
                 repeat_budget=repeat_budget,
+                prepare_table=not nested_in_table,
             )
 
         first_picture = len(doc.pictures)
