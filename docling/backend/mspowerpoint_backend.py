@@ -85,6 +85,7 @@ from docling.backend.utils.charts import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.media import MediaKind, load_linked_media, media_ref
+from docling.backend.utils.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.backend.utils.table_spans import MAX_COLSPAN, MAX_ROWSPAN, clamp_span
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
@@ -264,12 +265,42 @@ def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, st
         elif isinstance(child, CT_TextLineBreak):
             text += " "
         else:
-            run_text = child.find(qn("a:t"))
-            if run_text is not None:
-                text += run_text.text or ""
+            text += _run_text(child)
     if text:
         fragments.append((DocItemLabel.TEXT, text))
     return fragments
+
+
+def _run_text(run: etree._Element) -> str:
+    """Return the text of an ``a:r`` or ``a:fld`` with Symbol font characters mapped.
+
+    PowerPoint stores a character inserted from a symbol font as a private-use
+    code point (U+F000-U+F0FF) and draws it in the ``a:sym`` font of the run.
+    """
+    text_element = run.find(qn("a:t"))
+    if text_element is None or not text_element.text:
+        return ""
+    text = text_element.text
+    sym = run.find(f"{qn('a:rPr')}/{qn('a:sym')}")
+    if sym is None or sym.get("typeface", "").strip().lower() != "symbol":
+        return text
+    return "".join(
+        SYMBOL_FONT_TO_UNICODE.get(ord(char) - 0xF000, char)
+        if 0xF000 <= ord(char) <= 0xF0FF
+        else char
+        for char in text
+    )
+
+
+def _text_frame_text(text_frame) -> str:
+    """Return ``text_frame.text`` with the Symbol font characters in Unicode."""
+    return "\n".join(
+        "".join(
+            child.text if isinstance(child, CT_TextLineBreak) else _run_text(child)
+            for child in paragraph._p.content_children
+        )
+        for paragraph in text_frame.paragraphs
+    )
 
 
 def _trim_fragment_edges(
@@ -1649,8 +1680,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         cell_xml.get("gridSpan"), min(MAX_COLSPAN, num_cols - col_idx)
                     )
 
+                    cell_text = _text_frame_text(cell.text_frame).strip()
                     icell = TableCell(
-                        text=cell.text.strip(),
+                        text=cell_text,
                         row_span=row_span,
                         col_span=col_span,
                         start_row_offset_idx=row_idx,
@@ -1660,7 +1692,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         column_header=row_idx == 0,
                         row_header=False,
                     )
-                    if len(cell.text.strip()) > 0:
+                    if len(cell_text) > 0:
                         tcells.append(icell)
             # Initialize Docling TableData
             data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
@@ -2458,7 +2490,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if slide.has_notes_slide:
                 notes_slide = slide.notes_slide
                 if notes_slide.notes_text_frame is not None:
-                    notes_text = notes_slide.notes_text_frame.text.strip()
+                    notes_text = _text_frame_text(notes_slide.notes_text_frame).strip()
                     if notes_text:
                         bbox = BoundingBox(l=0, t=0, r=0, b=0)
                         prov = ProvenanceItem(
