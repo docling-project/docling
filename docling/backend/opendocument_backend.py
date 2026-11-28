@@ -1804,6 +1804,7 @@ def _add_table_from_odf(
     parent: NodeItem | None,
     *,
     repeat_budget: _OdfRepeatBudget | None = None,
+    prepare_table: bool = True,
     min_row: int | None = None,
     max_row: int | None = None,
     min_col: int | None = None,
@@ -1814,7 +1815,7 @@ def _add_table_from_odf(
     image_loader: ImageResourceLoader | None = None,
     comments: _OdfComments | None = None,
 ) -> TableItem | None:
-    if repeat_budget is not None:
+    if repeat_budget is not None and prepare_table:
         repeat_budget.prepare(table)
     if min_row is None or max_row is None or min_col is None or max_col is None:
         min_row, max_row, min_col, max_col = _find_true_data_bounds(table)
@@ -2745,7 +2746,14 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             )
 
             # Convert table data with provenance
-            self._convert_sheet_table(doc, table, sheet_group, page_no, content_layer)
+            self._convert_sheet_table(
+                doc,
+                table,
+                sheet_group,
+                page_no,
+                content_layer,
+                repeat_budget=repeat_budget,
+            )
 
             # Extract images from the sheet
             self._find_images_in_sheet(doc, table, sheet_group, page_no, content_layer)
@@ -2764,6 +2772,8 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         parent: NodeItem,
         page_no: int,
         content_layer: ContentLayer | None,
+        *,
+        repeat_budget: _OdfRepeatBudget | None = None,
     ) -> None:
         """Convert an ODS table and add it to the document with provenance.
 
@@ -2813,6 +2823,8 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     doc,
                     table,
                     parent,
+                    repeat_budget=repeat_budget,
+                    prepare_table=False,
                     min_row=min_row,
                     max_row=max_row,
                     min_col=min_col,

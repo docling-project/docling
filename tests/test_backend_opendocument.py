@@ -246,6 +246,63 @@ def test_odf_embedded_chart_obeys_repeat_budget(
     assert "repeated cells were not converted" in caplog.text
 
 
+def test_ods_nested_table_in_cell_obeys_repeat_budget(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+):
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    source = OdfDocument("spreadsheet")
+    source.body.clear()
+    sheet = Table("Sheet1")
+    row_outer = Row()
+    row_outer.append_cell(Cell("outer", repeated=2))
+    sheet.append_row(row_outer)
+
+    nested = Table("nested")
+    nested_row = Row()
+    nested_row.append_cell(Cell("inner", repeated=10_000_000))
+    nested.append_row(nested_row)
+
+    outer_cell = Cell()
+    outer_cell.append(nested)
+    row_nested = Row()
+    row_nested.append_cell(outer_cell)
+    sheet.append_row(row_nested)
+    source.body.append(sheet)
+
+    path = tmp_path / "ods_nested.ods"
+    source.save(str(path))
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(max_repeated_cells=2)
+            )
+        },
+    )
+    with caplog.at_level(logging.WARNING):
+        doc = converter.convert(path).document
+
+    outer_cells = doc.tables[0].data.table_cells
+    assert [cell.text for cell in outer_cells[:2]] == ["outer", "outer"]
+    rich_cell = outer_cells[2]
+    assert isinstance(rich_cell, RichTableCell)
+    nested_children = [
+        child.resolve(doc) for child in rich_cell.ref.resolve(doc).children
+    ]
+    assert nested_children == [doc.tables[1]]
+    assert [cell.text for cell in doc.tables[1].data.table_cells] == [
+        "inner",
+        "inner",
+    ]
+    assert (
+        "Table nested repeats more cells than the limit of 2 repeated cells. "
+        "9999998 repeated cells were not converted."
+    ) in caplog.text
+
+
 @pytest.fixture(scope="module")
 def odt_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return _build_odt(tmp_path_factory.mktemp("odf") / "demo.odt")
