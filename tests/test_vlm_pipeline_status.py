@@ -5,7 +5,7 @@
 
 Verifies that VlmPipeline correctly reports PARTIAL_SUCCESS when
 individual pages have problematic VLM stop reasons (INFERENCE_ERROR, LENGTH,
-CONTENT_FILTERED) or missing predictions.
+CONTENT_FILTERED, REPETITION) or missing predictions.
 
 Related: https://github.com/docling-project/docling/issues/2583
 """
@@ -113,6 +113,20 @@ def test_page_content_filtered(pipeline: VlmPipeline) -> None:
     assert len(conv_res.errors) == 1
     assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
     assert conv_res.errors[0].page_no == 1
+
+
+def test_page_stopped_by_repetition_detection(pipeline: VlmPipeline) -> None:
+    """A page stopped by repetition detection should yield PARTIAL_SUCCESS."""
+    pages = [
+        _make_page(1, VlmStopReason.REPETITION),
+    ]
+    conv_res = _make_conv_res(pages)
+    status = pipeline._determine_status(conv_res)
+    assert status == ConversionStatus.PARTIAL_SUCCESS
+    assert len(conv_res.errors) == 1
+    assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
+    assert conv_res.errors[0].page_no == 1
+    assert "stop_reason=repetition" in conv_res.errors[0].error_message
 
 
 def test_page_no_vlm_response(pipeline: VlmPipeline) -> None:

@@ -319,6 +319,7 @@ class VlmStopReason(str, Enum):
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
     CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
+    REPETITION = "repetition"  # Generation stopped by repetition detection
     INFERENCE_ERROR = "inference_error"  # Inference call failed (remote API or local engine), no output
     UNSPECIFIED = "unspecified"  # Defaul none value
 

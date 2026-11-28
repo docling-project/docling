@@ -180,6 +180,7 @@ class VlmConvertModel(BasePageModel):
         incomplete_reasons = {
             VlmStopReason.LENGTH.value,
             VlmStopReason.CONTENT_FILTERED.value,
+            VlmStopReason.REPETITION.value,
         }
         outputs = [layout_output, *recognition_outputs]
         for output in outputs:

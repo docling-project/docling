@@ -18,6 +18,7 @@ from docling.datamodel.base_models import (
     Page,
     PagePredictions,
     VlmPrediction,
+    VlmStopReason,
 )
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -457,3 +458,13 @@ def test_mlx_tied_word_embeddings_uses_embedding_projection(
     assert load_calls == [(repo_dir, False)]
     assert language_model.args.tie_word_embeddings is True
     assert "lm_head" not in vars(language_model)
+
+
+def test_a_repetition_stop_is_reported_as_incomplete() -> None:
+    layout = SimpleNamespace(stop_reason=VlmStopReason.END_OF_SEQUENCE.value)
+    recognition = [SimpleNamespace(stop_reason=VlmStopReason.REPETITION.value)]
+
+    assert (
+        VlmConvertModel._mineru2_stop_reason(layout, recognition)
+        == VlmStopReason.REPETITION.value
+    )
