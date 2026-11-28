@@ -330,7 +330,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     @staticmethod
-    def _get_text(node: etree._Element, sep: str | None = None) -> str:
+    def _get_text(
+        node: etree._Element,
+        sep: str | None = None,
+        *,
+        skip_fn: bool = False,
+    ) -> str:
+        """Collect descendant text, treating ``<break/>`` as a space.
+
+        Footnote markers (``xref[@ref-type="fn"]``) are skipped everywhere:
+        they are not content. Footnote bodies (``<fn>``) are skipped only when
+        ``skip_fn`` is true, which titles use so the note is not inlined into
+        the heading. Other callers keep the ``<fn>`` text in the document.
+        """
         skip_tags = ["disp-formula", "inline-formula"]
         text: str = (
             node.text.replace("\n", " ")
@@ -338,9 +350,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else ""
         )
         for child in list(node):
-            if child.tag not in skip_tags:
+            if child.tag == "break":
+                text += " "
+            elif child.tag == "xref" and child.get("ref-type") == "fn":
+                pass
+            elif skip_fn and child.tag == "fn":
+                pass
+            elif child.tag not in skip_tags:
                 # TODO: apply styling according to child.tag when supported by docling-core
-                text += JatsDocumentBackend._get_text(child, sep)
+                text += JatsDocumentBackend._get_text(child, sep, skip_fn=skip_fn)
             if sep:
                 text = text.rstrip(sep) + sep
             text += child.tail.replace("\n", " ") if child.tail else ""
@@ -547,7 +565,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         title_names: list[str] = ["article-title", "subtitle", "title", "label"]
         titles: list[str] = [
             " ".join(
-                JatsDocumentBackend._normalize_whitespace(elem.text)
+                JatsDocumentBackend._normalize_whitespace(
+                    JatsDocumentBackend._get_text(elem, skip_fn=True)
+                )
                 for elem in list(title_node)
                 if elem.tag in title_names
             ).strip()
@@ -774,7 +794,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             item_node = node.xpath(item)
             if len(item_node) > 0:
                 citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
-                    JatsDocumentBackend._normalize_whitespace(item_node[0].text)
+                    JatsDocumentBackend._normalize_whitespace(
+                        JatsDocumentBackend._get_text(item_node[0])
+                    )
                 )
 
         # Publication identifier
@@ -1579,7 +1601,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
         text = (
             JatsDocumentBackend._normalize_whitespace(
-                JatsDocumentBackend._get_text(title[0])
+                JatsDocumentBackend._get_text(title[0], skip_fn=True)
             )
             if title
             else ""
