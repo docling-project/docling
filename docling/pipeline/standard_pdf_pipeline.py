@@ -101,6 +101,8 @@ from docling.utils.utils import chunkify
 _log = logging.getLogger(__name__)
 
 _MODEL_STAGE_NAMES = ("ocr", "layout", "layout_postprocess", "table", "assemble")
+# Smaller default limits slow conversion down (about 10 % at batch size 1)
+_MIN_DEFAULT_PAGES_IN_FLIGHT = 8
 
 STAGE_FAILURE_CATEGORY = {
     "ocr": FailureCategory.INFERENCE_FAILURE,
@@ -757,6 +759,23 @@ class StandardPdfPipeline(ConvertPipeline):
             **extra,
         )
 
+    def _max_pages_in_flight(self) -> int:
+        opts = self.pipeline_options
+        if opts.max_pages_in_flight is not None:
+            return opts.max_pages_in_flight
+        return max(
+            _MIN_DEFAULT_PAGES_IN_FLIGHT,
+            2 * max(opts.ocr_batch_size, opts.layout_batch_size, opts.table_batch_size),
+        )
+
+    @staticmethod
+    def _acquire_page_slot(slots: threading.Semaphore, queue: ThreadedQueue) -> bool:
+        """Wait for a free in-flight slot. Return False if the queue closed meanwhile."""
+        while not slots.acquire(timeout=0.5):
+            if queue.closed:
+                return False
+        return True
+
     def _release_page_resources(self, item: ThreadedItem) -> None:
         page = item.payload
         if page is None:
@@ -952,6 +971,8 @@ class StandardPdfPipeline(ConvertPipeline):
             )
         timeout_exceeded = False
         producer_error: list[Exception] = []
+        # Keeps preprocessing from rendering pages far ahead of the models (#4705)
+        pages_in_flight = threading.Semaphore(self._max_pages_in_flight())
 
         def _completed_page_nos() -> set[int]:
             failed_page_nos = {
@@ -966,6 +987,11 @@ class StandardPdfPipeline(ConvertPipeline):
                     if page is None:
                         page_backend.unload()
                         continue
+                    if not self._acquire_page_slot(
+                        pages_in_flight, ctx.first_stage.input_queue
+                    ):
+                        page_backend.unload()
+                        break
                     page._backend = page_backend
                     try:
                         page.size = page_backend.get_size()
@@ -983,6 +1009,7 @@ class StandardPdfPipeline(ConvertPipeline):
                             conv_res=conv_res,
                         )
                     ):
+                        pages_in_flight.release()
                         page_backend.unload()
                         page._backend = None
                         break
@@ -1022,6 +1049,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 for itm in out_batch:
                     if itm.run_id != run_id:
                         continue
+                    pages_in_flight.release()
                     if itm.is_failed or itm.error:
                         error = itm.error or RuntimeError("unknown error")
                         proc.failed_pages.append((itm.page_no, error, itm.failure))

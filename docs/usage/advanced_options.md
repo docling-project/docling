@@ -1144,3 +1144,9 @@ doc_converter = DocumentConverter(
     }
 )
 ```
+
+`max_pages_in_flight` bounds how many pages of one document are inside the pipeline at the same time,
+across all stages. By default it is twice the largest of `ocr_batch_size`, `layout_batch_size` and
+`table_batch_size`, and at least 8. Lower it when large batch sizes still use too much memory,
+for example `PdfPipelineOptions(layout_batch_size=64, max_pages_in_flight=64)`.
+A value below the largest batch size makes stages run partial batches.
