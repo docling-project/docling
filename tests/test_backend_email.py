@@ -16,7 +16,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 
-from docling.backend.email_backend import EmailDocumentBackend
+from docling.backend.email_backend import EmailDocumentBackend, _body_holds
 from docling.datamodel.backend_options import EmailBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
@@ -939,6 +939,40 @@ def test_email_leaves_out_an_event_description_that_repeats_the_body():
         "#### Quarter planning\n\n"
         "Start: 2026-11-20 09:00 UTC"
     )
+
+
+def test_email_keeps_an_event_description_that_the_body_holds_only_inside_a_word():
+    """A description is repeated only if the body holds it as whole words.
+
+    "Room 4" is not in a body that says "Room 42", so it must stay.
+    """
+    message = _invitation_email("Review", "We meet in Room 42.")
+    message.add_alternative(
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "METHOD:REQUEST\r\n"
+        "BEGIN:VEVENT\r\n"
+        "UID:review@example.com\r\n"
+        "DTSTART:20261120T090000Z\r\n"
+        "SUMMARY:Review\r\n"
+        "DESCRIPTION:Room 4\r\n"
+        "END:VEVENT\r\n"
+        "END:VCALENDAR\r\n",
+        subtype="calendar",
+        params={"method": "REQUEST"},
+    )
+
+    markdown = _convert_email(message).export_to_markdown()
+
+    assert markdown.endswith("Start: 2026-11-20 09:00 UTC\n\nRoom 4")
+
+
+def test_body_holds_a_description_in_a_long_body():
+    """The word-boundary search stays fast on a large body."""
+    body_text = "Room 42 " * 125_000 + "Room 4."
+
+    assert _body_holds("Room 4", body_text)
+    assert not _body_holds("Room 4", body_text[: -len("Room 4.")])
 
 
 def test_email_reads_a_calendar_attachment_from_its_bytes():
