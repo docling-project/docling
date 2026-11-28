@@ -10,6 +10,7 @@ of flags. That mapping is the actual contract of these commands -- everything
 else they do is delegated.
 """
 
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -530,3 +531,68 @@ def test_download_hf_repo_requires_at_least_one_repo(tmp_path):
     result = runner.invoke(app, ["models", "download-hf-repo", "-o", str(tmp_path)])
 
     assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("flag", [[], ["--no-manifest"]])
+def test_download_lists_the_recorded_models_in_models_cdx_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag: list[str]
+) -> None:
+    from docling.models.utils.model_manifest import record_url_file
+
+    model_file = tmp_path / "rec.onnx"
+    model_file.write_bytes(b"onnx")
+
+    def _fake_download_models(**kwargs: Any) -> Path:
+        record_url_file("https://example.org/rec.onnx", model_file)
+        return kwargs["output_dir"]
+
+    monkeypatch.setattr(models_cli, "download_models", _fake_download_models)
+    result = runner.invoke(
+        app, ["models", "download", "rapidocr", "-o", str(tmp_path), "-q", *flag]
+    )
+
+    assert result.exit_code == 0, result.output
+    manifest = tmp_path / "models.cdx.json"
+    if flag:
+        assert not manifest.exists()
+    else:
+        (component,) = json.loads(manifest.read_text())["components"]
+        assert component["externalReferences"][0]["url"] == (
+            "https://example.org/rec.onnx"
+        )
+
+
+def test_download_without_manifest_does_not_ask_the_hub(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """--no-manifest downloads as before: no commit lookup, so it works offline."""
+    import huggingface_hub
+
+    class OfflineApi:
+        def model_info(self, *args: Any, **kwargs: Any) -> None:
+            raise AssertionError("model_info called with --no-manifest")
+
+    asked: list[dict] = []
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        asked.append(kwargs)
+        return str(kwargs["local_dir"])
+
+    monkeypatch.setattr(huggingface_hub, "HfApi", OfflineApi)
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "picture_classifier",
+            "-o",
+            str(tmp_path),
+            "-q",
+            "--no-manifest",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert asked, "the model was not downloaded"
+    assert not (tmp_path / "models.cdx.json").exists()

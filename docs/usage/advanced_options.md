@@ -76,6 +76,19 @@ $ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
 Downloading ds4sd/SmolDocling-256M-preview model from HuggingFace...
 ```
 
+`docling-tools models download` also writes `models.cdx.json` into the output
+directory: a [CycloneDX](https://cyclonedx.org/) SBOM of the downloaded models.
+Each Hugging Face model is listed with its repository and the commit that was
+downloaded, as a `pkg:huggingface` package URL, and each other model file with
+the URL it came from. Every file carries its SHA-256. SBOM tools that read SBOM
+files inside a container image, such as syft, which `docker build --sbom=true`
+uses, then list the models of an image built with the command. WhisperS2T
+models are not listed, because whisper-s2t downloads them itself. A later
+download into the same directory adds its models to the file, and a model
+downloaded again replaces its entry. Listing a Hugging Face model needs the Hub
+to resolve its commit, so an offline download needs `--no-manifest`, which skips
+the file.
+
 **Step 2: Use the prefetched models**
 
 ```python

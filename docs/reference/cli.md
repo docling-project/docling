@@ -148,7 +148,7 @@ docling convert-remote [OPTIONS] source
 | --- | --- | --- | --- |
 | `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
 | `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
-| `--from` | `docx`, `doc`, `rtf`, `pptx`, `ppt`, `html`, `mhtml`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `iwork_pages`, `iwork_keynote`, `iwork_numbers`, `ebcdic`, `afp`, `calendar` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
+| `--from` | `docx`, `doc`, `rtf`, `pptx`, `ppt`, `html`, `mhtml`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `iwork_pages`, `iwork_keynote`, `iwork_numbers`, `ebcdic`, `afp`, `calendar` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. When omitted, all formats are accepted when filtering directories and the service applies its own default. |
 | `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks`, `latex` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
@@ -277,6 +277,7 @@ docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformer
 | `--easyocr-lang` | `text` (repeatable) |  | OCR language to prefetch for EasyOCR, as a BCP-47 tag (e.g. 'de', 'zh-Hant', 'ru'). EasyOCR's own codes are accepted too and mean what EasyOCR means by them, so 'ch_sim' is Simplified Chinese. Repeat for multiple. |
 | `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' with a BCP-47 language (e.g. 'onnxruntime:el', 'torch:ko'). PP-OCR's own codes are accepted too, including its script recognizers, which no language tag can name: 'onnxruntime:cyrillic', 'torch:ch'. Repeat for multiple. Replaces the default set. |
 | `--rapidocr-model-size` | `tiny`, `small`, `medium` | `small` | Detection/recognition model size, applied to every selected --rapidocr-backend-lang pair (or the default set) -- one scalar for the whole command, unlike the repeatable --rapidocr-backend-lang. Only affects pairs resolving to PP-OCRv6; `tiny` is not available for every PP-OCRv6 language (e.g. Japanese), and an unsupported combination is rejected before any download starts. |
+| `--manifest` / `--no-manifest` | flag | `true` | Write models.cdx.json, a CycloneDX SBOM of the downloaded models (repository and commit or URL, SHA-256 of every file), into the output directory. |
 
 #### `docling-tools models download-hf-repo`
 

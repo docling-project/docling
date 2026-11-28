@@ -52,6 +52,7 @@ from docling.models.stages.table_structure.table_structure_model import (
     TableStructureModel,
 )
 from docling.models.utils.hf_model_download import download_hf_model
+from docling.models.utils.model_manifest import record_hf_file, record_url_file
 
 _log = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ def _download_whisper_models(
             and not force
             and _sha256_file(checkpoint_path) == expected_sha256
         ):
+            record_url_file(url, checkpoint_path)
             continue
 
         _log.info("Downloading native Whisper model %s...", model_name)
@@ -116,6 +118,7 @@ def _download_whisper_models(
             temp_path.replace(checkpoint_path)
         finally:
             temp_path.unlink(missing_ok=True)
+        record_url_file(url, checkpoint_path)
 
 
 def _sha256_file(path: Path) -> str:
@@ -141,13 +144,16 @@ def _download_distil_whisper_models(
     for model_name in model_names:
         repo_id, filename, revision = _DISTIL_WHISPER_OPENAI_CHECKPOINTS[model_name]
         _log.info("Downloading Distil-Whisper model %s...", model_name)
-        hf_hub_download(
-            repo_id=repo_id,
-            filename=filename,
-            revision=revision,
-            cache_dir=output_dir,
-            force_download=force,
+        path = Path(
+            hf_hub_download(
+                repo_id=repo_id,
+                filename=filename,
+                revision=revision,
+                cache_dir=output_dir,
+                force_download=force,
+            )
         )
+        record_hf_file(repo_id, revision, filename, path)
 
 
 def _download_whisper_s2t_models(
