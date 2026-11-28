@@ -2991,6 +2991,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level = 0
             self.parents[self.level + 1] = doc.add_title(
                 text_clean,
+                orig=annotated_text.text,
                 content_layer=self.content_layer,
                 formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
