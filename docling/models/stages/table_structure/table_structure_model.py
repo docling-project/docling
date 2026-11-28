@@ -5,6 +5,7 @@ import copy
 import logging
 import warnings
 from collections.abc import Iterable, Sequence
+from functools import cache
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -31,6 +32,7 @@ from docling.models.base_table_model import (
     degenerate_structure_reason,
     keep_table_text_as_child,
 )
+from docling.models.stages.table_structure.ruled_rows import repair_split_final_row
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -283,6 +285,17 @@ class TableStructureModel(BaseTableStructureModel):
                 # backend would re-parse and return native words OCR replaced.
                 sp = page.parsed_page
 
+                @cache
+                def get_shape_lines(
+                    current_page: Page = page,
+                ) -> list[BoundingBox] | None:
+                    if current_page._shape_lines is not None:
+                        return current_page._shape_lines
+                    assert current_page._backend is not None
+                    return current_page._backend.get_shape_lines(
+                        horizontal=True, vertical=False
+                    )
+
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
                     if sp is not None:
@@ -378,6 +391,18 @@ class TableStructureModel(BaseTableStructureModel):
                         )
                         num_rows, num_cols, table_cells = 0, 0, []
                         keep_table_text_as_child(table_cluster, page)
+                    elif self.mode == TableFormerMode.FAST and self.do_cell_matching:
+                        repaired = repair_split_final_row(
+                            cells=table_cells,
+                            tags=otsl_seq,
+                            num_rows=num_rows,
+                            num_cols=num_cols,
+                            get_rules=get_shape_lines,
+                            table_box=table_cluster.bbox,
+                        )
+                        if repaired is not None:
+                            table_cells, otsl_seq = repaired
+                            num_rows -= 1
 
                     tbl = Table(
                         otsl_seq=otsl_seq,

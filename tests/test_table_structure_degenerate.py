@@ -39,6 +39,7 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult, InputDocument, _DummyBackend
+from docling.datamodel.pipeline_options import TableFormerMode
 from docling.models.base_table_model import (
     degenerate_structure_reason,
     keep_table_text_as_child,
@@ -461,6 +462,7 @@ def _v1_model(rs_seq: list[str], shape: tuple[int, int], cells) -> TableStructur
     model = object.__new__(TableStructureModel)
     model.enabled = True
     model.do_cell_matching = True
+    model.mode = TableFormerMode.FAST
     model.scale = 2.0
     model.tm_config = {"predict": {"max_steps": 1024}}
     model.tf_predictor = _FakePredictor(model.scale, rs_seq, shape, cells)  # type: ignore[assignment]
