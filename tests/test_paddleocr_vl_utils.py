@@ -242,6 +242,30 @@ def test_parses_rich_table_cells_and_caption() -> None:
     assert all(not item.prov for item in doc.texts)
 
 
+def test_oversized_table_keeps_the_page(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    html = "<table>" + "<tr><td>x</td></tr>" * 1001 + "</table>"
+    payload = _payload(
+        [
+            _block("text", "before", bbox=[10, 20, 300, 80]),
+            _block("table", html, bbox=[10, 100, 300, 700]),
+            _block("text", "after", bbox=[10, 710, 300, 780]),
+        ]
+    )
+
+    with caplog.at_level(logging.WARNING):
+        doc = parse_paddleocr_vl_result(payload)
+
+    assert [item.text for item in doc.texts] == ["before", "after"]
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (0, 0)
+    assert table.prov
+    assert table.prov[0].bbox.t == 100
+    assert "exceeds 1000 grid cells" in caplog.text
+
+
 def test_preserves_formula_content_exactly() -> None:
     formulas = [r"E = mc^2", r"\frac{净利润}{营业收入}", r"x+y=z"]
     payload = _payload(
