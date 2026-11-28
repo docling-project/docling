@@ -65,6 +65,47 @@ def test_list_dedent_to_base_does_not_crash() -> None:
     assert [item.text for item in doc.texts] == ["a", "b"]
 
 
+def test_description_list_reads_terms_and_definitions() -> None:
+    # "term:: definition" is an AsciiDoc description list, the same structure
+    # as an HTML <dl>. It used to run into a single paragraph with the "::"
+    # markers kept as text (#5638).
+    doc = _convert_adoc(
+        b"== Glossary\n\n"
+        b"CPU:: The central processing unit.\n"
+        b"RAM::\n"
+        b"Random-access memory.\n"
+        b"\n"
+        b"After the list.\n"
+    )
+
+    assert [group.name for group in doc.groups if group.name] == [
+        "description list",
+        "descriptions",
+        "descriptions",
+    ]
+    assert [item.text for item in doc.texts if isinstance(item, ListItem)] == [
+        "CPU",
+        "The central processing unit.",
+        "RAM",
+        "Random-access memory.",
+    ]
+    term_items = [item for item in doc.texts if item.text in ("CPU", "RAM")]
+    assert all(
+        item.formatting is not None and item.formatting.bold for item in term_items
+    )
+    assert [
+        item.text for item in doc.texts if item.label == DocItemLabel.PARAGRAPH
+    ] == ["After the list."]
+    assert "::" not in doc.export_to_text()
+
+
+def test_block_macro_is_not_a_description_term() -> None:
+    # "image::target[]" has the "name::" shape of a description term but is a
+    # block macro; it must keep going through the picture backend.
+    doc = _convert_adoc(b"image::next.png[]\n")
+    assert [group for group in doc.groups if group.name == "description list"] == []
+
+
 def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
     # AsciiDoc writes a span as [colspan][.rowspan] followed by "+" or "*", and
     # either number may be omitted, so ".2+" is a rowspan on its own. The cell
