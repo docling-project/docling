@@ -36,6 +36,7 @@ from docling_core.types.doc import (
 )
 from PIL import Image
 
+from docling.backend import opendocument_backend
 from docling.backend.opendocument_backend import (
     OdpDocumentBackend,
     OdsDocumentBackend,
@@ -147,6 +148,102 @@ def _build_odp(path: Path) -> Path:
     body.append(page2)
     doc.save(str(path))
     return path
+
+
+@pytest.mark.parametrize(
+    ("input_format", "axis", "nested"),
+    [
+        (InputFormat.ODT, "rows", False),
+        (InputFormat.ODT, "columns", False),
+        (InputFormat.ODT, "columns", True),
+        (InputFormat.ODP, "columns", False),
+    ],
+)
+def test_odf_tables_share_repeat_budget(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    input_format: InputFormat,
+    axis: str,
+    nested: bool,
+):
+    monkeypatch.setattr(opendocument_backend, "DEFAULT_ODF_MAX_REPEATED_CELLS", 2)
+    source = OdfDocument("presentation" if input_format == InputFormat.ODP else "text")
+    source.body.clear()
+    page = None
+    if input_format == InputFormat.ODP:
+        page = DrawPage("slide", name="Slide")
+        source.body.append(page)
+
+    for name in ("first", "second"):
+        table = Table(name)
+        row = Row(repeated=10_000_000 if axis == "rows" else None)
+        row.append_cell(Cell(name, repeated=10_000_000 if axis == "columns" else None))
+        table.append_row(row)
+        if page is not None:
+            frame = Frame()
+            frame.append(table)
+            page.append(frame)
+        elif name == "first":
+            source.body.append(table)
+        else:
+            section = Section(name=name)
+            if nested:
+                outer_table = Table("outer")
+                outer_row = Row()
+                outer_cell = Cell()
+                outer_cell.append(table)
+                outer_row.append_cell(outer_cell)
+                outer_table.append_row(outer_row)
+                section.append(outer_table)
+            else:
+                section.append(table)
+            source.body.append(section)
+
+    path = tmp_path / f"tables.{input_format.value}"
+    source.save(str(path))
+    with caplog.at_level(logging.WARNING):
+        doc = DocumentConverter(allowed_formats=[input_format]).convert(path).document
+
+    assert len(doc.tables) == (3 if nested else 2)
+    if nested:
+        assert isinstance(doc.tables[1].data.table_cells[0], RichTableCell)
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["first"] * 3
+    assert [cell.text for cell in doc.tables[-1].data.table_cells] == ["second"]
+    assert "repeated cells were not converted" in caplog.text
+
+
+def test_odf_embedded_chart_obeys_repeat_budget(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    monkeypatch.setattr(opendocument_backend, "DEFAULT_ODF_MAX_REPEATED_CELLS", 0)
+    source = Path("tests/data/odf/sources/text_document_02.odt")
+    path = tmp_path / "chart.odt"
+    with zipfile.ZipFile(source) as src, zipfile.ZipFile(path, "w") as dst:
+        for item in src.infolist():
+            data = src.read(item)
+            if item.filename == "Object 1/content.xml":
+                data = data.replace(
+                    b'<table:table-cell office:value-type="string">',
+                    b'<table:table-cell table:number-columns-repeated="10000000" office:value-type="string">',
+                    1,
+                )
+            dst.writestr(item, data)
+
+    with caplog.at_level(logging.WARNING):
+        doc = (
+            DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+        )
+    charts = [
+        picture.meta.tabular_chart
+        for picture in doc.pictures
+        if picture.meta is not None and picture.meta.tabular_chart is not None
+    ]
+    assert len(charts) == 1
+    assert charts[0].chart_data.num_cols == 4
+    assert "repeated cells were not converted" in caplog.text
 
 
 @pytest.fixture(scope="module")
