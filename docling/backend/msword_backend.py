@@ -238,6 +238,9 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
         "japaneseCounting",
         "decimalFullWidth",
         "decimalEnclosedCircle",
+        "arabicAbjad",
+        "arabicAlpha",
+        "hindiNumbers",
     }
 )
 """OOXML numFmt values that produce visible list/heading markers."""
@@ -614,12 +617,57 @@ _CJK_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
 }
 """East Asian ``w:numFmt`` values mapped to their counter renderers."""
 
+# ECMA-376 names these formats but does not list their characters. The letter
+# orders and the repetition rule follow the markers rendered by Microsoft Word
+# 16.112 (macOS) for every counter from 0 to 112.
+_ARABIC_ABJAD_LETTERS: Final[str] = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغ"
+_ARABIC_ALPHA_LETTERS: Final[str] = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي"
+_DEVANAGARI_DIGITS: Final[str] = "".join(chr(0x0966 + digit) for digit in range(10))
+
+
+def _int_to_arabic_letter_marker(
+    value: int, letters: str, *, joiner_before: bool
+) -> str:
+    """Map a 1-based counter to Arabic letters, repeating the letter after the last one.
+
+    Word renders 29 as two copies of the first letter and 57 as three, with a
+    zero-width non-joiner (U+200C) next to each copy so that the copies do not
+    join: before each letter for arabicAbjad, after it for arabicAlpha. Word
+    shows no marker for 0. Negative counters stay decimal, as in the other
+    helpers.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return ""
+    letter = letters[(value - 1) % len(letters)]
+    copy = "\u200c" + letter if joiner_before else letter + "\u200c"
+    return copy * ((value - 1) // len(letters) + 1)
+
+
+_COMPLEX_SCRIPT_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
+    "arabicAbjad": lambda value: _int_to_arabic_letter_marker(
+        value, _ARABIC_ABJAD_LETTERS, joiner_before=True
+    ),
+    "arabicAlpha": lambda value: _int_to_arabic_letter_marker(
+        value, _ARABIC_ALPHA_LETTERS, joiner_before=False
+    ),
+    # Word renders hindiNumbers with Devanagari digits (U+0966-U+096F).
+    "hindiNumbers": lambda value: _int_to_positional_marker(value, _DEVANAGARI_DIGITS),
+}
+"""Arabic-script and Devanagari ``w:numFmt`` values mapped to their counter renderers."""
+
 
 def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
     """Render a list counter using an OOXML ``w:numFmt`` value."""
     cjk_formatter = _CJK_ENUM_FORMATTERS.get(num_fmt) if num_fmt is not None else None
     if cjk_formatter is not None and counter >= 0:
         return cjk_formatter(counter)
+    script_formatter = (
+        _COMPLEX_SCRIPT_ENUM_FORMATTERS.get(num_fmt) if num_fmt is not None else None
+    )
+    if script_formatter is not None:
+        return script_formatter(counter)
     if num_fmt == "lowerLetter":
         return _int_to_letter_marker(counter)
     if num_fmt == "upperLetter":
