@@ -1061,6 +1061,57 @@ def test_guess_format_xml_with_undecodable_head(tmp_path):
     assert dci._guess_format(doc_path) == InputFormat.XML_DOCLANG
 
 
+@pytest.mark.parametrize(
+    ("source", "name", "expected"),
+    [
+        ("pdf/sources/multi_page.pdf", "upload", InputFormat.PDF),
+        ("docx/sources/word_sample.docx", "upload", InputFormat.DOCX),
+        ("html/sources/example_01.html", "upload", InputFormat.HTML),
+        ("epub/sources/epub_purvis_poetry.epub", None, InputFormat.EPUB),
+        ("uspto/sources/ipa20110039701.xml", None, InputFormat.XML_USPTO),
+        ("jats/sources/elife-56337.nxml", None, InputFormat.XML_JATS),
+    ],
+)
+def test_guess_format_stream_not_at_start(source, name, expected):
+    """A stream is sniffed from its start, wherever its position is.
+
+    The backends read a stream from position 0, so a stream that was just
+    written to, or one that an earlier conversion left at its end, must get
+    the same format as a rewound one.
+    """
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+    path = Path("./tests/data") / source
+    data = path.read_bytes()
+    stream = BytesIO()
+    stream.write(data)  # left at the end, as after writing a download
+    doc_stream = DocumentStream(name=name or path.name, stream=stream)
+
+    assert dci._guess_format(doc_stream) == expected
+    assert stream.tell() == 0
+
+    stream.seek(len(data) // 2)  # partially read
+    assert dci._guess_format(doc_stream) == expected
+    assert stream.tell() == 0
+
+
+def test_convert_same_stream_twice():
+    """Converting a DocumentStream again gives the same single result."""
+    path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")
+    doc_stream = DocumentStream(name=path.name, stream=BytesIO(path.read_bytes()))
+    converter = DocumentConverter(allowed_formats=[InputFormat.EPUB])
+
+    first = list(converter.convert_all([doc_stream], raises_on_error=False))
+    second = list(converter.convert_all([doc_stream], raises_on_error=False))
+
+    assert len(first) == len(second) == 1
+    assert first[0].status == second[0].status == ConversionStatus.SUCCESS
+    assert second[0].input.file.name == path.name
+    assert (
+        second[0].document.export_to_markdown()
+        == first[0].document.export_to_markdown()
+    )
+
+
 def _make_input_doc(path):
     in_doc = InputDocument(
         path_or_stream=path,
