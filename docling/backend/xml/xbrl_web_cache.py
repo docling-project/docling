@@ -253,6 +253,10 @@ class FetchPolicyWebCache(WebCache):  # type: ignore[misc]
     def _refusal_reason(self, url: str, normalized: str) -> str | None:
         remote = False
         for target in (url, normalized):
+            try:
+                urlsplit(target)
+            except ValueError:
+                return "Malformed URL"
             scheme, sep, _ = target.partition("://")
             if sep and scheme in _REMOTE_SCHEMES:
                 if reason := self._cache_path_reason(target):
@@ -278,7 +282,12 @@ class FetchPolicyWebCache(WebCache):  # type: ignore[misc]
         self, url: str | None, base: str | None = None, *args: Any, **kwargs: Any
     ) -> str | None:
         if url is not None:
-            reason = self._refusal_reason(url, self.normalizeUrl(url, base) or url)
+            try:
+                normalized = self.normalizeUrl(url, base) or url
+            except ValueError:
+                self._on_refused(url, "Malformed URL")
+                return None
+            reason = self._refusal_reason(url, normalized)
             if reason is not None:
                 self._on_refused(url, reason)
                 return None

@@ -114,8 +114,9 @@ def _absolutize_missing_refs(content: bytes, base_dir: Path, source_uri: str) ->
     Relative references to schemas and linkbases are resolved against the URL
     where the document was published, unless the referenced file exists in
     ``base_dir`` (e.g. it was provided in the ``taxonomy`` folder). The result
-    is escaped for XML, and it always stays on the origin of ``source_uri``. The fetch
-    policy of the web cache still applies to every resulting URL.
+    is escaped for XML, and it always stays on the origin of ``source_uri``. The
+    fetch policy of the web cache still applies to every resulting URL. Malformed
+    references that cannot be parsed are left unchanged.
 
     Args:
         content: The XBRL or iXBRL document.
@@ -131,16 +132,20 @@ def _absolutize_missing_refs(content: bytes, base_dir: Path, source_uri: str) ->
         raw = match.group(2) if match.group(2) is not None else match.group(3)
         href = html.unescape(raw.decode("utf-8", errors="replace")).strip()
         path_part = href.split("#", 1)[0]
-        if (
-            not path_part
-            or urlparse(href).scheme
-            or _is_local_file(base_dir, unquote(path_part))
-        ):
+        try:
+            if (
+                not path_part
+                or urlparse(href).scheme
+                or _is_local_file(base_dir, unquote(path_part))
+            ):
+                return match.group(0)
+            absolute = urljoin(source_uri, href)
+            # A relative reference must stay on the origin of the source URL. This
+            # drops, for instance, the network-path reference `//other.host/x.xsd`.
+            origin, resolved = urlparse(source_uri), urlparse(absolute)
+        except ValueError:
+            # Leave a malformed reference unchanged; the web cache refuses it.
             return match.group(0)
-        absolute = urljoin(source_uri, href)
-        # A relative reference must stay on the origin of the source URL. This
-        # drops, for instance, the network-path reference `//other.host/x.xsd`.
-        origin, resolved = urlparse(source_uri), urlparse(absolute)
         if (resolved.scheme, resolved.netloc) != (origin.scheme, origin.netloc):
             return match.group(0)
         _log.debug(f"Resolving reference {href!r} to {absolute!r}")
