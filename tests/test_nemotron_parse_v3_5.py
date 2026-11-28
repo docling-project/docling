@@ -387,6 +387,48 @@ def test_chart_maps_classification_title_and_data() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("table", "expected_grid"),
+    [
+        (
+            "| x | y |\n| --- | --- |\n| 1 | 2 |\n| - | - |\n| 3 | 4 |",
+            [["x", "y"], ["1", "2"], ["-", "-"], ["3", "4"]],
+        ),
+        (
+            "| x | y |\n| --- | --- |\n| 1 | 2 |\n|  |  |\n| 3 | 4 |",
+            [["x", "y"], ["1", "2"], ["", ""], ["3", "4"]],
+        ),
+        (
+            "| x | y |\n| :--- | ---: |\n| 1 | 2 |",
+            [["x", "y"], ["1", "2"]],
+        ),
+        (
+            "| x | y |\n| 1 | 2 |\n| 3 | 4 |",
+            [["x", "y"], ["1", "2"], ["3", "4"]],
+        ),
+        (
+            "| x | y |\n| --- |\n| 1 | 2 |",
+            [["x", "y"], ["---", ""], ["1", "2"]],
+        ),
+        (
+            "| x | y |\n| --- | --- | --- |\n| 1 | 2 |",
+            [["x", "y", ""], ["---", "---", "---"], ["1", "2", ""]],
+        ),
+    ],
+)
+def test_chart_markdown_table_drops_only_the_delimiter_row(
+    table: str, expected_grid: list[list[str]]
+) -> None:
+    chart = f'<chart type="grouped_bar">\n{table}\n</chart>'
+
+    picture = _parse(_block("Chart", chart)).pictures[0]
+
+    assert picture.meta is not None
+    assert picture.meta.tabular_chart is not None
+    chart_data = picture.meta.tabular_chart.chart_data
+    assert [[cell.text for cell in row] for row in chart_data.grid] == expected_grid
+
+
 def test_multi_panel_chart_maps_one_picture_per_panel() -> None:
     chart = (
         '<chart type="faceted_bar">\n'
