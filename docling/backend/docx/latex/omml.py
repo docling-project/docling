@@ -14,6 +14,7 @@ Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py on 23/01/20
 from __future__ import annotations
 
 import logging
+from itertools import groupby
 from typing import Any, Iterator
 
 import lxml.etree as ET
@@ -815,6 +816,29 @@ class oMath2Latex(Tag2Method):
         "\u2212": "-",  # MINUS SIGN → minus
         "\u005e": "^",  # CIRCUMFLEX → superscript operator
         "\u00d7": "\\times ",  # MULTIPLICATION SIGN → natively output \times
+        "←": r" \leftarrow ",
+        "↑": r" \uparrow ",
+        "→": r" \rightarrow ",
+        "↓": r" \downarrow ",
+        "¬": r" \neg ",
+        "·": r" \cdot ",
+        "÷": r" \div ",
+        "µ": r" \mu ",
+        "¹": "^{1}",
+        "²": "^{2}",
+        "³": "^{3}",
+        "¼": r"\frac{1}{4}",
+        "½": r"\frac{1}{2}",
+        "¾": r"\frac{3}{4}",
+        "℃": r"{}^{\circ}\mathrm{C}",
+        "\u2044": "/",  # FRACTION SLASH
+        "•": r" \bullet ",
+        "◦": r" \circ ",
+        "◯": r" \bigcirc ",
+        "℧": r" \mho ",
+        "§": r" \S ",
+        "¶": r" \P ",
+        "¥": r" \yen ",
     }
 
     def process_unicode(self, s: str) -> str:
@@ -858,36 +882,22 @@ class oMath2Latex(Tag2Method):
         Returns:
             LaTeX string with text properly escaped and formatted.
         """
-        _str = []
-        _base_str = []
-        found_text = elm.findtext(f"./{OMML_NS}t")
-        if found_text:
-            for s in found_text:
-                out_latex_str = self.process_unicode(s)
-                _str.append(out_latex_str)
-                _base_str.append(s)
+        found_text = elm.findtext(f"./{OMML_NS}t") or ""
+        generated_braces = [brace for brace in "{}" if brace not in found_text]
+        parts = []
+        # Explicit math mappings already contain LaTeX syntax. Escape only
+        # the remaining spans so generated superscripts and braces stay active.
+        for is_mapped, characters in groupby(
+            found_text, key=lambda char: char in self._MATH_CHAR_MAP
+        ):
+            latex = BLANK.join(map(self.process_unicode, characters))
+            if not is_mapped:
+                latex = escape_latex(latex)
+                for brace in generated_braces:
+                    latex = latex.replace(f"\\{brace}", brace)
+            parts.append(latex)
 
-        proc_str = escape_latex(BLANK.join(_str))
-        base_proc_str = BLANK.join(_base_str)
-
-        if "{" not in base_proc_str and "\\{" in proc_str:
-            proc_str = proc_str.replace("\\{", "{")
-
-        if "}" not in base_proc_str and "\\}" in proc_str:
-            proc_str = proc_str.replace("\\}", "}")
-
-        # Undo escaping of characters that process_unicode intentionally
-        # mapped to math operators (e.g. U+005E caret → ^).  escape_latex
-        # treats them as text-mode specials, but inside <m:r> they are math.
-        for orig, mapped in self._MATH_CHAR_MAP.items():
-            if (
-                mapped in CHARS
-                and orig in (found_text or "")
-                and f"\\{mapped}" in proc_str
-            ):
-                proc_str = proc_str.replace(f"\\{mapped}", mapped)
-
-        return proc_str
+        return BLANK.join(parts)
 
     tag2meth = {
         "acc": do_acc,

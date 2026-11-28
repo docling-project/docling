@@ -3366,6 +3366,25 @@ def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
     assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]
 
 
+def test_inline_unicode_equation_uses_math_mode(tmp_path: Path) -> None:
+    omath = (
+        '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        "<m:r><m:t>x→0</m:t></m:r></m:oMath>"
+    )
+    docx_path = tmp_path / "inline_unicode_equation.docx"
+    document = Document()
+    paragraph = document.add_paragraph("As ")
+    paragraph._p.append(parse_xml(omath))
+    paragraph.add_run(", the limit exists.")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    formulas = [item.text for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert formulas == [r"x \rightarrow 0"]
+    assert r"As $x \rightarrow 0$, the limit exists." in doc.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     ("filename", "image_path"),
     [

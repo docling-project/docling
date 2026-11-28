@@ -46,6 +46,9 @@ cells follows separate handling.
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
+Word and PowerPoint equations use LaTeX math notation for symbols such as arrows,
+superscript digits, and fractions. For example, Markdown exports an inline
+equation containing x→0 as `$x \rightarrow 0$`.
 
 Video and audio on PPTX and ODP slides become tracks, with their poster frame or
 icon as the cover. The `video` or `audio` of the track gives the path of the media
