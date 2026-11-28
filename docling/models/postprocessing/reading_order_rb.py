@@ -846,6 +846,9 @@ class ReadingOrderPredictor:
             )
             candidates = list(spatial_idx.intersection(query_bbox))
 
+            # Keep the elements that sit strictly above pelem_j and overlap it
+            # horizontally, preserving the R-tree candidate order.
+            valid_candidates: List[Tuple[int, ReadingOrderNode]] = []
             for i in candidates:
                 if i == j:
                     continue
@@ -853,10 +856,34 @@ class ReadingOrderPredictor:
                 pelem_i = page_elems[i]
 
                 # Check spatial relationship
-                if not (
-                    pelem_i.is_strictly_above(pelem_j)
-                    and pelem_i.overlaps_horizontally(pelem_j)
+                if pelem_i.is_strictly_above(pelem_j) and pelem_i.overlaps_horizontally(
+                    pelem_j
                 ):
+                    valid_candidates.append((i, pelem_i))
+
+            # Fast path: an element whose vertical band lies inside the band
+            # [pelem_j.t, pelem_i.b] and which overlaps pelem_j horizontally
+            # also interrupts the pair (i, j) for every candidate i that sits
+            # further above, so those pairs can be rejected without running
+            # the per-pair R-tree query. This keeps pages with many stacked
+            # elements quadratic instead of cubic in the page element count.
+            # Horizontal separators keep the full per-pair check because for
+            # them the interruption lane is the upper element of the pair.
+            band_mins: List[Tuple[float, int]] = []  # two lowest band tops
+            if valid_candidates and not _is_horizontal_separator(pelem_j):
+                for i, pelem_i in valid_candidates:
+                    if pelem_i.b < pelem_j.t:
+                        continue
+                    entry = (pelem_i.t, i)
+                    if len(band_mins) < 2:
+                        band_mins.append(entry)
+                        band_mins.sort()
+                    elif entry < band_mins[1]:
+                        band_mins[1] = entry
+                        band_mins.sort()
+
+            for i, pelem_i in valid_candidates:
+                if any(top <= pelem_i.b and idx != i for top, idx in band_mins):
                     continue
 
                 # Check for interrupting elements

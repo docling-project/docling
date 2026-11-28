@@ -23,6 +23,7 @@ from docling.models.postprocessing.reading_order_rb import (
     PageElement,
     ReadingOrderPredictor,
     SeparatorElement,
+    _ReadingOrderPredictorState,
     build_page_separators,
 )
 
@@ -1350,3 +1351,112 @@ def test_build_page_separators_merges_fragments_below_candidate_cap() -> None:
 
     assert len(separators) == 5
     assert all(s.orientation == "horizontal" for s in separators)
+
+
+def _stacked_lines(count: int, page: Size) -> list[PageElement]:
+    """A single column of text lines, like a long scan split into lines."""
+    return [
+        PageElement(
+            cid=i,
+            page_no=1,
+            page_size=page,
+            label=DocItemLabel.TEXT,
+            l=72.0,
+            r=272.0,
+            t=page.height - 40.0 - 7.0 * i,
+            b=page.height - 46.0 - 7.0 * i,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+        for i in range(count)
+    ]
+
+
+def test_stacked_column_reading_order_stays_fast(monkeypatch) -> None:
+    # https://github.com/docling-project/docling/issues/5419 — the up/down map
+    # construction used to run the per-pair interruption query for every pair
+    # of elements, which is cubic in the number of elements of a page and made
+    # a 2,000-line page spend minutes in reading order. The closest candidate
+    # above an element already interrupts every pair it sits between, so the
+    # per-pair query now only runs for the few candidates whose bottoms are not
+    # covered by such an interruption band.
+    page = Size(width=612.0, height=15_000.0)
+    elements = _stacked_lines(800, page)
+
+    calls = 0
+    original = ReadingOrderPredictor._has_sequence_interruption
+
+    def counting_interruption(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        nonlocal calls
+        calls += 1
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(
+        ReadingOrderPredictor, "_has_sequence_interruption", counting_interruption
+    )
+
+    ordered = ReadingOrderPredictor().predict_reading_order(page_elements=elements)
+
+    # The stacked column keeps its natural top-to-bottom reading order.
+    assert [e.cid for e in ordered] == list(range(800))
+    # Only the closest candidates need the per-pair interruption query: two
+    # map passes with about one surviving candidate per element and page.
+    # (On the previous implementation this same test counted 639,200 calls.)
+    assert calls < 8 * 800
+
+
+def test_zero_height_element_is_not_its_own_interruption() -> None:
+    # The fast interruption rejection must not let an element interrupt its
+    # own pair: the lowest band top can belong to a zero-height element whose
+    # top equals its bottom, so without the self-exclusion it would reject
+    # itself and lose its link to the element below.
+    page = Size(width=612.0, height=792.0)
+    upper, lower = _stacked_lines(2, page)
+    rule = SeparatorElement(
+        cid=2,
+        page_no=1,
+        page_size=page,
+        orientation="horizontal",
+        l=72.0,
+        r=272.0,
+        b=lower.t + 0.5,
+        t=lower.t + 0.5,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+    elements = [upper, rule, lower]
+
+    state = _ReadingOrderPredictorState()
+    ReadingOrderPredictor()._init_ud_maps(elements, state)
+
+    # The rule is the closest candidate above the lower line, so the pair is
+    # kept; the upper line, which the rule separates from the lower line, is
+    # rejected by the band witness instead.
+    assert state.up_map == {0: [], 1: [0], 2: [1]}
+    assert state.dn_map == {0: [1], 1: [2], 2: []}
+
+
+def test_tall_neighbor_does_not_break_column_order() -> None:
+    # A tall element that straddles several lines of a column must not change
+    # the column's own order, and the fast interruption rejection must leave
+    # the pairs that need the full check unchanged.
+    page = Size(width=612.0, height=792.0)
+    elements = _stacked_lines(4, page)
+    straddler = PageElement(
+        cid=4,
+        page_no=1,
+        page_size=page,
+        label=DocItemLabel.PICTURE,
+        l=200.0,
+        r=500.0,
+        t=page.height - 46.0 - 7.0 * 1,
+        b=page.height - 46.0 - 7.0 * 3 - 6.0,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    ordered = ReadingOrderPredictor().predict_reading_order(
+        page_elements=[*elements, straddler]
+    )
+
+    # The column keeps its natural top-to-bottom order. The straddling
+    # picture overlaps lines 1 to 3 horizontally and vertically, so it takes
+    # part in the interruption checks, and is read after the column.
+    assert [e.cid for e in ordered] == [0, 1, 2, 3, 4]
