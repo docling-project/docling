@@ -495,8 +495,10 @@ class MacroHandlerMixin:
                 text_buffer.append(" ")
             else:
                 text_buffer.append(node.macroname)
-        elif node.macroname == " ":
-            text_buffer.append(" ")
+        elif node.macroname in (" ", "\\"):
+            # A control space, or a line break, which _nodes_to_text also reads
+            # as "\n": dropping it would join the words on each side.
+            text_buffer.append(" " if node.macroname == " " else "\n")
         elif node.macroname in MACROS_TEXT_FORMATTING:
             formatted_text = self._extract_macro_arg(node)
             if formatted_text:
