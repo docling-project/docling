@@ -12,7 +12,7 @@ item-0 at level 0: unspecified: group _root_
   item-11 at level 1: text: Galaxies (573), Astronomy image  ... , Convolutional neural networks (1938)
   item-12 at level 1: section_header: Introduction
   item-13 at level 1: text: Galaxies have spectacularly info ... ution with their detailed appearances.
-  item-14 at level 1: text: Deep neural networks that exploi ...  imagingbut what about us astronomers?
+  item-14 at level 1: text: Deep neural networks that exploi ... imaging—but what about us astronomers?
   item-15 at level 1: text: Two major challenges arise when  ... ind the patterns that ML models learn.
   item-16 at level 1: text: Fortunately, there exists a stra ... ics of how deep neural networks learn.
   item-17 at level 1: text: 
@@ -32,7 +32,7 @@ item-0 at level 0: unspecified: group _root_
       item-31 at level 3: text:  features per image in its penul ...  activations. Since we only add a top-
       item-32 at level 3: formula: k
       item-33 at level 3: text:  constraint to a standard CNN ar ... ro extra computational cost or memory.
-  item-34 at level 1: text: We train the SFNet to predict ga ... r conclusions in Section[sec:summary].
+  item-34 at level 1: text: We train the SFNet to predict ga ...  conclusions in Section [sec:summary].
   item-35 at level 1: section: group figure
     item-36 at level 2: picture
       item-36 at level 3: caption: 
@@ -75,7 +75,7 @@ item-0 at level 0: unspecified: group _root_
       item-73 at level 3: formula: d=512
       item-74 at level 3: text:  latent features (after the average pooling layer) and set 
       item-75 at level 3: formula: k=4
-      item-76 at level 3: text: . Later, in Section[ssec:comparison-pca], we vary 
+      item-76 at level 3: text: . Later, in Section [ssec:comparison-pca], we vary 
       item-77 at level 3: formula: k \in \{2, 3, 4, 6, 8\}
       item-78 at level 3: text: . Thus, the SFNet learns a repre ... features are localized in pixel space.
   item-79 at level 1: text: The resnet18 backbone of the mod ... om/jwuphysics/sparse-feature-networks.
@@ -102,7 +102,7 @@ item-0 at level 0: unspecified: group _root_
   item-100 at level 1: text: The eight most frequently activa ... eatures SL17, SL138, SL157, and SL322.
   item-101 at level 1: text: 
     item-102 at level 2: inline: group group
-      item-103 at level 3: text: In Figure[fig:bpt-interpretation ... e in overlapping regions of the [O3]/H
+      item-103 at level 3: text: In Figure [fig:bpt-interpretatio ... e in overlapping regions of the [O3]/H
       item-104 at level 3: formula: \beta
       item-105 at level 3: text:  versus [N2]/H
       item-106 at level 3: formula: \alpha
@@ -134,14 +134,14 @@ item-0 at level 0: unspecified: group _root_
       item-131 at level 3: formula: Z_{\rm gas} = 12 +
       item-132 at level 3: text: log(O/H), directly from images.  ... Sample. The scatter of metallicity is 
       item-133 at level 3: formula: 0.207
-      item-134 at level 3: text: dex, and our trained SFNet can predict it to within 
+      item-134 at level 3: text:  dex, and our trained SFNet can predict it to within 
       item-135 at level 3: formula: 0.087
-      item-136 at level 3: text: dex using only two image feature ... %, respectively), then we can achieve 
+      item-136 at level 3: text:  dex using only two image featur ... %, respectively), then we can achieve 
       item-137 at level 3: formula: 0.086
-      item-138 at level 3: text: dex error. This level of perform ... rpretability] for further discussion).
+      item-138 at level 3: text:  dex error. This level of perfor ... rpretability] for further discussion).
   item-139 at level 1: text: 
     item-140 at level 2: inline: group group
-      item-141 at level 3: text: In the bottom two rows of Table[ ... copic fibers collect light from lower-
+      item-141 at level 3: text: In the bottom two rows of Table  ... copic fibers collect light from lower-
       item-142 at level 3: formula: Z_{\rm gas}
       item-143 at level 3: text:   outskirts of disk galaxies obs ... morphological features that it learns.
   item-144 at level 1: section_header: Discussion
@@ -173,15 +173,15 @@ item-0 at level 0: unspecified: group _root_
   item-169 at level 1: text: The model is only able to learn  ... ionships that govern galaxy evolution.
   item-170 at level 1: section_header: Performance versus interpretability
   item-171 at level 1: text: Previous works have found that a ... accuracy of 0.85 and F1 score of 0.72.
-  item-172 at level 1: footnote: If we use all non-zero SFNet fea ... uces noiseanother benefit of sparsity.
+  item-172 at level 1: footnote: If we use all non-zero SFNet fea ... ces noise—another benefit of sparsity.
   item-173 at level 1: text: In comparison, the highly tuned  ... ble to state-of-the-art ML algorithms.
   item-174 at level 1: text: 
     item-175 at level 2: inline: group group
-      item-176 at level 3: text: In Section[ssec:metallicity], we ... mparison, a typical CNN only achieves 
+      item-176 at level 3: text: In Section [ssec:metallicity], w ... mparison, a typical CNN only achieves 
       item-177 at level 3: formula: 0.085
-      item-178 at level 3: text: dex error [2019MNRAS.484.4683W]; note that the systematic scatter is 
+      item-178 at level 3: text:  dex error [2019MNRAS.484.4683W]; note that the systematic scatter is 
       item-179 at level 3: formula: \sim 0.03
-      item-180 at level 3: text: dex. Again, this suggests that S ... nce in order to gain interpretability.
+      item-180 at level 3: text:  dex. Again, this suggests that  ... nce in order to gain interpretability.
   item-181 at level 1: section_header: Comparison to PCA
   item-182 at level 1: text: 
     item-183 at level 2: inline: group group
@@ -208,7 +208,7 @@ item-0 at level 0: unspecified: group _root_
       item-203 at level 3: text: We use the same training/validat ... the model each time for each value of 
       item-204 at level 3: formula: k
       item-205 at level 3: text: . Because we repeat the training ... nes reported in Section [sec:results].
-  item-206 at level 1: text: The results are shown in Figure[ ... values are given in Table[tab:dimred].
+  item-206 at level 1: text: The results are shown in Figure  ... alues are given in Table [tab:dimred].
   item-207 at level 1: text: l cc cc[t!] 5
   item-208 at level 1: text: Comparison of performance using  ... th PCA-based dimensionality reduction.
   item-209 at level 1: text: 
@@ -251,7 +251,7 @@ item-0 at level 0: unspecified: group _root_
     item-246 at level 2: inline: group group
       item-247 at level 3: text: The non-monotonic decrease in RMSE with increasing 
       item-248 at level 3: formula: k
-      item-249 at level 3: text:  suggests that PCAwhile able to  ... vant for predicting galaxy properties.
+      item-249 at level 3: text:  suggests that PCA—while able to ... vant for predicting galaxy properties.
   item-250 at level 1: text: 
     item-251 at level 2: inline: group group
       item-252 at level 3: text: We turn our attention to spectra ... rformance is poor for small values of 
@@ -267,7 +267,7 @@ item-0 at level 0: unspecified: group _root_
     item-262 at level 2: inline: group group
       item-263 at level 3: text: Do regular CNNs also learn inter ... hitecture as our SFNet modulo the top-
       item-264 at level 3: formula: k
-      item-265 at level 3: text:  sparsity constraint (Figure[fig ... e combination of morphology and color.
+      item-265 at level 3: text:  sparsity constraint (Figure [fi ... e combination of morphology and color.
   item-266 at level 1: text: 
     item-267 at level 2: inline: group group
       item-268 at level 3: text: Using morphological features fro ... obot-extracted features as inputs and 
@@ -277,16 +277,16 @@ item-0 at level 0: unspecified: group _root_
     item-272 at level 2: inline: group group
       item-273 at level 3: text: First, we fit a linear model to  ... e on the validation dataset (error of 
       item-274 at level 3: formula: 0.183
-      item-275 at level 3: text: dex). When we fit on the validat ... e answersthe error remains very high (
+      item-275 at level 3: text:  dex). When we fit on the valida ...  answers—the error remains very high (
       item-276 at level 3: formula: 0.181
-      item-277 at level 3: text: dex). This result demonstrates t ... es can reconstruct galaxy metallicity.
+      item-277 at level 3: text:  dex). This result demonstrates  ... es can reconstruct galaxy metallicity.
   item-278 at level 1: text: 
     item-279 at level 2: inline: group group
       item-280 at level 3: text: Second, we fit an gradient-boost ... he training dataset, and achieve only 
       item-281 at level 3: formula: 0.180
-      item-282 at level 3: text: dex error on the validation data ... taset, we can lower the error down to 
+      item-282 at level 3: text:  dex error on the validation dat ... taset, we can lower the error down to 
       item-283 at level 3: formula: 0.085
-      item-284 at level 3: text: dex (comparable to the SFNet performance).
+      item-284 at level 3: text:  dex (comparable to the SFNet performance).
   item-285 at level 1: text: Our experiments confirm that the ...  is both performant and interpretable.
   item-286 at level 1: text: 
     item-287 at level 2: inline: group group
@@ -309,7 +309,7 @@ item-0 at level 0: unspecified: group _root_
       item-304 at level 3: formula: k
       item-305 at level 3: text:  interpretable morphological fea ... ate predictions than by using the top 
       item-306 at level 3: formula: k
-      item-307 at level 3: text:  principal components of a regul ... ures (see Figure[fig:pca-comparison]).
+      item-307 at level 3: text:  principal components of a regul ... res (see Figure [fig:pca-comparison]).
   item-308 at level 1: text: We do not imply that astrophysic ... ned features and predicted quantities.
   item-309 at level 1: text: 
     item-310 at level 2: inline: group group
@@ -328,9 +328,9 @@ item-0 at level 0: unspecified: group _root_
     item-323 at level 2: list_item: Superposition is where semantic  ... rons (in one or even multiple layers).
     item-324 at level 2: list_item: 
       item-325 at level 3: inline: group group
-        item-326 at level 4: text: Polysemanticity means that any g ... such as three-armed spiral galaxy and 
+        item-326 at level 4: text: Polysemanticity means that any g ... h as “three-armed spiral galaxy” and “
         item-327 at level 4: formula: r
-        item-328 at level 4: text: -band light bleed from nearby saturated star.
+        item-328 at level 4: text: -band light bleed from nearby saturated star.”
   item-329 at level 1: text: So rather than a one-to-one mapp ... networks, even in just a single layer.
   item-330 at level 1: section_header: Sparse autoencoders and SFNets
   item-331 at level 1: text: Originally motivated by biologic ... s represented by deep neural networks.

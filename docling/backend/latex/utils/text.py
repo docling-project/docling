@@ -244,6 +244,21 @@ class TextHelperMixin:
         if isinstance(item, ListItem):
             self._list_item_lines.pop(item.self_ref, None)
 
+    @staticmethod
+    def _specials_to_text(node: LatexSpecialsNode) -> str:
+        """Return the text of a tie or ligature such as ``~``, ``--`` or ``````.
+
+        A tie is a space, as in the metadata handler; the others become the
+        characters they typeset: en and em dashes, curly quotes, inverted ! and ?.
+        ``&`` separates table cells, which the table parser handles, so it gives
+        no text.
+        """
+        if node.specials_chars == "&":
+            return ""
+        if node.specials_chars == "~":
+            return " "
+        return LatexNodes2Text().nodelist_to_text([node])
+
     def _char_macro_to_text(self, node: LatexMacroNode) -> str | None:
         """Return the Unicode text of an accent or letter macro.
 
@@ -409,6 +424,9 @@ class TextHelperMixin:
                 )
             elif isinstance(node, LatexMathNode):
                 self._process_math_node(node, doc, parent, text_buffer, flush_fn)
+            elif isinstance(node, LatexSpecialsNode):
+                if text := self._specials_to_text(node):
+                    text_buffer.append(text)
             elif isinstance(node, LatexEnvironmentNode) and node.envname == "math":
                 math_text = self._clean_math(node.latex_verbatim(), node.envname)
                 if math_text:
@@ -481,7 +499,9 @@ class TextHelperMixin:
         if node.nodeargd and node.nodeargd.argnlist:
             arg = node.nodeargd.argnlist[0]
             if isinstance(arg, LatexGroupNode):
-                return self._nodes_to_text(arg.nodelist).strip()
+                term = self._nodes_to_text(arg.nodelist).strip()
+                # \item[--] and \item[---] set a dash bullet, not a term.
+                return "" if term in ("\N{EN DASH}", "\N{EM DASH}") else term
         return ""
 
     def _macro_node_to_text(
@@ -564,6 +584,8 @@ class TextHelperMixin:
                 )
                 if text:
                     text_parts.append(text)
+            elif isinstance(node, LatexSpecialsNode):
+                text_parts.append(self._specials_to_text(node))
             elif isinstance(node, LatexMathNode):
                 text_parts.append(self._expand_macros(node.latex_verbatim()))
             elif isinstance(node, LatexEnvironmentNode):
