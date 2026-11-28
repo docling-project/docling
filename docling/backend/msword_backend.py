@@ -1389,15 +1389,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         child of the ``ListGroup`` (next to its list items), and the Markdown
         export glues the table onto the last list item.
         """
+        if self._close_open_list():
+            self._update_history("Table", None, None, None)
+
+    def _close_open_list(self) -> bool:
+        """Close the list that is still open before a table or a heading.
+
+        The next item then goes into the parent of the ``ListGroup``. A table
+        or a heading breaks list continuity, like substantive body text.
+
+        Returns:
+            Whether a list was open.
+        """
         if self._prev_numid() is None:
-            return
+            return False
         self.last_numid = (
             self.nested_lists[0].outer_numid
             if self.nested_lists and self.level_at_new_list is not None
             else self._prev_numid()
         )
         self.nested_lists = []
-        # A table breaks list continuity, like substantive body text.
         self._clear_list_group_cache()
         if self.level_at_new_list:
             for key in range(len(self.parents)):
@@ -1409,7 +1420,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for key in range(len(self.parents)):
                 self.parents[key] = None
             self.level = 0
-        self._update_history("Table", None, None, None)
+        return True
 
     def _clear_list_group_cache(self) -> None:
         """Clear the cached list group to prevent reuse across contexts."""
@@ -3547,8 +3558,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            # _add_heading clears the parents tail; reset list context so the
-            # next list item opens fresh under this heading.
+            # A heading closes an open list, like a table. _add_heading only
+            # clears the parents tail for a lower heading level, so without
+            # this the heading can become a child of the ListGroup.
+            self._close_open_list()
+            # Reset list context so the next list item opens fresh under this
+            # heading.
             self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style, numid, ilevel)

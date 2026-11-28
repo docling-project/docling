@@ -741,6 +741,34 @@ def _list_items_by_text(doc: DoclingDocument) -> dict[str, ListItem]:
     return {item.text: item for item in doc.texts if isinstance(item, ListItem)}
 
 
+@pytest.mark.parametrize(
+    ("leading_headings", "heading_level"),
+    [(["Overview"], 3), ([], 1)],
+    ids=["heading-level-skipped-after-list", "list-before-first-heading"],
+)
+def test_heading_after_a_list_is_not_in_the_list(
+    tmp_path, leading_headings, heading_level
+):
+    """A heading right after a list closes the list instead of nesting in it."""
+    document = Document()
+    for text in leading_headings:
+        document.add_heading(text, level=1)
+        document.add_paragraph("Intro text.")
+    document.add_paragraph("point one", style="List Bullet")
+    document.add_paragraph("point two", style="List Bullet")
+    document.add_heading("Details", level=heading_level)
+    document.add_paragraph("Body of the details section.")
+    doc = _convert_docx(document, tmp_path)
+
+    texts = {item.text: item for item in doc.texts}
+    heading = texts["Details"]
+    assert not isinstance(heading.parent.resolve(doc), ListGroup)
+    assert texts["Body of the details section."].parent == heading.get_ref()
+    items = _list_items_by_text(doc)
+    assert set(items) == {"point one", "point two"}
+    assert items["point two"].parent == items["point one"].parent
+
+
 def test_list_styles_nest_by_indentation(tmp_path):
     """Items styled "List Bullet 2" / "List Number 2" nest under the item above.
 
