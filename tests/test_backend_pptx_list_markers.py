@@ -97,6 +97,26 @@ def test_pptx_numbered_list_ignores_out_of_range_start_at(
     ] == [("a.", "Plan"), ("b.", "Build")]
 
 
+def test_pptx_numbered_list_skips_empty_paragraphs(tmp_path: Path):
+    """An empty paragraph in a numbered list gets no number and is not counted.
+
+    PowerPoint shows "1. Plan", a blank line, "2. Build" and "3. Ship" for this
+    list. The empty paragraph used to become an empty item "2.", so the items
+    after it were numbered one too high.
+    """
+    pptx_path = tmp_path / "empty_paragraph.pptx"
+    _save_numbered_deck(
+        pptx_path, [({"type": "arabicPeriod"}, ["Plan", "", "Build", "Ship"])]
+    )
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert [
+        (item.marker, item.text) for item in doc.texts if isinstance(item, ListItem)
+    ] == [("1.", "Plan"), ("2.", "Build"), ("3.", "Ship")]
+    assert doc.export_to_markdown() == "1. Plan\n2. Build\n3. Ship"
+
+
 def test_pptx_numbered_list_marker_follows_layout_auto_number_type(tmp_path: Path):
     """A scheme that the slide layout sets applies like one on the paragraph."""
     prs = Presentation()
