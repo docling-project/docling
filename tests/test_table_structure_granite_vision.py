@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from io import BytesIO
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -297,6 +298,7 @@ class _RecordingProcessor:
 
     def __init__(self) -> None:
         self.images: list[Image.Image] = []
+        self.tokenizer = SimpleNamespace(pad_token_id=None)
 
     def apply_chat_template(self, conversation, **kwargs) -> str:
         return "<tables_otsl>"
@@ -355,7 +357,6 @@ def test_table_crop_uses_configured_scale():
     model.device = "cpu"
     model._processor = processor
     model._model = _EchoModel()
-    model._model_max_length = 16
 
     model.predict_tables(ConversionResult(input=in_doc), [page])
 
