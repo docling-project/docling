@@ -158,3 +158,32 @@ def test_omml_unicode_macros_preserve_balanced_braces(
     assert len(formulas) == 1
     assert formulas[0].strip() == expected_formula
     assert formulas[0].count("{") == formulas[0].count("}")
+
+
+@pytest.mark.parametrize(
+    ("omml_text", "expected"),
+    [
+        pytest.param("x→0", r"x \rightarrow 0", id="right-arrow"),
+        pytest.param("a←b↑c↓d", r"a \leftarrow b \uparrow c \downarrow d", id="arrows"),
+        pytest.param("¬p", r"\neg p", id="negation"),
+        pytest.param("a·b÷c", r"a \cdot b \div c", id="operators"),
+        pytest.param("5µm", r"5 \mu m", id="micro"),
+        pytest.param("x¹+y²+z³", r"x^{1}+y^{2}+z^{3}", id="superscripts"),
+        pytest.param("¼+½+¾", r"\frac{1}{4}+\frac{1}{2}+\frac{3}{4}", id="fractions"),
+        pytest.param("37 ℃", r"37 {}^{\circ}\mathrm{C}", id="celsius"),
+        pytest.param("1\u20442", "1/2", id="fraction-slash"),
+        pytest.param(
+            "•+◦+◯+℧", r"\bullet + \circ + \bigcirc + \mho", id="math-symbols"
+        ),
+        pytest.param("§+¶+¥", r"\S + \P + \yen", id="other-symbols"),
+        pytest.param("a\u2013b\u00d7c^2", r"a-b\times c^2", id="existing-math"),
+        pytest.param("™", r"\text{ \texttrademark }", id="text-fallback"),
+    ],
+)
+def test_omml_unicode_symbols_use_math_mode(omml_text: str, expected: str) -> None:
+    doc = _convert_paragraph(_equation(omml_text))
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.FORMULA, expected)
+    ]
+    assert expected in doc.export_to_markdown()
