@@ -3681,3 +3681,79 @@ def test_xml_comments_in_charts_are_removed(monkeypatch):
     assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
         EXPECTED_CHART_GRID
     )
+
+
+_DOCX_MAIN_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+)
+_ALT_MAIN_CONTENT_TYPES = [
+    ("docm", "application/vnd.ms-word.document.macroEnabled.main+xml"),
+    (
+        "dotx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml",
+    ),
+    ("dotm", "application/vnd.ms-word.template.macroEnabledTemplate.main+xml"),
+]
+
+
+def _retag_main_part(source: Path, content_type: str) -> BytesIO:
+    """Return the package at *source* with its main-part content type rewritten."""
+    buffer = BytesIO()
+    with zipfile.ZipFile(source) as zin, zipfile.ZipFile(
+        buffer, "w", zipfile.ZIP_DEFLATED
+    ) as zout:
+        for info in zin.infolist():
+            data = zin.read(info.filename)
+            if info.filename == "[Content_Types].xml":
+                text = data.decode("utf-8")
+                assert _DOCX_MAIN_CONTENT_TYPE in text
+                data = text.replace(_DOCX_MAIN_CONTENT_TYPE, content_type).encode("utf-8")
+            zout.writestr(info, data)
+    buffer.seek(0)
+    return buffer
+
+
+@pytest.mark.parametrize(("suffix", "content_type"), _ALT_MAIN_CONTENT_TYPES)
+def test_macro_and_template_packages_load(tmp_path, suffix, content_type):
+    """A .docm/.dotx/.dotm is a valid Word package under another content type.
+
+    python-docx only accepts the plain document part, so the backend has to
+    rewrite the declaration before handing the package over.
+    """
+    source = Path("./tests/data/docx/sources/Transitional.docx")
+    target = tmp_path / f"retagged.{suffix}"
+    target.write_bytes(_retag_main_part(source, content_type).getvalue())
+
+    # The raw loader keeps refusing it: the fix belongs to the backend, not to
+    # python-docx, and this asserts the failure mode is the one being handled.
+    with pytest.raises(ValueError, match="is not a Word file"):
+        Document(str(target))
+
+    loaded = MsWordDocumentBackend.load_msword_file(target, "hash")
+    assert loaded is not None
+    assert [p.text for p in loaded.paragraphs if p.text] or loaded.tables
+
+    stream = BytesIO(target.read_bytes())
+    assert MsWordDocumentBackend.load_msword_file(stream, "hash") is not None
+
+
+def test_alt_main_part_detection_leaves_plain_docx_alone():
+    """A plain .docx must not take the rewrite path."""
+    import zipfile
+
+    source = Path("./tests/data/docx/sources/Transitional.docx")
+    with zipfile.ZipFile(source) as archive:
+        assert (
+            msword_backend_module._has_alt_main_part(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
+            is False
+        )
+
+    with zipfile.ZipFile(_retag_main_part(source, _ALT_MAIN_CONTENT_TYPES[0][1])) as archive:
+        assert (
+            msword_backend_module._has_alt_main_part(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
+            is True
+        )

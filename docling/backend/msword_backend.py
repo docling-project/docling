@@ -768,6 +768,66 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
     return texts
 
 
+_CONTENT_TYPES_PART = "[Content_Types].xml"
+_DOCX_MAIN_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+)
+# Word also writes the same document part under a macro-enabled or template
+# content type. python-docx accepts only the plain document one, so a valid
+# .docm/.dotx/.dotm is rejected before a single paragraph is read.
+_ALT_MAIN_CONTENT_TYPES = frozenset(
+    {
+        "application/vnd.ms-word.document.macroEnabled.main+xml",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml",
+        "application/vnd.ms-word.template.macroEnabledTemplate.main+xml",
+    }
+)
+
+
+def _has_alt_main_part(archive: zipfile.ZipFile, limits: ArchiveLimits) -> bool:
+    """Return True if the package declares a macro-enabled or template main part.
+
+    ``python-docx`` refuses such a package with ``ValueError: file ... is not a
+    Word file, content type is '<type>'``, even though the document part is
+    ordinary WordprocessingML. Detecting it here lets the loader rewrite the
+    declaration instead of failing the conversion.
+    """
+    for info in archive.infolist():
+        if info.filename != _CONTENT_TYPES_PART:
+            continue
+        content = read_member(archive, info, limits.max_file_bytes)
+        text = content.decode("utf-8", errors="ignore")
+        return any(content_type in text for content_type in _ALT_MAIN_CONTENT_TYPES)
+    return False
+
+
+def _normalize_alt_main_part(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
+    """Rewrite a macro-enabled or template package as a plain document package.
+
+    Only the ``[Content_Types].xml`` declaration of the main document part is
+    changed; the part itself, its relationships and every other member are
+    copied through untouched, so the macros or template settings are preserved
+    for anything that reads the file afterwards. The archive is validated
+    against zip-slip and checked against the decompressed size ``limits`` first.
+    """
+    for info in archive.infolist():
+        if not _is_safe_zip_member(info.filename):
+            raise SecurityError(f"ZIP slip attempt: {info.filename}")
+    check_archive_limits(archive, limits)
+    normalized = BytesIO()
+    with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in archive.infolist():
+            content = read_member(archive, info, limits.max_file_bytes)
+            if info.filename == _CONTENT_TYPES_PART:
+                text = content.decode("utf-8")
+                for content_type in _ALT_MAIN_CONTENT_TYPES:
+                    text = text.replace(content_type, _DOCX_MAIN_CONTENT_TYPE)
+                content = text.encode("utf-8")
+            target.writestr(info, content)
+    normalized.seek(0)
+    return normalized
+
+
 def _sanitize_docx(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
     """Rewrite a DOCX archive in memory, removing fragment-only relationship targets.
 
@@ -1229,6 +1289,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         return Document(_normalize_strict_ooxml(archive, limits))
                     if has_fragment_rels:
                         return Document(_sanitize_docx(archive, limits))
+                    if _has_alt_main_part(archive, limits):
+                        return Document(_normalize_alt_main_part(archive, limits))
                 return Document(str(path_or_stream))
             elif isinstance(path_or_stream, BytesIO):
                 with zipfile.ZipFile(path_or_stream) as archive:
@@ -1241,6 +1303,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         return Document(_normalize_strict_ooxml(archive, limits))
                     if has_fragment_rels:
                         return Document(_sanitize_docx(archive, limits))
+                    if _has_alt_main_part(archive, limits):
+                        return Document(_normalize_alt_main_part(archive, limits))
                 path_or_stream.seek(0)
                 return Document(path_or_stream)
             else:
