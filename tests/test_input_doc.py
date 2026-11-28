@@ -531,6 +531,38 @@ def test_guess_format_calendar(tmp_path, name, content, expected):
     assert dci._guess_format(stream) is expected
 
 
+_VBA_SOURCE = (
+    b'Attribute VB_Name = "DummyModule"\n'
+    b"Option Explicit\n\n"
+    b"Public Sub Example()\n"
+    b"    Dim values As Variant\n"
+    b'    values = Array("First", "Second", "Third")\n'
+    b'    MsgBox "Item, number " & 1\n'
+    b"End Sub\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        ("dummy-vba.txt", _VBA_SOURCE, InputFormat.MD),
+        ("dummy-vba.md", _VBA_SOURCE, InputFormat.MD),
+        ("notes.text", b"col1,col2\nval1,val2\n", InputFormat.MD),
+        ("data.csv", b"col1,col2\nval1,val2\n", InputFormat.CSV),
+        ("test-comma", b"col1,col2\nval1,val2\n", InputFormat.CSV),
+    ],
+)
+def test_guess_format_csv_does_not_hijack_plain_text(tmp_path, name, content, expected):
+    """Plain-text extensions must not be sniffed as CSV even with commas."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
 @pytest.mark.parametrize(
     ("suffix", "content", "expected"),
     [
