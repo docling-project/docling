@@ -1035,6 +1035,10 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
+            # Sniff the head of the document, not whatever follows the current
+            # position: the backends read a stream from its start, and a stream
+            # that was just written or already converted is left at its end.
+            obj.stream.seek(0)
             content = obj.stream.read(_CONTENT_SNIFF_BYTES)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
