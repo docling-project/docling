@@ -22,7 +22,7 @@ from __future__ import annotations
 import functools
 import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -355,26 +355,53 @@ _ODF_TABLE_ROWS_XPATH = (
     "table:table-row-group/child::table:table-row"
 )
 _ODF_ROW_CELLS_XPATH = "table:table-cell|table:covered-table-cell"
+DEFAULT_ODF_MAX_REPEATED_CELLS = OdsBackendOptions().max_repeated_cells
 _ODF_ROWS_REPEATED = "table:number-rows-repeated"
 _ODF_COLUMNS_REPEATED = "table:number-columns-repeated"
 
 
 class _OdfRepeatBudget:
-    """Limit the cells that repeated rows and cells add to a spreadsheet.
+    """Limit the cells that repeated rows and cells add to a document.
 
     odfdo expands ``table:number-rows-repeated`` and
-    ``table:number-columns-repeated`` each time it traverses a sheet, and the
-    backend traverses each sheet several times. A small file can declare
-    millions of copies. The copies of all sheets share one budget. A repetition
-    that does not fit is reduced to the copies that fit, and to one copy when the
-    budget is spent. The cells written in the file are always kept.
+    ``table:number-columns-repeated`` each time it traverses a table, and the
+    backend can traverse a table several times. A small file can declare
+    millions of copies. The tables share one repeat budget. When the budget is
+    spent, each nonzero repetition is reduced to one copy.
     """
 
     def __init__(self, cells: int) -> None:
+        self._limit = cells
         self._remaining = cells
 
+    def prepare(self, table: OdfTable) -> None:
+        """Trim padding and limit repetitions before traversing a table."""
+        rows = f"({_ODF_TABLE_ROWS_XPATH})"
+        # Keep explicitly authored empty cells in tables with no repetitions.
+        if (
+            table.get_element(
+                f"{rows}[@{_ODF_ROWS_REPEATED} > 1]"
+                f" | {rows}/*[(self::table:table-cell or self::table:covered-table-cell)"
+                f" and @{_ODF_COLUMNS_REPEATED} > 1]"
+            )
+            is None
+        ):
+            return
+        table.rstrip(aggressive=True)
+        removed = self.fit(table)
+        if removed > 0:
+            _log.warning(
+                "Table %s repeats more cells than the limit of %s repeated "
+                "cells. %s repeated cells were not converted.",
+                table.name or "<unnamed>",
+                self._limit,
+                removed,
+            )
+            # The XML attributes changed directly, so refresh odfdo's caches.
+            table.rstrip(aggressive=True)
+
     def fit(self, table: OdfTable) -> int:
-        """Reduce the repetitions of a sheet to the remaining budget.
+        """Reduce the repetitions of a table to the remaining budget.
 
         The attributes change in the XML tree only. The caller must refresh the
         odfdo caches of the table when cells were removed.
@@ -846,6 +873,7 @@ def _add_odf_paragraph(
     doc: DoclingDocument,
     element: Paragraph,
     *,
+    repeat_budget: _OdfRepeatBudget | None,
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
@@ -856,7 +884,9 @@ def _add_odf_paragraph(
         # Writer does not show it: keep it, like a hidden section, but out of
         # the default exports.
         content_layer = ContentLayer.INVISIBLE
-    chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
+    chart_count = _add_odf_charts(
+        doc, element, parent, content_layer, odf_obj, repeat_budget=repeat_budget
+    )
     images = element.get_images()
     image_count = _add_odf_images(
         doc,
@@ -1083,14 +1113,29 @@ def _odf_list_marker(
     return f"{counter}{suffix}"
 
 
+def _iter_odf_table_xml_cells(table: OdfTable) -> Iterator[Any]:
+    # Inspect written XML cells without expanding ODF repeat attributes.
+    for row in table.get_elements(_ODF_TABLE_ROWS_XPATH):
+        if int(row.get_attribute(_ODF_ROWS_REPEATED) or 1) <= 0:
+            continue
+        for cell in row.get_elements(_ODF_ROW_CELLS_XPATH):
+            if int(cell.get_attribute(_ODF_COLUMNS_REPEATED) or 1) <= 0:
+                continue
+            yield cell
+
+
 def _odf_table_has_content(table: OdfTable) -> bool:
-    for row in table.traverse():
-        for cell in row.traverse():
-            if cell.tag == "table:covered-table-cell":
-                return True
-            if _odf_cell_has_content(cell):
-                return True
-    return False
+    return any(
+        cell.tag == "table:covered-table-cell" or _odf_cell_has_content(cell)
+        for cell in _iter_odf_table_xml_cells(table)
+    )
+
+
+def _odf_table_has_text(table: OdfTable) -> bool:
+    return any(
+        cell.tag != "table:covered-table-cell" and _odf_cell_text(cell) != ""
+        for cell in _iter_odf_table_xml_cells(table)
+    )
 
 
 def _odf_cell_has_rich_content(cell: Any) -> bool:
@@ -1325,6 +1370,7 @@ def _add_odf_child(
     doc: DoclingDocument,
     element: Any,
     *,
+    repeat_budget: _OdfRepeatBudget | None,
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
@@ -1349,6 +1395,7 @@ def _add_odf_child(
             odf_obj=odf_obj,
             image_loader=image_loader,
             comments=comments,
+            repeat_budget=repeat_budget,
         )
     elif isinstance(element, OdfList):
         return _add_odf_list(
@@ -1370,6 +1417,7 @@ def _add_odf_child(
             odf_obj=odf_obj,
             image_loader=image_loader,
             comments=comments,
+            repeat_budget=repeat_budget,
         )
     elif isinstance(element, Section):
         # Writer saves a section hidden with Format > Sections > Hide as
@@ -1384,9 +1432,12 @@ def _add_odf_child(
             odf_obj=odf_obj,
             image_loader=image_loader,
             comments=comments,
+            repeat_budget=repeat_budget,
         )
     elif isinstance(element, Frame):
-        chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
+        chart_count = _add_odf_charts(
+            doc, element, parent, content_layer, odf_obj, repeat_budget=repeat_budget
+        )
         _add_odf_images(
             doc,
             element.get_images(),
@@ -1418,6 +1469,7 @@ def _add_odf_children(
     doc: DoclingDocument,
     elements: list[Any],
     *,
+    repeat_budget: _OdfRepeatBudget | None,
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
@@ -1448,6 +1500,7 @@ def _add_odf_children(
                 odf_obj=odf_obj,
                 image_loader=image_loader,
                 comments=comments,
+                repeat_budget=repeat_budget,
             )
 
 
@@ -1479,7 +1532,9 @@ def _odf_chart_title(chart_content: Any) -> str | None:
 
 
 def _chart_data_from_frame(
-    frame: Frame, odf_obj: OdfDocument | None
+    frame: Frame,
+    odf_obj: OdfDocument | None,
+    repeat_budget: _OdfRepeatBudget | None,
 ) -> tuple[TableData, PictureClassificationLabel, str | None] | None:
     if odf_obj is None:
         return None
@@ -1506,7 +1561,7 @@ def _chart_data_from_frame(
         return None
     for table in chart_tables:
         if isinstance(table, OdfTable) and table.name == "local-table":
-            table_data = _table_data_from_odf(table)
+            table_data = _table_data_from_odf(table, repeat_budget=repeat_budget)
             if table_data is not None:
                 return table_data, chart_classification, chart_title
     return None
@@ -1518,6 +1573,7 @@ def _add_odf_charts(
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
+    repeat_budget: _OdfRepeatBudget | None,
 ) -> int:
     chart_count = 0
     frames = [element] if isinstance(element, Frame) else []
@@ -1531,7 +1587,9 @@ def _add_odf_charts(
             if isinstance(child, Frame)
         )
     for frame in frames:
-        chart_result = _chart_data_from_frame(frame, odf_obj)
+        chart_result = _chart_data_from_frame(
+            frame, odf_obj, repeat_budget=repeat_budget
+        )
         if chart_result is None:
             continue
         chart_data, chart_classification, chart_title = chart_result
@@ -1733,6 +1791,7 @@ def _add_rich_cell_children(
     parent: NodeItem,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
+    repeat_budget: _OdfRepeatBudget | None,
     image_loader: ImageResourceLoader | None = None,
     comments: _OdfComments | None = None,
 ) -> None:
@@ -1745,6 +1804,7 @@ def _add_rich_cell_children(
             odf_obj=odf_obj,
             image_loader=image_loader,
             comments=comments,
+            repeat_budget=repeat_budget,
         )
 
 
@@ -1753,6 +1813,8 @@ def _add_table_from_odf(
     table: OdfTable,
     parent: NodeItem | None,
     *,
+    repeat_budget: _OdfRepeatBudget | None = None,
+    prepare_table: bool = True,
     min_row: int | None = None,
     max_row: int | None = None,
     min_col: int | None = None,
@@ -1763,6 +1825,8 @@ def _add_table_from_odf(
     image_loader: ImageResourceLoader | None = None,
     comments: _OdfComments | None = None,
 ) -> TableItem | None:
+    if repeat_budget is not None and prepare_table:
+        repeat_budget.prepare(table)
     if min_row is None or max_row is None or min_col is None or max_col is None:
         min_row, max_row, min_col, max_col = _find_true_data_bounds(table)
 
@@ -1828,6 +1892,7 @@ def _add_table_from_odf(
                     odf_obj=odf_obj,
                     image_loader=image_loader,
                     comments=comments,
+                    repeat_budget=repeat_budget,
                 )
                 table_cell = RichTableCell(**cell_kwargs, ref=group.get_ref())
             else:
@@ -1869,6 +1934,8 @@ def _table_data_from_odf(
     max_row: int | None = None,
     min_col: int | None = None,
     max_col: int | None = None,
+    *,
+    repeat_budget: _OdfRepeatBudget | None = None,
 ) -> TableData | None:
     """Convert an ODF table to a :class:`TableData` object.
 
@@ -1882,9 +1949,13 @@ def _table_data_from_odf(
         max_row: Optional maximum row index (0-based). If None, will be computed.
         min_col: Optional minimum column index (0-based). If None, will be computed.
         max_col: Optional maximum column index (0-based). If None, will be computed.
+        repeat_budget: Budget to apply if the table has not been prepared.
 
     Returns ``None`` when the table has no rows or columns.
     """
+    if repeat_budget is not None:
+        repeat_budget.prepare(table)
+
     # Find the actual data boundaries if not provided
     if min_row is None or max_row is None or min_col is None or max_col is None:
         min_row, max_row, min_col, max_col = _find_true_data_bounds(table)
@@ -1970,12 +2041,19 @@ class OdtDocumentBackend(_OdfBaseBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        repeat_budget = _OdfRepeatBudget(DEFAULT_ODF_MAX_REPEATED_CELLS)
         comments = self._detach_annotations()
         self._detach_hidden_text()
-        self._walk(self.odf_obj.body.children, parent=None, doc=doc, comments=comments)
+        self._walk(
+            self.odf_obj.body.children,
+            parent=None,
+            doc=doc,
+            comments=comments,
+            repeat_budget=repeat_budget,
+        )
         self._add_footnotes(doc, comments)
         comments.attach_rest(doc)
-        self._add_header_footer(doc)
+        self._add_header_footer(doc, repeat_budget=repeat_budget)
         return doc
 
     def _used_master_pages(self) -> list[Element]:
@@ -2065,7 +2143,9 @@ class OdtDocumentBackend(_OdfBaseBackend):
             select(masters[name].get_attribute("style:next-style-name"))
         return [masters[name] for name in selected]
 
-    def _add_header_footer(self, doc: DoclingDocument) -> None:
+    def _add_header_footer(
+        self, doc: DoclingDocument, repeat_budget: _OdfRepeatBudget
+    ) -> None:
         for master in self._used_master_pages():
             for tag in (
                 "header",
@@ -2101,6 +2181,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
                     odf_obj=self.odf_obj,
                     image_loader=self._image_loader,
                     comments=comments,
+                    repeat_budget=repeat_budget,
                 )
                 comments.attach_rest(doc)
 
@@ -2228,6 +2309,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
         parent: NodeItem | None,
         doc: DoclingDocument,
         comments: _OdfComments,
+        repeat_budget: _OdfRepeatBudget,
     ) -> None:
         _add_odf_children(
             doc,
@@ -2237,6 +2319,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
             odf_obj=self.odf_obj,
             image_loader=self._image_loader,
             comments=comments,
+            repeat_budget=repeat_budget,
         )
 
 
@@ -2274,6 +2357,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        repeat_budget = _OdfRepeatBudget(DEFAULT_ODF_MAX_REPEATED_CELLS)
         start_page, end_page = self.page_range
         for slide_idx, page in enumerate(self.odf_obj.body.get_draw_pages()):
             if not start_page <= slide_idx + 1 <= end_page:
@@ -2290,7 +2374,9 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     parent=slide_group,
                     text=slide_name,
                 )
-            self._walk_slide(page, parent=slide_group, doc=doc)
+            self._walk_slide(
+                page, parent=slide_group, doc=doc, repeat_budget=repeat_budget
+            )
             if self._is_slide_hidden(page):
                 self._hide_slide(doc, slide_group)
         return doc
@@ -2343,7 +2429,11 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         )
 
     def _walk_slide(
-        self, page: DrawPage, parent: NodeItem, doc: DoclingDocument
+        self,
+        page: DrawPage,
+        parent: NodeItem,
+        doc: DoclingDocument,
+        repeat_budget: _OdfRepeatBudget,
     ) -> None:
         seen_text_content = False
         for element in page.children:
@@ -2353,27 +2443,44 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 continue
             if tag == "anim:par":
                 continue
-            has_text = bool(
-                _clean_odf_text_lines(getattr(element, "text_recursive", ""))
-            )
+            has_text = OdpDocumentBackend._element_has_text(element)
             is_title = self._is_slide_title_element(element, not seen_text_content)
             if has_text:
                 seen_text_content = True
-            self._walk_slide_element(element, parent=parent, doc=doc, is_title=is_title)
+            self._walk_slide_element(
+                element,
+                parent=parent,
+                doc=doc,
+                is_title=is_title,
+                repeat_budget=repeat_budget,
+            )
 
     def _walk_slide_element(
-        self, element: Any, parent: NodeItem, doc: DoclingDocument, *, is_title: bool
+        self,
+        element: Any,
+        parent: NodeItem,
+        doc: DoclingDocument,
+        *,
+        is_title: bool,
+        repeat_budget: _OdfRepeatBudget,
     ) -> None:
         if getattr(element, "tag", None) == "draw:g":
             # Shapes in a group keep their own text; walk them like slide children.
             for child in element.children:
-                self._walk_slide_element(child, parent=parent, doc=doc, is_title=False)
+                self._walk_slide_element(
+                    child,
+                    parent=parent,
+                    doc=doc,
+                    is_title=False,
+                    repeat_budget=repeat_budget,
+                )
         elif isinstance(element, Frame):
             self._walk_slide_frame(
                 element,
                 parent=parent,
                 doc=doc,
                 is_title=is_title,
+                repeat_budget=repeat_budget,
             )
         else:
             self._walk_textbox_children(
@@ -2412,6 +2519,18 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 )
 
     @staticmethod
+    def _element_has_text(element: Element) -> bool:
+        """Return True if a slide element has text without expanding table repeats."""
+        if isinstance(element, OdfTable):
+            return _odf_table_has_text(element)
+        if element.get_elements("descendant::table:table"):
+            return any(
+                OdpDocumentBackend._element_has_text(child)
+                for child in element.children
+            )
+        return bool(_clean_odf_text_lines(element.text_recursive))
+
+    @staticmethod
     def _slide_has_visible_title(page: DrawPage) -> bool:
         seen_text_content = False
         for element in page.children:
@@ -2421,7 +2540,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 element, not seen_text_content
             ):
                 return True
-            if _clean_odf_text_lines(getattr(element, "text_recursive", "")):
+            if OdpDocumentBackend._element_has_text(element):
                 seen_text_content = True
         return False
 
@@ -2437,6 +2556,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     def _walk_slide_frame(
         self,
         frame: Frame,
+        repeat_budget: _OdfRepeatBudget,
         parent: NodeItem,
         doc: DoclingDocument,
         *,
@@ -2448,15 +2568,19 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             parent=parent,
             content_layer=None,
             odf_obj=self.odf_obj,
+            repeat_budget=repeat_budget,
         )
 
         for tbl in frame.get_elements("descendant::table:table"):
+            nested_in_table = tbl.get_element("ancestor::table:table") is not None
             _add_table_from_odf(
                 doc,
                 tbl,
                 parent=parent,
                 odf_obj=self.odf_obj,
                 image_loader=self._image_loader,
+                repeat_budget=repeat_budget,
+                prepare_table=not nested_in_table,
             )
 
         first_picture = len(doc.pictures)
@@ -2634,7 +2758,14 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             )
 
             # Convert table data with provenance
-            self._convert_sheet_table(doc, table, sheet_group, page_no, content_layer)
+            self._convert_sheet_table(
+                doc,
+                table,
+                sheet_group,
+                page_no,
+                content_layer,
+                repeat_budget=repeat_budget,
+            )
 
             # Extract images from the sheet
             self._find_images_in_sheet(doc, table, sheet_group, page_no, content_layer)
@@ -2653,6 +2784,8 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         parent: NodeItem,
         page_no: int,
         content_layer: ContentLayer | None,
+        *,
+        repeat_budget: _OdfRepeatBudget | None = None,
     ) -> None:
         """Convert an ODS table and add it to the document with provenance.
 
@@ -2702,6 +2835,8 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     doc,
                     table,
                     parent,
+                    repeat_budget=repeat_budget,
+                    prepare_table=False,
                     min_row=min_row,
                     max_row=max_row,
                     min_col=min_col,
