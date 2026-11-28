@@ -341,3 +341,57 @@ def test_create_image_ref_applies_exif_orientation():
     assert ref.pil_image is not None
     assert ref.pil_image.size == (100, 200)
     assert min(ref.pil_image.getpixel((ref.pil_image.width - 3, 2))) < 128
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "HTTP://images.test/img.png",
+        "HTTPS://images.test/img.png",
+        "HtTpS://images.test/img.png",
+        "DATA:image/png;base64,AAAA",
+        "Data:IMAGE/PNG;BASE64,AAAA",
+    ],
+)
+def test_resolve_relative_path_preserves_case_insensitive_uri_schemes(tmp_path, uri):
+    loader = ImageResourceLoader()
+    base_path = str(tmp_path / "doc.html")
+
+    assert loader.resolve_relative_path(uri, base_path) == uri
+
+
+@pytest.mark.parametrize("uri", ["FILE:///etc/passwd", "File:///etc/passwd"])
+def test_resolve_relative_path_rejects_uppercase_file_uri_absolute_path(tmp_path, uri):
+    loader = ImageResourceLoader()
+    base_path = str(tmp_path / "doc.html")
+
+    with pytest.raises(ValueError, match="Absolute paths are not allowed"):
+        loader.resolve_relative_path(uri, base_path)
+
+
+def test_load_image_ref_handles_uppercase_http_scheme_with_local_base(server, tmp_path):
+    loader = ImageResourceLoader(enable_remote_fetch=True)
+    url = server.url("images.test", "/img.png").replace("http://", "HTTP://", 1)
+
+    ref = loader.load_image_ref(url, str(tmp_path / "doc.html"))
+
+    assert ref is not None
+    assert server.paths() == ["/img.png"]
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "DATA:image/png;base64,",
+        "Data:IMAGE/PNG;BASE64,",
+    ],
+)
+def test_load_image_ref_handles_case_insensitive_data_uri(tmp_path, prefix):
+    payload = _png_data_uri(4, 4).split(",", 1)[1]
+    loader = ImageResourceLoader()
+
+    ref = loader.load_image_ref(prefix + payload, str(tmp_path / "doc.html"))
+
+    assert ref is not None
+    assert ref.pil_image is not None
+    assert ref.pil_image.size == (4, 4)

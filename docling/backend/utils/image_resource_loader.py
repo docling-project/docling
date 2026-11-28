@@ -344,7 +344,8 @@ class ImageResourceLoader:
         loc = loc.strip()
 
         # Strip file:// prefix for validation as local path
-        if loc.startswith(file_prefix := "file://"):
+        file_prefix = "file://"
+        if loc.lower().startswith(file_prefix):
             loc = loc[len(file_prefix) :]
 
         abs_loc = loc
@@ -353,7 +354,7 @@ class ImageResourceLoader:
             base_path = self.normalize_local_base_path(base_path)
             if loc.startswith("//"):
                 abs_loc = "https:" + loc
-            elif not loc.startswith(("http://", "https://", "data:", "#")):
+            elif not loc.lower().startswith(("http://", "https://", "data:", "#")):
                 if ImageResourceLoader.is_remote_url(base_path):
                     abs_loc = urljoin(base_path, loc)
                 elif ImageResourceLoader.is_local_path(base_path):
@@ -506,8 +507,10 @@ class ImageResourceLoader:
 
         if ImageResourceLoader.is_remote_url(src_loc):
             return self.fetch_remote(src_loc).content
-        elif src_loc.startswith("data:"):
-            encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
+        elif src_loc.lower().startswith("data:"):
+            encoded_data = re.sub(
+                r"^data:image/.+;base64,", "", src_loc, flags=re.IGNORECASE
+            )
             # Check the size before decoding: 4 base64 characters hold 3
             # bytes, less one byte for each "=" padding character.
             padding = len(encoded_data[-2:]) - len(encoded_data[-2:].rstrip("="))
