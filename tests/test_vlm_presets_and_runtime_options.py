@@ -556,6 +556,18 @@ class TestPresetSystem:
 class TestPresetBasedOptionsCreation:
     """Test creating options from presets."""
 
+    def test_granite_vision_preset(self):
+        """Test that the 'granite_vision' preset resolves for both VLM convert and picture description."""
+        vlm_opts = VlmConvertOptions.from_preset("granite_vision")
+        assert vlm_opts.model_spec is not None
+        assert vlm_opts.model_spec.name == "Granite-Vision-4.1-4B"
+        assert vlm_opts.engine_options.engine_type == VlmEngineType.AUTO_INLINE
+
+        pic_opts = PictureDescriptionVlmEngineOptions.from_preset("granite_vision")
+        assert pic_opts.model_spec is not None
+        assert pic_opts.model_spec.name == "Granite-Vision-4.1-4B"
+        assert pic_opts.engine_options.engine_type == VlmEngineType.AUTO_INLINE
+
     def test_create_vlm_convert_from_preset_default_runtime(self):
         """Test creating VlmConvertOptions from preset with default runtime."""
         options = VlmConvertOptions.from_preset("smoldocling")

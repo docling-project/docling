@@ -68,11 +68,10 @@ def run_lm_studio_example(input_doc_path: Path):
     print("- VlmEngineType.API_OLLAMA: http://localhost:11434/v1/chat/completions")
     print("- VlmEngineType.API_OPENAI: https://api.openai.com/v1/chat/completions")
     print("- VlmEngineType.API: Generic API endpoint (you specify the URL)")
-    print("\nEach preset has pre-configured model names for these API types.")
-    print("For example, granite_vision preset knows:")
-    print('- Ollama model name: "ibm/granite3.3-vision:2b"')
-    print('- LM Studio model name: "granite-vision-3.3-2b"')
-    print("- OpenAI model name: would use the HuggingFace repo_id\n")
+    print("\nThe granite_vision preset has pre-configured model names for API types:")
+    print('- Ollama model name:    "granite-vision-4.1-4b"')
+    print('- LM Studio model name: "granite-vision-4.1-4b"')
+    print('- OpenAI model name:    "granite-vision-4.1-4b"\n')
 
     doc_converter = DocumentConverter(
         format_options={

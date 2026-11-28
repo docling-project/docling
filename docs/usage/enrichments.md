@@ -151,7 +151,7 @@ doc = result.document
 
 #### Granite Vision model
 
-Model specs: see the [`ibm-granite/granite-vision-3.1-2b-preview` model card](https://huggingface.co/ibm-granite/granite-vision-3.1-2b-preview).
+Model specs: see the [`ibm-granite/granite-vision-4.1-4b` model card](https://huggingface.co/ibm-granite/granite-vision-4.1-4b).
 
 Usage in Docling:
 
