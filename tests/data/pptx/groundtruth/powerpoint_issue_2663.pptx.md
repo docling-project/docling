@@ -6,7 +6,6 @@ Key Benefits:
 - Ehnhances security and transparency by allowing public access to source code
 - Strong global community improves and maintains open-source projects.
 - Offers flexibility, allowing users to customize and adapt the software
-- 
 
 Considerations When Using Open-Source Software:
 

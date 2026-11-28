@@ -1315,6 +1315,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
                 while len(open_lists) > 1 and open_lists[-1].level > level:
                     open_lists.pop()
+                # PowerPoint shows no bullet or number on an empty paragraph and
+                # does not count it, but it still ends the lists nested deeper.
+                if not fragments:
+                    continue
                 if not open_lists:
                     open_lists.append(
                         _OpenList(
