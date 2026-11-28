@@ -12,6 +12,7 @@ This module includes two types of tests:
 
 from __future__ import annotations
 
+import base64
 import logging
 import sys
 import zipfile
@@ -41,9 +42,11 @@ from docling.backend.opendocument_backend import (
     OdsDocumentBackend,
     OdtDocumentBackend,
 )
+from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, OdsFormatOption
+from tests.fakes.image_server import PNG_1X1, SERVER_IP, local_server, use_test_network
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -727,6 +730,81 @@ def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     pictures = [item for item in child_items if isinstance(item, PictureItem)]
     assert len(pictures) == 1
     assert pictures[0].image is not None
+
+
+def _build_ods_with_cell_image_frame(path: Path, frame: Frame) -> Path:
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    table = Table("ImageCell", width=1, height=1)
+    row = Row()
+    cell = Cell()
+    cell.append(frame)
+    row.append_cell(cell)
+    table.append_row(row)
+    body.append(table)
+    doc.save(str(path))
+    return path
+
+
+def _rich_cell_pictures(result_doc: DoclingDocument) -> list[PictureItem]:
+    table = result_doc.tables[0]
+    cell = table.data.table_cells[0]
+    assert isinstance(cell, RichTableCell)
+    group = cell.ref.resolve(result_doc)
+    child_items = [child.resolve(result_doc) for child in group.children]
+    return [item for item in child_items if isinstance(item, PictureItem)]
+
+
+def test_ods_table_cell_data_uri_image_creates_rich_cell_picture(tmp_path: Path):
+    data_uri = "data:image/png;base64," + base64.b64encode(PNG_1X1).decode("ascii")
+    frame = Frame.image_frame(data_uri, size=("1cm", "1cm"))
+    img_el = frame.get_element("draw:image")
+    assert img_el is not None
+    img_el.set_attribute("draw:mime-type", "image/png")
+
+    path = _build_ods_with_cell_image_frame(tmp_path / "data_uri_cell.ods", frame)
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+    pictures = _rich_cell_pictures(res.document)
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+
+
+def test_ods_table_cell_remote_image_respects_enable_remote_fetch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/cell.png": PNG_1X1}
+        frame = Frame.image_frame(
+            server.url("images.test", "/cell.png"), size=("1cm", "1cm")
+        )
+        path = _build_ods_with_cell_image_frame(tmp_path / "remote_cell.ods", frame)
+
+        blocked = DocumentConverter(
+            allowed_formats=[InputFormat.ODS],
+            format_options={
+                InputFormat.ODS: OdsFormatOption(
+                    backend_options=OdsBackendOptions(enable_remote_fetch=False)
+                )
+            },
+        ).convert(path)
+        assert server.paths() == []
+        assert _rich_cell_pictures(blocked.document) == []
+
+        allowed = DocumentConverter(
+            allowed_formats=[InputFormat.ODS],
+            format_options={
+                InputFormat.ODS: OdsFormatOption(
+                    backend_options=OdsBackendOptions(enable_remote_fetch=True)
+                )
+            },
+        ).convert(path)
+        assert server.paths() == ["/cell.png"]
+        pictures = _rich_cell_pictures(allowed.document)
+        assert len(pictures) == 1
+        assert pictures[0].image is not None
 
 
 @pytest.mark.parametrize("kind", ["odt", "odp", "ods"])

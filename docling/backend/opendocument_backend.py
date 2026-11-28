@@ -2716,6 +2716,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     ),
                     content_layer=content_layer,
                     odf_obj=self.odf_obj,
+                    image_loader=self._image_loader,
                 )
 
     def _find_data_tables_in_sheet(
