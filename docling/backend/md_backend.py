@@ -119,6 +119,15 @@ _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
 _STOP_MARKER = f"#_#_{_MARKER_BODY}_STOP_#_#"
 
+# A line with its line ending (CommonMark ends lines at \n, \r\n or \r only).
+_LINE = re.compile(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$")
+# Opening code fence, after its indent: 3+ backticks or 3+ tildes.
+_FENCE_OPEN = re.compile(r"(`{3,}|~{3,})(.*)$", re.DOTALL)
+# Closing code fence, after its indent: the fence characters, then whitespace.
+_FENCE_CLOSE = re.compile(r"(`{3,}|~{3,})[ \t]*[\r\n]*$")
+# List item marker, after its indent: the marker, then spaces or end of line.
+_LIST_MARKER = re.compile(r"([-+*]|\d{1,9}[.)])(?:( +)(?=\S)|[ \t]*[\r\n]*$)")
+
 
 class _PendingCreationType(str, Enum):
     """CoordOrigin."""
@@ -349,17 +358,64 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return parse_hyperlink(dest)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
-        pattern = r"_+"
+        """Shorten long runs of underscores outside fenced code blocks.
 
-        def replace_match(match):
-            underscore_sequence = match.group(0)
+        Long runs make the emphasis parser slow. Fenced code is not parsed
+        for emphasis and its text is literal, so its lines are kept as is.
+        A fence in a list item can have up to 3 spaces of indent after the
+        content indent of the item. A fence ends at its closing fence or at
+        the end of its list item.
+        """
+        pattern = re.compile(rf"_{{{max_length + 1},}}")
+        replacement = "_" * max_length
 
-            if len(underscore_sequence) > max_length:
-                return "_" * max_length
-            else:
-                return underscore_sequence
+        lines: list[str] = []
+        items: list[int] = []  # content indents of the open list items
+        fence: str | None = None
+        fence_indent = 0
+        for line in _LINE.findall(markdown_text):
+            text = line.lstrip(" ")
+            indent = len(line) - len(text)
+            blank = not text.strip()
+            if fence is not None:
+                if blank or indent >= fence_indent:
+                    closing = _FENCE_CLOSE.match(text)
+                    if (
+                        closing
+                        and indent - fence_indent <= 3
+                        and closing.group(1)[0] == fence[0]
+                        and len(closing.group(1)) >= len(fence)
+                    ):
+                        fence = None
+                    lines.append(line)
+                    continue
+                fence = None
+            if not blank:
+                while items and indent < items[-1]:
+                    items.pop()
+            base = items[-1] if items else 0
+            if not blank and indent - base <= 3:
+                marker = _LIST_MARKER.match(text)
+                if marker:
+                    spaces = len(marker.group(2) or " ")
+                    # With 5+ spaces, the item content is indented code.
+                    base = (
+                        indent + len(marker.group(1)) + (spaces if spaces <= 4 else 1)
+                    )
+                    items.append(base)
+                    text = text[marker.end() :] if spaces <= 4 else ""
+                opening = _FENCE_OPEN.match(text)
+                # A backtick fence cannot have a backtick in its info string.
+                if opening and not (
+                    opening.group(1)[0] == "`" and "`" in opening.group(2)
+                ):
+                    fence = opening.group(1)
+                    fence_indent = base
+                    lines.append(line)
+                    continue
+            lines.append(pattern.sub(replacement, line))
 
-        shortened_text = re.sub(pattern, replace_match, markdown_text)
+        shortened_text = "".join(lines)
 
         if len(shortened_text) != len(markdown_text):
             warnings.warn("Detected potentially incorrect Markdown, correcting...")
