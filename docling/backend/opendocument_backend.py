@@ -26,7 +26,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Final, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -1070,6 +1070,54 @@ def _odf_list_start_value(
         return 1
 
 
+# Larger counters keep the decimal number: letter and Roman markers grow with
+# the counter, and `text:start-value` comes from the document. The limit
+# matches _MAX_START_OVERRIDE and _MAX_AUTO_NUMBER_START in the MS Office backends.
+_MAX_ODF_FORMATTED_COUNTER: Final = 32767
+
+
+def _odf_letter_counter(value: int, letter_sync: bool) -> str:
+    """Convert a positive list counter to lower-case letters."""
+    if value <= 0:
+        return str(value)
+    if letter_sync:
+        quotient, remainder = divmod(value - 1, 26)
+        return chr(ord("a") + remainder) * (quotient + 1)
+
+    result = ""
+    while value > 0:
+        value, remainder = divmod(value - 1, 26)
+        result = chr(ord("a") + remainder) + result
+    return result
+
+
+def _odf_roman_counter(value: int) -> str:
+    """Convert a positive list counter to lower-case Roman numerals."""
+    if value <= 0:
+        return str(value)
+
+    numerals = (
+        (1000, "m"),
+        (900, "cm"),
+        (500, "d"),
+        (400, "cd"),
+        (100, "c"),
+        (90, "xc"),
+        (50, "l"),
+        (40, "xl"),
+        (10, "x"),
+        (9, "ix"),
+        (5, "v"),
+        (4, "iv"),
+        (1, "i"),
+    )
+    result = ""
+    for number, numeral in numerals:
+        count, value = divmod(value, number)
+        result += numeral * count
+    return result
+
+
 def _odf_list_marker(
     counter: int,
     odf_obj: OdfDocument | None,
@@ -1077,10 +1125,31 @@ def _odf_list_marker(
     level: int,
 ) -> str:
     level_style = _odf_list_level_style(odf_obj, odf_list, level)
+    prefix = ""
     suffix = "."
+    num_format = "1"
+    letter_sync = False
     if level_style is not None:
-        suffix = level_style.attributes.get("style:num-suffix") or suffix
-    return f"{counter}{suffix}"
+        prefix = level_style.attributes.get("style:num-prefix", "")
+        suffix = level_style.attributes.get("style:num-suffix") or (
+            "" if prefix else suffix
+        )
+        # Not fo:num-format: odfdo's set_level_style writes it, but it is not a
+        # list-level attribute in ODF and LibreOffice ignores it.
+        num_format = level_style.attributes.get("style:num-format", "1")
+        letter_sync = level_style.attributes.get("style:num-letter-sync") == "true"
+
+    if counter <= _MAX_ODF_FORMATTED_COUNTER and num_format in {"a", "A"}:
+        number = _odf_letter_counter(counter, letter_sync)
+        if num_format == "A":
+            number = number.upper()
+    elif counter <= _MAX_ODF_FORMATTED_COUNTER and num_format in {"i", "I"}:
+        number = _odf_roman_counter(counter)
+        if num_format == "I":
+            number = number.upper()
+    else:
+        number = str(counter)
+    return f"{prefix}{number}{suffix}"
 
 
 def _odf_table_has_content(table: OdfTable) -> bool:

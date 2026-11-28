@@ -805,6 +805,130 @@ def test_odt_ordered_nested_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+@pytest.mark.parametrize(
+    ("attributes", "item_count", "expected_markers"),
+    [
+        pytest.param(
+            {"style:num-format": "a", "style:num-suffix": "."},
+            4,
+            ["a.", "b.", "c.", "d."],
+            id="lower_letter",
+        ),
+        pytest.param(
+            {"style:num-format": "a"},
+            4,
+            ["a.", "b.", "c.", "d."],
+            id="letter_default_suffix",
+        ),
+        pytest.param(
+            {"style:num-format": "a", "style:num-prefix": "("},
+            4,
+            ["(a", "(b", "(c", "(d"],
+            id="prefix_without_suffix",
+        ),
+        pytest.param(
+            {
+                "style:num-format": "A",
+                "style:num-prefix": "(",
+                "style:num-suffix": ")",
+            },
+            4,
+            ["(A)", "(B)", "(C)", "(D)"],
+            id="upper_letter_prefix",
+        ),
+        pytest.param(
+            {"style:num-format": "i", "style:num-suffix": "."},
+            4,
+            ["i.", "ii.", "iii.", "iv."],
+            id="lower_roman",
+        ),
+        pytest.param(
+            {"style:num-format": "I", "style:num-suffix": "."},
+            4,
+            ["I.", "II.", "III.", "IV."],
+            id="upper_roman",
+        ),
+        pytest.param(
+            {
+                "style:num-format": "i",
+                "style:num-suffix": ".",
+                "text:start-value": "4",
+            },
+            4,
+            ["iv.", "v.", "vi.", "vii."],
+            id="roman_start_value",
+        ),
+        pytest.param(
+            {"style:num-format": "a", "style:num-suffix": "."},
+            28,
+            [f"{chr(ord('a') + index)}." for index in range(26)] + ["aa.", "ab."],
+            id="letters_past_z",
+        ),
+        pytest.param(
+            {
+                "style:num-format": "a",
+                "style:num-suffix": ".",
+                "style:num-letter-sync": "true",
+            },
+            28,
+            [f"{chr(ord('a') + index)}." for index in range(26)] + ["aa.", "bb."],
+            id="letters_past_z_letter_sync",
+        ),
+        pytest.param(
+            {"fo:num-format": "A", "style:num-suffix": "."},
+            4,
+            ["1.", "2.", "3.", "4."],
+            id="fo_num_format_ignored",
+        ),
+        pytest.param(
+            {
+                "style:num-format": "i",
+                "style:num-suffix": ".",
+                "text:start-value": "9" * 30,
+            },
+            2,
+            [f"{'9' * 30}.", f"{int('9' * 30) + 1}."],
+            id="roman_hostile_start_value",
+        ),
+    ],
+)
+def test_odt_list_marker_follows_num_format(
+    tmp_path: Path,
+    attributes: dict[str, str],
+    item_count: int,
+    expected_markers: list[str],
+):
+    path = tmp_path / "list_marker.odt"
+    doc = OdfDocument("text")
+    doc.body.clear()
+    style = Style("list", name="Numbered")
+    style.set_level_style(1, num_format="1", suffix=".")
+    level_style = style.get_level_style(1)
+    level_style.del_attribute("fo:num-format")
+    level_style.del_attribute("style:num-suffix")
+    for name, value in attributes.items():
+        level_style.set_attribute(name, value)
+    doc.insert_style(style)
+
+    odf_list = OdfList(style="Numbered")
+    for index in range(1, item_count + 1):
+        odf_list.append(ListItem(f"item {index}"))
+    doc.body.append(odf_list)
+    doc.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    list_items = [
+        item
+        for item, _level in result.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [(item.text, item.enumerated, item.marker) for item in list_items] == [
+        (f"item {index}", True, marker)
+        for index, marker in enumerate(expected_markers, start=1)
+    ]
+
+
 def test_odt_text_document_nested_lists():
     path = Path("tests/data/odf/sources/text_document_01.odt")
 
