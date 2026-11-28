@@ -18,6 +18,7 @@ Below you can find a listing of all supported input and output formats.
 | Numbers | Apple Numbers spreadsheets (`.numbers`), both container generations (Numbers 3+ and iWork '09); requires the `format-iwork` extra |
 | Keynote | Apple Keynote presentations (`.key`), every container generation (Keynote 6+, the flattened package Keynote 2018+ writes, and iWork '09); requires the `format-iwork` extra |
 | Markdown | |
+| MediaWiki wikitext | `.wiki`, `.wikitext`, and gzip-compressed copies |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
 | HTML, XHTML | |
@@ -36,6 +37,9 @@ For Markdown, CSV, and AsciiDoc, a byte-order mark (BOM) selects the text encodi
 unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
+
+In HTML, a `<span>` with a non-empty `data-math-tex` attribute produces a formula
+item from the attribute value. The span can contain a visible preview.
 
 In Markdown prose, inline HTML `<br>` tags become hard line breaks in paragraphs,
 headings, and list items. Code spans, code blocks, and escaped tags stay literal.
@@ -81,8 +85,68 @@ Schema-specific support:
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard; also inline XBRL (iXBRL) reports in `.htm`, `.html` and `.xhtml` files; needs the `xbrl` extra (iXBRL reports convert as HTML without it) |
+| MediaWiki XML | MediaWiki page exports (`.xml`, `.xml.gz`) |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
+
+### MediaWiki
+
+Use `InputFormat.MEDIAWIKI` in the SDK or `--from mediawiki` in the CLI. Each
+MediaWiki XML export or wikitext file produces one Docling document. Both can use
+gzip compression. For a multi-page XML export, Docling imports the latest
+revision of each page in export order. The SDK also accepts a generic ZIP as a
+batch and converts each supported member to its own document.
+
+The parser runs locally and preserves headings, emphasis, links, lists, tables,
+formulas, code languages, and file captions. Pictures retain their captions
+without loading the image. The parser extracts named fields from common infobox
+and taxobox templates. It approximates selected templates for dates, lists,
+units, language text, and citations. It retains text from presentation templates
+such as `{{Small|…}}` and `{{Mono|…}}`. It leaves out other templates and all
+Lua modules. The `format-html` extra enables MediaWiki conversion in Docling Slim.
+
+The parser uses these size limits by default. You can set them with
+`MediaWikiBackendOptions`.
+
+| Option | Default | Limit |
+|--------|---------|-------|
+| `max_total_bytes` | 512 MiB | Input size after any decompression |
+| `max_file_bytes` | 16 MiB | Standalone wikitext size after any decompression |
+| `max_page_chars` | 4,194,304 | Characters in a page revision or standalone wikitext file |
+| `max_inline_reference_bytes` | 16 MiB | Total rendered inline citation bytes per input, including repeated citations |
+
+The XML reader limits each retained metadata field to 8,192 characters and
+discards other XML content as it reads. The wikitext parser keeps list markers
+beyond level 32 as text. If parsing exceeds the work limit, Docling logs a
+warning and keeps that page as plain text.
+
+By default, MediaWiki conversion omits `<ref>` citations and drops empty
+sections. Regular superscripts remain. Set `preserve_bold=False` or
+`preserve_italic=False` to remove that style and keep its text. This example
+keeps italic formatting, removes bold formatting, and lists citations.
+
+```python
+from docling.datamodel.backend_options import MediaWikiBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, MediaWikiFormatOption
+
+converter = DocumentConverter(format_options={
+    InputFormat.MEDIAWIKI: MediaWikiFormatOption(
+        backend_options=MediaWikiBackendOptions(
+            reference_mode="list", preserve_bold=False
+        )
+    )
+})
+result = converter.convert("article.wiki")
+```
+
+`reference_mode="inline"` places citation text in superscript at each use.
+`reference_mode="list"` uses numbered superscripts and places the referenced
+entries at `<references />` or `{{reflist}}`, or appends a References section
+when there is no matching list. Named references are reused, including forward
+definitions. Unresolved names are omitted. Groups have separate numbering.
+`reference_mode="omit"` is the default. This is an approximation of MediaWiki
+citation rendering and does not execute templates or Lua.
 
 ## Supported output formats
 

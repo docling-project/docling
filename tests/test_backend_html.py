@@ -74,6 +74,32 @@ def _convert_html(raw_html: bytes) -> DoclingDocument:
     return backend.convert()
 
 
+def test_html_math_span_uses_tex_attribute():
+    doc = _convert_html(
+        b'<p>Before <span data-math-tex="E=mc^2">E = mc<sup>2</sup></span> after.</p>'
+        b'<p><span data-math-tex="">Visible text.</span></p>'
+    )
+
+    (formula,) = [item for item in doc.texts if item.label == DocItemLabel.FORMULA]
+    assert formula.text == "E=mc^2"
+    assert doc.export_to_markdown() == "Before $E=mc^2$ after.\n\nVisible text."
+
+
+def test_html_list_figure_keeps_caption_with_its_picture():
+    doc = _convert_html(
+        b'<ul><li>item <figure><img src="test.png"><figcaption>cap</figcaption>'
+        b"</figure></li></ul>"
+    )
+
+    (item,) = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+    (picture,) = doc.pictures
+    (caption,) = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert item.text == "item"
+    assert picture.parent == item.get_ref()
+    assert caption.text == "cap"
+    assert picture.captions == [caption.get_ref()]
+
+
 def test_html_backend_options():
     options = HTMLBackendOptions()
     assert options.kind == "html"

@@ -200,6 +200,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
+from docling.utils.mediawiki_input import is_mediawiki_xml_file
 from docling.utils.profiling import ProfilingItem
 from docling.utils.progress import ProgressPrinter
 
@@ -364,8 +365,14 @@ def _iter_input_paths_from_directory(
 ) -> Iterable[Path]:
     seen_paths: set[Path] = set()
     for path in sorted(local_path.rglob("*")):
-        if not path.is_file() or not any(
+        if not path.is_file():
+            continue
+        if not any(
             _name_matches_format(path.name, fmt) for fmt in from_formats
+        ) and not (
+            InputFormat.MEDIAWIKI in from_formats
+            and path.suffix.lower() == ".xml"
+            and is_mediawiki_xml_file(path)
         ):
             continue
         if _is_office_lock_file(path):
@@ -1684,6 +1691,7 @@ def convert(  # noqa: C901
         IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
+        MediaWikiFormatOption,
         NativePdfFormatOption,
         OdpFormatOption,
         OdsFormatOption,
@@ -2167,6 +2175,9 @@ def convert(  # noqa: C901
                     else None,
                 ),
                 InputFormat.MD: MarkdownFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.MEDIAWIKI: MediaWikiFormatOption(
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.LATEX: LatexFormatOption(

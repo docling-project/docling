@@ -21,6 +21,9 @@ data = doc.export_to_dict()  # structured / lossless
 `result.status` reports success/failure; `result.document` is always a
 `DoclingDocument`.
 
+Use `converter.convert("export.xml.gz")` for an export or `converter.convert_string(text, format=InputFormat.MEDIAWIKI)` for wikitext in memory.
+See [MediaWiki supported formats](https://docling-project.github.io/docling/usage/supported_formats/#mediawiki) for limits and formatting options.
+
 ## Configuring the pipeline with PipelineOptions
 
 `DocumentConverter(format_options=...)` maps an **`InputFormat`** to a

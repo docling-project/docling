@@ -64,6 +64,7 @@ from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.backend.xml.doclang_backend import DocLangDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
+from docling.backend.xml.mediawiki_backend import MediaWikiDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
@@ -80,6 +81,7 @@ from docling.datamodel.backend_options import (
     JatsBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
+    MediaWikiBackendOptions,
     MetsGbsBackendOptions,
     MsWordBackendOptions,
     PdfBackendOptions,
@@ -274,6 +276,12 @@ class XMLJatsFormatOption(FormatOption):
 class XMLDocLangFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = DocLangDocumentBackend
+
+
+class MediaWikiFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = MediaWikiDocumentBackend
+    backend_options: MediaWikiBackendOptions | None = None
 
 
 class DclxFormatOption(FormatOption):
@@ -523,6 +531,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
+        InputFormat.MEDIAWIKI: MediaWikiFormatOption(),
         InputFormat.DCLX: DclxFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
@@ -916,9 +925,10 @@ class DocumentConverter:
     ) -> ConversionResult:
         """Convert a document given as a string using the specified format.
 
-        Only Markdown (`InputFormat.MD`), HTML (`InputFormat.HTML`), and DocLang
-        (`InputFormat.XML_DOCLANG`) formats are supported. The content is wrapped
-        in a `DocumentStream` and passed to the main conversion pipeline.
+        Markdown (`InputFormat.MD`), HTML (`InputFormat.HTML`), DocLang
+        (`InputFormat.XML_DOCLANG`), and MediaWiki (`InputFormat.MEDIAWIKI`) are
+        supported. The content is wrapped in a `DocumentStream` and passed to
+        the main conversion pipeline.
 
         Args:
             content: The document content as a string.
@@ -982,6 +992,13 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
+            return self.convert(doc_stream, progress_callback=progress_callback)
+        elif format == InputFormat.MEDIAWIKI:
+            if not name.lower().endswith((".wiki", ".wikitext", ".xml")):
+                name += ".wiki"
+            doc_stream = DocumentStream(
+                name=name, stream=BytesIO(content.encode("utf-8"))
+            )
             return self.convert(doc_stream, progress_callback=progress_callback)
         else:
             raise ValueError(f"format {format} is not supported in `convert_string`")

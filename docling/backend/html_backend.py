@@ -473,7 +473,12 @@ class AnnotatedText(BaseModel):
     hyperlink: Union[AnyUrl, Path, None] = None
     formatting: Union[Formatting, None] = None
     code: bool = False
+    formula: bool = False
     source_tag_id: Optional[str] = None
+
+    @property
+    def text_label(self) -> DocItemLabel:
+        return DocItemLabel.FORMULA if self.formula else DocItemLabel.TEXT
 
 
 class AnnotatedTextList(list):
@@ -529,7 +534,9 @@ class AnnotatedTextList(list):
         source_tag_id = self[0].source_tag_id
         for i in range(1, len(self)):
             if (
-                hyperlink == self[i].hyperlink
+                not self[i - 1].formula
+                and not self[i].formula
+                and hyperlink == self[i].hyperlink
                 and formatting == self[i].formatting
                 and code == self[i].code
                 and source_tag_id == self[i].source_tag_id
@@ -544,6 +551,7 @@ class AnnotatedTextList(list):
                         hyperlink=hyperlink,
                         formatting=formatting,
                         code=code,
+                        formula=self[i - 1].formula,
                         source_tag_id=source_tag_id,
                     )
                 )
@@ -559,6 +567,7 @@ class AnnotatedTextList(list):
                     hyperlink=hyperlink,
                     formatting=formatting,
                     code=code,
+                    formula=self[-1].formula,
                     source_tag_id=source_tag_id,
                 )
             )
@@ -588,16 +597,12 @@ class AnnotatedTextList(list):
                 space_pending = True
                 continue
             if (space_pending or at.text[:1].isspace()) and kept:
-                # A code run is wrapped in `` ` `` downstream, and the serializers hoist
-                # whitespace out of emphasis but not out of a code delimiter. Keep the boundary
-                # space outside both delimiters.
-                if not kept[-1].code:
+                # Keep boundary whitespace outside code and formula delimiters.
+                if not (kept[-1].code or kept[-1].formula):
                     kept[-1] = kept[-1].model_copy(update={"text": kept[-1].text + " "})
-                elif not at.code:
+                elif not (at.code or at.formula):
                     core = " " + core
                 else:
-                    # Both sides are code: either delimiter would swallow it (`a`` b`), so the
-                    # boundary becomes an unformatted run of its own between them.
                     kept.append(AnnotatedText(text=" ", source_tag_id=at.source_tag_id))
             # A trailing space is only significant if something follows; the loop ending here
             # leaves it dropped, which is the block-edge trim.
@@ -1879,6 +1884,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             A run carrying edge whitespace is a word boundary in rendered span soup, so
             compacting across it would glue words together. Only bare characters qualify.
             """
+            if part.formula:
+                return None
             cleaned = HTMLDocumentBackend._clean_unicode(part.text)
             return cleaned if len(cleaned) == 1 and not cleaned.isspace() else None
 
@@ -2204,6 +2211,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     bool(anno.formatting)
                     or bool(anno.hyperlink)
                     or anno.code
+                    or anno.formula
                     or has_input
                     or has_image
                     or has_custom_checkbox
@@ -2445,7 +2453,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 )
                                 docling_text2 = doc.add_text(
                                     parent=self.parents[self.level],
-                                    label=DocItemLabel.TEXT,
+                                    label=annotated_text.text_label,
                                     text=seg_clean,
                                     orig=annotated_text.text,
                                     content_layer=self.content_layer,
@@ -2709,6 +2717,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
+        if (
+            ignore_list
+            and tag.name == "figcaption"
+            and isinstance(tag.parent, Tag)
+            and tag.parent.name == "figure"
+            and tag.parent.find("img") is not None
+        ):
+            # The nested picture will emit its own caption.
+            return AnnotatedTextList()
+        # The attribute carries the TeX source. The children can show a preview.
+        tex = tag.get("data-math-tex") if tag.name == "span" else None
+        if isinstance(tex, str) and (tex := tex.strip()):
+            return AnnotatedTextList(
+                [
+                    AnnotatedText(
+                        text=tex,
+                        formula=True,
+                        hyperlink=self.hyperlink,
+                        formatting=self._formatting,
+                        source_tag_id=self._get_tag_id(tag),
+                    )
+                ]
+            )
         # Indexes in `result` where a block child starts or ends: a word boundary.
         block_edges: set[int] = set()
         if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
@@ -3138,7 +3169,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if not item_text:
             return None
 
-        if len(min_parts) > 1:
+        if len(min_parts) > 1 or min_parts[0].formula:
             # Complex content - create list item with inline group
             item_prov = self._make_text_prov(text=item_text, tag=tag)
             list_item = doc.add_list_item(
@@ -3199,7 +3230,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     else:
                         doc.add_text(
                             parent=self.parents[self.level],
-                            label=DocItemLabel.TEXT,
+                            label=annotated_text.text_label,
                             text=clean_text,
                             orig=text_part,
                             content_layer=self.content_layer,
@@ -3363,20 +3394,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     if current_dt_item:
                         self.parents[self.level + 1] = current_dt_item
+                    with self._use_list_item_context(current_dt_item):
+                        for nested in child.find_all("dl", recursive=False):
+                            self._handle_list(nested, doc)
 
                 elif child_name == "dd":
                     has_nested_dl = child.find("dl", recursive=False) is not None
-                    if has_nested_dl:
+                    if has_nested_dl and current_dt_item:
                         # Close current descriptions group before processing nested <dl>
                         dd_group = None
                         # If <dd> contains a nested <dl>, process it directly under the term item
                         # Don't create a list item for the <dd> itself to avoid double indentation
-                        if current_dt_item:
-                            with self._use_list_item_context(current_dt_item):
-                                processed_elements = set()
-                                self._process_list_item_nested_content(
-                                    child, doc, processed_elements
-                                )
+                        with self._use_list_item_context(current_dt_item):
+                            processed_elements = set()
+                            self._process_list_item_nested_content(
+                                child, doc, processed_elements
+                            )
                     else:
                         # For regular <dd> without nested <dl>, create/use descriptions group
                         if dd_group is None and current_dt_item:
@@ -3693,7 +3726,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 )
                                 docling_text = doc.add_text(
                                     parent=self.parents[self.level],
-                                    label=DocItemLabel.TEXT,
+                                    label=annotated_text.text_label,
                                     text=seg_clean,
                                     orig=annotated_text.text,
                                     content_layer=self.content_layer,
