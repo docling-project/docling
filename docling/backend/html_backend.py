@@ -5741,6 +5741,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         found in HTML but are worth replacing to sanitize text and ensure consistency
         in text processing tasks.
 
+        The zero-width joiner (U+200D) and zero-width non-joiner (U+200C) are kept:
+        they control how Indic and Persian text is shaped and how emoji sequences are
+        composed, so removing them changes the meaning of the text.
+
         Args:
             text: The original text.
 
@@ -5750,8 +5754,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         replacements = {
             "\u00a0": " ",  # non-breaking space
             "\u200b": "",  # zero-width space
-            "\u200c": "",  # zero-width non-joiner
-            "\u200d": "",  # zero-width joiner
             "\u2010": "-",  # hyphen
             "\u2011": "-",  # non-breaking hyphen
             "\u2012": "-",  # dash
