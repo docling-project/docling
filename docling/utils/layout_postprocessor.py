@@ -114,6 +114,8 @@ class LayoutPostprocessor:
         "picture": {"area_threshold": 2.0, "conf_threshold": 0.3},
         "wrapper": {"area_threshold": 2.0, "conf_threshold": 0.2},
     }
+    LIST_ITEM_ENCLOSURE_THRESHOLD = 0.8
+    LIST_ITEM_CELL_OVERLAP_THRESHOLD = 0.5
 
     CONTAINER_TYPES = {
         DocItemLabel.FORM,
@@ -645,6 +647,47 @@ class LayoutPostprocessor:
                 unique_cells.append(cell)
         return unique_cells
 
+    def _select_enclosed_list_item(
+        self,
+        text_cluster: Cluster,
+        candidates: list[tuple[Cluster, float]],
+        ordered_bboxes: dict[int, BoundingBox],
+    ) -> Cluster | None:
+        """Prefer a higher-confidence LIST_ITEM enclosed by a weaker TEXT cluster."""
+        text_bbox = ordered_bboxes[text_cluster.id]
+        if not has_positive_area(text_bbox):
+            return None
+
+        text_area = text_bbox.area()
+        conf_threshold = self.OVERLAP_PARAMS["regular"]["conf_threshold"]
+
+        best_list_item: Cluster | None = None
+        best_overlap = self.LIST_ITEM_CELL_OVERLAP_THRESHOLD
+
+        for candidate, overlap_ratio in candidates:
+            if candidate.label != DocItemLabel.LIST_ITEM:
+                continue
+            if overlap_ratio <= best_overlap:
+                continue
+            if candidate.confidence - text_cluster.confidence <= conf_threshold:
+                continue
+
+            candidate_bbox = ordered_bboxes[candidate.id]
+            if not has_positive_area(candidate_bbox):
+                continue
+            if candidate_bbox.area() > text_area:
+                continue
+            if (
+                candidate_bbox.intersection_over_self(text_bbox)
+                <= self.LIST_ITEM_ENCLOSURE_THRESHOLD
+            ):
+                continue
+
+            best_overlap = overlap_ratio
+            best_list_item = candidate
+
+        return best_list_item
+
     def _assign_cells_to_clusters(
         self, clusters: list[Cluster], min_overlap: float = 0.2
     ) -> list[Cluster]:
@@ -655,6 +698,9 @@ class LayoutPostprocessor:
         cluster_by_id = {cluster.id: cluster for cluster in clusters}
         cluster_ids = set(cluster_by_id)
         cluster_order = {cluster.id: order for order, cluster in enumerate(clusters)}
+        ordered_bboxes = {
+            cluster.id: ordered_bounding_box(cluster.bbox) for cluster in clusters
+        }
         cluster_index = SpatialClusterIndex(clusters)
 
         for cell in self.cells:
@@ -665,22 +711,29 @@ class LayoutPostprocessor:
             if cell_bbox.area() <= 0:
                 continue
 
-            best_overlap = min_overlap
-            best_cluster = None
             candidate_ids = cluster_index.find_candidates(cell_bbox) & cluster_ids
+            candidates: list[tuple[Cluster, float]] = []
 
             for cluster_id in sorted(candidate_ids, key=cluster_order.__getitem__):
                 cluster = cluster_by_id[cluster_id]
-
                 overlap_ratio = cell_bbox.intersection_over_self(
-                    ordered_bounding_box(cluster.bbox)
+                    ordered_bboxes[cluster_id]
                 )
-                if overlap_ratio > best_overlap:
-                    best_overlap = overlap_ratio
-                    best_cluster = cluster
+                if overlap_ratio > min_overlap:
+                    candidates.append((cluster, overlap_ratio))
 
-            if best_cluster is not None:
-                best_cluster.cells.append(cell)
+            if not candidates:
+                continue
+
+            best_cluster, _ = max(candidates, key=lambda item: item[1])
+            if best_cluster.label == DocItemLabel.TEXT:
+                preferred = self._select_enclosed_list_item(
+                    best_cluster, candidates, ordered_bboxes
+                )
+                if preferred is not None:
+                    best_cluster = preferred
+
+            best_cluster.cells.append(cell)
 
         # Deduplicate cells in each cluster after assignment
         for cluster in clusters:
