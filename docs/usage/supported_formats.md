@@ -9,7 +9,8 @@ Below you can find a listing of all supported input and output formats.
 | Format | Description |
 |--------|-------------|
 | PDF | |
-| DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
+| DOCX, DOCM, DOTX, DOTM | Microsoft Word documents and templates based on Office Open XML |
+| XLSX, PPTX | Microsoft Excel and PowerPoint formats based on Office Open XML |
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
 | RTF | Rich Text Format; requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |

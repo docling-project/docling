@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final, NamedTuple
+from typing import Any, Callable, Final, NamedTuple, cast
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
@@ -83,16 +83,20 @@ _log = logging.getLogger(__name__)
 _DOCX_AVAILABLE: bool = False
 _DOCX_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
-    from docx import Document
     from docx.document import Document as DocxDocument
     from docx.enum.style import WD_STYLE_TYPE
     from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
-    from docx.opc.part import XmlPart
+    from docx.opc.package import Unmarshaller
+    from docx.opc.packuri import PackURI
+    from docx.opc.part import Part, PartFactory, XmlPart
+    from docx.opc.pkgreader import PackageReader
     from docx.oxml import parse_xml as docx_parse_xml
     from docx.oxml.ns import qn
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
+    from docx.package import Package as DocxPackage
+    from docx.parts.document import DocumentPart
     from docx.styles.style import BaseStyle, CharacterStyle, ParagraphStyle
     from docx.table import Table, _Cell, _Row
     from docx.text.hyperlink import Hyperlink
@@ -106,6 +110,14 @@ except ImportError as e:  # pragma: no cover - import-time guard
 _INSTALL_HINT = (
     "The 'python-docx' package is required to process Word files. "
     "Install it with `pip install 'docling-slim[format-docx]'`."
+)
+
+_WORD_VARIANT_MAIN_TYPES: Final = frozenset(
+    {
+        "application/vnd.ms-word.document.macroenabled.main+xml",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml",
+        "application/vnd.ms-word.template.macroenabledtemplate.main+xml",
+    }
 )
 
 _CHART_RENDER_HINT = (
@@ -642,6 +654,20 @@ def _trim_run_edges(
         get_text=lambda run: run[0],
         with_text=lambda run, text: (text, run[1], run[2]),
     )
+
+
+def _word_part_factory(
+    partname: PackURI,
+    content_type: str,
+    reltype: str,
+    blob: bytes,
+    package: DocxPackage,
+) -> Part:
+    """Load Word templates and macro-enabled main parts as documents."""
+    if content_type.lower() in _WORD_VARIANT_MAIN_TYPES:
+        return DocumentPart.load(partname, content_type, blob, package)
+    # PartFactory.__new__ returns an instance of the selected Part class.
+    return cast(Part, PartFactory(partname, content_type, reltype, blob, package))
 
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
@@ -1206,7 +1232,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         document_hash: str,
         limits: ArchiveLimits = _DEFAULT_ARCHIVE_LIMITS,
     ) -> DocxDocument:
-        """Load a .docx package with python-docx.
+        """Load an Office Open XML Word document or template with python-docx.
 
         The package is checked against the decompressed size ``limits`` before
         any member is read. Strict OOXML packages and packages with
@@ -1218,33 +1244,32 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             DocumentLoadError: If python-docx cannot load the package.
         """
         try:
-            if isinstance(path_or_stream, Path):
-                with zipfile.ZipFile(path_or_stream) as archive:
-                    check_archive_limits(archive, limits)
-                    is_strict = _is_strict_ooxml(archive)
-                    has_fragment_rels = not is_strict and _has_fragment_only_rels(
-                        archive, limits
-                    )
-                    if is_strict:
-                        return Document(_normalize_strict_ooxml(archive, limits))
-                    if has_fragment_rels:
-                        return Document(_sanitize_docx(archive, limits))
-                return Document(str(path_or_stream))
-            elif isinstance(path_or_stream, BytesIO):
-                with zipfile.ZipFile(path_or_stream) as archive:
-                    check_archive_limits(archive, limits)
-                    is_strict = _is_strict_ooxml(archive)
-                    has_fragment_rels = not is_strict and _has_fragment_only_rels(
-                        archive, limits
-                    )
-                    if is_strict:
-                        return Document(_normalize_strict_ooxml(archive, limits))
-                    if has_fragment_rels:
-                        return Document(_sanitize_docx(archive, limits))
+            with zipfile.ZipFile(path_or_stream) as archive:
+                check_archive_limits(archive, limits)
+                if _is_strict_ooxml(archive):
+                    path_or_stream = _normalize_strict_ooxml(archive, limits)
+                elif _has_fragment_only_rels(archive, limits):
+                    path_or_stream = _sanitize_docx(archive, limits)
+            if isinstance(path_or_stream, BytesIO):
                 path_or_stream.seek(0)
-                return Document(path_or_stream)
-            else:
-                return None
+            source = (
+                str(path_or_stream)
+                if isinstance(path_or_stream, Path)
+                else path_or_stream
+            )
+
+            # The public Document loader only accepts the standard .docx type.
+            # Use the OPC loader with a factory scoped to this package.
+            package = DocxPackage()
+            Unmarshaller.unmarshal(
+                PackageReader.from_file(source), package, _word_part_factory
+            )
+            main_part = package.main_document_part
+            if not isinstance(main_part, DocumentPart):
+                raise ValueError(
+                    f"Unexpected Word main part type: {main_part.content_type}"
+                )
+            return main_part.document
         except (SecurityError, DocumentLoadError):
             raise
         except Exception as e:

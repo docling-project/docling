@@ -52,10 +52,11 @@ docling report.pdf --to md --to json --output /tmp/    # both at once
 docling report.pdf --to dclx --output-file /tmp/named-result.dclx
 ```
 
-Supported input formats include: `pdf`, `docx`/`doc`, `pptx`/`ppt`, `xlsx`/`xls`,
+Supported input formats include `pdf`, `docx`/`doc`, `pptx`/`ppt`, `xlsx`/`xls`,
 `html`, `md`, `asciidoc`, `csv`, `odt`/`ods`/`odp`, images, `audio`, and several
-XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
-`--from pdf --from docx ./inbox` to batch-convert a directory.
+XML formats. Use `--from docx` for `.docx`, `.docm`, `.dotx`, and `.dotm` files.
+Repeat `--from` to accept multiple formats, for example
+`--from pdf --from docx ./inbox`.
 
 ## Picking a pipeline (PDF / images)
 
