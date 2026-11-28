@@ -7,15 +7,16 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from docling_core.types.doc import BoundingBox, Size
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfHyperlink,
     SegmentedPdfPage,
+    TextCell,
 )
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -368,3 +369,127 @@ class TestSanitizeTextArabicPresentationForms:
     def test_mixed_arabic_and_latin(self, model):
         """Only the Arabic run is folded; surrounding Latin is untouched."""
         assert model.sanitize_text(["2024 ﻣﺎﺮﺱ x²"]) == "2024 مارس x²"
+
+
+def _make_cell(
+    index: int, text: str, left: float, top: float, right: float, bottom: float
+) -> TextCell:
+    """Create a TextCell with a TOPLEFT-origin rect."""
+    bbox = BoundingBox(
+        l=left, t=top, r=right, b=bottom, coord_origin=CoordOrigin.TOPLEFT
+    )
+    return TextCell(
+        index=index,
+        rect=BoundingRectangle.from_bounding_box(bbox),
+        text=text,
+        orig=text,
+        from_ocr=False,
+    )
+
+
+def _make_cluster(
+    cluster_id: int, cells: list[TextCell], label: DocItemLabel = DocItemLabel.TEXT
+) -> Cluster:
+    """Create a Cluster around the given cells."""
+    bbox = BoundingBox.enclosing_bbox([c.rect.to_bounding_box() for c in cells])
+    return Cluster(id=cluster_id, label=label, bbox=bbox, cells=cells)
+
+
+def _assemble(model: PageAssembleModel, clusters: list[Cluster]) -> Page:
+    """Run the model on a page with the given clusters."""
+    page = Page(page_no=0, size=Size(width=400, height=300))
+    page._backend = MagicMock()
+    page._backend.is_valid.return_value = True
+    page.predictions.layout = LayoutPrediction(clusters=clusters)
+    (page,) = model(MagicMock(), [page])
+    assert page.assembled is not None
+    return page
+
+
+def _drop_cap_page_clusters(
+    drop_cap: TextCell, label: DocItemLabel = DocItemLabel.TEXT
+) -> list[Cluster]:
+    """A paragraph, a drop-cap cluster, then the paragraph the drop cap opens."""
+    return [
+        _make_cluster(0, [_make_cell(0, "Previous paragraph text.", 10, 10, 190, 20)]),
+        _make_cluster(1, [drop_cap], label=label),
+        _make_cluster(
+            2,
+            [
+                _make_cell(2, "ealized through a combination", 34, 30, 190, 40),
+                _make_cell(3, "of tools and processes.", 34, 42, 190, 52),
+                _make_cell(4, "It closes the paragraph.", 10, 54, 190, 64),
+            ],
+        ),
+    ]
+
+
+class TestDropCap:
+    """Tests for merging drop caps into the paragraph that follows them."""
+
+    def test_drop_cap_cluster_is_merged_into_next_paragraph(self, model):
+        """A drop-cap cluster joins the first word of the paragraph it opens."""
+        drop_cap = _make_cell(1, "R", 10, 30, 32, 52)
+        page = _assemble(model, _drop_cap_page_clusters(drop_cap))
+        assert page.assembled is not None
+        assert [el.text for el in page.assembled.body] == [
+            "Previous paragraph text.",
+            "Realized through a combination of tools and processes. "
+            "It closes the paragraph.",
+        ]
+        assert len(page.assembled.elements) == 2
+        merged = page.assembled.body[1].cluster
+        assert merged.cells[0] == drop_cap
+        assert len(merged.cells) == 4
+        assert merged.bbox.l == 10
+        assert merged.bbox.t == 30
+        assert merged.bbox.b == 64
+
+    def test_drop_cap_inside_paragraph_cluster_is_joined(self, model):
+        """A drop cap in the paragraph's own cluster is not split off by a space."""
+        cells = [
+            _make_cell(1, "R", 10, 30, 32, 52),
+            _make_cell(2, "ealized through a combination", 34, 30, 190, 40),
+            _make_cell(3, "of tools and processes.", 34, 42, 190, 52),
+        ]
+        page = _assemble(model, [_make_cluster(0, cells)])
+        assert page.assembled is not None
+        assert [el.text for el in page.assembled.body] == [
+            "Realized through a combination of tools and processes."
+        ]
+
+    @pytest.mark.parametrize(
+        "drop_cap, label",
+        [
+            pytest.param(
+                _make_cell(1, "R", 10, 30, 32, 40),
+                DocItemLabel.TEXT,
+                id="body-size-letter",
+            ),
+            pytest.param(
+                _make_cell(1, "R", 250, 30, 272, 52),
+                DocItemLabel.TEXT,
+                id="letter-in-another-column",
+            ),
+            pytest.param(
+                _make_cell(1, "R", 10, 90, 32, 112),
+                DocItemLabel.TEXT,
+                id="letter-below-the-paragraph",
+            ),
+            pytest.param(
+                _make_cell(1, "R", 10, 30, 32, 52),
+                DocItemLabel.CAPTION,
+                id="caption-letter",
+            ),
+        ],
+    )
+    def test_letter_not_opening_the_paragraph_is_kept(self, model, drop_cap, label):
+        """A single letter that is not a drop cap of the next paragraph stays apart."""
+        page = _assemble(model, _drop_cap_page_clusters(drop_cap, label=label))
+        assert page.assembled is not None
+        assert [el.text for el in page.assembled.elements] == [
+            "Previous paragraph text.",
+            "R",
+            "ealized through a combination of tools and processes. "
+            "It closes the paragraph.",
+        ]
