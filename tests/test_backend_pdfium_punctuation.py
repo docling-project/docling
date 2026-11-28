@@ -1,17 +1,24 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""A punctuation run of the pypdfium2 backend joins its word without a space.
+"""Punctuation runs of the pypdfium2 backend join their row without a space.
 
 PDFium gives a full stop set as its own text run a tight glyph box on the
 baseline, well below the top of the line. The fixture sets an italic phrase
 followed by a roman stop, as legal text does with Latin phrases.
 
-The fixture is built as raw PDF bytes, so the test needs no models and no extra
-dependency.
+A comma run additionally hangs below the baseline: on a row without
+descenders its top edge sits inside the row while its bottom edge dips below
+the row's, so the containment rule alone would split amounts like
+"$250,500,000" across cells.
+
+The tests build small PDFs or use existing fixtures. They need no models or
+extra dependencies.
 """
 
 from pathlib import Path
+
+import pytest
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -22,6 +29,10 @@ CONTENT = (
     b"/F1 11 Tf (.) Tj ( The price is payable on completion.) Tj ET"
 )
 
+CONTENT_COMMA = (
+    b"BT /F1 11 Tf 72 700 Td (the sum of $250) Tj (,) Tj (500,000 and 32.5%) Tj ET\n"
+    b"BT /F1 11 Tf 72 680 Td (ACME HOLDINGS PLC) Tj (,) Tj ( as Parent) Tj ET"
+)
 
 # A table whose row-group label is set rotated, spanning two body rows: the
 # rows' cells lie inside the label's vertical extent.
@@ -118,3 +129,76 @@ def test_right_to_left_answers_across_a_gap_stay_separate() -> None:
 
     assert "بلی" in first_answers
     assert "خير" in first_answers
+
+
+def test_descending_punctuation_run_joins_its_row(tmp_path: Path) -> None:
+    """A comma hanging below a descenderless row keeps the line in one cell."""
+    pdf_path = tmp_path / "descend.pdf"
+    pdf_path.write_bytes(_build_pdf(CONTENT_COMMA))
+
+    assert [text for text, _ in _cell_texts(pdf_path)] == [
+        "the sum of $250,500,000 and 32.5%",
+        "ACME HOLDINGS PLC, as Parent",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("runs", "expected"),
+    [
+        pytest.param(
+            b"(,) Tj (NEXT) Tj ET",
+            ["ACME,NEXT"],
+            id="same-row",
+        ),
+        pytest.param(
+            b"ET BT /F1 11 Tf 200 700 Td (,) Tj (NEXT) Tj ET",
+            ["ACME", ",", "NEXT"],
+            id="gap-before-comma",
+        ),
+        pytest.param(
+            b"(,) Tj ET BT /F1 11 Tf 200 700 Td (NEXT) Tj ( ROW) Tj ET",
+            ["ACME,", "NEXT ROW"],
+            id="gap-after-comma",
+        ),
+        pytest.param(
+            b"(,) Tj ET BT /F1 11 Tf 107 696 Td (NEXT) Tj ( ROW) Tj ET",
+            ["ACME,", "NEXT ROW"],
+            id="close-lower-row",
+        ),
+        pytest.param(
+            b"/F1 4 Tf -2 Ts (2) Tj 0 Ts /F1 11 Tf (NEXT) Tj ET",
+            ["ACME", "2", "NEXT"],
+            id="descending-digit",
+        ),
+        pytest.param(
+            b"-2 Ts (.) Tj ET",
+            ["ACME", "."],
+            id="no-vertical-overlap",
+        ),
+        pytest.param(
+            b"/F1 20 Tf -1.6 Ts (,) Tj ET",
+            ["ACME", ","],
+            id="descent-exceeds-tolerance",
+        ),
+    ],
+)
+def test_descending_punctuation_row_boundaries(
+    tmp_path: Path, runs: bytes, expected: list[str]
+) -> None:
+    pdf_path = tmp_path / "row_boundaries.pdf"
+    pdf_path.write_bytes(_build_pdf(b"BT /F1 11 Tf 72 700 Td (ACME) Tj " + runs))
+
+    assert [text for text, _ in _cell_texts(pdf_path)] == expected
+
+
+def test_joined_comma_keeps_adjacent_superscript_separate() -> None:
+    """Joining the comma does not copy a nearby superscript into its cell."""
+    pdf_path = Path("tests/data/latex/sources/2412.19437/figures/basic_arch.pdf")
+    texts = [text for text, _ in _cell_texts(pdf_path)]
+    v = "\U0001d42f" * 2  # Mathematical bold small v.
+    t = "\U0001d461" * 2  # Mathematical italic small t.
+    i = "\U0001d456" * 2  # Mathematical italic small i.
+    superscript = "\U0001d436" * 2  # Mathematical italic capital C.
+    prefix = "{" + v
+    index = next(n for n, text in enumerate(texts) if text.startswith(prefix))
+    assert texts[index : index + 2] == [f"{prefix}{t},{i}", superscript]

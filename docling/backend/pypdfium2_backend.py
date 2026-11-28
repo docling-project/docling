@@ -322,23 +322,20 @@ class _PageChars:
             centre_ys=[y for y, _, _ in centres],
         )
 
-    def text_in_rect(self, rect: tuple[float, float, float, float]) -> str:
-        """Text of the characters whose box centre lies in ``rect``.
-
-        Args:
-            rect: ``(left, bottom, right, top)`` in the unrotated PDF frame, as
-                ``PdfTextPage.get_text_bounded()`` takes it.
-
-        Returns:
-            The text in character order. As in ``FPDFText_GetBoundedText``, a
-            space that directly follows a selected character is kept, and CRLF
-            separates selected characters on different baselines.
-        """
+    def indices_in_rect(self, rect: tuple[float, float, float, float]) -> set[int]:
+        """Select character centres in a rectangle in the unrotated PDF frame."""
         left, bottom, right, top = rect
         candidates = self.centres[
             bisect_left(self.centre_ys, bottom) : bisect_right(self.centre_ys, top)
         ]
-        selected = {char_index for _, x, char_index in candidates if left <= x <= right}
+        return {char_index for _, x, char_index in candidates if left <= x <= right}
+
+    def text_in_rect(self, rect: tuple[float, float, float, float]) -> str:
+        """Text of the characters whose box centre lies in ``rect``."""
+        return self.text_for_indices(self.indices_in_rect(rect))
+
+    def text_for_indices(self, selected: set[int]) -> str:
+        """Render in PDFium character order, keeping its spaces and line breaks."""
         if not selected:
             return ""
 
@@ -429,6 +426,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             origin = page.get_bbox()[:2]
 
         cells = []
+        source_rects: list[tuple[float, float, float, float]] = []
         cell_counter = 0
 
         page_size = self.get_size()
@@ -437,6 +435,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             chars = _PageChars.from_text_page(self.text_page)
             for i in range(self.text_page.count_rects()):
                 rect = self.text_page.get_rect(i)
+                source_rects.append(rect)
                 text_piece = chars.text_in_rect(rect)
                 # `rect` is in the unrotated frame, `page_size` in the rotated
                 # display frame: bring the rect over before converting origin.
@@ -472,9 +471,20 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             if not cells:
                 return []
 
-            def group_rows(cells: List[TextCell]) -> List[List[TextCell]]:
-                rows = []
+            def can_merge_horizontally(prev_cell: TextCell, cell: TextCell) -> bool:
+                prev_bbox = prev_cell.rect.to_bounding_box()
+                bbox = cell.rect.to_bounding_box()
+                avg_height = (prev_cell.rect.height + bbox.height) / 2
+                # Check the gap on both sides, including right-to-left runs.
+                gap = max(bbox.l - prev_bbox.r, prev_bbox.l - bbox.r)
+                return gap <= avg_height * horizontal_threshold_factor
+
+            def group_rows(
+                cells: List[TextCell],
+            ) -> list[tuple[list[TextCell], bool]]:
+                rows: list[tuple[list[TextCell], bool]] = []
                 current_row = [cells[0]]
+                has_descending_punctuation = False
                 row_top = cells[0].rect.to_bounding_box().t
                 row_bottom = cells[0].rect.to_bounding_box().b
                 row_height = cells[0].rect.to_bounding_box().height
@@ -482,58 +492,72 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 for cell in cells[1:]:
                     vertical_threshold = row_height * vertical_threshold_factor
                     bbox = cell.rect.to_bounding_box()
-                    if (
+                    aligned = (
                         abs(bbox.t - row_top) <= vertical_threshold
                         and abs(bbox.b - row_bottom) <= vertical_threshold
-                    ) or (
-                        # PDFium boxes a punctuation run tightly on the baseline,
-                        # so its edges miss the row's, though it sits inside it.
-                        # Words beside a taller cell (rotated label, drop cap) sit
-                        # inside it too, so only runs without letters or digits.
-                        bbox.t >= row_top
+                    )
+                    # PDFium boxes punctuation tightly on the baseline. A tall
+                    # label can also enclose nearby words, so exclude letters
+                    # and digits from both punctuation cases.
+                    contained_punctuation = (
+                        not aligned
+                        and bbox.t >= row_top
                         and bbox.b <= row_bottom
                         and not any(ch.isalnum() for ch in cell.text)
-                    ):
+                    )
+                    # A comma can hang just below a line without descenders.
+                    descending_punctuation = (
+                        not aligned
+                        and row_top <= bbox.t <= row_bottom < bbox.b
+                        and bbox.b - row_bottom <= vertical_threshold
+                        and not any(ch.isalnum() for ch in cell.text)
+                        and can_merge_horizontally(current_row[-1], cell)
+                    )
+                    if aligned or contained_punctuation or descending_punctuation:
                         current_row.append(cell)
-                        row_top = min(row_top, cell.rect.to_bounding_box().t)
-                        row_bottom = max(row_bottom, cell.rect.to_bounding_box().b)
-                        row_height = row_bottom - row_top
+                        has_descending_punctuation |= descending_punctuation
+                        # Include the comma in the merged box, but do not let it
+                        # widen the alignment tolerance for the next run.
+                        if not descending_punctuation:
+                            row_top = min(row_top, bbox.t)
+                            row_bottom = max(row_bottom, bbox.b)
+                            row_height = row_bottom - row_top
                     else:
-                        rows.append(current_row)
+                        rows.append((current_row, has_descending_punctuation))
                         current_row = [cell]
-                        row_top = cell.rect.to_bounding_box().t
-                        row_bottom = cell.rect.to_bounding_box().b
-                        row_height = cell.rect.to_bounding_box().height
+                        has_descending_punctuation = False
+                        row_top = bbox.t
+                        row_bottom = bbox.b
+                        row_height = bbox.height
 
-                if current_row:
-                    rows.append(current_row)
-
+                rows.append((current_row, has_descending_punctuation))
                 return rows
 
-            def merge_row(row: List[TextCell]) -> List[TextCell]:
+            def merge_row(
+                row: List[TextCell], has_descending_punctuation: bool
+            ) -> List[TextCell]:
                 merged = []
                 current_group = [row[0]]
 
                 for cell in row[1:]:
-                    prev_cell = current_group[-1]
-                    prev_bbox = prev_cell.rect.to_bounding_box()
-                    bbox = cell.rect.to_bounding_box()
-                    avg_height = (prev_cell.rect.height + bbox.height) / 2
-                    # Gap on either side: a run set left of the previous one
-                    # (right-to-left text) must not merge across a wide gap.
-                    gap = max(bbox.l - prev_bbox.r, prev_bbox.l - bbox.r)
-                    if gap <= avg_height * horizontal_threshold_factor:
+                    if can_merge_horizontally(current_group[-1], cell):
                         current_group.append(cell)
                     else:
-                        merged.append(merge_group(current_group))
+                        merged.append(
+                            merge_group(current_group, has_descending_punctuation)
+                        )
                         current_group = [cell]
 
                 if current_group:
-                    merged.append(merge_group(current_group))
+                    merged.append(
+                        merge_group(current_group, has_descending_punctuation)
+                    )
 
                 return merged
 
-            def merge_group(group: List[TextCell]) -> TextCell:
+            def merge_group(
+                group: List[TextCell], has_descending_punctuation: bool
+            ) -> TextCell:
                 if len(group) == 1:
                     return group[0]
 
@@ -544,13 +568,22 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                     b=max(cell.rect.to_bounding_box().b for cell in group),
                 )
 
-                bbox = merged_bbox.to_bottom_left_origin(page_size.height)
-                # Cells are stored in the display frame; PDFium only understands
-                # the unrotated one, so undo the rotation before querying it.
-                pdf_rect = _rect_to_pdf_frame(
-                    bbox.as_tuple(), rotation, page_size, origin
-                )
-                merged_text = chars.text_in_rect(pdf_rect)
+                if has_descending_punctuation:
+                    # Expanding a row for punctuation can enclose nearby text.
+                    # Read only characters selected by the group's source rects.
+                    indices = {
+                        index
+                        for cell in group
+                        for index in chars.indices_in_rect(source_rects[cell.index])
+                    }
+                    merged_text = chars.text_for_indices(indices)
+                else:
+                    bbox = merged_bbox.to_bottom_left_origin(page_size.height)
+                    # Undo the display rotation before querying PDFium coordinates.
+                    pdf_rect = _rect_to_pdf_frame(
+                        bbox.as_tuple(), rotation, page_size, origin
+                    )
+                    merged_text = chars.text_in_rect(pdf_rect)
 
                 return TextCell(
                     index=group[0].index,
@@ -561,7 +594,11 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 )
 
             rows = group_rows(cells)
-            merged_cells = [cell for row in rows for cell in merge_row(row)]
+            merged_cells = [
+                cell
+                for row, has_descending_punctuation in rows
+                for cell in merge_row(row, has_descending_punctuation)
+            ]
 
             for i, cell in enumerate(merged_cells, 1):
                 cell.index = i
