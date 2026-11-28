@@ -303,6 +303,39 @@ def _merge_calendar_parts(
     return shown_parts, merged
 
 
+def _body_holds(description: str, body_text: str) -> bool:
+    """Return whether the body holds the description, word for word.
+
+    The match must not start or end inside a word of the body: a description
+    "Room 4" is not repeated by a body that says "Room 42".
+
+    Args:
+        description: The DESCRIPTION value of an entry.
+        body_text: The body text with each run of whitespace as one space.
+
+    Returns:
+        True if the body holds the description, or the description is empty.
+    """
+    text = " ".join(description.split())
+    if not text:
+        return True
+    if len(text) > len(body_text):
+        return False
+    start = 0
+    while (idx := body_text.find(text, start)) >= 0:
+        end = idx + len(text)
+        if not (idx > 0 and _is_word_char(body_text[idx - 1])) and not (
+            end < len(body_text) and _is_word_char(body_text[end])
+        ):
+            return True
+        start = idx + 1
+    return False
+
+
+def _is_word_char(char: str) -> bool:
+    return char.isalnum() or char == "_"
+
+
 def _without_repeated_descriptions(
     components: list[Component], body_text: str
 ) -> list[Component]:
@@ -334,7 +367,7 @@ def _without_repeated_descriptions(
                     prop
                     for prop in component.properties
                     if prop.name != "DESCRIPTION"
-                    or " ".join(prop.value.split()) not in body_text
+                    or not _body_holds(prop.value, body_text)
                 ],
             )
         result.append(component)
