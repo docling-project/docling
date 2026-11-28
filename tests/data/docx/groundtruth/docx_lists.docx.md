@@ -112,3 +112,11 @@ The spare clamps were sorted into labeled tins along the lower shelf.
     - 1.1. Item B
         - 1.1.1. Item C
     - 1.2. Item D
+
+#### Test 13: Nested list items separated by empty paragraphs
+
+1. Prepare the site
+    - 1.1. Clear debris
+    - 1.2. Level the ground
+2. Install the inverter
+    - 2.1. Mount the bracket

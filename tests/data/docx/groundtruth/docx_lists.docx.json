@@ -4,7 +4,7 @@
   "name": "docx_lists",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 3929171338294676296,
+    "binary_hash": 10757828437436753757,
     "filename": "docx_lists.docx"
   },
   "furniture": {
@@ -78,6 +78,9 @@
         },
         {
           "$ref": "#/texts/93"
+        },
+        {
+          "$ref": "#/texts/99"
         }
       ],
       "content_layer": "body",
@@ -596,6 +599,54 @@
       "children": [
         {
           "$ref": "#/texts/96"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/33",
+      "parent": {
+        "$ref": "#/texts/99"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/100"
+        },
+        {
+          "$ref": "#/texts/103"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/34",
+      "parent": {
+        "$ref": "#/texts/100"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/101"
+        },
+        {
+          "$ref": "#/texts/102"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/35",
+      "parent": {
+        "$ref": "#/texts/103"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/104"
         }
       ],
       "content_layer": "body",
@@ -2477,6 +2528,9 @@
       "children": [
         {
           "$ref": "#/groups/30"
+        },
+        {
+          "$ref": "#/texts/98"
         }
       ],
       "content_layer": "body",
@@ -2577,6 +2631,148 @@
       },
       "enumerated": true,
       "marker": "1.2."
+    },
+    {
+      "self_ref": "#/texts/98",
+      "parent": {
+        "$ref": "#/texts/93"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/99",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/33"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Test 13: Nested list items separated by empty paragraphs",
+      "text": "Test 13: Nested list items separated by empty paragraphs",
+      "level": 3
+    },
+    {
+      "self_ref": "#/texts/100",
+      "parent": {
+        "$ref": "#/groups/33"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/34"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Prepare the site",
+      "text": "Prepare the site",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "1."
+    },
+    {
+      "self_ref": "#/texts/101",
+      "parent": {
+        "$ref": "#/groups/34"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Clear debris",
+      "text": "Clear debris",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "1.1."
+    },
+    {
+      "self_ref": "#/texts/102",
+      "parent": {
+        "$ref": "#/groups/34"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Level the ground",
+      "text": "Level the ground",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "1.2."
+    },
+    {
+      "self_ref": "#/texts/103",
+      "parent": {
+        "$ref": "#/groups/33"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/35"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Install the inverter",
+      "text": "Install the inverter",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "2."
+    },
+    {
+      "self_ref": "#/texts/104",
+      "parent": {
+        "$ref": "#/groups/35"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Mount the bracket",
+      "text": "Mount the bracket",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "2.1."
     }
   ],
   "pictures": [],
