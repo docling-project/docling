@@ -66,7 +66,15 @@ _log = logging.getLogger(__name__)
 
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
-_EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
+_FALCON_OCR_REPO_ID = "tiiuae/Falcon-OCR"
+# Falcon-OCR does not support SDPA yet; it must load with eager attention
+# (see #3278). The ``_attn_implementation="eager"`` kwarg reaches
+# ``FalconOCRConfig.__init__`` through the config kwargs, which forwards
+# them to ``PreTrainedConfig``; this entry is the whole attention fix.
+_EAGER_ATTN_REQUIRED_REPO_IDS = {
+    "nvidia/NVIDIA-Nemotron-Parse-2.0",
+    _FALCON_OCR_REPO_ID,
+}
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -113,6 +121,64 @@ def _stopper_stop_reasons(
     return stop_reasons
 
 
+def _falcon_ocr_generate(
+    model: Any,
+    images: list[Image],
+    *,
+    category: str = "plain",
+    max_new_tokens: int = 4096,
+    temperature: float = 0.0,
+    top_k: int | None = None,
+    min_dimension: int = 64,
+    max_dimension: int = 1024,
+    compile_model: bool = False,
+    seed: int | None = None,
+) -> list[str]:
+    """Run Falcon-OCR's native ``generate`` on a batch of images.
+
+    The remote-code model (pinned revision
+    ``42ec56b72a23984ac059e7c8a6d397a8529423fe``) defines ``generate(images,
+    *, category, max_new_tokens, temperature, top_k, min_dimension,
+    max_dimension, compile, seed) -> list[str]`` and builds the prompt
+    itself from the category. Defaults match the remote model's own
+    defaults. ``category`` is one value for the whole batch; it comes from
+    the model preset, not from the input prompts.
+    """
+    generate_kwargs: dict[str, Any] = {
+        "category": category,
+        "max_new_tokens": max_new_tokens,
+        "temperature": temperature,
+        "top_k": top_k,
+        "min_dimension": min_dimension,
+        "max_dimension": max_dimension,
+        "compile": compile_model,
+    }
+    if seed is not None:
+        generate_kwargs["seed"] = seed
+    return model.generate(images, **generate_kwargs)
+
+
+def _falcon_ocr_outputs(texts: list[str], expected_count: int) -> list[VlmEngineOutput]:
+    """Build one output per input from Falcon-OCR's plain texts.
+
+    The native ``generate`` returns only ``list[str]`` — no token counts
+    and no end-of-sequence flag — so the stop reason is unknown, and
+    ``stop_strings`` from ``VlmEngineInput`` are not applied on this path.
+    """
+    if len(texts) != expected_count:
+        raise RuntimeError(
+            f"Falcon-OCR returned {len(texts)} texts for {expected_count} images."
+        )
+    return [
+        VlmEngineOutput(
+            text=text,
+            stop_reason=VlmStopReason.UNSPECIFIED.value,
+            metadata={"falcon_ocr": "native_generate"},
+        )
+        for text in texts
+    ]
+
+
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     """HuggingFace Transformers engine for VLM inference.
 
@@ -145,6 +211,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.processor: Any | None = None
         self.vlm_model: PreTrainedModel | None = None
         self.generation_config: GenerationConfig | None = None
+        # ``config.model_type`` of the loaded model (for example "falcon_ocr").
+        # ``_load_model_for_repo`` reads it once, before ``torch.compile``.
+        self.model_type: str | None = None
         self.strip_stop_strings = (
             bool(
                 model_config.extra_config.get("transformers_strip_stop_strings", False)
@@ -343,6 +412,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         self.vlm_model.eval()
 
+        # The loaded model declares its own identity: Falcon-OCR's config
+        # reports ``model_type`` "falcon_ocr", which selects the native
+        # generate path in ``predict_batch``. Read it before
+        # ``torch.compile`` wraps the model; a local copy or a fine-tune
+        # keeps the same ``model_type`` and takes the same path.
+        self.model_type = self.vlm_model.config.model_type
+
         # Optionally compile model for better performance (model must be in eval mode first)
         # Works for Python < 3.14 with any torch 2.x
         # Works for Python >= 3.14 with torch >= 2.10
@@ -358,14 +434,43 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 )
 
         # Load generation config
-        self.generation_config = GenerationConfig.from_pretrained(
-            artifacts_path, revision=revision
+        self.generation_config = self._load_generation_config(
+            artifacts_path=artifacts_path,
+            revision=revision,
         )
 
         _log.info(
             f"Loaded model {repo_id} (revision: {revision}) in "
             f"{time.monotonic() - load_start_time:.2f} sec."
         )
+
+    def _load_generation_config(
+        self,
+        *,
+        artifacts_path: Union[Path, str],
+        revision: str,
+    ) -> GenerationConfig:
+        """Load the generation config, deriving it when the repo ships none.
+
+        Some models (for example Falcon-OCR) ship no
+        ``generation_config.json``; without the fallback the engine fails
+        before the first page is read. ``artifacts_path`` is always a local
+        directory at this point, so a missing file is checked directly.
+        """
+        if (Path(artifacts_path) / "generation_config.json").exists():
+            return GenerationConfig.from_pretrained(artifacts_path, revision=revision)
+        if self.vlm_model is None:
+            raise RuntimeError(
+                "Model not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
+        _log.warning(
+            "Model %s does not ship generation_config.json; deriving the "
+            "generation config from the model config instead.",
+            self.model_config.repo_id
+            if self.model_config is not None
+            else artifacts_path,
+        )
+        return GenerationConfig.from_model_config(self.vlm_model.config)
 
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
@@ -378,6 +483,64 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.processor is None:
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
+
+    def _predict_falcon_batch(
+        self, input_batch: List[VlmEngineInput]
+    ) -> List[VlmEngineOutput]:
+        """Run Falcon-OCR through its native ``generate`` API.
+
+        The remote-code model ships no usable chat template, so the generic
+        chat-template processor flow cannot run it. The OCR category comes
+        from the model preset (``falcon_ocr_category``, default ``"plain"``);
+        it is data for this path, not a switch that selects which code runs.
+        The native ``generate`` returns only ``list[str]`` — no token counts
+        and no end-of-sequence flag — so ``stop_strings`` from
+        ``VlmEngineInput`` are not applied on this path and the stop reason
+        stays unspecified.
+        """
+        if not input_batch:
+            return []
+        if self.vlm_model is None:
+            raise RuntimeError(
+                "Model not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
+
+        first_input = input_batch[0]
+        extra_generation_config = dict(first_input.extra_generation_config or {})
+        extra_config = (
+            self.model_config.extra_config if self.model_config is not None else {}
+        )
+        category = str(extra_config.get("falcon_ocr_category", "plain"))
+
+        _log.info(
+            "Running Falcon-OCR native generate on %s image(s) on %s (max_new_tokens=%s)...",
+            len(input_batch),
+            self.device,
+            first_input.max_new_tokens,
+        )
+        start_time = time.time()
+        with torch.inference_mode():
+            generated_texts = _falcon_ocr_generate(
+                self.vlm_model,
+                [input_data.image for input_data in input_batch],
+                category=category,
+                max_new_tokens=first_input.max_new_tokens,
+                temperature=first_input.temperature,
+                top_k=extra_generation_config.get("top_k"),
+                min_dimension=extra_generation_config.get("min_dimension", 64),
+                max_dimension=extra_generation_config.get("max_dimension", 1024),
+                compile_model=self.options.compile_model,
+                seed=extra_generation_config.get("seed"),
+            )
+        generation_time = time.time() - start_time
+        _log.info(
+            "Falcon-OCR generated %s text(s) for %s image(s) in %.2f sec.",
+            len(generated_texts),
+            len(input_batch),
+            generation_time,
+        )
+
+        return _falcon_ocr_outputs(generated_texts, len(input_batch))
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
@@ -398,9 +561,21 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return []
 
         # Model should already be loaded via initialize()
-        if self.vlm_model is None or self.processor is None:
+        if self.vlm_model is None:
             raise RuntimeError(
                 "Model not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
+
+        # Falcon-OCR ships no usable chat template and its remote-code model
+        # exposes a native OCR generation API; the generic chat-template
+        # processor flow cannot run it. The loaded model declares its own
+        # identity via ``config.model_type``, read once at load time.
+        if self.model_type == "falcon_ocr":
+            return self._predict_falcon_batch(input_batch)
+
+        if self.processor is None:
+            raise RuntimeError(
+                "Processor not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
         # Get prompt style from first input's extra config

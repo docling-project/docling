@@ -11,6 +11,8 @@ This test suite validates:
 5. All three stage types (VlmConvert, PictureDescription, CodeFormula)
 """
 
+from types import SimpleNamespace
+
 import pytest
 from pydantic import ValidationError
 
@@ -201,6 +203,10 @@ class TestRuntimeOptions:
             tokenizer = None
 
         class FakeModel:
+            # A real PreTrainedModel always carries .config with .model_type;
+            # the engine reads it once at load time.
+            config = SimpleNamespace(model_type="test")
+
             @classmethod
             def from_pretrained(cls, *args, **kwargs):
                 captured_kwargs.update(kwargs)
@@ -230,6 +236,11 @@ class TestRuntimeOptions:
         monkeypatch.setattr(
             tf_engine.GenerationConfig,
             "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_model_config",
             lambda *args, **kwargs: object(),
         )
 
@@ -273,6 +284,10 @@ class TestRuntimeOptions:
             tokenizer = None
 
         class FakeModel:
+            # A real PreTrainedModel always carries .config with .model_type;
+            # the engine reads it once at load time.
+            config = SimpleNamespace(model_type="test")
+
             @classmethod
             def from_pretrained(cls, *args, **kwargs):
                 model_kwargs.update(kwargs)
@@ -304,6 +319,11 @@ class TestRuntimeOptions:
         monkeypatch.setattr(
             tf_engine.GenerationConfig,
             "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_model_config",
             lambda *args, **kwargs: object(),
         )
 
