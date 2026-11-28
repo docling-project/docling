@@ -86,7 +86,7 @@ class SpatialClusterIndex:
         bbox1: BoundingBox,
         bbox2: BoundingBox,
         overlap_threshold: float,
-        containment_threshold: float,
+        containment_threshold: float | None,
     ) -> bool:
         """Check if two bboxes overlap sufficiently."""
         bbox1 = ordered_bounding_box(bbox1)
@@ -94,14 +94,14 @@ class SpatialClusterIndex:
         if not has_positive_area(bbox1) or not has_positive_area(bbox2):
             return False
 
-        iou = bbox1.intersection_over_union(bbox2)
-        containment1 = bbox1.intersection_over_self(bbox2)
-        containment2 = bbox2.intersection_over_self(bbox1)
+        if bbox1.intersection_over_union(bbox2) > overlap_threshold:
+            return True
+        if containment_threshold is None:
+            return False
 
         return (
-            iou > overlap_threshold
-            or containment1 > containment_threshold
-            or containment2 > containment_threshold
+            bbox1.intersection_over_self(bbox2) > containment_threshold
+            or bbox2.intersection_over_self(bbox1) > containment_threshold
         )
 
 
@@ -300,7 +300,9 @@ class LayoutPostprocessor:
             c for c in special_clusters if c.label == DocItemLabel.PICTURE
         ]
         picture_clusters = self._remove_overlapping_clusters(
-            picture_clusters, "picture"
+            picture_clusters,
+            "picture",
+            containment_threshold=None if self.options.keep_nested_pictures else 0.8,
         )
 
         table_clusters = [c for c in special_clusters if c.label in self.TABLE_TYPES]
@@ -331,13 +333,32 @@ class LayoutPostprocessor:
         ]
 
         nested_clusters = table_clusters + picture_clusters
-        for cluster in nested_clusters:
+        child_assignment_order = nested_clusters
+        if self.options.keep_nested_pictures:
+            # Assign shared text to the smallest eligible picture first.
+            child_assignment_order = table_clusters + sorted(
+                picture_clusters,
+                key=lambda cluster: (
+                    cluster.bbox.area(),
+                    -cluster.confidence,
+                    cluster.id,
+                ),
+            )
+
+        assigned_picture_child_ids: set[int] = set()
+        for cluster in child_assignment_order:
             children = [
                 regular
                 for regular in self.regular_clusters
-                if regular.bbox.intersection_over_self(cluster.bbox) > 0.8
+                if regular.id not in assigned_picture_child_ids
+                and regular.bbox.intersection_over_self(cluster.bbox) > 0.8
             ]
             self._set_cluster_children(cluster, children)
+            if (
+                self.options.keep_nested_pictures
+                and cluster.label == DocItemLabel.PICTURE
+            ):
+                assigned_picture_child_ids.update(child.id for child in children)
 
         parent_by_child_id = {}
         for child in nested_clusters:
@@ -553,7 +574,7 @@ class LayoutPostprocessor:
         clusters: list[Cluster],
         cluster_type: str,
         overlap_threshold: float = 0.8,
-        containment_threshold: float = 0.8,
+        containment_threshold: float | None = 0.8,
     ) -> list[Cluster]:
         if not clusters:
             return []

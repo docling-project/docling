@@ -53,6 +53,7 @@ def _translate(options: LayoutOptions) -> LayoutObjectDetectionOptions:
         keep_empty_clusters=options.keep_empty_clusters,
         skip_cell_assignment=options.skip_cell_assignment,
         create_orphan_clusters=options.create_orphan_clusters,
+        keep_nested_pictures=options.keep_nested_pictures,
     )
 
 

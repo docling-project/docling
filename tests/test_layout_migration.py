@@ -88,12 +88,14 @@ def test_translate_round_trips_postprocessing_flags():
         keep_empty_clusters=True,
         skip_cell_assignment=True,
         create_orphan_clusters=False,
+        keep_nested_pictures=True,
     )
     translated = _translate(options)
 
     assert translated.keep_empty_clusters is True
     assert translated.skip_cell_assignment is True
     assert translated.create_orphan_clusters is False
+    assert translated.keep_nested_pictures is True
 
 
 def test_translate_falls_back_from_retired_v2_model():

@@ -1717,7 +1717,7 @@ class BaseLayoutOptions(BaseOptions):
     Layout analysis detects the structural regions of a document page
     (text blocks, tables, figures, headers, etc.) and assigns content
     cells to those regions. This base class provides the shared controls
-    for empty-cluster retention and cell-assignment skipping.
+    for layout post-processing.
 
     See Also:
         `LayoutObjectDetectionOptions`: Default layout options; object-detection
@@ -1752,6 +1752,16 @@ class BaseLayoutOptions(BaseOptions):
             )
         ),
     ] = True
+
+    keep_nested_pictures: Annotated[
+        bool,
+        Field(
+            description=(
+                "Retain distinct picture detections inside larger pictures during layout post-processing. "
+                "Nearly identical picture boxes are still merged."
+            )
+        ),
+    ] = False
 
 
 class LayoutOptions(BaseLayoutOptions):
@@ -1881,6 +1891,16 @@ class BaseLayoutPostprocessorOptions(BaseOptions):
             )
         ),
     ] = True
+
+    keep_nested_pictures: Annotated[
+        bool,
+        Field(
+            description=(
+                "Retain distinct picture detections inside larger pictures. "
+                "Nearly identical picture boxes are still merged."
+            )
+        ),
+    ] = False
 
 
 class LayoutPostprocessorOptions(BaseLayoutPostprocessorOptions):
