@@ -177,11 +177,14 @@ class VlmConvertModel(BasePageModel):
         layout_output: VlmEngineOutput,
         recognition_outputs: list[VlmEngineOutput],
     ) -> str | None:
+        outputs = [layout_output, *recognition_outputs]
+        for output in outputs:
+            if output.stop_reason == VlmStopReason.INFERENCE_ERROR.value:
+                return output.stop_reason
         incomplete_reasons = {
             VlmStopReason.LENGTH.value,
             VlmStopReason.CONTENT_FILTERED.value,
         }
-        outputs = [layout_output, *recognition_outputs]
         for output in outputs:
             if output.stop_reason in incomplete_reasons:
                 return output.stop_reason
