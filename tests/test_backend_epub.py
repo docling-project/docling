@@ -18,10 +18,13 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 """
 
 import logging
+import struct
 import warnings
 import zipfile
+import zlib
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 from docling_core.types.doc import TextItem
@@ -184,11 +187,38 @@ def test_epub_content_combination():
     assert len(total_text) > 100, "Combined content should have substantial text"
 
 
+class _UnflaggedNameInfo(zipfile.ZipInfo):
+    """A ZIP entry whose name is stored in ``encoding`` without the UTF-8 flag.
+
+    Info-ZIP ``zip`` (also the one shipped with macOS) stores UTF-8 names this
+    way, while ``zipfile`` sets the flag for every non-ASCII name it writes.
+    With ``unicode_path_field``, the entry also carries its name in an Info-ZIP
+    Unicode Path extra field (0x7075), as Info-ZIP builds with Unicode support
+    write it. Python 3.12 and later take the name from that field.
+    """
+
+    def __init__(self, filename: str, encoding: str, unicode_path_field: bool):
+        super().__init__(filename)
+        self.encoding = encoding
+        if unicode_path_field:
+            stored = filename.encode(encoding)
+            utf8 = filename.encode("utf-8")
+            self.extra = (
+                struct.pack("<HHBI", 0x7075, 5 + len(utf8), 1, zlib.crc32(stored))
+                + utf8
+            )
+
+    def _encodeFilenameFlags(self) -> tuple[bytes, int]:
+        return self.filename.encode(self.encoding), self.flag_bits
+
+
 def _build_epub_with_hrefs(
     path: Path,
     hrefs: list[str],
     names: list[str],
     bodies: list[str] | None = None,
+    name_encoding: str | None = None,
+    unicode_path_field: bool = False,
 ) -> Path:
     """Build a minimal EPUB whose manifest hrefs and ZIP entry names differ.
 
@@ -197,6 +227,9 @@ def _build_epub_with_hrefs(
     item is declared ``application/xhtml+xml``, which is what makes it a
     content document; the file name only varies. ``bodies`` replaces the
     default body markup of each document, one entry per name.
+    ``name_encoding`` stores the names in that encoding without the ZIP UTF-8
+    flag, and ``unicode_path_field`` also adds an Info-ZIP Unicode Path extra
+    field to each of them.
     """
     container = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -233,8 +266,11 @@ def _build_epub_with_hrefs(
         z.writestr("META-INF/container.xml", container)
         z.writestr("OEBPS/content.opf", opf)
         for name, body in zip(names, bodies, strict=True):
+            member: str | zipfile.ZipInfo = f"OEBPS/{name}"
+            if name_encoding is not None:
+                member = _UnflaggedNameInfo(member, name_encoding, unicode_path_field)
             z.writestr(
-                f"OEBPS/{name}",
+                member,
                 '<?xml version="1.0" encoding="UTF-8"?>'
                 '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
                 f"{body}"
@@ -268,6 +304,48 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 0 body." in text
     assert "Chapter 1 body." in text
     assert "Chapter 2 body." in text
+
+
+@pytest.mark.parametrize(
+    ("name", "name_encoding", "unicode_path_field"),
+    [
+        pytest.param("café.xhtml", "utf-8", False, id="utf-8"),
+        pytest.param("café.xhtml", "cp437", False, id="cp437"),
+        pytest.param("Ωäö.xhtml", "utf-8", True, id="utf-8-unicode-path-field"),
+    ],
+)
+def test_epub_member_name_without_utf8_flag_is_read(
+    tmp_path: Path, name: str, name_encoding: str, unicode_path_field: bool
+):
+    """A non-ASCII file name is read as UTF-8 when its ZIP entry has no UTF-8 flag.
+
+    EPUB requires UTF-8 file names, but not the ZIP flag that marks them, and
+    Info-ZIP ``zip`` does not set it. ``zipfile`` then decodes the name as
+    CP437, so the manifest href finds no member and the chapter is dropped
+    while the conversion still reports success. An archive that stores the
+    name in CP437 must still be read, and a name that Python 3.12+ takes from
+    a Unicode Path extra field must be kept, even when its CP437 encoding
+    happens to be valid UTF-8 (as for ``Ωäö``).
+    """
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "unflagged.epub",
+        hrefs=[quote(name), "plain.xhtml"],
+        names=[name, "plain.xhtml"],
+        name_encoding=name_encoding,
+        unicode_path_field=unicode_path_field,
+    )
+    with zipfile.ZipFile(epub_path) as archive:
+        assert not any(info.flag_bits & 0x800 for info in archive.infolist())
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    text = "\n".join(item.text for item in result.document.texts)
+
+    assert "Chapter 0 body." in text
+    assert "Chapter 1 body." in text
 
 
 @pytest.mark.parametrize("stored_name", ["OEBPS/my book.opf", "OEBPS/my%20book.opf"])

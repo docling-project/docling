@@ -39,6 +39,33 @@ _log = logging.getLogger(__name__)
 # An attribute value cannot hold a literal "<" either, but it can hold a ">".
 _START_TAG = re.compile(r"""<[A-Za-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>""")
 
+# General purpose bit 11 of a ZIP entry: its name is encoded as UTF-8.
+_ZIP_UTF8_NAME_FLAG = 0x800
+
+
+def _decode_utf8_member_names(archive: ZipFile) -> None:
+    """Decode the member names of an EPUB archive as UTF-8.
+
+    EPUB requires UTF-8 file names in the container, but not the ZIP flag that
+    marks a name as UTF-8. Tools such as Info-ZIP ``zip`` leave the flag unset,
+    so ``zipfile`` decodes the name as CP437 and a manifest reference to a
+    non-ASCII file name finds no member. A name that is not valid UTF-8 keeps
+    its CP437 decoding.
+
+    Only ``filename`` changes: ``zipfile`` compares ``orig_filename`` with the
+    local file header when a member is opened. A name that ``zipfile`` has
+    already changed is kept, such as one that Python 3.12+ takes from an
+    Info-ZIP Unicode Path extra field.
+    """
+    for info in archive.infolist():
+        if info.flag_bits & _ZIP_UTF8_NAME_FLAG or info.filename != info.orig_filename:
+            continue
+        try:
+            info.filename = info.filename.encode("cp437").decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+    archive.NameToInfo = {info.filename: info for info in archive.infolist()}
+
 
 class EpubDocumentBackend(DeclarativeDocumentBackend):
     """Backend for converting EPUB files to DoclingDocument format.
@@ -89,6 +116,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 self.epub_zip = ZipFile(self.path_or_stream, "r")
             else:
                 raise ValueError("path_or_stream must be BytesIO or Path")
+            _decode_utf8_member_names(self.epub_zip)
 
             # Parse the EPUB structure
             self._parse_epub_structure()
