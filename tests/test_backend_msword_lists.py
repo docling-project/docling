@@ -707,6 +707,159 @@ def test_list_markers_follow_east_asian_num_fmt_end_to_end(tmp_path):
     ]
 
 
+# Markers rendered by Microsoft Word 16.112 (macOS), read back with "Convert
+# numbers to text". Word puts U+200C before (arabicAbjad) or after (arabicAlpha)
+# each letter, repeats the letter after the 28th counter, and shows nothing for
+# 0 in the letter formats. hindiNumbers uses Devanagari digits.
+_COMPLEX_SCRIPT_MARKERS: list[tuple[str, int, str]] = [
+    ("arabicAbjad", 0, ""),
+    ("arabicAbjad", 1, "\u200cأ"),
+    ("arabicAbjad", 2, "\u200cب"),
+    ("arabicAbjad", 5, "\u200c\u0647"),
+    ("arabicAbjad", 9, "\u200cط"),
+    ("arabicAbjad", 10, "\u200cي"),
+    ("arabicAbjad", 26, "\u200cض"),
+    ("arabicAbjad", 27, "\u200cظ"),
+    ("arabicAbjad", 28, "\u200cغ"),
+    ("arabicAbjad", 29, "\u200cأ\u200cأ"),
+    ("arabicAbjad", 30, "\u200cب\u200cب"),
+    ("arabicAbjad", 56, "\u200cغ\u200cغ"),
+    ("arabicAbjad", 57, "\u200cأ\u200cأ\u200cأ"),
+    ("arabicAbjad", 100, "\u200cع\u200cع\u200cع\u200cع"),
+    ("arabicAbjad", 101, "\u200cف\u200cف\u200cف\u200cف"),
+    ("arabicAbjad", 112, "\u200cغ\u200cغ\u200cغ\u200cغ"),
+    ("arabicAlpha", 0, ""),
+    ("arabicAlpha", 1, "أ\u200c"),
+    ("arabicAlpha", 2, "ب\u200c"),
+    ("arabicAlpha", 5, "ج\u200c"),
+    ("arabicAlpha", 9, "ذ\u200c"),
+    ("arabicAlpha", 10, "ر\u200c"),
+    ("arabicAlpha", 26, "\u0647\u200c"),
+    ("arabicAlpha", 27, "و\u200c"),
+    ("arabicAlpha", 28, "ي\u200c"),
+    ("arabicAlpha", 29, "أ\u200cأ\u200c"),
+    ("arabicAlpha", 30, "ب\u200cب\u200c"),
+    ("arabicAlpha", 56, "ي\u200cي\u200c"),
+    ("arabicAlpha", 57, "أ\u200cأ\u200cأ\u200c"),
+    ("arabicAlpha", 100, "ط\u200cط\u200cط\u200cط\u200c"),
+    ("arabicAlpha", 101, "ظ\u200cظ\u200cظ\u200cظ\u200c"),
+    ("arabicAlpha", 112, "ي\u200cي\u200cي\u200cي\u200c"),
+    ("hindiNumbers", 0, "\u0966"),
+    ("hindiNumbers", 1, "१"),
+    ("hindiNumbers", 2, "२"),
+    ("hindiNumbers", 5, "५"),
+    ("hindiNumbers", 9, "९"),
+    ("hindiNumbers", 10, "१०"),
+    ("hindiNumbers", 26, "२६"),
+    ("hindiNumbers", 27, "२७"),
+    ("hindiNumbers", 28, "२८"),
+    ("hindiNumbers", 29, "२९"),
+    ("hindiNumbers", 30, "३०"),
+    ("hindiNumbers", 56, "५६"),
+    ("hindiNumbers", 57, "५७"),
+    ("hindiNumbers", 100, "१००"),
+    ("hindiNumbers", 101, "१०१"),
+    ("hindiNumbers", 112, "११२"),
+]
+
+
+@pytest.mark.parametrize(
+    ("num_fmt", "counter", "expected"),
+    [
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
+        for num_fmt, counter, expected in _COMPLEX_SCRIPT_MARKERS
+    ],
+)
+def test_format_enum_counter_arabic_and_hindi_num_fmt(num_fmt, counter, expected):
+    assert _format_enum_counter(counter, num_fmt) == expected
+
+
+@pytest.mark.parametrize("num_fmt", ["arabicAbjad", "arabicAlpha", "hindiNumbers"])
+def test_arabic_and_hindi_formatters_keep_negative_values_decimal(num_fmt):
+    """Negative counters fall back to decimal, as in the letter and roman helpers."""
+    assert _format_enum_counter(-12, num_fmt) == "-12"
+
+
+def test_list_markers_follow_arabic_and_hindi_num_fmt_end_to_end(tmp_path):
+    """Arabic-script and Devanagari ``w:numFmt`` levels must keep their markers.
+
+    These formats used to be treated as non-numbered, so the list items came out
+    as bullets with an empty marker.
+    """
+
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    def add_numbering(abstract_id: str, num_id: str, num_fmt: str, start_val: int):
+        abstract_num = OxmlElement("w:abstractNum")
+        abstract_num.set(qn("w:abstractNumId"), abstract_id)
+        lvl = OxmlElement("w:lvl")
+        lvl.set(qn("w:ilvl"), "0")
+        start = OxmlElement("w:start")
+        start.set(qn("w:val"), str(start_val))
+        lvl.append(start)
+        fmt = OxmlElement("w:numFmt")
+        fmt.set(qn("w:val"), num_fmt)
+        lvl.append(fmt)
+        text_el = OxmlElement("w:lvlText")
+        text_el.set(qn("w:val"), "%1.")
+        lvl.append(text_el)
+        abstract_num.append(lvl)
+        numbering.insert(0, abstract_num)
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        ref = OxmlElement("w:abstractNumId")
+        ref.set(qn("w:val"), abstract_id)
+        num.append(ref)
+        numbering.append(num)
+
+    # The letter lists start at 28 so they cross the end of the alphabet.
+    add_numbering("510", "511", "arabicAbjad", 28)
+    add_numbering("520", "521", "arabicAlpha", 28)
+    add_numbering("530", "531", "hindiNumbers", 9)
+
+    def add_item(text: str, num_id: str):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), "0")
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), num_id)
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    for num_id in ("511", "521", "531"):
+        add_item(f"{num_id} first", num_id)
+        add_item(f"{num_id} second", num_id)
+
+    docx_path = tmp_path / "arabic_hindi_num_fmt_markers.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    items = [
+        (item.text, item.marker, item.enumerated)
+        for item, _ in converted.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+
+    assert items == [
+        ("511 first", "\u200cغ.", True),
+        ("511 second", "\u200cأ\u200cأ.", True),
+        ("521 first", "ي\u200c.", True),
+        ("521 second", "أ\u200cأ\u200c.", True),
+        ("531 first", "९.", True),
+        ("531 second", "१०.", True),
+    ]
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
