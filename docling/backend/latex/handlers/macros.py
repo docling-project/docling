@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Literal
 
 from docling_core.types.doc.document import (
     DocItemLabel,
@@ -141,6 +141,40 @@ def _strip_latex_comments(text: str) -> str:
     return "".join(parts)
 
 
+def _optional_argument_default(argnlist: list) -> str | None:
+    if len(argnlist) < 5:
+        return None
+    optional_arg = argnlist[3]
+    if optional_arg is None:
+        return None
+    raw = optional_arg.latex_verbatim()
+    if len(raw) < 2 or raw[0] != "[" or raw[-1] != "]":
+        return None
+    return raw[1:-1]
+
+
+def _simple_bracket_prefix(
+    text: str,
+) -> tuple[str, str] | Literal["complex"] | None:
+    index = 0
+    while index < len(text) and text[index].isspace():
+        index += 1
+    if index >= len(text) or text[index] != "[":
+        return None
+    depth = 0
+    for end in range(index, len(text)):
+        char = text[end]
+        if char == "[":
+            depth += 1
+            if depth > 1:
+                return "complex"
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                return text[index + 1 : end], text[end + 1 :]
+    return "complex"
+
+
 def _simple_declaration_end(text: str, command: str, cursor: int) -> int | None:
     cursor = _skip_latex_space(text, cursor)
     if command == "newif":
@@ -170,6 +204,7 @@ class MacroHandlerMixin:
         _input_stack: set[str]
         _custom_macros: dict[str, str]
         _custom_macro_num_args: dict[str, int]
+        _custom_macro_opt_defaults: dict[str, str]
         _masked_macro_spans: list[tuple[int, int]]
         _suppress_image_path_caption: bool
         _expansion_budget: MacroExpansionBudget
@@ -283,6 +318,7 @@ class MacroHandlerMixin:
                     match.group(2)
                 )
                 self._custom_macro_num_args[match.group(1)] = 0
+                self._custom_macro_opt_defaults.pop(match.group(1), None)
             for name, expansion in self._custom_macros.items():
                 body = expansion.strip()
                 if self._custom_macro_num_args.get(
@@ -404,12 +440,18 @@ class MacroHandlerMixin:
                             macro_def = def_arg.latex_verbatim().strip("{} ")
 
                         if macro_name:
+                            num_args = self._parse_custom_macro_num_args(num_args_arg)
                             self._custom_macros[macro_name] = _strip_latex_comments(
                                 macro_def
                             )
-                            self._custom_macro_num_args[macro_name] = (
-                                self._parse_custom_macro_num_args(num_args_arg)
-                            )
+                            self._custom_macro_num_args[macro_name] = num_args
+                            optional_default = _optional_argument_default(argnlist)
+                            if num_args > 0 and optional_default is not None:
+                                self._custom_macro_opt_defaults[macro_name] = (
+                                    optional_default
+                                )
+                            else:
+                                self._custom_macro_opt_defaults.pop(macro_name, None)
                             _log.debug(
                                 f"Registered custom macro: \\{macro_name} -> '{macro_def}'"
                             )
@@ -958,6 +1000,61 @@ class MacroHandlerMixin:
 
         return self._nodes_to_text(parsed_nodes)
 
+    def _parse_optional_call(
+        self, siblings: list, next_index: int
+    ) -> tuple[str, int, str] | Literal["absent", "complex"]:
+        index = next_index
+        while index < len(siblings):
+            node = siblings[index]
+            if isinstance(node, LatexCharsNode) and not node.chars.strip():
+                index += 1
+                continue
+            break
+        if index >= len(siblings) or not isinstance(siblings[index], LatexCharsNode):
+            return "absent"
+        parsed = _simple_bracket_prefix(siblings[index].chars)
+        if parsed is None:
+            return "absent"
+        if parsed == "complex":
+            return "complex"
+        value, remainder = parsed
+        return value, index, remainder
+
+    def _optional_macro_call_args(
+        self,
+        macro_name: str,
+        siblings: list,
+        next_index: int,
+        expected_arg_count: int,
+    ) -> tuple[list[str], int, LatexCharsNode | None, str] | None:
+        parsed = self._parse_optional_call(siblings, next_index)
+        if parsed == "complex":
+            return None
+        chars_node: LatexCharsNode | None = None
+        saved_chars = ""
+        if parsed == "absent":
+            value = self._custom_macro_opt_defaults[macro_name]
+            node_index = None
+        else:
+            value, node_index, remainder = parsed
+            chars_node = siblings[node_index]
+            saved_chars = chars_node.chars
+            chars_node.chars = remainder
+
+        braced_needed = expected_arg_count - 1
+        if braced_needed == 0:
+            consumed = 0 if node_index is None else node_index - next_index
+            arg_values: list[str] = []
+        else:
+            arg_values, consumed = self._extract_custom_macro_invocation_args(
+                siblings, next_index, braced_needed
+            )
+        if len(arg_values) < braced_needed:
+            if chars_node is not None:
+                chars_node.chars = saved_chars
+            return None
+        return [value, *arg_values], consumed, chars_node, saved_chars
+
     def _expand_custom_macro_invocation(
         self, node: LatexMacroNode, siblings: list, next_index: int
     ) -> tuple[str, int]:
@@ -970,11 +1067,23 @@ class MacroHandlerMixin:
         expected_arg_count = self._custom_macro_num_args.get(node.macroname, 0)
         arg_values: list[str] = []
         consumed = 0
-        if expected_arg_count > 0:
+        chars_node: LatexCharsNode | None = None
+        saved_chars = ""
+        used_optional = False
+        if expected_arg_count > 0 and node.macroname in self._custom_macro_opt_defaults:
+            optional_args = self._optional_macro_call_args(
+                node.macroname, siblings, next_index, expected_arg_count
+            )
+            if optional_args is not None:
+                arg_values, consumed, chars_node, saved_chars = optional_args
+                used_optional = True
+        if not used_optional and expected_arg_count > 0:
             arg_values, consumed = self._extract_custom_macro_invocation_args(
                 siblings, next_index, expected_arg_count
             )
         if expected_arg_count <= 0 or len(arg_values) < expected_arg_count:
+            if chars_node is not None:
+                chars_node.chars = saved_chars
             definition = self._custom_macros[node.macroname]
             if not budget.spend(len(definition)):
                 return node.latex_verbatim(), 0
@@ -983,10 +1092,11 @@ class MacroHandlerMixin:
         expansion = self._render_custom_macro_expansion(
             node.macroname, arg_values, budget.remaining_chars()
         )
-        if expansion is None:
-            budget.exceed()
-            return node.latex_verbatim(), 0
-        if not budget.spend(len(expansion)):
+        if expansion is None or not budget.spend(len(expansion)):
+            if chars_node is not None:
+                chars_node.chars = saved_chars
+            if expansion is None:
+                budget.exceed()
             return node.latex_verbatim(), 0
         return expansion, consumed
 
