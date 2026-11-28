@@ -332,10 +332,19 @@ It holds nothing but a reference to the ``TSWP.StorageArchive`` with the text.
 
 TILE_LIST_FIELD = 1
 
-TILE_ENTRY_ROW_FIELD = 1
+TILE_SIZE_FIELD = 2
+"""Fields of a table's tile storage: its tiles, and how many rows each one spans."""
+
+DEFAULT_TILE_SIZE = 256
+"""How many rows a tile spans when the tile storage does not say.
+
+The oldest documents do not say, and every document that does says 256.
+"""
+
+TILE_ENTRY_INDEX_FIELD = 1
 
 TILE_ENTRY_TILE_FIELD = 2
-"""Fields of the tile list: each entry's first row, and the tile itself."""
+"""Fields of the tile list: which tile an entry is, counted from 0, and the tile."""
 
 STORE_STRINGS_FIELD = 4
 
@@ -804,8 +813,9 @@ def iwa_placements(
     """Walk a table's tiles, yielding where each stored cell sits.
 
     A table taller than one tile is split across several, and each tile numbers
-    its rows from its own start rather than from the table's, so the entry's
-    first row is added back here.
+    its rows from its own start rather than from the table's. A tile starts at its
+    index times the tile size. Counting the rows of the tiles before it would not
+    work, because a tile leaves out a row that stores nothing.
 
     Args:
         store: The table's decoded data store.
@@ -818,18 +828,23 @@ def iwa_placements(
     if not isinstance(container, bytes):
         return
 
-    for entry in safe_fields(container).get(TILE_LIST_FIELD, []):
+    tiles = safe_fields(container)
+    tile_size = tiles.get(TILE_SIZE_FIELD, [None])[0]
+    if not isinstance(tile_size, int) or tile_size <= 0:
+        tile_size = DEFAULT_TILE_SIZE
+
+    for entry in tiles.get(TILE_LIST_FIELD, []):
         if not isinstance(entry, bytes):
             continue
         parsed = safe_fields(entry)
-        first_row = parsed.get(TILE_ENTRY_ROW_FIELD, [0])[0]
+        index = parsed.get(TILE_ENTRY_INDEX_FIELD, [0])[0]
         reference = parsed.get(TILE_ENTRY_TILE_FIELD, [None])[0]
         target = read_reference(reference) if isinstance(reference, bytes) else None
         tile = objects.get(target) if target is not None else None
         if tile is None or tile.message_type != TST_TILE:
             continue
         yield from iwa_tile_placements(
-            tile, first_row if isinstance(first_row, int) else 0
+            tile, index * tile_size if isinstance(index, int) else 0
         )
 
 

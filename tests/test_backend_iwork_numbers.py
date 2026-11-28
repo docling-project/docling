@@ -38,6 +38,10 @@ Jon Connell). They are Numbers output that fills table cells with images. Only
 the first two have a stored groundtruth: the photos in the other two would make
 it tens of megabytes.
 
+``numbers_tall_table.numbers`` is ``test-3.numbers`` from the same corpus and
+under the same license. It is Numbers output with a table of 600 rows, which
+Numbers stores in three tiles.
+
 See https://github.com/masaccio/numbers-parser (``tests/data``).
 """
 
@@ -69,9 +73,14 @@ from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
 from docling.backend.iwork import archives, cells, numbers_xml
 from docling.backend.iwork.archives import (
     PACKAGE_DATAS_FIELD,
+    STORE_TILES_FIELD,
     TSD_GROUP,
     TSD_IMAGE,
     TSP_PACKAGE_METADATA,
+    TST_TABLE_MODEL,
+    TST_TILE,
+    iwa_placements,
+    iwa_table,
 )
 from docling.backend.iwork.chart_image import PALETTE
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
@@ -101,6 +110,7 @@ NUMBERS_CELL_PICTURES = SOURCES / "numbers_cell_pictures.numbers"
 NUMBERS_CELL_FILLS = SOURCES / "numbers_cell_fills.numbers"
 NUMBERS_CELL_PICTURES_REPEATED = SOURCES / "numbers_cell_pictures_repeated.numbers"
 NUMBERS_CELL_PICTURES_STYLED = SOURCES / "numbers_cell_pictures_styled.numbers"
+NUMBERS_TALL_TABLE = SOURCES / "numbers_tall_table.numbers"
 GROUNDTRUTH = Path("./tests/data/numbers/groundtruth")
 
 KEYNOTE_2013 = Path("./tests/data/keynote/sources/keynote_2013.key")
@@ -310,6 +320,80 @@ def test_sparse_rows_land_in_the_columns_the_spreadsheet_shows():
     assert modern == legacy
     # "=C3 + D3" over the two numbers, so the columns are the ones that matter.
     assert modern == {(1, 1): "Test", (2, 2): "0.5", (2, 3): "0.1", (3, 3): "0.6"}
+
+
+_TALL_TABLE_ROWS = [f"ROW{number}" for number in range(1, 601)]
+
+
+def test_a_table_taller_than_one_tile_keeps_every_row():
+    """Each tile numbers its rows from zero. If a tile's index is read as its first
+    row, the tiles land on top of each other and only the last write to a position
+    survives, so everything past the first tile is lost.
+    """
+    table = _tables(_backend(NUMBERS_TALL_TABLE).convert())[0]
+
+    assert [row[0].text for row in table.data.grid] == _TALL_TABLE_ROWS
+
+
+def test_the_table_reader_of_pages_and_keynote_keeps_every_row():
+    """Pages and Keynote read their tables through ``iwa_table``, not the Numbers
+    reader, and it takes the position of a cell from the same tile walk.
+    """
+    with zipfile.ZipFile(NUMBERS_TALL_TABLE) as archive:
+        objects = _objects(archive)
+    tables = [
+        iwa_table(model, objects)
+        for model in objects.values()
+        if model.message_type == TST_TABLE_MODEL
+    ]
+    tall = next(table for table in tables if table and table.num_rows > 1)
+
+    assert [row[0].text for row in tall.grid] == _TALL_TABLE_ROWS
+
+
+def _tile_with_rows(*row_indices: int) -> bytes:
+    """A ``TST.Tile`` that stores one cell in each of the rows named."""
+    return b"".join(
+        _field(
+            5,
+            _field(1, index)
+            + _field(6, bytes(16))
+            + _field(7, (0).to_bytes(2, "little")),
+        )
+        for index in row_indices
+    )
+
+
+def _tile_entry(index: int, identifier: int) -> bytes:
+    return _field(1, _field(1, index) + _field(2, _field(1, identifier)))
+
+
+@pytest.mark.parametrize(
+    ("tile_size", "second_tile_starts_at"),
+    [(None, 256), (4, 4)],
+    ids=["size not stated", "size stated"],
+)
+def test_a_tile_starts_at_its_index_times_the_tile_size(
+    tile_size: int | None, second_tile_starts_at: int
+):
+    """A tile leaves out a row that stores nothing, as the first one here does. So
+    the rows of the tiles before a tile do not say where it starts. Its index does.
+    """
+    declared = b"" if tile_size is None else _field(2, tile_size)
+    store: dict[int, list[int | bytes]] = {
+        STORE_TILES_FIELD: [_tile_entry(0, 1) + _tile_entry(1, 2) + declared]
+    }
+    objects = {
+        1: IWAObject(1, TST_TILE, _tile_with_rows(0, 2)),
+        2: IWAObject(2, TST_TILE, _tile_with_rows(0, 1)),
+    }
+
+    assert [placed.row for placed in iwa_placements(store, objects)] == [
+        0,
+        2,
+        second_tile_starts_at,
+        second_tile_starts_at + 1,
+    ]
 
 
 def test_sheet_names_filter_selects_sheets():
