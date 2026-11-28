@@ -96,6 +96,9 @@ The picture classification step classifies the `PictureItem` elements in the doc
 This model is specialized to understand the classes of pictures found in documents, e.g. different chart types, flow diagrams,
 logos, signatures, etc.
 
+Before classification, Docling centers crops with a width-to-height or height-to-width ratio greater than 2:1 on a white background.
+This reduces distortion when the classifier resizes the crop to a square. The padding applies only to the classifier input.
+
 Model specs: see the [`DocumentFigureClassifier-v2.5` model card](https://huggingface.co/docling-project/DocumentFigureClassifier-v2.5).
 
 Example command line:

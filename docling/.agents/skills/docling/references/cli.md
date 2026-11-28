@@ -192,6 +192,8 @@ docling report.pdf --enrich-picture-classes --output /tmp/
 docling report.pdf --enrich-picture-description --output /tmp/
 ```
 
+Picture classification adds white padding to crops wider or taller than 2:1 before the model resizes them. The padding applies only to the classifier input.
+
 ## Common situations
 
 | Situation | Handling |
