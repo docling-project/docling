@@ -326,6 +326,51 @@ def test_cli_exports_to_exact_output_file(tmp_path):
     assert b"Named DCLX CLI" in payload
 
 
+def test_cli_default_export_preserves_markdown_source(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    original = b"# Notes\n\n<!-- Author comment -->\n\nBody.\n"
+    source = Path("notes.md")
+    source.write_bytes(original)
+
+    result = runner.invoke(app, ["convert", str(source)])
+
+    assert source.read_bytes() == original
+    assert result.exit_code != 0
+    assert "would overwrite an input" in " ".join(result.output.split())
+
+
+def test_cli_export_preserves_another_input_in_directory(tmp_path):
+    # The CSV is processed first. Its text output would replace the next input.
+    (tmp_path / "notes.csv").write_bytes(b"name,value\nApples,2\n")
+    source = tmp_path / "notes.txt"
+    original = b"Unrelated notes.\n"
+    source.write_bytes(original)
+
+    result = runner.invoke(
+        app, ["convert", str(tmp_path), "--to", "text", "--output", str(tmp_path)]
+    )
+
+    assert source.read_bytes() == original
+    assert result.exit_code != 0
+    assert "would overwrite an input" in " ".join(result.output.split())
+
+
+def test_cli_output_file_preserves_hard_linked_input(tmp_path):
+    source = tmp_path / "source.md"
+    original = b"# Notes\n"
+    source.write_bytes(original)
+    destination = tmp_path / "export.json"
+    destination.hardlink_to(source)
+
+    result = runner.invoke(
+        app, ["convert", str(source), "--to", "json", "--output-file", str(destination)]
+    )
+
+    assert source.read_bytes() == original
+    assert result.exit_code != 0
+    assert "would overwrite an input" in " ".join(result.output.split())
+
+
 def test_cli_output_file_rejects_multiple_formats(tmp_path):
     source = tmp_path / "input.md"
     source.write_text("# Multiple formats", encoding="utf-8")

@@ -31,6 +31,9 @@ You can additionally use Docling directly from your terminal, for instance:
 docling https://arxiv.org/pdf/2206.01062
 ```
 
+The CLI writes to the current directory by default. If an export would overwrite an input
+document, choose another output directory, for example `docling notes.md --output out`.
+
 The CLI provides various options, such as 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) (incl. MLX acceleration) & other VLMs:
 ```bash
 docling --vlm-model granite_docling https://arxiv.org/pdf/2206.01062

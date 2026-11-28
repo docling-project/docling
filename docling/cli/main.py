@@ -61,6 +61,7 @@ from docling.cli.engine_options import (
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
+    _make_export_path_resolver,
     _parse_page_range,
     _should_generate_export_images,
     _split_list,
@@ -715,6 +716,7 @@ def export_documents(
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
     debug_vlm_native_output: bool = False,
     output_file: Path | None = None,
+    input_paths: Iterable[Path] = (),
 ) -> ExportSummary:
     """Export the conversion results and count the documents per outcome.
 
@@ -724,6 +726,8 @@ def export_documents(
     success_count = 0
     partial_success_count = 0
     failure_count = 0
+
+    export_path = _make_export_path_resolver(output_dir, output_file, input_paths)
 
     # Initialize chunker once for all documents
     chunker_obj = None
@@ -767,7 +771,7 @@ def export_documents(
 
             # Export JSON format:
             if export_json:
-                fname = output_file or output_dir / f"{doc_filename}.json"
+                fname = export_path(f"{doc_filename}.json")
                 _log.info(f"writing JSON output to {fname}")
                 conv_res.document.save_as_json(
                     filename=fname, image_mode=image_export_mode
@@ -775,7 +779,7 @@ def export_documents(
 
             # Export YAML format:
             if export_yaml:
-                fname = output_file or output_dir / f"{doc_filename}.yaml"
+                fname = export_path(f"{doc_filename}.yaml")
                 _log.info(f"writing YAML output to {fname}")
                 conv_res.document.save_as_yaml(
                     filename=fname, image_mode=image_export_mode
@@ -783,7 +787,7 @@ def export_documents(
 
             # Export HTML format:
             if export_html:
-                fname = output_file or output_dir / f"{doc_filename}.html"
+                fname = export_path(f"{doc_filename}.html")
                 _log.info(f"writing HTML output to {fname}")
                 conv_res.document.save_as_html(
                     filename=fname,
@@ -793,7 +797,7 @@ def export_documents(
 
             # Export HTML format:
             if export_html_split_page:
-                fname = output_file or output_dir / f"{doc_filename}.html"
+                fname = export_path(f"{doc_filename}.html")
                 _log.info(f"writing HTML output to {fname}")
                 if show_layout:
                     ser = HTMLDocSerializer(
@@ -819,14 +823,14 @@ def export_documents(
 
             # Export Text format:
             if export_txt:
-                fname = output_file or output_dir / f"{doc_filename}.txt"
+                fname = export_path(f"{doc_filename}.txt")
                 _log.info(f"writing TXT output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_text())
 
             # Export Markdown format:
             if export_md:
-                fname = output_file or output_dir / f"{doc_filename}.md"
+                fname = export_path(f"{doc_filename}.md")
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
                     filename=fname, image_mode=image_export_mode
@@ -849,26 +853,26 @@ def export_documents(
 
             # Export Document Tags format:
             if export_doctags:
-                fname = output_file or output_dir / f"{doc_filename}.doctags"
+                fname = export_path(f"{doc_filename}.doctags")
                 _log.info(f"writing Doc Tags output to {fname}")
                 conv_res.document.save_as_doctags(filename=fname)
 
             # Export WebVTT format:
             if export_vtt:
-                fname = output_file or output_dir / f"{doc_filename}.vtt"
+                fname = export_path(f"{doc_filename}.vtt")
                 _log.info(f"writing WebVTT output to {fname}")
                 conv_res.document.save_as_vtt(filename=fname)
 
             # Export DocLang format:
             if export_doclang:
-                fname = output_file or output_dir / f"{doc_filename}.dclg.xml"
+                fname = export_path(f"{doc_filename}.dclg.xml")
                 _log.info(f"writing DocLang output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_doclang())
 
             # Export DCLX format:
             if export_dclx:
-                fname = output_file or output_dir / f"{doc_filename}.dclx"
+                fname = export_path(f"{doc_filename}.dclx")
                 _log.info(f"writing DCLX output to {fname}")
                 conv_res.document.save_as_doclang_archive(
                     filename=fname,
@@ -877,7 +881,7 @@ def export_documents(
 
             # Export LaTeX format:
             if export_latex:
-                fname = output_file or output_dir / f"{doc_filename}.tex"
+                fname = export_path(f"{doc_filename}.tex")
                 _log.info(f"writing LaTeX output to {fname}")
                 ser_res = LaTeXDocSerializer(doc=conv_res.document).serialize()
                 with fname.open("w", encoding="utf-8") as fp:
@@ -885,7 +889,7 @@ def export_documents(
 
             # Export Chunks format:
             if export_chunks and chunker_obj is not None:
-                fname = output_file or output_dir / f"{doc_filename}.chunks.jsonl"
+                fname = export_path(f"{doc_filename}.chunks.jsonl")
                 _log.info(f"writing Chunks output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     for i, chunk in enumerate(
@@ -1832,6 +1836,7 @@ def convert(  # noqa: C901
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: list[Path | str] = []
+        staged_local_sources: list[Path] = []
         for src in source:
             try:
                 if _is_http_url(src) and _is_html_source(src, from_formats):
@@ -1863,6 +1868,7 @@ def convert(  # noqa: C901
                             source=src, headers=parsed_headers, workdir=Path(tempdir)
                         )
                         input_doc_paths.append(resolved_source)
+                        staged_local_sources.append(local_path)
                     continue
 
                 # check if we can fetch some remote url
@@ -2418,6 +2424,10 @@ def convert(  # noqa: C901
                 chunk_tokenizer=chunk_tokenizer,
                 debug_vlm_native_output=debug_vlm_native_output,
                 output_file=output_file,
+                input_paths=[
+                    *staged_local_sources,
+                    *(p for p in input_doc_paths if isinstance(p, Path)),
+                ],
                 keep_source=keep_source,
             )
 

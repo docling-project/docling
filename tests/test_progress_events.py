@@ -363,7 +363,7 @@ def test_show_progress_prints_without_a_callback(capsys):
 def test_cli_progress_is_on_by_request_and_off_for_pipes(tmp_path):
     source = tmp_path / "doc.md"
     source.write_text("# Title\n\nSome text.", encoding="utf-8")
-    args = [str(source), "--from", "md", "--output", str(tmp_path)]
+    args = [str(source), "--from", "md", "--output", str(tmp_path / "out")]
 
     requested = CliRunner().invoke(app, [*args, "--progress"])
     default = CliRunner().invoke(app, args)
@@ -390,7 +390,15 @@ def test_cli_keeps_log_lines_with_progress_and_verbose(tmp_path, monkeypatch):
 
     result = CliRunner().invoke(
         app,
-        [str(source), "--from", "md", "--progress", "-v", "--output", str(tmp_path)],
+        [
+            str(source),
+            "--from",
+            "md",
+            "--progress",
+            "-v",
+            "--output",
+            str(tmp_path / "out"),
+        ],
     )
 
     assert result.exit_code == 0

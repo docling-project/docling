@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import re
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 import typer
@@ -20,6 +21,36 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.LATEX,
     }
 )
+
+
+def _make_export_path_resolver(
+    output_dir: Path, output_file: Path | None, input_paths: Iterable[Path]
+) -> Callable[[str], Path]:
+    # Results can carry a temporary filename or only a basename. Protect the
+    # local inputs of the whole batch, including files still to be converted.
+    input_files = set()
+    for source in input_paths:
+        try:
+            info = source.stat()
+        except FileNotFoundError:
+            continue
+        input_files.add((info.st_dev, info.st_ino))
+
+    def export_path(filename: str) -> Path:
+        path = output_file or output_dir / filename
+        if input_files:
+            try:
+                info = path.stat()
+            except FileNotFoundError:
+                return path
+            if (info.st_dev, info.st_ino) in input_files:
+                raise typer.BadParameter(
+                    f"Writing {path} would overwrite an input document. "
+                    "Choose a different output path."
+                )
+        return path
+
+    return export_path
 
 
 def _should_generate_export_images(

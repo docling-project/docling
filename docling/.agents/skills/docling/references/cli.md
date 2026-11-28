@@ -42,6 +42,7 @@ docling <source> [--to md|json|html|text|doctags] [--output DIR]
 - `--output` defaults to the current directory. Use `--output /tmp/` to redirect.
 - For one input and one output format, `--output-file PATH` writes to an exact
   filename instead of deriving it from the input.
+- Both `convert` and `convert-remote` reject a primary output path that would overwrite an input document.
 - `--to` may be repeated to emit several formats in one run.
 
 ```bash
