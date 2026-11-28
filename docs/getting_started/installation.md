@@ -51,7 +51,7 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     When installing Docling on macOS with Intel processors, you might encounter errors with PyTorch compatibility.
     This happens because newer PyTorch versions (2.6.0+) no longer provide wheels for Intel-based Macs.
 
-    If you're using an Intel Mac, install Docling with compatible PyTorch
+    If you're using an Intel Mac, install Docling with compatible PyTorch.
     **Note:** PyTorch 2.2.2 requires Python 3.12 or lower. Make sure you're not using Python 3.13+.
 
     ```bash
