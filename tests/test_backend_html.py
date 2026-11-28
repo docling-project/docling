@@ -21,6 +21,7 @@ from docling_core.types.doc import (
     ImageRefMode,
     PictureItem,
     RichTableCell,
+    TextItem,
 )
 from docling_core.types.doc.document import ContentLayer
 from PIL import Image
@@ -3394,3 +3395,57 @@ def test_details_in_table_cell_stays_in_the_cell(details: str):
     assert markdown.count("Run it twice") == 1
     assert "exampleRun" not in markdown
     assert markdown.rstrip().endswith("After the table")
+
+
+_LINE_ENDING_BODIES = {
+    "pre": "<pre>first\nsecond\n\nfourth</pre>",
+    "pre_code": "<pre><code class='language-python'>def f():\n    return 1\n</code></pre>",
+    "table_cell": "<table><tr><td>first\nsecond</td><td>x</td></tr></table>",
+    "image_alt": (
+        "<img alt='first\nsecond' src='data:image/gif;base64,R0lGODlhAQABAAAAACw='>"
+    ),
+}
+
+
+@pytest.mark.parametrize("line_ending", ["\r\n", "\r"], ids=["crlf", "cr"])
+@pytest.mark.parametrize("body", _LINE_ENDING_BODIES.values(), ids=_LINE_ENDING_BODIES)
+def test_source_line_endings_convert_like_lf(body: str, line_ending: str):
+    """A CR LF or a lone CR in the source reads as LF, as the HTML standard says."""
+    html = f"<html><body>{body}</body></html>"
+    expected = _convert_html(html.encode())
+    actual = _convert_html(html.replace("\n", line_ending).encode())
+
+    assert "\r" not in actual.export_to_markdown()
+    assert actual.export_to_markdown() == expected.export_to_markdown()
+    assert [
+        item.text for item, _ in actual.iterate_items() if isinstance(item, TextItem)
+    ] == [
+        item.text for item, _ in expected.iterate_items() if isinstance(item, TextItem)
+    ]
+
+
+@pytest.mark.parametrize("encoding", ["utf-16", "utf-32"])
+def test_source_line_endings_in_wide_encodings_convert_like_lf(encoding: str):
+    """CR LF is translated in encodings where a line ending spans several bytes."""
+    html = "<html><body><pre>é\nb\nc</pre></body></html>"
+    expected = _convert_html(html.encode(encoding))
+    actual = _convert_html(html.replace("\n", "\r\n").encode(encoding))
+
+    assert actual.export_to_markdown() == expected.export_to_markdown()
+    assert "\r" not in actual.export_to_markdown()
+
+
+def test_character_reference_cr_is_kept_whatever_the_source_line_endings():
+    """A CR from ``&#13;`` stays a CR, as the source line endings do not change it."""
+    html = "<html>\n<body><pre>a&#13;b</pre></body></html>"
+    texts = [
+        [
+            item.text
+            for item, _ in _convert_html(source.encode()).iterate_items()
+            if isinstance(item, TextItem)
+        ]
+        for source in (html, html.replace("\n", "\r\n"))
+    ]
+
+    assert texts[0] == ["a\rb"]
+    assert texts[1] == texts[0]

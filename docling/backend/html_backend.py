@@ -87,7 +87,7 @@ _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
-    from bs4.dammit import EncodingDetector
+    from bs4.dammit import EncodingDetector, UnicodeDammit
     from bs4.element import PreformattedString
 
     _BS4_AVAILABLE = True
@@ -191,7 +191,26 @@ def _parse_html(markup: bytes) -> BeautifulSoup:
             pass
         else:
             encoding = "utf-8"
-    return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
+    # Decode the bytes as BeautifulSoup's html.parser builder does, then translate
+    # the line endings before the tokenizer reads the text. The HTML standard
+    # translates CR LF and a lone CR to LF in the input stream, so a document with
+    # Windows line endings must convert like the same document with LF. This runs
+    # on the decoded text and not on the bytes, because UTF-16 and UTF-32 encode a
+    # line ending in more than one byte. A CR from a character reference such as
+    # ``&#13;`` is resolved later, by the tokenizer, so it stays a CR.
+    dammit = UnicodeDammit(
+        markup,
+        known_definite_encodings=[encoding] if encoding else [],
+        is_html=True,
+    )
+    text = dammit.unicode_markup
+    if text is None:
+        return BeautifulSoup(markup, "html.parser", from_encoding=encoding)
+    soup = BeautifulSoup(text.replace("\r\n", "\n").replace("\r", "\n"), "html.parser")
+    # BeautifulSoup records no encoding for text input. The browser rendering
+    # decodes the raw bytes with this encoding, so keep the detected one.
+    soup.original_encoding = dammit.original_encoding
+    return soup
 
 
 def _resolve_line_breaks(text: str) -> str:
