@@ -305,7 +305,7 @@ def test_latex_enumerate_item_starting_with_paragraph_break(item: bytes):
     first, second = (child.resolve(doc) for child in outer.children)
     assert (first.text, second.text) == ("First", "Second")
     assert [child.resolve(doc).text for child in first.children] == ["Continuation"]
-    assert doc.export_to_markdown() == "1. First\nContinuation\n2. Second"
+    assert doc.export_to_markdown() == "1. First\n\n   Continuation\n\n2. Second"
 
 
 @pytest.mark.parametrize(
@@ -357,12 +357,12 @@ def test_latex_enumerate_item_starting_with_formula(item: bytes, formula: str):
         (
             rb"\item \[x=1\] \begin{itemize}\item In\end{itemize} After",
             [GroupLabel.INLINE, GroupLabel.LIST, DocItemLabel.TEXT],
-            "1. $x=1$\n    - In\nAfter\n2. Second",
+            "1. $x=1$\n\n   - In\n\n   After\n\n2. Second",
         ),
         (
             rb"\item \[x=1\]\footnote{Note.} First",
             [GroupLabel.INLINE, DocItemLabel.FOOTNOTE],
-            "1. $x=1$ First\nNote.\n2. Second",
+            "1. $x=1$ First\n\n   Note.\n\n2. Second",
         ),
     ],
     ids=["nested_list", "footnote"],

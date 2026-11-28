@@ -291,6 +291,9 @@ _IMPLIED_END_TAGS: Final = {
 # HTML table row-group elements that wrap <tr> children.
 _TABLE_SECTION_TAGS: Final = frozenset({"thead", "tbody", "tfoot"})
 
+_LIST_TAGS: Final = frozenset({"ul", "ol", "dl"})
+_LIST_AND_TABLE_TAGS: Final = _LIST_TAGS | frozenset({"table"})
+
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
 _FORMAT_TAG_MAP: Final = {
@@ -317,11 +320,6 @@ _FORM_KEY_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)$")
 _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
-)
-# A CSS string value of `list-style-type` replaces the rendered bullet or number
-# of a list item, e.g. `<li style="list-style-type: '3. ';">`.
-_LIST_STYLE_STRING_RE: Final = re.compile(
-    r"list-style-type\s*:\s*(?P<quote>['\"])(?P<marker>.*?)(?P=quote)", re.IGNORECASE
 )
 # The `start` attribute of an `<ol>`, by the HTML rules for parsing integers:
 # leading ASCII whitespace, an optional plus sign, and ASCII digits.
@@ -2711,7 +2709,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         # Indexes in `result` where a block child starts or ends: a word boundary.
         block_edges: set[int] = set()
-        if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
+        if not ignore_list or (tag.name not in _LIST_AND_TABLE_TAGS):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -3053,7 +3051,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """
         parent = elem.parent
         while parent and parent != boundary:
-            if isinstance(parent, Tag) and parent.name in {"ul", "ol", "dl"}:
+            if isinstance(parent, Tag) and parent.name in _LIST_TAGS:
                 return True
             parent = parent.parent
         return False
@@ -3080,7 +3078,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(elem, Tag):
             if elem.name == "img":
                 self._emit_image(elem, doc)
-            elif elem.name in {"ul", "ol", "dl"}:
+            elif elem.name in _LIST_TAGS:
                 # Only process top-level lists (not nested within other lists)
                 if not self._has_list_ancestor(elem, li):
                     self._handle_block(elem, doc)
@@ -3331,6 +3329,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level += 1
             return group
 
+        if (
+            not is_ordered
+            and not is_description
+            and self._is_invisible_wrapper_list(tag)
+        ):
+            for li in tag.find_all("li", recursive=False):
+                if not isinstance(li, Tag):
+                    continue
+                for sublist in li.find_all(_LIST_TAGS, recursive=False):
+                    if isinstance(sublist, Tag):
+                        self._handle_block(sublist, doc)
+            return added_refs
+
         list_group: Optional[ListGroup] = open_list_group(start)
 
         # Track the number of list items added (not all children)
@@ -3527,7 +3538,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # No content, but check for nested lists (including those wrapped in divs)
-                    for sublist in li({"ul", "ol", "dl"}):
+                    for sublist in li(_LIST_TAGS):
                         if isinstance(sublist, Tag):
                             # Check if this list has a ul/ol/dl ancestor within the current li
                             has_list_ancestor = self._has_list_ancestor(sublist, li)
@@ -3541,18 +3552,52 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return added_refs
 
     @staticmethod
-    def _get_list_style_marker(li: Tag) -> str:
-        """Return the marker that an inline string `list-style-type` sets on `li`.
+    def _inline_css_property(style: str, property_name: str) -> str | None:
+        """Return the value of a CSS property from an inline style string, or None."""
+        name = property_name.lower()
+        for declaration in style.split(";"):
+            parts = declaration.split(":", 1)
+            if len(parts) != 2:
+                continue
+            prop, value = parts[0].strip().lower(), parts[1].strip()
+            if prop == name:
+                return value
+        return None
 
-        Docling's HTML export writes the original marker of a list item this way,
-        so reading it back keeps markers such as `3.` when the HTML is converted
-        again (the Markdown backend does this for files with HTML blocks).
-        """
+    @staticmethod
+    def _get_list_style_marker(li: Tag) -> str:
+        """Return the CSS string marker set by list-style-type on li, or empty string."""
         style = li.get("style")
         if not isinstance(style, str):
             return ""
-        match = _LIST_STYLE_STRING_RE.search(style)
-        return match.group("marker").strip() if match else ""
+        value = HTMLDocumentBackend._inline_css_property(style, "list-style-type")
+        if value is None:
+            return ""
+        # CSS string values are enclosed in matching quotes: `'3. '` or `"3. "`.
+        if len(value) >= 2 and value[0] in ("'", '"') and value[-1] == value[0]:
+            return value[1:-1].strip()
+        return ""
+
+    @staticmethod
+    def _is_invisible_wrapper_list(ul: Tag) -> bool:
+        """Return True when every <li> in ul has list-style-type: none and no visible text."""
+        found_li = False
+        for child in ul.children:
+            if not (isinstance(child, Tag) and child.name == "li"):
+                continue
+            found_li = True
+            style = child.get("style", "")
+            if not isinstance(style, str):
+                return False
+            lst = HTMLDocumentBackend._inline_css_property(style, "list-style-type")
+            if lst is None or lst.lower() != "none":
+                return False
+            direct_text = "".join(
+                str(c) for c in child.children if not isinstance(c, Tag)
+            ).strip()
+            if direct_text:
+                return False
+        return found_li
 
     @staticmethod
     def _get_cell_header_flags(
@@ -3650,7 +3695,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             heading_refs = self._handle_heading(tag, doc)
             added_refs.extend(heading_refs)
 
-        elif tag_name in {"ul", "ol", "dl"}:
+        elif tag_name in _LIST_TAGS:
             added_refs.extend(self._handle_list(tag, doc))
 
         elif tag_name in {"p", "address", "summary"}:

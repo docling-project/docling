@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "name": "example_07",
   "origin": {
     "mimetype": "text/html",
@@ -96,20 +96,6 @@
       },
       "children": [
         {
-          "$ref": "#/groups/4"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/4",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [
-        {
           "$ref": "#/texts/8"
         },
         {
@@ -121,23 +107,9 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/4",
       "parent": {
         "$ref": "#/texts/10"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/6"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/groups/5"
       },
       "children": [
         {
@@ -280,7 +252,7 @@
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -294,7 +266,7 @@
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -312,7 +284,7 @@
       },
       "children": [
         {
-          "$ref": "#/groups/5"
+          "$ref": "#/groups/4"
         }
       ],
       "content_layer": "body",
@@ -326,7 +298,7 @@
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -340,7 +312,7 @@
     {
       "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",

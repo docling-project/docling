@@ -43,7 +43,7 @@ groups:
 key_value_items: []
 name: mixed_without_h1
 origin:
-  binary_hash: 1004175075401466085
+  binary_hash: 30267573202381115
   filename: mixed_without_h1.md
   mimetype: text/html
 pages: {}
@@ -126,4 +126,4 @@ texts:
   prov: []
   self_ref: '#/texts/6'
   text: The end!
-version: 1.11.0
+version: 1.12.0

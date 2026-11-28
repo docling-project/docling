@@ -17,13 +17,13 @@ print(sys.argv)
 
 ### Case D - fully monospaced paragraph, no code style
 
-```
+```sql
 SELECT * FROM users WHERE active = 1;
 ```
 
 ### Case E - multi-line monospaced block
 
-```
+```python
 def fib(n):
     a, b = 0, 1
     for _ in range(n):
