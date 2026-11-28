@@ -23,6 +23,7 @@ from docx.oxml.ns import qn
 from docx.shared import Twips
 
 from docling.backend.msword_backend import (
+    _ARABIC_ENUM_FORMATTERS,
     _CJK_ENUM_FORMATTERS,
     MsWordDocumentBackend,
     _format_enum_counter,
@@ -704,6 +705,199 @@ def test_list_markers_follow_east_asian_num_fmt_end_to_end(tmp_path):
         ("legal two", "贰、", True),
         ("stem one", "甲.", True),
         ("japanese hundred", "百", True),
+    ]
+
+
+# Expected strings are the markers Word renders for a level with the given
+# ``w:numFmt`` and ``w:start``. Character sets are from ECMA-376-1:2016
+# §17.18.59; the rule each format follows is noted inline. Arabic letters are
+# written as escapes: U+0623 is the first letter of both sequences, U+0644 is
+# abjad 12, U+0633 is alpha 12.
+_ARABIC_BOUNDARY_COUNTERS = (1, 2, 5, 9, 10, 12, 27, 28, 29, 30, 56, 57, 100)
+_ARABIC_MARKERS: dict[str, tuple[str, ...]] = {
+    # 28-letter abjad order; past 28 the letter repeats (ECMA-376, Word
+    # identical): 29 is the first letter twice, 56 the last letter twice.
+    "arabicAbjad": (
+        "\u0623",
+        "\u0628",
+        "\u0647",
+        "\u0637",
+        "\u064a",
+        "\u0644",
+        "\u0638",
+        "\u063a",
+        "\u0623\u0623",
+        "\u0628\u0628",
+        "\u063a\u063a",
+        "\u0623\u0623\u0623",
+        "\u0639\u0639\u0639\u0639",
+    ),
+    # 28-letter alphabet order; same repeat rule past 28.
+    "arabicAlpha": (
+        "\u0623",
+        "\u0628",
+        "\u062c",
+        "\u0630",
+        "\u0631",
+        "\u0633",
+        "\u0648",
+        "\u064a",
+        "\u0623\u0623",
+        "\u0628\u0628",
+        "\u064a\u064a",
+        "\u0623\u0623\u0623",
+        "\u0637\u0637\u0637\u0637",
+    ),
+    # Positional Devanagari digits U+0966-U+096F (ECMA-376; Word identical).
+    "hindiNumbers": (
+        "\u0967",
+        "\u0968",
+        "\u096b",
+        "\u096f",
+        "\u0967\u0966",
+        "\u0967\u0968",
+        "\u0968\u096d",
+        "\u0968\u096e",
+        "\u0968\u096f",
+        "\u0969\u0966",
+        "\u096b\u096c",
+        "\u096b\u096d",
+        "\u0967\u0966\u0966",
+    ),
+}
+
+
+_EXTRA_ARABIC_CASES: list[tuple[str, int, str]] = [
+    # Zero is a valid w:start value.
+    ("arabicAbjad", 0, "0"),
+    ("arabicAlpha", 0, "0"),
+    ("hindiNumbers", 0, "\u0966"),
+]
+
+
+@pytest.mark.parametrize(
+    ("num_fmt", "counter", "expected"),
+    [
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
+        for num_fmt, markers in _ARABIC_MARKERS.items()
+        for counter, expected in zip(_ARABIC_BOUNDARY_COUNTERS, markers, strict=True)
+    ]
+    + [
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
+        for num_fmt, counter, expected in _EXTRA_ARABIC_CASES
+    ],
+)
+def test_format_enum_counter_arabic_num_fmt(num_fmt, counter, expected):
+    assert _format_enum_counter(counter, num_fmt) == expected
+
+
+@pytest.mark.parametrize("num_fmt", sorted(_ARABIC_ENUM_FORMATTERS))
+def test_arabic_formatters_keep_negative_values_decimal(num_fmt):
+    """Negative counters fall back to decimal, as in the letter and roman helpers."""
+    assert _ARABIC_ENUM_FORMATTERS[num_fmt](-12) == "-12"
+
+
+def test_list_markers_follow_arabic_num_fmt_end_to_end(tmp_path):
+    """Arabic-script ``w:numFmt`` levels must keep their markers through convert().
+
+    Arabic, Sindhi and Hindi documents number lists with abjad letters, the
+    Arabic alphabet or Devanagari digits. These formats used to be treated as
+    non-numbered, so the list items came out as bullets with an empty marker
+    and the numbers Word shows were lost.
+    """
+
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    def add_numbering(
+        abstract_id: str, num_id: str, levels: list[tuple[str, str, int]]
+    ):
+        abstract_num = OxmlElement("w:abstractNum")
+        abstract_num.set(qn("w:abstractNumId"), abstract_id)
+        for ilvl, (num_fmt, lvl_text, start_val) in enumerate(levels):
+            lvl = OxmlElement("w:lvl")
+            lvl.set(qn("w:ilvl"), str(ilvl))
+            start = OxmlElement("w:start")
+            start.set(qn("w:val"), str(start_val))
+            lvl.append(start)
+            fmt = OxmlElement("w:numFmt")
+            fmt.set(qn("w:val"), num_fmt)
+            lvl.append(fmt)
+            text_el = OxmlElement("w:lvlText")
+            text_el.set(qn("w:val"), lvl_text)
+            lvl.append(text_el)
+            abstract_num.append(lvl)
+        numbering.append(abstract_num)
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        ref = OxmlElement("w:abstractNumId")
+        ref.set(qn("w:val"), abstract_id)
+        num.append(ref)
+        numbering.append(num)
+
+    # Abjad starts at 27 so the list crosses the end of the 28-letter set.
+    add_numbering("900", "901", [("arabicAbjad", "%1.", 27)])
+    add_numbering("910", "911", [("arabicAlpha", "%1)", 1)])
+    add_numbering("920", "921", [("hindiNumbers", "%1.", 9)])
+    # A two-level list: abjad on top, Devanagari digits below it.
+    add_numbering(
+        "930",
+        "931",
+        [("arabicAbjad", "%1.", 1), ("hindiNumbers", "%1.%2.", 1)],
+    )
+
+    def add_item(text: str, num_id: str, ilvl_val: int = 0):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), str(ilvl_val))
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), num_id)
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    add_item("abjad twenty-seven", "901")
+    add_item("abjad twenty-eight", "901")
+    add_item("abjad twenty-nine", "901")
+    add_item("alpha one", "911")
+    add_item("alpha two", "911")
+    add_item("hindi nine", "921")
+    add_item("hindi ten", "921")
+    add_item("hindi eleven", "921")
+    add_item("nested top", "931", 0)
+    add_item("nested first", "931", 1)
+    add_item("nested second", "931", 1)
+
+    docx_path = tmp_path / "arabic_num_fmt_markers.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    items = [
+        (item.text, item.marker, item.enumerated)
+        for item, _ in converted.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+
+    assert items == [
+        ("abjad twenty-seven", "\u0638.", True),
+        ("abjad twenty-eight", "\u063a.", True),
+        ("abjad twenty-nine", "\u0623\u0623.", True),
+        ("alpha one", "\u0623)", True),
+        ("alpha two", "\u0628)", True),
+        ("hindi nine", "\u096f.", True),
+        ("hindi ten", "\u0967\u0966.", True),
+        ("hindi eleven", "\u0967\u0967.", True),
+        ("nested top", "\u0623.", True),
+        ("nested first", "\u0623.\u0967.", True),
+        ("nested second", "\u0623.\u0968.", True),
     ]
 
 

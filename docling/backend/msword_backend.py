@@ -228,6 +228,9 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
         "japaneseCounting",
         "decimalFullWidth",
         "decimalEnclosedCircle",
+        "arabicAbjad",
+        "arabicAlpha",
+        "hindiNumbers",
     }
 )
 """OOXML numFmt values that produce visible list/heading markers."""
@@ -523,6 +526,39 @@ def _int_to_japanese_counting_marker(value: int) -> str:
     return text
 
 
+# Arabic-script numFmt rendering. Character sets follow ECMA-376-1:2016
+# §17.18.59 (ST_NumberFormat) as Word renders them ([MS-DOCX] numFmt
+# extensions, [MS-OI29500] 2.1.548 g, h, w, x):
+# - arabicAbjad is the 28-letter Mashriqi abjad order (U+0623, U+0628,
+#   U+062C, ...): 1 is U+0623, 12 is U+0644, 28 is U+063A.
+# - arabicAlpha is the 28-letter Arabic alphabet order (U+0623, U+0628,
+#   U+062A, ...): 1 is U+0623, 12 is U+0633, 28 is U+064A.
+# Past 28, both repeat the selected letter, the same rule as lowerLetter:
+# 29 is the first letter twice. Word also adds U+200C before (arabicAbjad)
+# or after (arabicAlpha) every sequence number; that joiner is invisible, so
+# it is left out of markers here, which carry the visible counter text only.
+# Note the first letter is U+0623 (Word), not the U+0627 of the CLDR abjad
+# sequence. hindiNumbers is positional Devanagari digits (U+0966-U+096F):
+# 123 renders as U+0967 U+0968 U+0969 ([MS-DOCX], field switch HINDIARABIC).
+_ARABIC_ABJAD_LETTERS: Final[str] = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغ"
+_ARABIC_ALPHA_LETTERS: Final[str] = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي"
+_DEVANAGARI_DIGITS: Final[str] = "".join(chr(0x0966 + digit) for digit in range(10))
+
+
+def _int_to_repeated_sequence_marker(value: int, symbols: str) -> str:
+    """Map a 1-based counter to a repeated symbol from ``symbols``.
+
+    The symbol for ``value`` is selected by position in ``symbols`` and then
+    repeated once per full pass over the set: with 28 symbols, 29 renders as
+    the first symbol twice. This is the rule ECMA-376 gives for arabicAbjad
+    and arabicAlpha, and the one Word renders ([MS-OI29500] 2.1.548 g, h); it
+    is the same rule ``_int_to_letter_marker`` uses for the Latin alphabet.
+    """
+    if value <= 0:
+        return str(value)
+    return symbols[(value - 1) % len(symbols)] * ((value - 1) // len(symbols) + 1)
+
+
 _CJK_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
     "chineseCounting": _int_to_chinese_counting_marker,
     "chineseCountingThousand": _int_to_chinese_counting_thousand_marker,
@@ -550,11 +586,28 @@ _CJK_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
 """East Asian ``w:numFmt`` values mapped to their counter renderers."""
 
 
+_ARABIC_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
+    "arabicAbjad": lambda value: _int_to_repeated_sequence_marker(
+        value, _ARABIC_ABJAD_LETTERS
+    ),
+    "arabicAlpha": lambda value: _int_to_repeated_sequence_marker(
+        value, _ARABIC_ALPHA_LETTERS
+    ),
+    "hindiNumbers": lambda value: _int_to_positional_marker(value, _DEVANAGARI_DIGITS),
+}
+"""Arabic-script ``w:numFmt`` values mapped to their counter renderers."""
+
+
 def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
     """Render a list counter using an OOXML ``w:numFmt`` value."""
     cjk_formatter = _CJK_ENUM_FORMATTERS.get(num_fmt) if num_fmt is not None else None
     if cjk_formatter is not None and counter >= 0:
         return cjk_formatter(counter)
+    arabic_formatter = (
+        _ARABIC_ENUM_FORMATTERS.get(num_fmt) if num_fmt is not None else None
+    )
+    if arabic_formatter is not None and counter >= 0:
+        return arabic_formatter(counter)
     if num_fmt == "lowerLetter":
         return _int_to_letter_marker(counter)
     if num_fmt == "upperLetter":
