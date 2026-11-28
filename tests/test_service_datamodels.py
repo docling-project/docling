@@ -114,9 +114,22 @@ def test_s3_coordinates_credential_schema_is_optional_string(
         assert "Optional" in field_schema["description"]
 
 
-def test_http_source_request_rejects_zip_urls() -> None:
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.com/report.zip",
+        "https://example.com/report.zip#download",
+    ],
+)
+def test_http_source_request_rejects_zip_urls(url: str) -> None:
     with pytest.raises(ValidationError, match="ZIP URLs are not accepted"):
-        HttpSourceRequest(url="https://example.com/report.zip")
+        HttpSourceRequest(url=url)
+
+
+def test_http_source_request_allows_zip_suffix_in_fragment() -> None:
+    request = HttpSourceRequest(url="https://example.com/report.pdf#a.zip")
+
+    assert str(request.url) == "https://example.com/report.pdf#a.zip"
 
 
 def test_any_http_source_request_allows_zip_urls() -> None:

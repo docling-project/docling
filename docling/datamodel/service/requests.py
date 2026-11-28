@@ -55,7 +55,7 @@ class HttpSourceRequest(AnyHttpSourceRequest):
     @field_validator("url")
     @classmethod
     def reject_zip_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
-        path = str(value).lower().split("?", maxsplit=1)[0]
+        path = (value.path or "").lower()
         if path.endswith(".zip"):
             raise ValueError("ZIP URLs are not accepted on the convert endpoint")
         return value
