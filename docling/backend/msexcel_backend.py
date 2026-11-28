@@ -542,6 +542,14 @@ def _rich_image_targets(
     }
 
 
+def _xml_index(value: str | None) -> int:
+    """Read a 0-based index from rich data XML, or -1 if it is not an integer."""
+    try:
+        return int(value or "-1")
+    except ValueError:
+        return -1
+
+
 def _rich_value_images(
     zip_file: ZipFile, parts: dict[str, str], max_bytes: int
 ) -> dict[int, ExcelCellImage]:
@@ -601,7 +609,7 @@ def _rich_value_images(
     images: dict[int, ExcelCellImage] = {}
     rich_values = _read_xml(zip_file, parts["rdRichValue"], max_bytes)
     for index, node in enumerate(rich_values.iterfind("rd:rv", ns)):
-        structure = int(node.get("s", "-1"))
+        structure = _xml_index(node.get("s"))
         if not 0 <= structure < len(structures):
             continue
         structure_type, keys = structures[structure]
@@ -609,7 +617,7 @@ def _rich_value_images(
         if kind is None:
             continue
         fields = dict(zip(keys, (v.text or "" for v in node.iterfind("rd:v", ns))))
-        target = image_targets[kind].get(int(fields.get(kind.position_key, "-1")))
+        target = image_targets[kind].get(_xml_index(fields.get(kind.position_key)))
         if target is not None:
             images[index] = ExcelCellImage(target, fields.get("Text") or None)
 
@@ -617,12 +625,12 @@ def _rich_value_images(
     for vm, record in enumerate(
         metadata.iterfind("m:valueMetadata/m:bk/m:rc", ns), start=1
     ):
-        future_index = int(record.get("v", "-1"))
+        future_index = _xml_index(record.get("v"))
         if record.get("t") != rich_value_type or not (
             0 <= future_index < len(future_blocks)
         ):
             continue
-        image = images.get(int(future_blocks[future_index] or "-1"))
+        image = images.get(_xml_index(future_blocks[future_index]))
         if image is not None:
             by_vm[vm] = image
     return by_vm
