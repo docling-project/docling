@@ -1351,6 +1351,74 @@ def test_nested_table_in_description_list_item():
     assert len(doc.tables) == 1
 
 
+def test_nested_list_in_description_term():
+    """#5586: a list nested in <dt> stays under the term, not dropped."""
+    doc = _convert_html(
+        b"<html><body><dl>"
+        b"<dt>Colors<ol><li>red</li><li>blue</li></ol></dt>"
+        b"<dd>palette</dd>"
+        b"</dl></body></html>"
+    )
+    texts = {item.text: item for item in doc.texts}
+
+    nested_list = texts["red"].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["Colors"].self_ref
+    assert texts["blue"].parent.cref == nested_list.self_ref
+    assert texts["palette"].parent.resolve(doc).parent.cref == texts["Colors"].self_ref
+
+
+def test_nested_table_in_description_term():
+    """#5586: a table nested in <dt> is parsed as a table under the term."""
+    doc = _convert_html(
+        b"<html><body><dl>"
+        b"<dt>Sizes<table><tbody><tr><td>S</td><td>M</td></tr></tbody></table></dt>"
+        b"<dd>shirts</dd>"
+        b"</dl></body></html>"
+    )
+    texts = {item.text: item for item in doc.texts}
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 1
+    assert doc.tables[0].data.num_cols == 2
+    assert doc.tables[0].parent.cref == texts["Sizes"].self_ref
+
+
+def test_image_only_description_term_keeps_picture():
+    """#5586: a <dt> that is only an image still creates a term item.
+
+    The picture and the <dd> stay under that term, so the term does not vanish
+    and the description is not promoted to a top-level item.
+    """
+    doc = _convert_html(
+        b"<html><body><dl>"
+        b'<dt><img src="logo.png" alt="ACME logo"></dt>'
+        b"<dd>ACME Corp</dd>"
+        b"</dl></body></html>"
+    )
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+    term = list_items[0]
+    texts = {item.text: item for item in doc.texts}
+
+    assert len(doc.pictures) == 1
+    assert term.text == ""
+    assert doc.pictures[0].parent.cref == term.self_ref
+    assert texts["ACME Corp"].parent.resolve(doc).parent.cref == term.self_ref
+
+
+def test_nested_list_in_description_stays_under_dd():
+    """Control for #5586: a list nested in <dd> is still kept under the description."""
+    doc = _convert_html(
+        b"<html><body><dl>"
+        b"<dt>T</dt>"
+        b"<dd>D<ol><li>nested</li></ol></dd>"
+        b"</dl></body></html>"
+    )
+    texts = {item.text: item for item in doc.texts}
+
+    nested_list = texts["nested"].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["D"].self_ref
+
+
 def test_description_lists():
     """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
     test_set: list[tuple[bytes, str]] = []

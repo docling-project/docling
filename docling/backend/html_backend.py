@@ -3361,6 +3361,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         parent=list_group,
                         extra_formatting=bold_formatting,
                     )
+                    if current_dt_item is None and any(
+                        not self._has_list_ancestor(elem, child)
+                        for elem in child.find_all(["table", "img"])
+                    ):
+                        # An item without text still holds its table or image
+                        current_dt_item = doc.add_list_item(
+                            text="",
+                            parent=list_group,
+                            content_layer=self.content_layer,
+                            prov=self._make_text_prov(text="", tag=child),
+                        )
+
+                    # Process nested content (images, lists, tables) in the term
+                    with self._use_list_item_context(current_dt_item):
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            child, doc, processed_elements
+                        )
+
                     if current_dt_item:
                         self.parents[self.level + 1] = current_dt_item
 
