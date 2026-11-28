@@ -268,6 +268,14 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Figure captions in PDFs
+
+During standard PDF conversion, layout post-processing can recover a multi-line
+figure caption that the layout model labeled as text. The block must start with
+a chapter-numbered figure marker such as `Figure 15-35: ...`, optionally after
+a short production code, and sit directly below a single matching picture.
+The recovered caption uses the standard picture caption links.
+
 ### Use visible PDF rules for reading order
 
 For PDFs whose columns or horizontal bands are separated by visible rules, the
