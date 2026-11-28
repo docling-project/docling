@@ -16,6 +16,7 @@ from docling.backend.xml.mediawiki._syntax import (
     is_scheme,
     is_single,
     is_single_only,
+    normalize_tag_name,
     parse_entity,
 )
 from docling.backend.xml.mediawiki._tokenizer_state import (
@@ -28,6 +29,7 @@ from docling.backend.xml.mediawiki._tokenizer_state import (
     ParserError,
     Sentinel,
     TagOpenData,
+    TokenizerWorkLimitError,
 )
 
 
@@ -148,7 +150,9 @@ class Tokenizer:
         segment = self._text[index] if 0 <= index < len(self._text) else None
         self.work += len(segment) if segment is not None else 1
         if self.work > self._work_limit:
-            raise ParserError("MediaWiki tokenizer exceeded its work limit.")
+            raise TokenizerWorkLimitError(
+                "MediaWiki tokenizer exceeded its work limit."
+            )
         if segment is not None:
             return segment
         return START if index < 0 else END
@@ -709,14 +713,11 @@ class Tokenizer:
 
     def _handle_tag_close_close(self):
         """Handle the ending of a closing tag (``</foo>``)."""
-
-        def strip(tok):
-            return tok["text"].rstrip().lower()
-
         closing = self._pop()
         if len(closing) != 1 or (
             not isinstance(closing[0], tokens.Text)
-            or strip(closing[0]) != strip(self._stack[1])
+            or normalize_tag_name(closing[0]["text"])
+            != normalize_tag_name(self._stack[1]["text"])
         ):
             self._fail_route()
         self._emit_all(closing)
@@ -725,10 +726,6 @@ class Tokenizer:
 
     def _handle_blacklisted_tag(self):
         """Handle the body of an HTML tag that is parser-blacklisted."""
-
-        def strip(text):
-            return text.rstrip().lower()
-
         while True:
             this, nxt = self._read(), self._read(1)
             if this is END:
@@ -736,7 +733,8 @@ class Tokenizer:
             elif this == "<" and nxt == "/":
                 self._head += 3
                 if self._read() != ">" or (
-                    strip(self._read(-1)) != strip(self._stack[1]["text"])
+                    normalize_tag_name(cast(str, self._read(-1)))
+                    != normalize_tag_name(self._stack[1]["text"])
                 ):
                     self._head -= 1
                     self._emit_text("</")
@@ -785,6 +783,8 @@ class Tokenizer:
 
     def _really_parse_tag(self):
         """Actually parse an HTML tag, starting with the open (``<foo>``)."""
+        if self._head > self._closers.tag_end:
+            raise BadRoute()
         data = TagOpenData()
         self._push(contexts.TAG_OPEN)
         self._emit(tokens.TagOpenOpen())
@@ -811,7 +811,9 @@ class Tokenizer:
                 name = self._stack[1]["text"]
                 if is_single_only(name):
                     return self._handle_single_only_tag_end()
-                if not is_single(name) and self._closers.tag < self._head:
+                # A differently named closer cannot end this tag's body.
+                last_close = self._closers.tags.get(normalize_tag_name(name), -1)
+                if not is_single(name) and last_close < self._head:
                     self._fail_route()
                 if is_parsable(name):
                     return self._parse(push=False)
@@ -996,12 +998,16 @@ class Tokenizer:
 
     def _handle_list(self):
         """Handle a wiki-style list (``#``, ``*``, ``;``, ``:``)."""
+        markers = ("#", "*", ";", ":")
         for _ in range(self.MAX_LIST_DEPTH):
             self._handle_list_marker()
-            if self._read(1) not in ("#", "*", ";", ":"):
+            if self._read(1) not in markers:
                 return
             self._head += 1
-        raise ParserError(f"MediaWiki list depth exceeds {self.MAX_LIST_DEPTH}.")
+        while (marker := self._read()) in markers:
+            self._emit_text(marker)
+            self._head += 1
+        self._head -= 1
 
     def _handle_hr(self):
         """Handle a wiki-style horizontal rule (``----``) in the string."""

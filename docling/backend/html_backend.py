@@ -2726,11 +2726,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         ):
             # The nested picture will emit its own caption.
             return AnnotatedTextList()
-        if tag.name == "span" and "data-math-tex" in tag.attrs:
+        # The attribute carries the TeX source. The children can show a preview.
+        tex = tag.get("data-math-tex") if tag.name == "span" else None
+        if isinstance(tex, str) and (tex := tex.strip()):
             return AnnotatedTextList(
                 [
                     AnnotatedText(
-                        text=tag.get_text().strip(),
+                        text=tex,
                         formula=True,
                         hyperlink=self.hyperlink,
                         formatting=self._formatting,
@@ -3392,20 +3394,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     if current_dt_item:
                         self.parents[self.level + 1] = current_dt_item
+                    with self._use_list_item_context(current_dt_item):
+                        for nested in child.find_all("dl", recursive=False):
+                            self._handle_list(nested, doc)
 
                 elif child_name == "dd":
                     has_nested_dl = child.find("dl", recursive=False) is not None
-                    if has_nested_dl:
+                    if has_nested_dl and current_dt_item:
                         # Close current descriptions group before processing nested <dl>
                         dd_group = None
                         # If <dd> contains a nested <dl>, process it directly under the term item
                         # Don't create a list item for the <dd> itself to avoid double indentation
-                        if current_dt_item:
-                            with self._use_list_item_context(current_dt_item):
-                                processed_elements = set()
-                                self._process_list_item_nested_content(
-                                    child, doc, processed_elements
-                                )
+                        with self._use_list_item_context(current_dt_item):
+                            processed_elements = set()
+                            self._process_list_item_nested_content(
+                                child, doc, processed_elements
+                            )
                     else:
                         # For regular <dd> without nested <dl>, create/use descriptions group
                         if dd_group is None and current_dt_item:

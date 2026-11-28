@@ -5,12 +5,18 @@
 
 """State used while recognizing tags and finding valid tokenization routes."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+
+from docling.backend.xml.mediawiki._syntax import normalize_tag_name
 
 
 class ParserError(ValueError):
     """The wikitext token stream violates an internal parser invariant."""
+
+
+class TokenizerWorkLimitError(ParserError):
+    """Tokenization exhausted the work budget for this page."""
 
 
 class BadRoute(Exception):
@@ -54,18 +60,20 @@ URI_SCHEME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567
 
 @dataclass
 class ClosingPositions:
-    """Last possible closing delimiter for routes that can scan to EOF."""
+    """Last possible closing delimiters, including a position for each tag name."""
 
     brace: int = -1
     bracket: int = -1
     comment: int = -1
     table: int = -1
-    tag: int = -1
+    tag_end: int = -1
+    tags: dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_segments(cls, segments: list[str]) -> "ClosingPositions":
         positions = cls()
         previous = before_previous = ""
+        closing_tag_start: int | None = None
         for index, segment in enumerate(segments):
             if segment == "}":
                 if previous == "}":
@@ -74,9 +82,19 @@ class ClosingPositions:
                     positions.table = index - 1
             elif segment == "]":
                 positions.bracket = index
-            elif segment == ">" and previous == before_previous == "-":
-                positions.comment = index - 2
+            elif segment == ">":
+                positions.tag_end = index
+                if previous == before_previous == "-":
+                    positions.comment = index - 2
+                if closing_tag_start is not None:
+                    name = normalize_tag_name(
+                        "".join(segments[closing_tag_start + 2 : index])
+                    )
+                    positions.tags[name] = closing_tag_start
+                    closing_tag_start = None
+            elif segment == "<":
+                closing_tag_start = None
             elif segment == "/" and previous == "<":
-                positions.tag = index - 1
+                closing_tag_start = index - 1
             before_previous, previous = previous, segment
         return positions

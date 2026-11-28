@@ -82,6 +82,10 @@ class _EmphasisNormalizer(HTMLParser):
 
 def normalize_emphasis(html: str, *, preserve_bold: bool, preserve_italic: bool) -> str:
     """Merge equal emphasis around inline text and keep other HTML boundaries."""
+    # The renderer emits canonical emphasis tags. Avoid buffering entity-heavy text
+    # when the generated HTML has no emphasis to normalize.
+    if "<b>" not in html and "<i>" not in html:
+        return html
     normalizer = _EmphasisNormalizer(
         preserve_bold=preserve_bold, preserve_italic=preserve_italic
     )

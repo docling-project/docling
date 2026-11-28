@@ -3,6 +3,7 @@
 
 """Convert MediaWiki XML exports and wikitext files."""
 
+import logging
 import zlib
 from collections.abc import Iterator
 from html import escape
@@ -10,13 +11,16 @@ from io import BytesIO
 from pathlib import Path
 from xml.etree.ElementTree import ParseError
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin
+from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
 from docling_core.types.doc.document import Formatting
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.backend.xml.mediawiki._tokenizer_state import ParserError
+from docling.backend.xml.mediawiki._tokenizer_state import (
+    ParserError,
+    TokenizerWorkLimitError,
+)
 from docling.backend.xml.mediawiki.export import read_wiki_pages
 from docling.backend.xml.mediawiki.render import InlineReferenceBudget, render_wikitext
 from docling.datamodel.backend_options import (
@@ -33,6 +37,8 @@ from docling.utils.mediawiki_input import (
     open_mediawiki_source,
 )
 from docling.utils.text_decoding import decode_text
+
+_log = logging.getLogger(__name__)
 
 
 class MediaWikiDocumentBackend(DeclarativeDocumentBackend):
@@ -120,7 +126,7 @@ class MediaWikiDocumentBackend(DeclarativeDocumentBackend):
         options = self.mediawiki_options
         if source.kind is MediaWikiSourceKind.XML:
             for page in read_wiki_pages(source.stream, options.max_page_chars):
-                yield self._convert_article(
+                yield self._convert_page(
                     page.wikitext, reference_budget, page.title, page.wiki_base
                 )
             return
@@ -130,7 +136,29 @@ class MediaWikiDocumentBackend(DeclarativeDocumentBackend):
             raise DocumentLoadError(
                 f"Wikitext input {source.name!r} exceeds max_file_bytes ({options.max_file_bytes})."
             )
-        yield self._convert_article(decode_text(BytesIO(data)), reference_budget)
+        yield self._convert_page(decode_text(BytesIO(data)), reference_budget)
+
+    def _convert_page(
+        self,
+        wikitext: str,
+        reference_budget: InlineReferenceBudget,
+        title: str = "",
+        wiki_base: str | None = None,
+    ) -> DoclingDocument:
+        """Convert one page and retain its source if tokenization reaches its limit."""
+        try:
+            return self._convert_article(wikitext, reference_budget, title, wiki_base)
+        except TokenizerWorkLimitError:
+            _log.warning(
+                "MediaWiki page %r exceeded the tokenizer work limit. "
+                "Keeping the page as plain text.",
+                title or self.file.name,
+            )
+            doc = DoclingDocument(name=title or self.file.stem)
+            if title:
+                doc.add_title(title)
+            doc.add_text(label=DocItemLabel.TEXT, text=wikitext)
+            return doc
 
     def _convert_article(
         self,

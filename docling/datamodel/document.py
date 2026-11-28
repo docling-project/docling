@@ -13,7 +13,6 @@ from collections.abc import Container, Iterable, Mapping
 from datetime import datetime
 from enum import Enum
 from io import BytesIO
-from itertools import islice
 from pathlib import Path, PurePath, PurePosixPath
 from typing import (
     TYPE_CHECKING,
@@ -80,11 +79,7 @@ from docling.datamodel.base_models import (
 from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
-from docling.utils.mediawiki_input import (
-    is_mediawiki_xml,
-    is_wikitext_name,
-    probe_gzip,
-)
+from docling.utils.mediawiki_input import is_wikitext_name, probe_mediawiki_input
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
@@ -1083,20 +1078,10 @@ class _DocumentConversionInput(BaseModel):
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
 
-        if mime == "application/gzip" and (
-            mediawiki_allowed or InputFormat.METS_GBS in allowed_formats
-        ):
-            source = obj if isinstance(obj, Path) else obj.stream
-            probe = probe_gzip(source, obj.name, mediawiki_allowed=mediawiki_allowed)
-            if probe.is_tar:
-                mime = self._detect_mets_gbs(obj) or mime
-            elif probe.mediawiki is not None:
-                return InputFormat.MEDIAWIKI
-        elif (
-            mediawiki_allowed
-            and mime in (None, "application/octet-stream", "application/xml")
-            and is_mediawiki_xml(content)
-        ):
+        probe = probe_mediawiki_input(obj, mime, content, allowed_formats)
+        if probe.is_tar:
+            mime = self._detect_mets_gbs(obj) or mime
+        elif probe.mediawiki is not None:
             return InputFormat.MEDIAWIKI
 
         if not mime or mime.lower() == "application/octet-stream":
@@ -1481,14 +1466,29 @@ class _DocumentConversionInput(BaseModel):
         limit = limits.max_file_bytes
         try:
             with open_tar_gz(content) as tar:
-                for member in islice(tar, limits.max_member_count):
-                    if not member.name.endswith(".xml") or member.size > limit:
+                for count, member in enumerate(tar, 1):
+                    if count > limits.max_member_count:
+                        _log.warning(
+                            "Archive exceeds member count limit (%d) during format detection",
+                            limits.max_member_count,
+                        )
+                        return None
+                    if not member.name.endswith(".xml"):
                         continue
-                    if (file := tar.extractfile(member)) is not None:
+                    if member.size <= limit:
+                        if (file := tar.extractfile(member)) is None:
+                            continue
                         with file:
                             xml = file.read(limit + 1)
-                        if len(xml) <= limit and b"http://www.loc.gov/METS/" in xml:
-                            return "application/mets+xml"
+                        if len(xml) <= limit:
+                            if b"http://www.loc.gov/METS/" in xml:
+                                return "application/mets+xml"
+                            continue
+                    _log.warning(
+                        "XML file %s exceeds size limit (%d bytes) during format detection",
+                        member.name,
+                        limit,
+                    )
         except Exception as e:
             _log.warning(f"Error during METS-GBS format detection: {e}")
             return None

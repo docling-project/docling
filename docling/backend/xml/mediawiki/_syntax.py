@@ -78,6 +78,11 @@ def get_html_tag(markup: str) -> str:
     return MARKUP_TO_HTML[markup]
 
 
+def normalize_tag_name(name: str) -> str:
+    """Normalize a tag name for matching opening and closing tags."""
+    return name.rstrip().lower()
+
+
 def is_parsable(tag: str) -> bool:
     """Return if the given *tag*'s contents should be passed to the parser."""
     return tag.lower() not in PARSER_BLACKLIST

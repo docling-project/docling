@@ -366,14 +366,32 @@ def test_members_after_needed_files_are_not_read(test_doc_path, tmp_path):
     doc_backend.unload()
 
 
-def test_format_detection_stops_at_member_limit(test_doc_path, tmp_path):
+def test_format_detection_stops_at_member_limit(test_doc_path, tmp_path, caplog):
     """Detection gives up once the default member limit is exceeded."""
     archive = tmp_path / "filler_before_mets.tar.gz"
     limit = MetsGbsBackendOptions().max_member_count
     _repack_with_filler(test_doc_path, archive, [], filler_count=limit + 1)
 
     assert _DocumentConversionInput._detect_mets_gbs(archive) is None
+    assert f"Archive exceeds member count limit ({limit})" in caplog.text
     assert _DocumentConversionInput._detect_mets_gbs(test_doc_path) is not None
+
+
+def test_format_detection_warns_and_skips_oversize_xml(tmp_path, monkeypatch, caplog):
+    monkeypatch.setattr(
+        "docling.datamodel.document.MetsGbsBackendOptions",
+        lambda: MetsGbsBackendOptions(max_file_bytes=64),
+    )
+    path = tmp_path / "oversize.tar.gz"
+    marker = b'<mets xmlns="http://www.loc.gov/METS/"/>'
+    with tarfile.open(path, "w:gz") as archive:
+        for name, data in (("oversize.xml", marker.ljust(65)), ("mets.xml", marker)):
+            member = tarfile.TarInfo(name)
+            member.size = len(data)
+            archive.addfile(member, BytesIO(data))
+
+    assert _DocumentConversionInput._detect_mets_gbs(path) == "application/mets+xml"
+    assert "XML file oversize.xml exceeds size limit (64 bytes)" in caplog.text
 
 
 def _input_doc(source: Path | DocumentStream) -> InputDocument:

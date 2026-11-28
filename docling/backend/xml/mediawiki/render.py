@@ -578,6 +578,7 @@ class _Renderer:
             "transliteration",
             "in lang",
             "small",
+            "mono",
             "nowrap",
             "nobr",
             "center",
@@ -629,7 +630,13 @@ class _Renderer:
             return "<table>" + "".join(rows) + "</table>" if rows else ""
         if name in {"lang", "transl", "transliteration", "in lang"}:
             return positional[1] if len(positional) > 1 else ""
-        if name.startswith("lang-") or name in {"small", "nowrap", "nobr", "center"}:
+        if name.startswith("lang-") or name in {
+            "small",
+            "mono",
+            "nowrap",
+            "nobr",
+            "center",
+        }:
             return positional[0] if positional else ""
         if name in {"ubl", "unbulleted list", "plainlist", "hlist"}:
             return "; ".join(value for value in positional if value)
@@ -714,9 +721,8 @@ class _Renderer:
                 )
             return f"<pre>{body}</pre>"
         if name == "math":
-            return (
-                f'<span data-math-tex="">{escape(_plain(tag.body), quote=False)}</span>'
-            )
+            tex = _plain(tag.body)
+            return f'<span data-math-tex="{escape(tex, quote=True)}">{escape(tex, quote=False)}</span>'
         if name in {"chem", "ce"}:
             return f"<code>{escape(_plain(tag.body), quote=False)}</code>"
         if name == "table":

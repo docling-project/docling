@@ -8,7 +8,7 @@ from __future__ import annotations
 import gzip
 import tarfile
 import zlib
-from collections.abc import Iterator
+from collections.abc import Container, Iterator
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from enum import Enum
@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import BinaryIO, Protocol
 from xml.parsers import expat
 
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.exceptions import DocumentLoadError
 
 _HEAD_BYTES = 8192
@@ -42,7 +43,7 @@ class MediaWikiSource:
 
 
 @dataclass(frozen=True)
-class GzipProbe:
+class MediaWikiInputProbe:
     mediawiki: MediaWikiSourceKind | None = None
     is_tar: bool = False
 
@@ -132,7 +133,9 @@ def _gzip_payload_name(name: str) -> str:
     return name[:-3] if name.lower().endswith(".gz") else name
 
 
-def _probe_gzip(raw: BinaryIO, name: str, *, mediawiki_allowed: bool) -> GzipProbe:
+def _probe_gzip(
+    raw: BinaryIO, name: str, *, mediawiki_allowed: bool
+) -> MediaWikiInputProbe:
     # Use zlib so that a large gzip header, empty members, or a malformed
     # stream cannot cause detection to read beyond the compressed prefix.
     remaining = _GZIP_PROBE_BYTES
@@ -152,23 +155,51 @@ def _probe_gzip(raw: BinaryIO, name: str, *, mediawiki_allowed: bool) -> GzipPro
                 head.extend(member.decompress(compressed, _HEAD_BYTES - len(head)))
                 compressed = member.unused_data
     except zlib.error:
-        return GzipProbe()
+        return MediaWikiInputProbe()
     if _is_tar_header(bytes(head)):
-        return GzipProbe(is_tar=True)
+        return MediaWikiInputProbe(is_tar=True)
     if mediawiki_allowed:
-        return GzipProbe(mediawiki=_source_kind(_gzip_payload_name(name), bytes(head)))
-    return GzipProbe()
+        return MediaWikiInputProbe(
+            mediawiki=_source_kind(_gzip_payload_name(name), bytes(head))
+        )
+    return MediaWikiInputProbe()
 
 
 def probe_gzip(
     source: Path | BytesIO, name: str, *, mediawiki_allowed: bool
-) -> GzipProbe:
+) -> MediaWikiInputProbe:
     """Classify a gzip prefix without opening an archive or moving the input stream."""
     try:
         with _open_source(source) as raw:
             return _probe_gzip(raw, name, mediawiki_allowed=mediawiki_allowed)
     except OSError:
-        return GzipProbe()
+        return MediaWikiInputProbe()
+
+
+def probe_mediawiki_input(
+    source: Path | DocumentStream,
+    mime: str | None,
+    head: bytes,
+    allowed_formats: Container[InputFormat],
+) -> MediaWikiInputProbe:
+    """Detect XML and check gzip prefixes for MediaWiki or possible METS-GBS."""
+    mediawiki_allowed = InputFormat.MEDIAWIKI in allowed_formats
+    mets_allowed = InputFormat.METS_GBS in allowed_formats
+    if mime == "application/gzip" and (mediawiki_allowed or mets_allowed):
+        probe = probe_gzip(
+            source if isinstance(source, Path) else source.stream,
+            source.name,
+            mediawiki_allowed=mediawiki_allowed,
+        )
+        if not probe.is_tar or mets_allowed:
+            return probe
+    if (
+        mediawiki_allowed
+        and mime in (None, "application/octet-stream", "application/xml")
+        and is_mediawiki_xml(head)
+    ):
+        return MediaWikiInputProbe(mediawiki=MediaWikiSourceKind.XML)
+    return MediaWikiInputProbe()
 
 
 @contextmanager

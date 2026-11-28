@@ -3,6 +3,7 @@
 
 import gzip
 import tarfile
+import tracemalloc
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -225,7 +226,7 @@ def test_mediawiki_detection_skips_gzip_probe_if_disallowed(
     def unexpected_probe(*args, **kwargs):
         pytest.fail("PDF-only format detection must skip the gzip prefix probe")
 
-    monkeypatch.setattr("docling.datamodel.document.probe_gzip", unexpected_probe)
+    monkeypatch.setattr("docling.utils.mediawiki_input.probe_gzip", unexpected_probe)
     source = DocumentStream(name="page.wiki.gz", stream=BytesIO(gzip.compress(b"text")))
     result = DocumentConverter(allowed_formats=[InputFormat.PDF]).convert(
         source, raises_on_error=False
@@ -312,17 +313,71 @@ def test_mediawiki_size_limits(
     assert any(option in error.error_message for error in result.errors)
 
 
-def test_xml_reader_checks_revision_text_before_reading_its_end() -> None:
-    class UnfinishedRevision(BytesIO):
-        def read(self, size: int = -1, /) -> bytes:
-            assert self.tell() == 0, (
-                "Reader should stop before looking for the closing tag"
-            )
-            return super().read(size)
+class _UnfinishedXml(BytesIO):
+    def read(self, size: int = -1, /) -> bytes:
+        assert self.tell() == 0, "Reader should stop before looking for the closing tag"
+        return super().read(size)
 
-    stream = UnfinishedRevision(b"<mediawiki><page><revision><text>0123456789")
+
+def test_xml_reader_checks_revision_text_before_reading_its_end() -> None:
+    stream = _UnfinishedXml(b"<mediawiki><page><revision><text>0123456789")
     with pytest.raises(DocumentLoadError, match="max_page_chars"):
         list(read_wiki_pages(stream, max_page_chars=8))
+
+
+@pytest.mark.parametrize(
+    ("prefix", "field"),
+    [
+        (b"<siteinfo><base>", "base"),
+        (b"<page><title>", "title"),
+        (b"<page><revision><timestamp>", "timestamp"),
+        (b"<page><revision><id>", "id"),
+        (b"<page><revision><model>", "model"),
+        (b"<page><revision><content><role>", "role"),
+        (b"<page><revision><content><model>", "model"),
+    ],
+)
+def test_xml_reader_checks_metadata_before_reading_its_end(
+    prefix: bytes, field: str
+) -> None:
+    stream = _UnfinishedXml(b"<mediawiki>" + prefix + b"x" * 8193)
+    with pytest.raises(DocumentLoadError, match=rf"'{field}'.*metadata limit"):
+        list(read_wiki_pages(stream, max_page_chars=16))
+
+
+@pytest.mark.parametrize("section", ["revision", "siteinfo"])
+def test_xml_reader_discards_unknown_elements(section: str) -> None:
+    ignored = b"<unknown/>" * 20_000
+    siteinfo = b"<siteinfo><base>https://wiki.example/wiki/Main_Page</base>"
+    siteinfo += (ignored if section == "siteinfo" else b"") + b"</siteinfo>"
+    revision = b"<revision><text>Article text.</text>"
+    revision += (ignored if section == "revision" else b"") + b"</revision>"
+    stream = BytesIO(
+        b"<mediawiki>"
+        + siteinfo
+        + b"<page><title>Article</title>"
+        + revision
+        + b"</page></mediawiki>"
+    )
+
+    was_tracing = tracemalloc.is_tracing()
+    if not was_tracing:
+        tracemalloc.start()
+    try:
+        tracemalloc.reset_peak()
+        initial, _ = tracemalloc.get_traced_memory()
+        (page,) = list(read_wiki_pages(stream, max_page_chars=16))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        if not was_tracing:
+            tracemalloc.stop()
+
+    assert peak - initial < 512 * 1024
+    assert (page.title, page.wikitext, page.wiki_base) == (
+        "Article",
+        "Article text.",
+        "https://wiki.example/wiki/",
+    )
 
 
 def test_infobox_and_common_templates_preserve_content() -> None:
@@ -580,6 +635,7 @@ def test_mediawiki_preserves_entity_text() -> None:
     [
         "<p>text\n",
         "<small>text\n",
+        "<a ",
         "[https://example.com ",
         "{{{key|",
         "{|\n",
@@ -597,15 +653,68 @@ def test_tokenizer_incomplete_markup_work_grows_linearly(opener: str) -> None:
 
 def test_tokenizer_bounds_ambiguous_markup_work() -> None:
     with pytest.raises(ParserError, match="work limit"):
-        Tokenizer().tokenize("<p>text\n" * 1000 + "</different>")
+        Tokenizer().tokenize("<p>text\n" * 1000 + "</p>")
 
 
-def test_mediawiki_list_depth_stops_before_html_conversion() -> None:
-    result = _converter().convert(
-        DocumentStream(name="list.wiki", stream=BytesIO(b"*" * 33 + b" item")),
-        raises_on_error=False,
+def test_tokenizer_skips_unrelated_tag_closers() -> None:
+    opener = "<p>text\n"
+    closer = "</different>"
+    tokenizer = Tokenizer()
+    tokenizer.tokenize(opener * 1000 + closer)
+    work = tokenizer.work
+    tokenizer.tokenize(opener * 2000 + closer)
+    assert tokenizer.work <= 2 * work
+
+
+def test_mediawiki_preserves_pitch_class_vectors_in_tables() -> None:
+    vector = "<0,0,0,0,0,0>"
+    row = "|-\n| {{Small|{{Mono|" + vector + "}}}} <ref>Source</REF >\n"
+    source = (
+        "{|\n! Interval vector\n" + row * 64 + "|}\n\n== After the table ==\n\nTail."
     )
-    assert result.status is ConversionStatus.FAILURE
-    assert any(
-        "list depth exceeds 32" in error.error_message for error in result.errors
+    doc = _converter().convert_string(source, format=InputFormat.MEDIAWIKI).document
+
+    (table,) = doc.tables
+    cell_texts = [cells[0].text for cells in table.data.grid]
+    assert cell_texts == ["Interval vector"] + [vector] * 64
+    assert any(item.text == "After the table" for item in doc.texts)
+    assert any(item.text == "Tail." for item in doc.texts)
+
+
+@pytest.mark.parametrize("marker", [":", ";", "*", "#"])
+def test_mediawiki_parser_limits_recover_per_page(
+    caplog: pytest.LogCaptureFixture, marker: str
+) -> None:
+    ambiguous = "<p>text\n" * 1000 + "</p>"
+    pages = (
+        ("First", "First paragraph."),
+        ("Deep list", marker * 34 + " list content."),
+        ("Ambiguous markup", ambiguous),
+        ("Last", "Last paragraph with ''emphasis''."),
     )
+    export = (
+        "<mediawiki>"
+        + "".join(
+            f"<page><title>{title}</title><revision><text>{escape(body)}</text></revision></page>"
+            for title, body in pages
+        )
+        + "</mediawiki>"
+    )
+    source = DocumentStream(
+        name="pages.xml.gz", stream=BytesIO(gzip.compress(export.encode()))
+    )
+    result = _converter().convert(source)
+
+    assert result.status is ConversionStatus.SUCCESS
+    texts = [item.text for item in result.document.texts]
+    assert (
+        texts.index("First")
+        < texts.index("Deep list")
+        < texts.index("Ambiguous markup")
+        < texts.index("Last")
+    )
+    assert "First paragraph." in texts
+    assert marker * 2 + " list content." in texts
+    assert ambiguous in texts
+    assert "Last paragraph with *emphasis*." in result.document.export_to_markdown()
+    assert "Ambiguous markup' exceeded the tokenizer work limit" in caplog.text

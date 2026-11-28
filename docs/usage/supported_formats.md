@@ -38,6 +38,9 @@ unless the backend's `encoding` option is set. If the bytes are not valid in the
 BOM-detected encoding, conversion fails with an error that names the encoding
 and retains the decoder error as its cause.
 
+In HTML, a `<span>` with a non-empty `data-math-tex` attribute produces a formula
+item from the attribute value. The span can contain a visible preview.
+
 In Markdown prose, inline HTML `<br>` tags become hard line breaks in paragraphs,
 headings, and list items. Code spans, code blocks, and escaped tags stay literal.
 The document representation keeps heading line breaks; Markdown export normalizes
@@ -98,8 +101,9 @@ The parser runs locally and preserves headings, emphasis, links, lists, tables,
 formulas, code languages, and file captions. Pictures retain their captions
 without loading the image. The parser extracts named fields from common infobox
 and taxobox templates. It approximates selected templates for dates, lists,
-units, language text, and citations. It leaves out other templates and all Lua
-modules. The `format-html` extra enables MediaWiki conversion in Docling Slim.
+units, language text, and citations. It retains text from presentation templates
+such as `{{Small|…}}` and `{{Mono|…}}`. It leaves out other templates and all
+Lua modules. The `format-html` extra enables MediaWiki conversion in Docling Slim.
 
 The parser uses these size limits by default. You can set them with
 `MediaWikiBackendOptions`.
@@ -111,8 +115,10 @@ The parser uses these size limits by default. You can set them with
 | `max_page_chars` | 4,194,304 | Characters in a page revision or standalone wikitext file |
 | `max_inline_reference_bytes` | 16 MiB | Total rendered inline citation bytes per input, including repeated citations |
 
-The parser limits list nesting to 32 levels and bounds the work spent on
-ambiguous or incomplete markup.
+The XML reader limits each retained metadata field to 8,192 characters and
+discards other XML content as it reads. The wikitext parser keeps list markers
+beyond level 32 as text. If parsing exceeds the work limit, Docling logs a
+warning and keeps that page as plain text.
 
 By default, MediaWiki conversion omits `<ref>` citations and drops empty
 sections. Regular superscripts remain. Set `preserve_bold=False` or
